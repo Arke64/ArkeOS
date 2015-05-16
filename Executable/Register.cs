@@ -4,7 +4,7 @@
 		RZ,
 		RS,
 		RC,
-		RSI,
+		RSIP,
 		RIP,
 		RSP,
 		RIDT,

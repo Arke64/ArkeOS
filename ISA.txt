@@ -6,7 +6,7 @@ RA: Accumulator
 RZ: Zero flag
 RS: Sign flag
 RC: Carry flag
-RSI: Address of the instruction executing when an interrupt fires
+RSIP: Address of the instruction executing when an interrupt fires
 RIP: Address of the current instruction
 RSP: Address of the current stack position
 RIDT: Address of the interrupt descriptor table

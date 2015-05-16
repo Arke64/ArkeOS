@@ -44,6 +44,14 @@ namespace ArkeOS.Executable {
 
 			this.Code = (byte)((b1 & 0x3F) >> 2);
 			this.Size = (InstructionSize)(b1 & 0x03);
+			this.Ra = Register.RA;
+			this.Rb = Register.RA;
+			this.Rc = Register.RA;
+			this.Value = 0;
+			this.SupportsRa = false;
+			this.SupportsRb = false;
+			this.SupportsRc = false;
+			this.SupportsValue = false;
 
 			var def = Instruction.Find(this.Code);
 
