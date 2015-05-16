@@ -31,13 +31,18 @@ namespace ArkeOS.Interpreter {
 
 		public void Run() {
 			while (true) {
-				switch (this.memory.ReadU8(this.instructionPointer++)) {
-					case Instructions.Halt:
+				switch ((Instruction)this.memory.ReadU16(this.instructionPointer)) {
+					case Instruction.Halt:
 						return;
+
+					case Instruction.Nop:
+						break;
 
 					default:
 						throw new InvalidInstructionException();
 				}
+
+				this.instructionPointer += 2;
 			}
 		}
 	}

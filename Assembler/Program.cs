@@ -1,12 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.IO;
 using System.Linq;
 using ArkeOS.Executable;
 
 namespace ArkeOS.Assembler {
-	class Program {
+	public static class Program {
 		private static bool CheckArgs(string[] args, out string input, out string output) {
 			input = string.Empty;
 			output = string.Empty;
@@ -27,6 +26,10 @@ namespace ArkeOS.Assembler {
 			}
 
 			return true;
+		}
+
+		private static void Write(this BinaryWriter writer, Instruction instruction) {
+			writer.Write((ushort)instruction);
 		}
 
 		public static void Main(string[] args) {
@@ -71,7 +74,12 @@ namespace ArkeOS.Assembler {
 						foreach (var parts in sections[i]) {
 							switch (parts[0]) {
 								case "HALT":
-									writer.Write(Instructions.Halt);
+									writer.Write(Instruction.Halt);
+
+									break;
+
+								case "NOP":
+									writer.Write(Instruction.Nop);
 
 									break;
 
