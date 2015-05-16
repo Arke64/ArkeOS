@@ -7,7 +7,7 @@ namespace ArkeOS.Interpreter {
 			path = string.Empty;
 
 			if (args.Length != 1) {
-				path = "../../Program.bin";
+				path = "../../Program.aoe";
 			}
 			else {
 				path = args[0];

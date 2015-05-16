@@ -15,6 +15,9 @@ namespace ArkeOS.Executable {
 			using (var stream = new MemoryStream()) {
 				using (var writer = new BinaryWriter(stream)) {
 					this.Header.Write(writer);
+
+					writer.BaseStream.Seek(Header.Size, SeekOrigin.Begin);
+
 					this.Sections.ForEach(s => s.Write(writer));
 				}
 
