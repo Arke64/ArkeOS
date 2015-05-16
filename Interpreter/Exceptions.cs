@@ -15,4 +15,11 @@ namespace ArkeOS.Interpreter {
 		public InvalidProgramFormatException(string message, Exception innerException) : base(message, innerException) { }
 		protected InvalidProgramFormatException(SerializationInfo info, StreamingContext context) : base(info, context) { }
 	}
+
+	public class InvalidInstructionException : Exception {
+		public InvalidInstructionException() { }
+		public InvalidInstructionException(string message) : base(message) { }
+		public InvalidInstructionException(string message, Exception innerException) : base(message, innerException) { }
+		protected InvalidInstructionException(SerializationInfo info, StreamingContext context) : base(info, context) { }
+	}
 }

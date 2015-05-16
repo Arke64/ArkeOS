@@ -26,7 +26,9 @@ namespace ArkeOS.Executable {
 			using (var reader = new BinaryReader(new MemoryStream(data))) {
 				this.Header.Read(reader);
 
-				while (reader.PeekChar() != -1) {
+				reader.BaseStream.Seek(Header.Size, SeekOrigin.Begin);
+
+				for (var i = 0; i < this.Header.SectionCount; i++) {
 					var section = new Section();
 
 					section.Read(reader);

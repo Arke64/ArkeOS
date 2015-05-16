@@ -7,12 +7,11 @@ namespace ArkeOS.Interpreter {
 			path = string.Empty;
 
 			if (args.Length != 1) {
-				Console.WriteLine("Usage: JIT.exe program");
-
-				return false;
+				path = "../../Program.bin";
 			}
-
-			path = args[0];
+			else {
+				path = args[0];
+			}
 
 			if (!File.Exists(path)) {
 				Console.WriteLine("The specified file cannot be found.");
@@ -26,7 +25,11 @@ namespace ArkeOS.Interpreter {
 		public static void Main(string[] args) {
 			string path;
 
-			if (!Program.CheckArgs(args, out path)) return;
+			if (!Program.CheckArgs(args, out path)) {
+				Console.ReadLine();
+
+				return;
+			}
 
 			var contents = File.ReadAllBytes(path);
 			var jit = new Interpreter();
@@ -35,15 +38,23 @@ namespace ArkeOS.Interpreter {
 				jit.Parse(contents);
 			}
 			catch (InvalidProgramFormatException) {
-				Console.Write("Invalid program format.");
+				Console.WriteLine("Invalid program format.");
 			}
 
 			try {
 				jit.Run();
 			}
 			catch (UnhandledProgramExceptionException) {
-				Console.Write("Unhandled JIT exception.");
+				Console.WriteLine("Unhandled program exception.");
 			}
+			catch (InvalidInstructionException) {
+				Console.WriteLine("Invalid instruction encountered.");
+			}
+			finally {
+				Console.WriteLine("Program terminated.");
+			}
+
+			Console.ReadLine();
 		}
 	}
 }

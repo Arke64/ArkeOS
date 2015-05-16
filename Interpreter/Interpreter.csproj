@@ -6,8 +6,8 @@
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProjectGuid>{4486659F-008C-4521-9E7D-FF7B49A96748}</ProjectGuid>
     <OutputType>Exe</OutputType>
-    <RootNamespace>ArkeOS.Jit</RootNamespace>
-    <AssemblyName>ArkeOS.Jit</AssemblyName>
+    <RootNamespace>ArkeOS.Interpreter</RootNamespace>
+    <AssemblyName>ArkeOS.Interpreter</AssemblyName>
     <TargetFrameworkVersion>v4.6</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
@@ -48,7 +48,9 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Exceptions.cs" />
+    <Compile Include="Instructions.cs" />
     <Compile Include="Interpreter.cs" />
+    <Compile Include="MemoryManager.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="AssemblyInfo.cs" />
   </ItemGroup>
