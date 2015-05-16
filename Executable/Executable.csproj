@@ -40,7 +40,9 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Image.cs" />
-    <Compile Include="Instructions.cs" />
+    <Compile Include="Instruction.cs" />
+    <Compile Include="InstructionSize.cs" />
+    <Compile Include="Register.cs" />
     <Compile Include="Section.cs" />
     <Compile Include="Header.cs" />
     <Compile Include="AssemblyInfo.cs" />

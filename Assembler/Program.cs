@@ -28,10 +28,6 @@ namespace ArkeOS.Assembler {
 			return true;
 		}
 
-		private static void Write(this BinaryWriter writer, Instruction instruction) {
-			writer.Write((ushort)instruction);
-		}
-
 		public static void Main(string[] args) {
 			string input, output;
 
@@ -43,57 +39,74 @@ namespace ArkeOS.Assembler {
 
 			var lines = File.ReadAllLines(input);
 			var image = new Image();
-			var sections = new List<List<string[]>>();
+			var sections = new Dictionary<Section, List<string[]>>();
 
 			image.Header.Magic = Header.MagicNumber;
-			image.Header.EntryPointAddress = Convert.ToUInt64(lines.Single(l => l.IndexOf("ENTRY") == 0).Split(' ')[1], 16);
-			image.Header.StackAddress = Convert.ToUInt64(lines.Single(l => l.IndexOf("STACK") == 0).Split(' ')[1], 16);
 
-			for (var i = 2; i < lines.Length; i++) {
-				var parts = lines[i].Split(' ');
+			foreach (var line in lines) {
+				var parts = line.Split(' ');
 
-				if (parts[0] == "CODE") {
-					sections.Add(new List<string[]>());
-					image.Sections.Add(new Section() { Address = Convert.ToUInt64(parts[1], 16) });
+				switch (parts[0]) {
+					case "ENTRY": image.Header.EntryPointAddress = Convert.ToUInt64(parts[1], 16); break;
+					case "STACK": image.Header.StackAddress = Convert.ToUInt64(parts[1], 16); break;
 
-					continue;
+					case "CODE":
+						var section = new Section() { Address = Convert.ToUInt64(parts[1], 16) };
+
+						image.Sections.Add(section);
+						sections.Add(section, new List<string[]>());
+
+						break;
+
+					default:
+						if (string.IsNullOrWhiteSpace(parts[0]))
+							continue;
+
+						sections.Last().Value.Add(parts);
+
+						break;
 				}
-				else if (string.IsNullOrWhiteSpace(parts[0])) {
-					continue;
-				}
-				else {
-					sections.Last().Add(parts);
+			}
+
+			foreach (var s in sections) {
+				var section = s.Key;
+
+				using (var stream = new MemoryStream()) {
+					using (var writer = new BinaryWriter(stream)) {
+						foreach (var parts in s.Value) {
+							var def = Instruction.Find(parts[0]);
+							var parameters = parts.Skip(1).Select(p => new Parameter(p));
+							var state = 0;
+
+							if (def == null) throw new InvalidInstructionException();
+							if (parameters.Any(p => !p.IsValid)) throw new InvalidParameterException();
+							if (parameters.Count() > 3) throw new InvalidParameterException();
+							if (parameters.Count(p => !p.IsRegister) > 1) throw new InvalidParameterException();
+							if (parameters.Count() > 0 && !parameters.Last().IsRegister && parameters.Count(p => !p.IsRegister) > 1) throw new InvalidParameterException();
+
+							foreach (var p in parameters) {
+								if (p.IsRegister) {
+									switch (state++) {
+										case 0: def.Ra = p.Register; break;
+										case 1: def.Rb = p.Register; break;
+										case 2: def.Rc = p.Register; break;
+									}
+								}
+								else {
+									def.Value = p.Literal;
+								}
+							}
+
+							def.Serialize(writer);
+						}
+					}
+
+					section.Data = stream.ToArray();
+					section.Size = (ulong)section.Data.LongLength;
 				}
 			}
 
 			image.Header.SectionCount = (ushort)sections.Count;
-
-			for (var i = 0; i < sections.Count; i++) {
-				using (var stream = new MemoryStream()) {
-					using (var writer = new BinaryWriter(stream)) {
-						foreach (var parts in sections[i]) {
-							switch (parts[0]) {
-								case "HALT":
-									writer.Write(Instruction.Halt);
-
-									break;
-
-								case "NOP":
-									writer.Write(Instruction.Nop);
-
-									break;
-
-								default:
-									throw new Exception();
-							}
-						}
-
-						image.Sections[i].Size = (ulong)writer.BaseStream.Length;
-					}
-
-					image.Sections[i].Data = stream.ToArray();
-				}
-			}
 
 			File.WriteAllBytes(output, image.ToArray());
 		}

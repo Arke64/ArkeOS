@@ -1,4 +1,5 @@
 ﻿using System;
+using System.IO;
 
 namespace ArkeOS.Interpreter {
 	public class MemoryManager {
@@ -6,6 +7,8 @@ namespace ArkeOS.Interpreter {
 
 		public MemoryManager() {
 			this.memory = new byte[1 * 1024 * 1024];
+
+			this.Reader = new BinaryReader(new MemoryStream(this.memory));
 		}
 
 		public ulong this[ulong address] {
@@ -16,6 +19,8 @@ namespace ArkeOS.Interpreter {
 				this.WriteU64(address, value);
 			}
 		}
+
+		public BinaryReader Reader { get; }
 
 		public byte ReadU8(ulong address) => this.memory[address];
 		public ushort ReadU16(ulong address) => BitConverter.ToUInt16(this.memory, (int)address);

@@ -1,4 +1,5 @@
 ﻿using System.Linq;
+using System.IO;
 using ArkeOS.Executable;
 
 namespace ArkeOS.Interpreter {
@@ -31,18 +32,27 @@ namespace ArkeOS.Interpreter {
 
 		public void Run() {
 			while (true) {
-				switch ((Instruction)this.memory.ReadU16(this.instructionPointer)) {
-					case Instruction.Halt:
-						return;
+				this.memory.Reader.BaseStream.Seek((long)this.instructionPointer, SeekOrigin.Begin);
 
-					case Instruction.Nop:
-						break;
+				var instruction = new Instruction(this.memory.Reader);
 
-					default:
-						throw new InvalidInstructionException();
+				if (instruction.Code == Instruction.Hlt.Code) {
+					return;
+				}
+				else if (instruction.Code == Instruction.Nop.Code) {
+					
+				}
+				else if (instruction.Code == Instruction.Add.Code) {
+
+				}
+				else if (instruction.Code == Instruction.Jiz.Code) {
+
+				}
+				else {
+					throw new InvalidInstructionException();
 				}
 
-				this.instructionPointer += 2;
+				this.instructionPointer += instruction.Length;
 			}
 		}
 	}
