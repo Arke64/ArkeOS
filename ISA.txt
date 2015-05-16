@@ -5,7 +5,7 @@ RI0-RI15: General purpose use for interrupts only
 RA: Accumulator
 RZ: Zero flag
 RS: Sign flag
-RC: Carry flag
+Rc: Carry flag
 RSI: Address of the instruction executing when an interrupt fires
 RIP: Address of the current instruction
 RSP: Address of the current stack position
@@ -23,73 +23,73 @@ Format
 ------
 6b OP Code: The instruction code
 2b OP Size: The size of data to work with (00 = 1 byte, 01 = 2 byte, 10 = 4 byte, 11 = 8 byte)
-1b/0b Do not use RA: If set, instructions that use RA as an operand now use Ry and instructions that use RA as the destination now use Rd.
-7b/8-64b Register/Value: The first operand register or an immediate value whose length is specified by OP Size
+1b/0b Final Operand: If set, this is the last operand (only defined when not using an immediate value, any operands not set default to RA)
+0b-23b/8-64b Register/Value: The parameter registers (Ra, Rb, Rc) or an immediate value whose length is specified by OP Size
 
 Basic
 -----
 00 HLT: Stops the processor
 01 NOP: No operation
-02 INT Rx: Raise the interrupt specified by the value in Rx
-03 PUSH Rx: Push the value in Rx onto the stack
-04 POP Rx: Pop a value from the stack into Rx
+02 INT Ra: Raise the interrupt specified by the value in Ra
+03 PUSH Ra: Push the value in Ra onto the stack
+04 POP Ra: Pop a value from the stack into Ra
 
 Math
 ----
-05 ADD Rx (, Ry, Rd): Add the value in Rx to RA
-06 ADC Rx (, Ry, Rd): Add the value in Rx with carry to RA
-07 ADF Rx (, Ry, Rd): Add the IEEE 754 value in Rx to RA
-08 SUB Rx (, Ry, Rd): Subtract the value in Rx from RA
-09 SBB Rx (, Ry, Rd): Subtract the value in Rx with borrow from RA
-10 SBF Rx (, Ry, Rd): Subtract the IEEE 754 value in Rx from RA
-11 DIV Rx (, Ry, Rd): Divide RA by the value in Rx
-12 DVF Rx (, Ry, Rd): Divide RA by the IEEE 754 value in Rx
-13 MUL Rx (, Ry, Rd): Multiply RA by the value in Rx
-14 MLF Rx (, Ry, Rd): Multiply RA by the IEEE 754 value in Rx
-15 INC (Rx): Add 1 to RA
-16 DEC (Rx): Subtract 1 from RA
-17 NEG (Rx): Reverse the sign of RA
-18 MOD Rx (, Ry, Rd): Store the remainder of dividing RA by the value in Rx in RA
-19 MDF Rx (, Ry, Rd): Store the remainder of dividing RA by the IEEE 754 value in Rx in RA
+05 ADD Ra Rb Rc: Add the value in Ra to Rb and store in Rc
+06 ADC Ra Rb Rc: Add the value in Ra with carry to Rb and store in Rc
+07 ADF Ra Rb Rc: Add the IEEE 754 value in Ra to Rb and store in Rc
+08 SUB Ra Rb Rc: Subtract the value in Ra from Rb and store in Rc
+09 SBB Ra Rb Rc: Subtract the value in Ra with borrow from Rb and store in Rc
+10 SBF Ra Rb Rc: Subtract the IEEE 754 value in Ra from Rb and store in Rc
+11 DIV Ra Rb Rc: Divide Rb by the value in Ra and store in Rc
+12 DVF Ra Rb Rc: Divide Rb by the IEEE 754 value in Ra and store in Rc
+13 MUL Ra Rb Rc: Multiply Rb by the value in Ra and store in Rc
+14 MLF Ra Rb Rc: Multiply Rb by the IEEE 754 value in Ra and store in Rc
+15 INC Ra: Add 1 to Ra
+16 DEC Ra: Subtract 1 from Ra
+17 NEG Ra: Reverse the sign of Ra
+18 MOD Ra Rb Rc: Take the remainder of dividing Rb by the value in Ra and store in Rc
+19 MDF Ra Rb Rc: Take the remainder of dividing Rb by the IEEE 754 value in Ra and store in Rc
 
 Logic
 -----
-20 RR Rx (, Ry, Rd): Rotate RA right by the value in Rx
-21 RL Rx (, Ry, Rd): Rotate RA left by the value in Rx
-22 RRC Rx (, Ry, Rd): Rotate RA right with carry by the value in Rx
-23 RLC Rx (, Ry, Rd): Rotate RA left with carry by the value in Rx
-24 NAND Rx (, Ry, Rd): Store the NAND of RA and Rx in RA
-25 AND Rx (, Ry, Rd): Store the AND of RA and Rx in RA
-26 XOR Rx (, Ry, Rd): Store the XOR of RA and Rx in RA
-27 NOR Rx (, Ry, Rd): Store the NOR of RA and Rx in RA
-28 OR Rx (, Ry, Rd): Store the OR of RA and Rx in RA
-29 NOT (Rx, Rd): Store the NOT of RA in RA
-30 GT Rx (, Ry,): Update flags to reflect if Rx is greater than RA
-31 GTE Rx (, Ry,): Update flags to reflect if Rx is greater than or equal to RA
-32 LT Rx (, Ry,): Update flags to reflect if Rx is less than RA
-33 LTE Rx (, Ry,): Update flags to reflect if Rx is less than or equal to RA
-34 EQ Rx (, Ry,): Update flags to reflect if Rx is equal to RA
-35 NEQ Rx (, Ry,): Update flags to reflect if Rx is not equal to RA
+20 RR Ra Rb Rc: Rotate Rb right by the value in Ra and store in Rc
+21 RL Ra Rb Rc: Rotate Rb left by the value in Ra and store in Rc
+22 RRc Ra Rb Rc: Rotate Rb right with carry by the value in Ra and store in Rc
+23 RLC Ra Rb Rc: Rotate Rb left with carry by the value in Ra and store in Rc
+24 NAND Ra Rb Rc: Store the NAND of Ra and Rb in Rc
+25 AND Ra Rb Rc: Store the AND of Ra and Rb in Rc
+26 XOR Ra Rb Rc: Store the XOR of Ra and Rb in Rc
+27 NOR Ra Rb Rc: Store the NOR of Ra and Rb in Rc
+28 OR Ra Rb Rc: Store the OR of Ra and Rb in Rc
+29 NOT Ra Rb: Store the NOT of Ra in Rb
+30 GT Ra Rb: Update flags to reflect if Rb is greater than Ra
+31 GTE Ra Rb: Update flags to reflect if Rb is greater than or equal to Ra
+32 LT Ra Rb: Update flags to reflect if Rb is less than Ra
+33 LTE Ra Rb: Update flags to reflect if Rb is less than or equal to Ra
+34 EQ Ra Rb: Update flags to reflect if Rb is equal to Ra
+35 NEQ Ra Rb: Update flags to reflect if Rb is not equal to Ra
 
 Control
 -------
-36 MMR Rx (, Ry): Move the value at the location in memory specified by the address in Rx
-37 MDR Rx (, Ry): Read from the device specified by the value into Rx into RA
-38 MRM Rx (, Ry): Move RA into the memory location whose address is in Rx
-39 MRD Rx (, Ry): Write RA out to the device specified by the value in Rx
-40 MRR Rx, Ry: Move Rx into Ry
-41 MIR Rx, value: Move value into Rx
-42 JC (Rx): Sets the instruction pointer to the value in RA if RC is set
-43 JS (Rx): Sets the instruction pointer to the value in RA if RS is set
-44 JZ (Rx): Sets the instruction pointer to the value in RA if RZ is set
-45 JNC (Rx): Sets the instruction pointer to the value in RA if RC is not set
-46 JNS (Rx): Sets the instruction pointer to the value in RA if RC is not set
-47 JNZ (Rx): Sets the instruction pointer to the value in RA if RC is not set
-48 JMP (Rx): Sets the instruction pointer to the value in RA
+36 MMR Ra Rb: Move the value at the location in memory specified by the address in Ra into Rb
+37 MDR Ra Rb: Read from the device specified by the value into Ra into Rb
+38 MRM Ra Rb: Move Rb into the memory location whose address is in Ra
+39 MRD Ra Rb: Write Rb out to the device specified by the value in Ra
+40 MRR Ra Rb: Move Ra into Rb
+41 MIR Ra value: Move value into Ra
+42 JC Ra: Sets the instruction pointer to the value in Ra if RC is set
+43 JS Ra: Sets the instruction pointer to the value in Ra if RS is set
+44 JZ Ra: Sets the instruction pointer to the value in Ra if RZ is set
+45 JNC Ra: Sets the instruction pointer to the value in Ra if RC is not set
+46 JNS Ra: Sets the instruction pointer to the value in Ra if RS is not set
+47 JNZ Ra: Sets the instruction pointer to the value in Ra if RZ is not set
+48 JMP Ra: Sets the instruction pointer to the value in Ra
 49 JIC value: Increments the instruction pointer by value if RC is set
 50 JIS value: Increments the instruction pointer by value if RS is set
 51 JIZ value: Increments the instruction pointer by value if RZ is set
 52 JINC value: Increments the instruction pointer by value if RC is not set
-53 JINS value: Increments the instruction pointer by value if RC is not set
-54 JINZ value: Increments the instruction pointer by value if RC is not set
+53 JINS value: Increments the instruction pointer by value if RS is not set
+54 JINZ value: Increments the instruction pointer by value if RZ is not set
 55 JIMP value: Increments the instruction pointer by value
