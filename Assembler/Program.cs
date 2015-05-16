@@ -46,8 +46,8 @@ namespace ArkeOS.Assembler {
 			var sections = new List<List<string[]>>();
 
 			image.Header.Magic = Header.MagicNumber;
-			image.Header.EntryPointAddress = Convert.ToUInt64(lines[0].Split(' ')[1], 16);
-			image.Header.StackAddress = Convert.ToUInt64(lines[1].Split(' ')[1], 16);
+			image.Header.EntryPointAddress = Convert.ToUInt64(lines.Single(l => l.IndexOf("ENTRY") == 0).Split(' ')[1], 16);
+			image.Header.StackAddress = Convert.ToUInt64(lines.Single(l => l.IndexOf("STACK") == 0).Split(' ')[1], 16);
 
 			for (var i = 2; i < lines.Length; i++) {
 				var parts = lines[i].Split(' ');
