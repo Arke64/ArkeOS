@@ -1,0 +1,95 @@
+Registers
+---------
+R0-R63: General purpose
+RI0-RI15: General purpose for interrupts
+RA: Accumulator
+RZ: Zero
+RS: Sign
+RC: Carry
+RSI: Address of the instruction executing when an interrupt fires
+RIP: Address of the current instruction
+RSP: Address of the current stack position
+RIDT: Address of the interrupt descriptor table
+
+IDT
+---
+0x00: Invalid instruction
+0x01: Divide by zero
+0x02: System call
+0x03-0x0F: Reserved
+0x0F-0xnn: User defined
+
+Format
+------
+6b OP Code: The instruction code
+2b OP Size: The size of data to work with (00 = 1 byte, 01 = 2 byte, 10 = 4 byte, 11 = 8 byte)
+1b/0b Do not use RA: If set, instructions that use RA as an operand now use Ry and instructions that use RA as the destination now use Rd.
+7b/8b Register/Value: The first operand register or an immediate 8 bit value
+
+Basic
+-----
+00 HLT: Stops the processor
+01 NOP: No operation
+02 INT Rx: Raise the interrupt specified by the value in Rx
+03 PUSH Rx: Push the value in Rx onto the stack
+04 POP Rx: Pop a value from the stack into Rx
+
+Math
+----
+05 ADD Rx (, Ry, Rd): Add the value in Rx to RA
+06 ADC Rx (, Ry, Rd): Add the value in Rx with carry to RA
+07 ADF Rx (, Ry, Rd): Add the IEEE 754 value in Rx to RA
+08 SUB Rx (, Ry, Rd): Subtract the value in Rx from RA
+09 SBB Rx (, Ry, Rd): Subtract the value in Rx with borrow from RA
+10 SBF Rx (, Ry, Rd): Subtract the IEEE 754 value in Rx from RA
+11 DIV Rx (, Ry, Rd): Divide RA by the value in Rx
+12 DVF Rx (, Ry, Rd): Divide RA by the IEEE 754 value in Rx
+13 MUL Rx (, Ry, Rd): Multiply RA by the value in Rx
+14 MLF Rx (, Ry, Rd): Multiply RA by the IEEE 754 value in Rx
+15 INC (Rx): Add 1 to RA
+16 DEC (Rx): Subtract 1 from RA
+17 NEG (Rx): Reverse the sign of RA
+18 MOD Rx (, Ry, Rd): Store the remainder of dividing RA by the value in Rx in RA
+19 MDF Rx (, Ry, Rd): Store the remainder of dividing RA by the IEEE 754 value in Rx in RA
+
+Logic
+-----
+20 RR Rx (, Ry, Rd): Rotate RA right by the value in Rx
+21 RL Rx (, Ry, Rd): Rotate RA left by the value in Rx
+22 RRC Rx (, Ry, Rd): Rotate RA right with carry by the value in Rx
+23 RLC Rx (, Ry, Rd): Rotate RA left with carry by the value in Rx
+24 NAND Rx (, Ry, Rd): Store the NAND of RA and Rx in RA
+25 AND Rx (, Ry, Rd): Store the AND of RA and Rx in RA
+26 XOR Rx (, Ry, Rd): Store the XOR of RA and Rx in RA
+27 NOR Rx (, Ry, Rd): Store the NOR of RA and Rx in RA
+28 OR Rx (, Ry, Rd): Store the OR of RA and Rx in RA
+29 NOT (Rx, Rd): Store the NOT of RA in RA
+30 GT Rx (, Ry,): Update flags to reflect if Rx is greater than RA
+31 GTE Rx (, Ry,): Update flags to reflect if Rx is greater than or equal to RA
+32 LT Rx (, Ry,): Update flags to reflect if Rx is less than RA
+33 LTE Rx (, Ry,): Update flags to reflect if Rx is less than or equal to RA
+34 EQ Rx (, Ry,): Update flags to reflect if Rx is equal to RA
+35 NEQ Rx (, Ry,): Update flags to reflect if Rx is not equal to RA
+
+Control
+-------
+36 MAM Rx (, Ry): Move RA into the memory location whose address is in Rx
+37 MAR Rx (, Ry): Move RA into Rx
+38 MAD Rx (, Ry): Write RA out to the device specified by the value in Rx
+39 MMA Rx (, Ry): Move the value at the location in memory specified by the address in Rx
+40 MRA Rx (, Ry): Move Rx into RA
+41 MDA Rx (, Ry): Read from the device specified by the value into Rx into RA
+42 JC (Rx): Sets the instruction pointer to the value in RA if RC is set
+43 JS (Rx): Sets the instruction pointer to the value in RA if RS is set
+44 JZ (Rx): Sets the instruction pointer to the value in RA if RZ is set
+45 JNC (Rx): Sets the instruction pointer to the value in RA if RC is not set
+46 JNS (Rx): Sets the instruction pointer to the value in RA if RC is not set
+47 JNZ (Rx): Sets the instruction pointer to the value in RA if RC is not set
+48 JMP (Rx): Sets the instruction pointer to the value in RA
+49 JIC value: Increments the instruction pointer by value if RC is set
+50 JIS value: Increments the instruction pointer by value if RS is set
+51 JIZ value: Increments the instruction pointer by value if RZ is set
+52 JINC value: Increments the instruction pointer by value if RC is not set
+53 JINS value: Increments the instruction pointer by value if RC is not set
+54 JINZ value: Increments the instruction pointer by value if RC is not set
+55 JIMP value: Increments the instruction pointer by value
