@@ -6,6 +6,8 @@ RA: Accumulator
 RZ: Zero flag
 RS: Sign flag
 RC: Carry flag
+RO: 0x00.. register
+RF: 0xFF.. register
 RSIP: Address of the instruction executing when an interrupt fires
 RIP: Address of the current instruction
 RSP: Address of the current stack position
@@ -16,7 +18,8 @@ IDT
 0x00: Invalid instruction
 0x01: Divide by zero
 0x02: System call
-0x03-0x0F: Reserved
+0x03: Protection violation
+0x04-0x0F: Reserved
 0x10-0xFF: User defined
 
 Format
@@ -79,17 +82,5 @@ Control
 39 MRD Ra Rb: Write Rb out to the device specified by the value in Ra
 40 MRR Ra Rb: Move Ra into Rb
 41 MIR Ra value: Move value into Ra
-42 JC Ra: Sets the instruction pointer to the value in Ra if RC is set
-43 JS Ra: Sets the instruction pointer to the value in Ra if RS is set
-44 JZ Ra: Sets the instruction pointer to the value in Ra if RZ is set
-45 JNC Ra: Sets the instruction pointer to the value in Ra if RC is not set
-46 JNS Ra: Sets the instruction pointer to the value in Ra if RS is not set
-47 JNZ Ra: Sets the instruction pointer to the value in Ra if RZ is not set
-48 JMP Ra: Sets the instruction pointer to the value in Ra
-49 JIC value: Increments the instruction pointer by value if RC is set
-50 JIS value: Increments the instruction pointer by value if RS is set
-51 JIZ value: Increments the instruction pointer by value if RZ is set
-52 JINC value: Increments the instruction pointer by value if RC is not set
-53 JINS value: Increments the instruction pointer by value if RS is not set
-54 JINZ value: Increments the instruction pointer by value if RZ is not set
-55 JIMP value: Increments the instruction pointer by value
+42 JZ Ra Rb: Sets the instruction pointer to the value in Rb if Ra is zero.
+43 JNZ Ra Rb: Sets the instruction pointer to the value in Rb if Ra is non-zero.

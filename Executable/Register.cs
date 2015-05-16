@@ -4,6 +4,8 @@
 		RZ,
 		RS,
 		RC,
+		RO,
+		RF,
 		RSIP,
 		RIP,
 		RSP,
