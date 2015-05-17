@@ -19,7 +19,7 @@ namespace ArkeOS.Executable {
 			var b1 = reader.ReadByte();
 			var b2 = reader.ReadByte();
 
-			this.Code = (byte)((b1 & 0x3F) >> 2);
+			this.Code = (byte)((b1 & 0xFC) >> 2);
 			this.Size = (InstructionSize)(b1 & 0x03);
 			this.All = new List<Parameter>();
 

@@ -16,15 +16,13 @@ namespace ArkeOS.Interpreter {
 		public Interpreter() {
 			this.image = new Image();
 			this.memory = new MemoryManager();
-			this.instructionHandlers = new Dictionary<InstructionDefinition, Action<Instruction>>();
 
+			this.instructionHandlers = InstructionDefinition.All.ToDictionary(i => i, i => (Action<Instruction>)Delegate.CreateDelegate(typeof(Action<Instruction>), this, i.Mnemonic, true));
 			this.registers = Enum.GetNames(typeof(Register)).Select(n => (Register)Enum.Parse(typeof(Register), n)).ToDictionary(e => e, e => 0UL);
 
 			this.registers[Register.RO] = 0;
 			this.registers[Register.RF] = ulong.MaxValue;
 			this.running = true;
-
-			this.AddInstructions();
 		}
 
 		public void Parse(byte[] data) {
