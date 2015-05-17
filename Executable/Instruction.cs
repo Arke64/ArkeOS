@@ -38,7 +38,7 @@ namespace ArkeOS.Executable {
 
 			var idx = parts[0].IndexOf(':');
             if (idx != -1) {
-				this.Size = (InstructionSize)byte.Parse(parts[0].Substring(idx + 1));
+				this.Size = (InstructionSize)(byte.Parse(parts[0].Substring(idx + 1)) - 1);
 				parts[0] = parts[0].Substring(0, idx);
 			}
 
