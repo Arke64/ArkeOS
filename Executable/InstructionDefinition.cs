@@ -46,10 +46,7 @@ namespace ArkeOS.Executable {
 		public static InstructionDefinition Pop = new InstructionDefinition("POP", 7, 1);
 		public static InstructionDefinition Jz = new InstructionDefinition("JZ", 8, 2);
 		public static InstructionDefinition Jnz = new InstructionDefinition("JNZ", 9, 2);
-		public static InstructionDefinition Jiz = new InstructionDefinition("JIZ", 10, 2);
-		public static InstructionDefinition Jinz = new InstructionDefinition("JINZ", 11, 2);
-		public static InstructionDefinition Jdz = new InstructionDefinition("JDZ", 12, 2);
-		public static InstructionDefinition Jdnz = new InstructionDefinition("JDNZ", 13, 2);
+		public static InstructionDefinition Jiz = new InstructionDefinition("JMP", 10, 1);
 
 		public static InstructionDefinition Add = new InstructionDefinition("ADD", 20, 3);
 		public static InstructionDefinition Adc = new InstructionDefinition("ADC", 21, 3);

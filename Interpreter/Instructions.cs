@@ -67,36 +67,10 @@ namespace ArkeOS.Interpreter {
 			}
 		}
 
-		private void Jiz(Instruction instruction) {
-			if (this.GetValue(instruction.A) == 0) {
-				this.registers[Register.RIP] += this.GetValue(instruction.B);
+		private void Jmp(Instruction instruction) {
+			this.registers[Register.RIP] = this.GetValue(instruction.A);
 
-				this.supressRIPIncrement = true;
-			}
-		}
-
-		private void Jinz(Instruction instruction) {
-			if (this.GetValue(instruction.A) != 0) {
-				this.registers[Register.RIP] += this.GetValue(instruction.B);
-
-				this.supressRIPIncrement = true;
-			}
-		}
-
-		private void Jdz(Instruction instruction) {
-			if (this.GetValue(instruction.A) == 0) {
-				this.registers[Register.RIP] -= this.GetValue(instruction.B);
-
-				this.supressRIPIncrement = true;
-			}
-		}
-
-		private void Jdnz(Instruction instruction) {
-			if (this.GetValue(instruction.A) != 0) {
-				this.registers[Register.RIP] -= this.GetValue(instruction.B);
-
-				this.supressRIPIncrement = true;
-			}
+			this.supressRIPIncrement = true;
 		}
 
 		#endregion
