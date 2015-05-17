@@ -57,18 +57,18 @@ Math
 27 DVF A B C: Divide B by the IEEE 754 value in A and store in C
 28 MUL A B C: Multiply B by A and store in C
 29 MLF A B C: Multiply B by the IEEE 754 value in A and store in C
-30 INC A: Add 1 to A
-31 DEC A: Subtract 1 from A
-32 NEG A: Reverse the sign of A
+30 INC A B: Add 1 to A and store in B
+31 DEC A B: Subtract 1 from A and store in B
+32 NEG A B: Reverse the sign of A and store in B
 33 MOD A B C: Take the remainder of dividing B by A and store in C
 34 MDF A B C: Take the remainder of dividing B by the IEEE 754 value in A and store in C
 
 Logic
 -----
-40 RR A B C: Rotate B right by A and store in C
-41 RL A B C: Rotate B left by A and store in C
-42 RRC A B C: Rotate B right with carry by A and store in C
-43 RLC A B C: Rotate B left with carry by A and store in C
+40 SR A B C: Shift B right by A and store in C
+41 SL A B C: Shift B left by A and store in C
+42 RR A B C: Rotate B right by A and store in C
+43 RL A B C: Rotate B left by A and store in C
 44 XCHG A B: Swap A and B
 45 NAND A B C: Store the NAND of A and B in C
 46 AND A B C: Store the AND of A and B in C
@@ -77,9 +77,9 @@ Logic
 49 NXOR A B C: Store the NXOR of A and B in C
 50 XOR A B C: Store the XOR of A and B in C
 51 NOT A B: Store the NOT of A in B
-52 GT A B: Update flags to reflect if B is greater than A
-53 GTE A B: Update flags to reflect if B is greater than or equal to A
-54 LT A B: Update flags to reflect if B is less than A
-55 LTE A B: Update flags to reflect if B is less than or equal to A
-56 EQ A B: Update flags to reflect if B is equal to A
-57 NEQ A B: Update flags to reflect if B is not equal to A
+52 GT A B: Update RZ to reflect if B is greater than A
+53 GTE A B: Update RZ to reflect if B is greater than or equal to A
+54 LT A B: Update RZ to reflect if B is less than A
+55 LTE A B: Update RZ to reflect if B is less than or equal to A
+56 EQ A B: Update RZ to reflect if B is equal to A
+57 NEQ A B: Update RZ to reflect if B is not equal to A

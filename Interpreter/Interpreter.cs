@@ -63,7 +63,6 @@ namespace ArkeOS.Interpreter {
 		private void UpdateFlags(ulong value) {
 			this.registers[Register.RZ] = value == 0 ? ulong.MaxValue : 0;
 			this.registers[Register.RS] = (value & (ulong)(1 << (Instruction.SizeToBits(this.currentSize) - 1))) != 0 ? ulong.MaxValue : 0;
-			this.registers[Register.RC] = 0;
 		}
 
 		private ulong GetValue(Parameter parameter) {
@@ -102,6 +101,7 @@ namespace ArkeOS.Interpreter {
 		}
 
 		private void Access(Parameter a, Action<ulong> operation) => operation(this.GetValue(a));
+		private void Access(Parameter a, Parameter b, Action<ulong, ulong> operation) => operation(this.GetValue(a), this.GetValue(b));
 		private void Access(Parameter destination, Func<ulong> operation) => this.SetValue(destination, operation());
 		private void Access(Parameter a, Parameter destination, Func<ulong, ulong> operation) => this.SetValue(destination, operation(this.GetValue(a)));
 		private void Access(Parameter a, Parameter b, Parameter destination, Func<ulong, ulong, ulong> operation) => this.SetValue(destination, operation(this.GetValue(a), this.GetValue(b)));

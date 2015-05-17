@@ -249,7 +249,7 @@ namespace ArkeOS.Interpreter {
 				this.registers[Register.RC] = ulong.MaxValue;
 
 			unchecked {
-				this.SetValue(instruction.A, a + 1);
+				this.SetValue(instruction.B, a + 1);
 			}
 		}
 
@@ -261,7 +261,7 @@ namespace ArkeOS.Interpreter {
 				this.registers[Register.RC] = ulong.MaxValue;
 
 			unchecked {
-				this.SetValue(instruction.A, max);
+				this.SetValue(instruction.B, max);
 			}
 		}
 
@@ -276,7 +276,7 @@ namespace ArkeOS.Interpreter {
 				a &= ~mask;
 			}
 
-			this.SetValue(instruction.A, a);
+			this.SetValue(instruction.B, a);
 		}
 
 		private void Mod(Instruction instruction) {
@@ -307,76 +307,77 @@ namespace ArkeOS.Interpreter {
 
 		#region Logic
 
-		private void Rr(Instruction instruction) {
+		private void Sr(Instruction instruction) {
+			this.Access(instruction.A, instruction.B, instruction.C, (a, b) => b >> (byte)a);
+		}
 
+		private void Sl(Instruction instruction) {
+			this.Access(instruction.A, instruction.B, instruction.C, (a, b) => b << (byte)a);
+		}
+
+		private void Rr(Instruction instruction) {
+			this.Access(instruction.A, instruction.B, instruction.C, (a, b) => (b >> (byte)a) | (b << (Instruction.SizeToBits(instruction.Size) - (byte)a)));
 		}
 
 		private void Rl(Instruction instruction) {
-
-		}
-
-		private void Rrc(Instruction instruction) {
-
-		}
-
-		private void Rlc(Instruction instruction) {
-
+			this.Access(instruction.A, instruction.B, instruction.C, (a, b) => (b << (byte)a) | (b >> (Instruction.SizeToBits(instruction.Size) - (byte)a)));
 		}
 
 		private void Xchg(Instruction instruction) {
-
+			this.SetValue(instruction.A, this.GetValue(instruction.A));
+			this.SetValue(instruction.B, this.GetValue(instruction.B));
 		}
 
 		private void Nand(Instruction instruction) {
-
+			this.Access(instruction.A, instruction.B, instruction.C, (a, b) => ~(a & b));
 		}
 
 		private void And(Instruction instruction) {
-
+			this.Access(instruction.A, instruction.B, instruction.C, (a, b) => a & b);
 		}
 
 		private void Nor(Instruction instruction) {
-
+			this.Access(instruction.A, instruction.B, instruction.C, (a, b) => ~(a | b));
 		}
 
 		private void Or(Instruction instruction) {
-
+			this.Access(instruction.A, instruction.B, instruction.C, (a, b) => a | b);
 		}
 
 		private void Nxor(Instruction instruction) {
-
+			this.Access(instruction.A, instruction.B, instruction.C, (a, b) => ~(a ^ b));
 		}
 
 		private void Xor(Instruction instruction) {
-
+			this.Access(instruction.A, instruction.B, instruction.C, (a, b) => a ^ b);
 		}
 
 		private void Not(Instruction instruction) {
-
+			this.Access(instruction.A, instruction.B, a => ~a);
 		}
 
 		private void Gt(Instruction instruction) {
-
+			this.Access(instruction.A, instruction.B, (a, b) => this.registers[Register.RZ] = b > a ? ulong.MaxValue : 0);
 		}
 
 		private void Gte(Instruction instruction) {
-
+			this.Access(instruction.A, instruction.B, (a, b) => this.registers[Register.RZ] = b >= a ? ulong.MaxValue : 0);
 		}
 
 		private void Lt(Instruction instruction) {
-
+			this.Access(instruction.A, instruction.B, (a, b) => this.registers[Register.RZ] = b < a ? ulong.MaxValue : 0);
 		}
 
 		private void Lte(Instruction instruction) {
-
+			this.Access(instruction.A, instruction.B, (a, b) => this.registers[Register.RZ] = b <= a ? ulong.MaxValue : 0);
 		}
 
 		private void Eq(Instruction instruction) {
-
+			this.Access(instruction.A, instruction.B, (a, b) => this.registers[Register.RZ] = b == a ? ulong.MaxValue : 0);
 		}
 
 		private void Neq(Instruction instruction) {
-
+			this.Access(instruction.A, instruction.B, (a, b) => this.registers[Register.RZ] = b != a ? ulong.MaxValue : 0);
 		}
 
 		#endregion

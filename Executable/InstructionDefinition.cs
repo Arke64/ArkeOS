@@ -58,16 +58,16 @@ namespace ArkeOS.Executable {
 		public static InstructionDefinition Dvf = new InstructionDefinition("DVF", 27, 3);
 		public static InstructionDefinition Mul = new InstructionDefinition("MUL", 28, 3);
 		public static InstructionDefinition Mlf = new InstructionDefinition("MLF", 39, 3);
-		public static InstructionDefinition Inc = new InstructionDefinition("INC", 30, 1);
-		public static InstructionDefinition Dec = new InstructionDefinition("DEC", 31, 1);
-		public static InstructionDefinition Neg = new InstructionDefinition("NEG", 32, 1);
+		public static InstructionDefinition Inc = new InstructionDefinition("INC", 30, 2);
+		public static InstructionDefinition Dec = new InstructionDefinition("DEC", 31, 2);
+		public static InstructionDefinition Neg = new InstructionDefinition("NEG", 32, 2);
 		public static InstructionDefinition Mod = new InstructionDefinition("MOD", 33, 3);
 		public static InstructionDefinition Mdf = new InstructionDefinition("MDF", 34, 3);
 
-		public static InstructionDefinition Rr = new InstructionDefinition("RR", 40, 3);
-		public static InstructionDefinition Rl = new InstructionDefinition("RL", 41, 3);
-		public static InstructionDefinition Rrc = new InstructionDefinition("RRC", 42, 3);
-		public static InstructionDefinition Rlc = new InstructionDefinition("RLC", 43, 3);
+		public static InstructionDefinition Rr = new InstructionDefinition("SR", 40, 3);
+		public static InstructionDefinition Rl = new InstructionDefinition("SL", 41, 3);
+		public static InstructionDefinition Rrc = new InstructionDefinition("RR", 42, 3);
+		public static InstructionDefinition Rlc = new InstructionDefinition("RL", 43, 3);
 		public static InstructionDefinition Xchg = new InstructionDefinition("XCHG", 44, 2);
 		public static InstructionDefinition Nand = new InstructionDefinition("NAND", 45, 3);
 		public static InstructionDefinition And = new InstructionDefinition("AND", 46, 3);
