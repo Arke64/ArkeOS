@@ -34,8 +34,15 @@ namespace ArkeOS.Executable {
 		}
 
 		public Instruction(string[] parts) {
-			this.Code = InstructionDefinition.Find(parts[0]).Code;
 			this.Size = InstructionSize.EightByte;
+
+			var idx = parts[0].IndexOf(':');
+            if (idx != -1) {
+				this.Size = (InstructionSize)byte.Parse(parts[0].Substring(idx + 1));
+				parts[0] = parts[0].Substring(0, idx);
+			}
+
+			this.Code = InstructionDefinition.Find(parts[0]).Code;
 			this.All = parts.Skip(1).Select(p => new Parameter(this.Size, p)).ToList();
 
 			if (this.Definition.ParameterCount != this.All.Count()) throw new Exception();
