@@ -5,21 +5,26 @@ using System.Linq;
 using ArkeOS.Executable;
 
 namespace ArkeOS.Interpreter {
-	public class Interpreter {
+	public partial class Interpreter {
 		private Image image;
 		private MemoryManager memory;
 		private Dictionary<Register, ulong> registers;
+		private Dictionary<InstructionDefinition, Action<Instruction>> instructionHandlers;
 		private InstructionSize currentSize;
+		private bool running;
 
 		public Interpreter() {
 			this.image = new Image();
 			this.memory = new MemoryManager();
-			this.registers = new Dictionary<Register, ulong>();
+			this.instructionHandlers = new Dictionary<InstructionDefinition, Action<Instruction>>();
 
 			this.registers = Enum.GetNames(typeof(Register)).Select(n => (Register)Enum.Parse(typeof(Register), n)).ToDictionary(e => e, e => 0UL);
 
 			this.registers[Register.RO] = 0;
 			this.registers[Register.RF] = ulong.MaxValue;
+			this.running = true;
+
+			this.AddInstructions();
 		}
 
 		public void Parse(byte[] data) {
@@ -37,40 +42,17 @@ namespace ArkeOS.Interpreter {
 		}
 
 		public void Run() {
-			while (true) {
+			while (this.running) {
 				this.memory.Reader.BaseStream.Seek((long)this.registers[Register.RIP], SeekOrigin.Begin);
 
 				var instruction = new Instruction(this.memory.Reader);
 
 				this.currentSize = instruction.Size;
 
-				if (instruction.Code == InstructionDefinition.Hlt.Code) {
-					return;
-				}
-				else if (instruction.Code == InstructionDefinition.Nop.Code) {
-					
-				}
-				else if (instruction.Code == InstructionDefinition.Add.Code) {
-					var aa = this.GetValue(instruction.A);
-					var bb = this.GetValue(instruction.B);
-
-					if (this.currentSize == InstructionSize.EightByte && ulong.MaxValue - aa < bb) {
-						unchecked {
-							this.SetValue(instruction.C, aa + bb);
-						}
-
-						this.registers[Register.RC] = ulong.MaxValue;
-					}
-					else {
-						this.Access(instruction.A, instruction.B, instruction.C, (a, b) => a + b);
-					}
-				}
-				else if (instruction.Code == InstructionDefinition.Jiz.Code) {
-
-				}
-				else {
+				if (!this.instructionHandlers.ContainsKey(instruction.Definition))
 					throw new InvalidInstructionException();
-				}
+
+				this.instructionHandlers[instruction.Definition](instruction);
 
 				this.registers[Register.RIP] += instruction.Length;
 			}

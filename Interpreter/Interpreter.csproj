@@ -48,6 +48,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Exceptions.cs" />
+    <Compile Include="Instructions.cs" />
     <Compile Include="Interpreter.cs" />
     <Compile Include="MemoryManager.cs" />
     <Compile Include="Program.cs" />
