@@ -80,59 +80,105 @@ namespace ArkeOS.Interpreter {
 		private void Add(Instruction instruction) {
 			var a = this.GetValue(instruction.A);
 			var b = this.GetValue(instruction.B);
+			var max = Instruction.SizeToMask(instruction.Size);
 
-			var max = 0UL;
-			switch (instruction.Size) {
-				case InstructionSize.OneByte: max = byte.MaxValue; break;
-				case InstructionSize.TwoByte: max = ushort.MaxValue; break;
-				case InstructionSize.FourByte: max = uint.MaxValue; break;
-				case InstructionSize.EightByte: max = ulong.MaxValue; break;
+            if (max - a < b)
+				this.registers[Register.RC] = ulong.MaxValue;
+
+			unchecked {
+				this.SetValue(instruction.C, max & ((max & a) + (max & b)));
+			}
+		}
+
+		private void Adc(Instruction instruction) {
+			var a = this.GetValue(instruction.A);
+			var b = this.GetValue(instruction.B);
+			var carry = this.registers[Register.RC] > 0 ? 1UL : 0UL;
+			var max = Instruction.SizeToMask(instruction.Size);
+
+			if (a < max) {
+				a += carry;
+			}
+			else if (b < max) {
+				b += carry;
+			}
+			else if (carry == 1) {
+				this.registers[Register.RC] = ulong.MaxValue;
+
+				this.SetValue(instruction.C, max);
+
+				return;
 			}
 
 			if (max - a < b)
 				this.registers[Register.RC] = ulong.MaxValue;
 
 			unchecked {
-				switch (instruction.Size) {
-					case InstructionSize.OneByte: this.SetValue(instruction.C, (byte)((byte)b + (byte)a)); break;
-					case InstructionSize.TwoByte: this.SetValue(instruction.C, (ushort)((ushort)b + (ushort)a)); break;
-					case InstructionSize.FourByte: this.SetValue(instruction.C, (uint)b + (uint)a); break;
-					case InstructionSize.EightByte: this.SetValue(instruction.C, b + a); break;
-				}
+				this.SetValue(instruction.C, max & ((max & a) + (max & b)));
 			}
 		}
 
-		private void Adc(Instruction instruction) {
-
-		}
-
 		private void Adf(Instruction instruction) {
+			var a = this.GetValue(instruction.A);
+			var b = this.GetValue(instruction.B);
 
+			var aa = BitConverter.ToDouble(BitConverter.GetBytes(a), 0);
+			var bb = BitConverter.ToDouble(BitConverter.GetBytes(b), 0);
+			var cc = BitConverter.ToUInt64(BitConverter.GetBytes(aa + bb), 0);
+
+			this.SetValue(instruction.C, cc);
 		}
 
 		private void Sub(Instruction instruction) {
 			var a = this.GetValue(instruction.A);
 			var b = this.GetValue(instruction.B);
+			var max = Instruction.SizeToMask(instruction.Size);
 
 			if (a > b)
 				this.registers[Register.RC] = ulong.MaxValue;
 
 			unchecked {
-				switch (instruction.Size) {
-					case InstructionSize.OneByte: this.SetValue(instruction.C, (byte)((byte)b - (byte)a)); break;
-					case InstructionSize.TwoByte: this.SetValue(instruction.C, (ushort)((ushort)b - (ushort)a)); break;
-					case InstructionSize.FourByte: this.SetValue(instruction.C, (uint)b - (uint)a); break;
-					case InstructionSize.EightByte: this.SetValue(instruction.C, b - a); break;
-				}
+				this.SetValue(instruction.C, max & ((max & b) - (max & a)));
 			}
 		}
 
 		private void Sbb(Instruction instruction) {
+			var a = this.GetValue(instruction.A);
+			var b = this.GetValue(instruction.B);
+			var carry = this.registers[Register.RC] > 0 ? 1UL : 0UL;
+			var max = Instruction.SizeToMask(instruction.Size);
 
+			if (a > 0) {
+				a -= carry;
+			}
+			else if (b > 0) {
+				b -= carry;
+			}
+			else if (carry == 1) {
+				this.registers[Register.RC] = ulong.MaxValue;
+
+				this.SetValue(instruction.C, max);
+
+				return;
+			}
+
+			if (a > b)
+				this.registers[Register.RC] = ulong.MaxValue;
+
+			unchecked {
+				this.SetValue(instruction.C, max & ((max & b) - (max & a)));
+			}
 		}
 
 		private void Sbf(Instruction instruction) {
+			var a = this.GetValue(instruction.A);
+			var b = this.GetValue(instruction.B);
 
+			var aa = BitConverter.ToDouble(BitConverter.GetBytes(a), 0);
+			var bb = BitConverter.ToDouble(BitConverter.GetBytes(b), 0);
+			var cc = BitConverter.ToUInt64(BitConverter.GetBytes(bb - aa), 0);
+
+			this.SetValue(instruction.C, cc);
 		}
 
 		private void Div(Instruction instruction) {

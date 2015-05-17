@@ -77,17 +77,20 @@ namespace ArkeOS.Interpreter {
 				default: throw new ArgumentException(nameof(parameter));
 			}
 
-			switch (this.currentSize) {
-				case InstructionSize.OneByte: value = (byte)value; break;
-				case InstructionSize.TwoByte: value = (ushort)value; break;
-				case InstructionSize.FourByte: value = (uint)value; break;
+			unchecked {
+				return value & Instruction.SizeToMask(this.currentSize);
 			}
-
-			return value;
 		}
 
 		private void SetValue(Parameter parameter, ulong value) {
 			this.UpdateFlags(value);
+
+			var orig = value;
+
+			value &= Instruction.SizeToMask(this.currentSize);
+
+			if (value != orig)
+				this.registers[Register.RC] = ulong.MaxValue;
 
 			switch (parameter.Type) {
 				case ParameterType.Literal: break;
