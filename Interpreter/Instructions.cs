@@ -17,7 +17,7 @@ namespace ArkeOS.Interpreter {
 		}
 
 		private void Mov(Instruction instruction) {
-
+			this.Access(instruction.A, instruction.B, a => a);
 		}
 
 		private void In(Instruction instruction) {

@@ -109,13 +109,16 @@ namespace ArkeOS.Executable {
 
 		private ulong ParseLiteral(string value) {
 			if (value.IndexOf("0x") == 0) {
-				return Convert.ToUInt64(value, 16);
+				return Convert.ToUInt64(value.Substring(2), 16);
+			}
+			else if (value.IndexOf("0t") == 0) {
+				return ulong.Parse(value.Substring(2));
 			}
 			else if (value.IndexOf("0o") == 0) {
-				return Convert.ToUInt64(value, 8);
+				return Convert.ToUInt64(value.Substring(2), 8);
 			}
 			else if (value.IndexOf("0b") == 0) {
-				return Convert.ToUInt64(value, 2);
+				return Convert.ToUInt64(value.Substring(2), 2);
 			}
 			else {
 				throw new Exception();
