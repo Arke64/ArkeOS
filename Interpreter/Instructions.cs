@@ -182,39 +182,125 @@ namespace ArkeOS.Interpreter {
 		}
 
 		private void Div(Instruction instruction) {
+			var a = this.GetValue(instruction.A);
+			var b = this.GetValue(instruction.B);
 
+			if (a == 0)
+				throw new DivideByZeroException();
+
+			this.SetValue(instruction.C, b / a);
 		}
 
 		private void Dvf(Instruction instruction) {
+			var a = this.GetValue(instruction.A);
+			var b = this.GetValue(instruction.B);
 
+			if (a == 0)
+				throw new DivideByZeroException();
+
+			var aa = BitConverter.ToDouble(BitConverter.GetBytes(a), 0);
+			var bb = BitConverter.ToDouble(BitConverter.GetBytes(b), 0);
+			var cc = BitConverter.ToUInt64(BitConverter.GetBytes(bb / aa), 0);
+
+			this.SetValue(instruction.C, cc);
 		}
 
 		private void Mul(Instruction instruction) {
+			var a = this.GetValue(instruction.A);
+			var b = this.GetValue(instruction.B);
+			var max = Instruction.SizeToMask(instruction.Size);
 
+			if (a == 0) {
+				var t = a;
+				a = b;
+				b = t;
+			}
+
+			if (a == 0) {
+				this.SetValue(instruction.C, 0);
+
+				return;
+			}
+
+			if (max / a > b)
+				this.registers[Register.RC] = ulong.MaxValue;
+
+			unchecked {
+				this.SetValue(instruction.C, max & ((max & a) + (max & b)));
+			}
 		}
 
 		private void Mlf(Instruction instruction) {
+			var a = this.GetValue(instruction.A);
+			var b = this.GetValue(instruction.B);
 
+			var aa = BitConverter.ToDouble(BitConverter.GetBytes(a), 0);
+			var bb = BitConverter.ToDouble(BitConverter.GetBytes(b), 0);
+			var cc = BitConverter.ToUInt64(BitConverter.GetBytes(bb * aa), 0);
+
+			this.SetValue(instruction.C, cc);
 		}
 
 		private void Inc(Instruction instruction) {
+			var a = this.GetValue(instruction.A);
+			var max = Instruction.SizeToMask(instruction.Size);
 
+			if (max == a)
+				this.registers[Register.RC] = ulong.MaxValue;
+
+			unchecked {
+				this.SetValue(instruction.A, a + 1);
+			}
 		}
 
 		private void Dec(Instruction instruction) {
+			var a = this.GetValue(instruction.A);
+			var max = Instruction.SizeToMask(instruction.Size);
 
+			if (a == 0)
+				this.registers[Register.RC] = ulong.MaxValue;
+
+			unchecked {
+				this.SetValue(instruction.A, max);
+			}
 		}
 
 		private void Neg(Instruction instruction) {
+			var a = this.GetValue(instruction.A);
+			var mask = (ulong)(1 << (Instruction.SizeToBits(this.currentSize) - 1));
 
+			if ((a & mask) == 0) {
+				a |= mask;
+			}
+			else {
+				a &= ~mask;
+			}
+
+			this.SetValue(instruction.A, a);
 		}
 
 		private void Mod(Instruction instruction) {
+			var a = this.GetValue(instruction.A);
+			var b = this.GetValue(instruction.B);
 
+			if (a == 0)
+				throw new DivideByZeroException();
+
+			this.SetValue(instruction.C, b % a);
 		}
 
 		private void Mdf(Instruction instruction) {
+			var a = this.GetValue(instruction.A);
+			var b = this.GetValue(instruction.B);
 
+			if (a == 0)
+				throw new DivideByZeroException();
+
+			var aa = BitConverter.ToDouble(BitConverter.GetBytes(a), 0);
+			var bb = BitConverter.ToDouble(BitConverter.GetBytes(b), 0);
+			var cc = BitConverter.ToUInt64(BitConverter.GetBytes(bb % aa), 0);
+
+			this.SetValue(instruction.C, cc);
 		}
 
 		#endregion
