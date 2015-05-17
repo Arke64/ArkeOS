@@ -14,11 +14,25 @@ namespace ArkeOS.Interpreter {
 		}
 
 		private void Int(Instruction instruction) {
+			this.EnterInterrupt((Interrupt)this.GetValue(instruction.A));
 
+			this.supressRIPIncrement = true;
+		}
+
+		private void Eint(Instruction instruction) {
+			this.registers[Register.RIP] = this.registers[Register.RSIP];
+
+			this.inProtectedIsr = false;
+			this.supressRIPIncrement = true;
 		}
 
 		private void Mov(Instruction instruction) {
 			this.Access(instruction.A, instruction.B, a => a);
+		}
+
+		private void Xchg(Instruction instruction) {
+			this.SetValue(instruction.A, this.GetValue(instruction.A));
+			this.SetValue(instruction.B, this.GetValue(instruction.B));
 		}
 
 		private void In(Instruction instruction) {
@@ -185,24 +199,28 @@ namespace ArkeOS.Interpreter {
 			var a = this.GetValue(instruction.A);
 			var b = this.GetValue(instruction.B);
 
-			if (a == 0)
-				throw new DivideByZeroException();
-
-			this.SetValue(instruction.C, b / a);
+			if (a != 0) {
+				this.SetValue(instruction.C, b / a);
+			}
+			else {
+				this.pendingInterrupts.Enqueue(Interrupt.DivideByZero);
+			}
 		}
 
 		private void Dvf(Instruction instruction) {
 			var a = this.GetValue(instruction.A);
 			var b = this.GetValue(instruction.B);
 
-			if (a == 0)
-				throw new DivideByZeroException();
+			if (a != 0) {
+				var aa = BitConverter.ToDouble(BitConverter.GetBytes(a), 0);
+				var bb = BitConverter.ToDouble(BitConverter.GetBytes(b), 0);
+				var cc = BitConverter.ToUInt64(BitConverter.GetBytes(bb / aa), 0);
 
-			var aa = BitConverter.ToDouble(BitConverter.GetBytes(a), 0);
-			var bb = BitConverter.ToDouble(BitConverter.GetBytes(b), 0);
-			var cc = BitConverter.ToUInt64(BitConverter.GetBytes(bb / aa), 0);
-
-			this.SetValue(instruction.C, cc);
+				this.SetValue(instruction.C, cc);
+			}
+			else {
+				this.pendingInterrupts.Enqueue(Interrupt.DivideByZero);
+			}
 		}
 
 		private void Mul(Instruction instruction) {
@@ -321,11 +339,6 @@ namespace ArkeOS.Interpreter {
 
 		private void Rl(Instruction instruction) {
 			this.Access(instruction.A, instruction.B, instruction.C, (a, b) => (b << (byte)a) | (b >> (Instruction.SizeToBits(instruction.Size) - (byte)a)));
-		}
-
-		private void Xchg(Instruction instruction) {
-			this.SetValue(instruction.A, this.GetValue(instruction.A));
-			this.SetValue(instruction.B, this.GetValue(instruction.B));
 		}
 
 		private void Nand(Instruction instruction) {

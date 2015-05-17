@@ -7,10 +7,13 @@ RS: Sign flag
 RC: Carry flag
 RO: 0x00.. register
 RF: 0xFF.. register
+RMDE: Mode register (0 = no protection, 1 = protected)
 RSIP: Address of the instruction executing when an interrupt fires
 RIP: Address of the current instruction
 RSP: Address of the current stack position
-RIDT: Address of the interrupt descriptor table
+RIDT: Physical address of the interrupt descriptor table
+RMDT: Physical address of the memory descriptor table
+RTDT: Physical address of the task descriptor table
 
 IDT
 ---
@@ -18,7 +21,10 @@ IDT
 0x01: Divide by zero
 0x02: System call
 0x03: Protection violation
-0x04-0x0F: Reserved
+0x04: Page not present
+0x05: System timer
+0x06: Device waiting
+0x07-0x0F: Reserved
 0x10-0xFF: User defined
 
 Format
@@ -36,14 +42,16 @@ Basic
 00 HLT: Stops the processor
 01 NOP: No operation
 02 INT A: Raise the interrupt specified by A
-03 MOV A B: Move B into A
-04 IN A B: Read from device ID specified in A into B
-05 OUT A B: Write to device ID specified in A from B
-06 PUSH A: Push A onto the stack
-07 POP A: Pop a value from the stack into A
-08 JZ A B: Sets the instruction pointer to B if A is zero.
-09 JNZ A B: Sets the instruction pointer to B if A is non-zero.
-10 JMP A: Sets the instruction pointer to A.
+03 EINT: Return from the interrupt
+04 MOV A B: Move B into A
+05 XCHG A B: Swap A and B
+06 IN A B: Read from device ID specified in A into B
+07 OUT A B: Write to device ID specified in A from B
+08 PUSH A: Push A onto the stack
+09 POP A: Pop a value from the stack into A
+10 JZ A B: Sets the instruction pointer to B if A is zero.
+11 JNZ A B: Sets the instruction pointer to B if A is non-zero.
+12 JMP A: Sets the instruction pointer to A.
 
 Math
 ----
@@ -69,17 +77,16 @@ Logic
 41 SL A B C: Shift B left by A and store in C
 42 RR A B C: Rotate B right by A and store in C
 43 RL A B C: Rotate B left by A and store in C
-44 XCHG A B: Swap A and B
-45 NAND A B C: Store the NAND of A and B in C
-46 AND A B C: Store the AND of A and B in C
-47 NOR A B C: Store the NOR of A and B in C
-48 OR A B C: Store the OR of A and B in C
-49 NXOR A B C: Store the NXOR of A and B in C
-50 XOR A B C: Store the XOR of A and B in C
-51 NOT A B: Store the NOT of A in B
-52 GT A B: Update RZ to reflect if B is greater than A
-53 GTE A B: Update RZ to reflect if B is greater than or equal to A
-54 LT A B: Update RZ to reflect if B is less than A
-55 LTE A B: Update RZ to reflect if B is less than or equal to A
-56 EQ A B: Update RZ to reflect if B is equal to A
-57 NEQ A B: Update RZ to reflect if B is not equal to A
+44 NAND A B C: Store the NAND of A and B in C
+45 AND A B C: Store the AND of A and B in C
+46 NOR A B C: Store the NOR of A and B in C
+47 OR A B C: Store the OR of A and B in C
+48 NXOR A B C: Store the NXOR of A and B in C
+49 XOR A B C: Store the XOR of A and B in C
+50 NOT A B: Store the NOT of A in B
+51 GT A B: Update RZ to reflect if B is greater than A
+52 GTE A B: Update RZ to reflect if B is greater than or equal to A
+53 LT A B: Update RZ to reflect if B is less than A
+54 LTE A B: Update RZ to reflect if B is less than or equal to A
+55 EQ A B: Update RZ to reflect if B is equal to A
+56 NEQ A B: Update RZ to reflect if B is not equal to A

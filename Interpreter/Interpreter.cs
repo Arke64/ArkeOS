@@ -13,10 +13,13 @@ namespace ArkeOS.Interpreter {
 		private InstructionSize currentSize;
 		private bool supressRIPIncrement;
 		private bool running;
+		private bool inProtectedIsr;
+		private Queue<Interrupt> pendingInterrupts;
 
 		public Interpreter() {
 			this.image = new Image();
 			this.memory = new MemoryManager();
+			this.pendingInterrupts = new Queue<Interrupt>();
 
 			this.instructionHandlers = InstructionDefinition.All.ToDictionary(i => i, i => (Action<Instruction>)Delegate.CreateDelegate(typeof(Action<Instruction>), this, i.Mnemonic, true));
 			this.registers = Enum.GetNames(typeof(Register)).Select(n => (Register)Enum.Parse(typeof(Register), n)).ToDictionary(e => e, e => 0UL);
@@ -25,6 +28,7 @@ namespace ArkeOS.Interpreter {
 			this.registers[Register.RF] = ulong.MaxValue;
 			this.running = true;
 			this.supressRIPIncrement = false;
+			this.inProtectedIsr = false;
 		}
 
 		public void Parse(byte[] data) {
@@ -43,21 +47,37 @@ namespace ArkeOS.Interpreter {
 
 		public void Run() {
 			while (this.running) {
+				if (this.pendingInterrupts.Any())
+					this.EnterInterrupt(this.pendingInterrupts.Dequeue());
+
 				this.memory.Reader.BaseStream.Seek((long)this.registers[Register.RIP], SeekOrigin.Begin);
-				this.supressRIPIncrement = false;
 
 				var instruction = new Instruction(this.memory.Reader);
 
 				this.currentSize = instruction.Size;
 
-				if (!this.instructionHandlers.ContainsKey(instruction.Definition))
-					throw new InvalidInstructionException();
+				if (this.instructionHandlers.ContainsKey(instruction.Definition)) {
+					this.instructionHandlers[instruction.Definition](instruction);
 
-				this.instructionHandlers[instruction.Definition](instruction);
+					if (!this.supressRIPIncrement)
+						this.registers[Register.RIP] += instruction.Length;
 
-				if (!this.supressRIPIncrement)
-					this.registers[Register.RIP] += instruction.Length;
+					this.supressRIPIncrement = false;
+				}
+				else {
+					this.pendingInterrupts.Enqueue(Interrupt.InvalidInstruction);
+				}
 			}
+		}
+
+		private void EnterInterrupt(Interrupt id) {
+			var table = this.memory.ReadU64(this.registers[Register.RIDT]);
+			var isr = this.memory.ReadU64(table + (ulong)id * 8);
+
+			this.registers[Register.RSIP] = this.registers[Register.RIP];
+			this.registers[Register.RIP] = isr;
+
+			this.inProtectedIsr = (byte)id <= 0x07;
 		}
 
 		private void UpdateFlags(ulong value) {
@@ -69,11 +89,29 @@ namespace ArkeOS.Interpreter {
 			var value = 0UL;
 
 			switch (parameter.Type) {
-				case ParameterType.Literal: value = parameter.Literal; break;
-				case ParameterType.Register: value = this.registers[parameter.Register]; break;
-				case ParameterType.LiteralAddress: value = this.memory.ReadU64(parameter.Literal); break;
-				case ParameterType.RegisterAddress: value = this.memory.ReadU64(this.registers[parameter.Register]); break;
-				default: throw new ArgumentException(nameof(parameter));
+				case ParameterType.Literal:
+					value = parameter.Literal;
+					break;
+
+				case ParameterType.Register:
+					if (this.IsRegisterAccessAllowed(parameter.Register))
+						value = this.registers[parameter.Register];
+
+					break;
+
+				case ParameterType.LiteralAddress:
+					value = this.memory.ReadU64(parameter.Literal);
+
+					break;
+
+				case ParameterType.RegisterAddress:
+					if (this.IsRegisterAccessAllowed(parameter.Register))
+						value = this.memory.ReadU64(this.registers[parameter.Register]);
+
+					break;
+
+				default:
+					throw new ArgumentException(nameof(parameter));
 			}
 
 			unchecked {
@@ -92,12 +130,33 @@ namespace ArkeOS.Interpreter {
 				this.registers[Register.RC] = ulong.MaxValue;
 
 			switch (parameter.Type) {
-				case ParameterType.Literal: break;
-				case ParameterType.Register: this.registers[parameter.Register] = value; break;
-				case ParameterType.LiteralAddress: this.memory.WriteU64(parameter.Literal, value); break;
-				case ParameterType.RegisterAddress: this.memory.WriteU64(this.registers[parameter.Register], value); break;
-				default: throw new ArgumentException(nameof(parameter));
+				case ParameterType.Literal:
+					break;
+
+				case ParameterType.Register:
+					if (this.IsRegisterAccessAllowed(parameter.Register))
+						this.registers[parameter.Register] = value;
+
+					break;
+
+				case ParameterType.LiteralAddress:
+					this.memory.WriteU64(parameter.Literal, value);
+
+					break;
+
+				case ParameterType.RegisterAddress:
+					if (this.IsRegisterAccessAllowed(parameter.Register))
+						this.memory.WriteU64(this.registers[parameter.Register], value);
+
+					break;
+
+				default:
+					throw new ArgumentException(nameof(parameter));
 			}
+		}
+
+		private bool IsRegisterAccessAllowed(Register register) {
+			return this.inProtectedIsr || this.registers[Register.RMDE] == 0 || (register != Register.RO && register != Register.RF && register != Register.RMDE && register != Register.RSIP && register != Register.RIDT && register != Register.RMDT && register != Register.RTDT);
 		}
 
 		private void Access(Parameter a, Action<ulong> operation) => operation(this.GetValue(a));

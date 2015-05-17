@@ -39,14 +39,16 @@ namespace ArkeOS.Executable {
 		public static InstructionDefinition Hlt = new InstructionDefinition("HLT", 0, 0);
 		public static InstructionDefinition Nop = new InstructionDefinition("NOP", 1, 0);
 		public static InstructionDefinition Int = new InstructionDefinition("INT", 2, 1);
-		public static InstructionDefinition Mov = new InstructionDefinition("MOV", 3, 2);
-		public static InstructionDefinition In = new InstructionDefinition("IN", 4, 2);
-		public static InstructionDefinition Out = new InstructionDefinition("OUT", 5, 2);
-		public static InstructionDefinition Push = new InstructionDefinition("PUSH", 6, 1);
-		public static InstructionDefinition Pop = new InstructionDefinition("POP", 7, 1);
-		public static InstructionDefinition Jz = new InstructionDefinition("JZ", 8, 2);
-		public static InstructionDefinition Jnz = new InstructionDefinition("JNZ", 9, 2);
-		public static InstructionDefinition Jiz = new InstructionDefinition("JMP", 10, 1);
+		public static InstructionDefinition Eint = new InstructionDefinition("EINT", 3, 1);
+		public static InstructionDefinition Mov = new InstructionDefinition("MOV", 4, 2);
+		public static InstructionDefinition Xchg = new InstructionDefinition("XCHG", 5, 2);
+		public static InstructionDefinition In = new InstructionDefinition("IN", 6, 2);
+		public static InstructionDefinition Out = new InstructionDefinition("OUT", 7, 2);
+		public static InstructionDefinition Push = new InstructionDefinition("PUSH", 8, 1);
+		public static InstructionDefinition Pop = new InstructionDefinition("POP", 9, 1);
+		public static InstructionDefinition Jz = new InstructionDefinition("JZ", 10, 2);
+		public static InstructionDefinition Jnz = new InstructionDefinition("JNZ", 11, 2);
+		public static InstructionDefinition Jiz = new InstructionDefinition("JMP", 12, 1);
 
 		public static InstructionDefinition Add = new InstructionDefinition("ADD", 20, 3);
 		public static InstructionDefinition Adc = new InstructionDefinition("ADC", 21, 3);
@@ -68,19 +70,18 @@ namespace ArkeOS.Executable {
 		public static InstructionDefinition Rl = new InstructionDefinition("SL", 41, 3);
 		public static InstructionDefinition Rrc = new InstructionDefinition("RR", 42, 3);
 		public static InstructionDefinition Rlc = new InstructionDefinition("RL", 43, 3);
-		public static InstructionDefinition Xchg = new InstructionDefinition("XCHG", 44, 2);
-		public static InstructionDefinition Nand = new InstructionDefinition("NAND", 45, 3);
-		public static InstructionDefinition And = new InstructionDefinition("AND", 46, 3);
-		public static InstructionDefinition Nor = new InstructionDefinition("NOR", 47, 3);
-		public static InstructionDefinition Or = new InstructionDefinition("OR", 48, 3);
-		public static InstructionDefinition Nxor = new InstructionDefinition("NXOR", 49, 3);
-		public static InstructionDefinition Xor = new InstructionDefinition("XOR", 50, 3);
-		public static InstructionDefinition Not = new InstructionDefinition("NOT", 51, 2);
-		public static InstructionDefinition Gt = new InstructionDefinition("GT", 52, 2);
-		public static InstructionDefinition Gte = new InstructionDefinition("GTE", 53, 2);
-		public static InstructionDefinition Lt = new InstructionDefinition("LT", 54, 2);
-		public static InstructionDefinition Lte = new InstructionDefinition("LTE", 55, 2);
-		public static InstructionDefinition Eq = new InstructionDefinition("EQ", 56, 2);
-		public static InstructionDefinition Neq = new InstructionDefinition("NEQ", 57, 2);
+		public static InstructionDefinition Nand = new InstructionDefinition("NAND", 44, 3);
+		public static InstructionDefinition And = new InstructionDefinition("AND", 45, 3);
+		public static InstructionDefinition Nor = new InstructionDefinition("NOR", 46, 3);
+		public static InstructionDefinition Or = new InstructionDefinition("OR", 47, 3);
+		public static InstructionDefinition Nxor = new InstructionDefinition("NXOR", 48, 3);
+		public static InstructionDefinition Xor = new InstructionDefinition("XOR", 49, 3);
+		public static InstructionDefinition Not = new InstructionDefinition("NOT", 50, 2);
+		public static InstructionDefinition Gt = new InstructionDefinition("GT", 51, 2);
+		public static InstructionDefinition Gte = new InstructionDefinition("GTE", 52, 2);
+		public static InstructionDefinition Lt = new InstructionDefinition("LT", 53, 2);
+		public static InstructionDefinition Lte = new InstructionDefinition("LTE", 54, 2);
+		public static InstructionDefinition Eq = new InstructionDefinition("EQ", 55, 2);
+		public static InstructionDefinition Neq = new InstructionDefinition("NEQ", 56, 2);
 	}
 }
