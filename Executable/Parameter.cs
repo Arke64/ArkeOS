@@ -70,7 +70,18 @@ namespace ArkeOS.Executable {
 				this.Length = (byte)(2 ^ (byte)size);
 			}
 			else if (value[0] == '[') {
+				value = value.Substring(1, value.Length - 2).Trim();
 
+				if (value[0] == '0') {
+					this.Literal = this.ParseLiteral(value);
+					this.Type = ParameterType.LiteralAddress;
+					this.Length = 8;
+				}
+				else if (value[0] == 'R') {
+					this.Register = (Register)Enum.Parse(typeof(Register), value);
+					this.Type = ParameterType.RegisterAddress;
+					this.Length = 1;
+				}
 			}
 			else if (value[0] == 'R') {
 				this.Register = (Register)Enum.Parse(typeof(Register), value);
