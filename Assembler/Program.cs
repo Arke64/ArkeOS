@@ -1,7 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using ArkeOS.Executable;
 
 namespace ArkeOS.Assembler {
@@ -37,9 +35,9 @@ namespace ArkeOS.Assembler {
 				return;
 			}
 
-			var lines = File.ReadAllLines(input);
+			Section section = null;
 			var image = new Image();
-			var sections = new Dictionary<Section, List<string[]>>();
+			var lines = File.ReadAllLines(input);
 
 			image.Header.Magic = Header.MagicNumber;
 
@@ -49,12 +47,14 @@ namespace ArkeOS.Assembler {
 				switch (parts[0]) {
 					case "ENTRY": image.Header.EntryPointAddress = Convert.ToUInt64(parts[1], 16); break;
 					case "STACK": image.Header.StackAddress = Convert.ToUInt64(parts[1], 16); break;
-
-					case "CODE":
-						var section = new Section() { Address = Convert.ToUInt64(parts[1], 16) };
+					case "ORIGIN":
+						section = new Section(Convert.ToUInt64(parts[1], 16));
 
 						image.Sections.Add(section);
-						sections.Add(section, new List<string[]>());
+
+						break;
+
+					case "LABEL":
 
 						break;
 
@@ -62,25 +62,13 @@ namespace ArkeOS.Assembler {
 						if (string.IsNullOrWhiteSpace(parts[0]))
 							continue;
 
-						sections.Last().Value.Add(parts);
+						section.AddInstruction(new Instruction(parts));
 
 						break;
 				}
 			}
 
-			foreach (var s in sections) {
-				var section = s.Key;
-
-				using (var stream = new MemoryStream()) {
-					using (var writer = new BinaryWriter(stream))
-						s.Value.Select(p => new Instruction(p)).ToList().ForEach(i => i.Serialize(writer));
-
-					section.Data = stream.ToArray();
-					section.Size = (ulong)section.Data.LongLength;
-				}
-			}
-
-			image.Header.SectionCount = (ushort)sections.Count;
+			image.Header.SectionCount = (ushort)image.Sections.Count;
 
 			File.WriteAllBytes(output, image.ToArray());
 		}

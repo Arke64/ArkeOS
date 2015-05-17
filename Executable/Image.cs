@@ -18,7 +18,7 @@ namespace ArkeOS.Executable {
 
 					writer.BaseStream.Seek(Header.Size, SeekOrigin.Begin);
 
-					this.Sections.ForEach(s => s.Write(writer));
+					this.Sections.ForEach(s => s.Serialize(writer));
 				}
 
 				return stream.ToArray();
@@ -31,13 +31,8 @@ namespace ArkeOS.Executable {
 
 				reader.BaseStream.Seek(Header.Size, SeekOrigin.Begin);
 
-				for (var i = 0; i < this.Header.SectionCount; i++) {
-					var section = new Section();
-
-					section.Read(reader);
-
-					this.Sections.Add(section);
-				}
+				for (var i = 0; i < this.Header.SectionCount; i++)
+					this.Sections.Add(new Section(reader));
 			}
 		}
 	}

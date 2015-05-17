@@ -1,21 +1,41 @@
-﻿using System.IO;
+﻿using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 
 namespace ArkeOS.Executable {
 	public class Section {
-		public ulong Address { get; set; }
-		public ulong Size { get; set; }
-		public byte[] Data { get; set; }
+		private List<Instruction> instructions;
 
-		public void Write(BinaryWriter writer) {
-			writer.Write(this.Address);
-			writer.Write(this.Size);
-			writer.Write(this.Data, 0, (int)this.Size);
+		public ulong Address { get; }
+		public ulong Size { get; private set; }
+		public byte[] Data { get; private set; }
+
+		public Section(ulong address) {
+			this.instructions = new List<Instruction>();
+
+			this.Address = address;
 		}
 
-		public void Read(BinaryReader reader) {
+		public Section(BinaryReader reader) {
 			this.Address = reader.ReadUInt64();
 			this.Size = reader.ReadUInt64();
 			this.Data = reader.ReadBytes((int)this.Size);
+		}
+
+		public void AddInstruction(Instruction instruction) {
+			this.instructions.Add(instruction);
+		}
+
+		public void Serialize(BinaryWriter writer) {
+			writer.Write(this.Address);
+			writer.Write((ulong)this.instructions.Sum(i => i.Length));
+
+			var start = writer.BaseStream.Position;
+
+			foreach (var i in this.instructions) {
+				i.Address = (ulong)(writer.BaseStream.Position - start) + this.Address;
+				i.Serialize(writer);
+			}
 		}
 	}
 }

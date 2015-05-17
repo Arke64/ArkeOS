@@ -1,4 +1,5 @@
-﻿using ArkeOS.Executable;
+﻿using System;
+using ArkeOS.Executable;
 
 namespace ArkeOS.Interpreter {
 	public partial class Interpreter {
@@ -29,7 +30,7 @@ namespace ArkeOS.Interpreter {
 		}
 
 		private void Push(Instruction instruction) {
-			this.registers[Register.RSP] -= 2UL ^ (byte)instruction.Size;
+			this.registers[Register.RSP] -= instruction.SizeInBytes;
 
 			switch (instruction.Size) {
 				case InstructionSize.OneByte: this.Access(instruction.A, a => this.memory.WriteU8(this.registers[Register.RSP], (byte)a)); break;
@@ -40,7 +41,7 @@ namespace ArkeOS.Interpreter {
 		}
 
 		private void Pop(Instruction instruction) {
-			this.registers[Register.RSP] += 2UL ^ (byte)instruction.Size;
+			this.registers[Register.RSP] += instruction.SizeInBytes;
 
 			switch (instruction.Size) {
 				case InstructionSize.OneByte: this.Access(instruction.A, () => this.memory.ReadU8(this.registers[Register.RSP])); break;

@@ -62,7 +62,7 @@ namespace ArkeOS.Interpreter {
 
 		private void UpdateFlags(ulong value) {
 			this.registers[Register.RZ] = value == 0 ? ulong.MaxValue : 0;
-			this.registers[Register.RS] = (value & (ulong)(1 << (2 ^ ((byte)this.currentSize * 8 - 1)))) != 0 ? ulong.MaxValue : 0;
+			this.registers[Register.RS] = (value & (ulong)(1 << Instruction.SizeToBytes(this.currentSize))) != 0 ? ulong.MaxValue : 0;
 			this.registers[Register.RC] = 0;
 		}
 

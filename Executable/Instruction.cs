@@ -5,9 +5,11 @@ using System.Linq;
 
 namespace ArkeOS.Executable {
 	public class Instruction {
+		public ulong Address { get; set; }
 		public byte Code { get; }
 		public InstructionSize Size { get; }
-		public List<Parameter> All { get; }
+		public byte SizeInBytes => Instruction.SizeToBytes(this.Size);
+        public List<Parameter> All { get; }
 		public Parameter A => this.All[0];
 		public Parameter B => this.All[1];
 		public Parameter C => this.All[2];
@@ -15,10 +17,13 @@ namespace ArkeOS.Executable {
 		public byte Length => (byte)(this.All.Sum(p => p.Length) + 2);
 		public InstructionDefinition Definition => InstructionDefinition.Find(this.Code);
 
+		public static byte SizeToBytes(InstructionSize size) => (byte)Math.Pow(2, (byte)size);
+
 		public Instruction(BinaryReader reader) {
 			var b1 = reader.ReadByte();
 			var b2 = reader.ReadByte();
 
+			this.Address = (ulong)reader.BaseStream.Position - 2;
 			this.Code = (byte)((b1 & 0xFC) >> 2);
 			this.Size = (InstructionSize)(b1 & 0x03);
 			this.All = new List<Parameter>();
@@ -50,6 +55,7 @@ namespace ArkeOS.Executable {
 				parts[0] = parts[0].Substring(0, idx);
 			}
 
+			this.Address = 0;
 			this.Code = InstructionDefinition.Find(parts[0]).Code;
 			this.All = parts.Skip(1).Select(p => new Parameter(this.Size, p)).ToList();
 

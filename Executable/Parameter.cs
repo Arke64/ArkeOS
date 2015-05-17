@@ -67,7 +67,7 @@ namespace ArkeOS.Executable {
 			if (value[0] == '0') {
 				this.Literal = this.ParseLiteral(value);
 				this.Type = ParameterType.Literal;
-				this.Length = (byte)(2 ^ (byte)size);
+				this.Length = Instruction.SizeToBytes(size);
 			}
 			else if (value[0] == '[') {
 				value = value.Substring(1, value.Length - 2).Trim();
