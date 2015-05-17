@@ -111,7 +111,7 @@ namespace ArkeOS.Executable {
 			if (value.IndexOf("0x") == 0) {
 				return Convert.ToUInt64(value.Substring(2), 16);
 			}
-			else if (value.IndexOf("0t") == 0) {
+			else if (value.IndexOf("0d") == 0) {
 				return ulong.Parse(value.Substring(2));
 			}
 			else if (value.IndexOf("0o") == 0) {
