@@ -16,6 +16,8 @@ namespace ArkeOS.Interpreter {
 			this.registers = new Dictionary<Register, ulong>();
 
 			this.registers = Enum.GetNames(typeof(Register)).Select(n => (Register)Enum.Parse(typeof(Register), n)).ToDictionary(e => e, e => 0UL);
+
+			this.registers[Register.R0] = 1;
 		}
 
 		public void Parse(byte[] data) {
@@ -38,16 +40,16 @@ namespace ArkeOS.Interpreter {
 
 				var instruction = new Instruction(this.memory.Reader);
 
-				if (instruction.Code == Instruction.Hlt.Code) {
+				if (instruction.Code == InstructionDefinition.Hlt.Code) {
 					return;
 				}
-				else if (instruction.Code == Instruction.Nop.Code) {
+				else if (instruction.Code == InstructionDefinition.Nop.Code) {
 					
 				}
-				else if (instruction.Code == Instruction.Add.Code) {
-					this.registers[instruction.Rc] = this.registers[instruction.Ra] + this.registers[instruction.Rb];
+				else if (instruction.Code == InstructionDefinition.Add.Code) {
+					this.Access(instruction.A, instruction.B, instruction.C, (a, b) => a + b);
 				}
-				else if (instruction.Code == Instruction.Jiz.Code) {
+				else if (instruction.Code == InstructionDefinition.Jiz.Code) {
 
 				}
 				else {
@@ -57,5 +59,28 @@ namespace ArkeOS.Interpreter {
 				this.registers[Register.RIP] += instruction.Length;
 			}
 		}
+
+		private ulong GetValue(Parameter p) {
+			switch (p.Type) {
+				case ParameterType.Literal: return p.Literal;
+				case ParameterType.Register: return this.registers[p.Register];
+				case ParameterType.LiteralAddress: return this.memory.ReadU64(p.Literal);
+				case ParameterType.RegisterAddress: return this.memory.ReadU64(this.registers[p.Register]);
+				default: throw new ArgumentException(nameof(p));
+			}
+		}
+
+		private void SetValue(Parameter p, ulong value) {
+			switch (p.Type) {
+				case ParameterType.Literal: break;
+				case ParameterType.Register: this.registers[p.Register] = value; break;
+				case ParameterType.LiteralAddress: this.memory.WriteU64(p.Literal, value); break;
+				case ParameterType.RegisterAddress: this.memory.WriteU64(this.registers[p.Register], value); break;
+				default: throw new ArgumentException(nameof(p));
+			}
+		}
+
+		private void Access(Parameter a, Parameter destination, Func<ulong, ulong> operation) => this.SetValue(destination, operation(this.GetValue(a)));
+		private void Access(Parameter a, Parameter b, Parameter destination, Func<ulong, ulong, ulong> operation) => this.SetValue(destination, operation(this.GetValue(a), this.GetValue(b)));
 	}
 }

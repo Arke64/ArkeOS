@@ -1,134 +1,56 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 
 namespace ArkeOS.Executable {
 	public class Instruction {
-		private static Dictionary<string, Instruction> mnemonics = new Dictionary<string, Instruction>();
-		private static Dictionary<byte, Instruction> codes = new Dictionary<byte, Instruction>();
-
-		public string Mnemonic { get; }
 		public byte Code { get; }
-		public bool SupportsRa { get; }
-		public bool SupportsRb { get; }
-		public bool SupportsRc { get; }
-		public bool SupportsValue { get; }
-
-		public InstructionSize Size { get; set; }
-		public Register Ra { get; set; }
-		public Register Rb { get; set; }
-		public Register Rc { get; set; }
-		public ulong Value { get; set; }
-
-		public byte Length => (byte)(1 + (this.SupportsRa ? 1 : 0) + (this.SupportsRb ? 1 : 0) + (this.SupportsRc ? 1 : 0) + (this.SupportsValue ? 2 ^ (int)this.Size : 0));
-
-		private Instruction(string mnemonic, byte code, bool supportsRa, bool supportsRb, bool supportsRc, bool supportsValue) {
-			this.Mnemonic = mnemonic;
-			this.Code = code;
-			this.SupportsRa = supportsRa;
-			this.SupportsRb = supportsRb;
-			this.SupportsRc = supportsRc;
-			this.SupportsValue = supportsValue;
-
-			this.Size = InstructionSize.OneByte;
-			this.Ra = (Register)0xFF;
-			this.Rb = (Register)0xFF;
-			this.Rc = (Register)0xFF;
-
-			Instruction.mnemonics.Add(mnemonic, this);
-			Instruction.codes.Add(code, this);
-		}
+		public InstructionSize Size { get; }
+		public List<Parameter> All { get; }
+		public Parameter A => this.All[0];
+		public Parameter B => this.All[1];
+		public Parameter C => this.All[2];
+		public Parameter D => this.All[3];
+		public byte Length => (byte)(this.All.Sum(p => p.Length) + 2);
+		public InstructionDefinition Definition => InstructionDefinition.Find(this.Code);
 
 		public Instruction(BinaryReader reader) {
 			var b1 = reader.ReadByte();
+			var b2 = reader.ReadByte();
 
 			this.Code = (byte)((b1 & 0x3F) >> 2);
 			this.Size = (InstructionSize)(b1 & 0x03);
-			this.Ra = Register.RA;
-			this.Rb = Register.RA;
-			this.Rc = Register.RA;
-			this.Value = 0;
-			this.SupportsRa = false;
-			this.SupportsRb = false;
-			this.SupportsRc = false;
-			this.SupportsValue = false;
+			this.All = new List<Parameter>();
 
-			var def = Instruction.Find(this.Code);
-
-			this.Mnemonic = def.Mnemonic;
-
-			if (def.SupportsRa) {
-				var b2 = reader.ReadByte();
-
-				this.SupportsRa = true;
-				this.Ra = (Register)(b2 & 0x7F);
-
-				if (def.SupportsRb && (b2 & 0x80) == 0) {
-					var b3 = reader.ReadByte();
-
-					this.SupportsRb = true;
-					this.Rb = (Register)(b3 & 0x7F);
-
-					if (def.SupportsRc && (b3 & 0x80) == 0) {
-						var b4 = reader.ReadByte();
-
-						this.SupportsRc = true;
-						this.Rc = (Register)(b4 & 0x7F);
-					}
+			for (var i = 0; i < this.Definition.ParameterCount; i++) {
+				switch ((ParameterType)(b2 & (0x03 << (i * 2)))) {
+					case ParameterType.Register: this.All.Add(new Parameter(this.Size, ParameterType.Register, reader.ReadByte())); break;
+					case ParameterType.Literal: this.All.Add(new Parameter(this.Size, ParameterType.Literal, BitConverter.ToUInt64(reader.ReadBytes(2 ^ (byte)this.Size), 0))); break;
+					case ParameterType.LiteralAddress: this.All.Add(new Parameter(this.Size, ParameterType.LiteralAddress, reader.ReadUInt64())); break;
+					case ParameterType.RegisterAddress: this.All.Add(new Parameter(this.Size, ParameterType.RegisterAddress, reader.ReadByte())); break;
 				}
 			}
+		}
 
-			if (def.SupportsValue) {
-				this.SupportsValue = true;
+		public Instruction(string[] parts) {
+			this.Code = InstructionDefinition.Find(parts[0]).Code;
+			this.Size = InstructionSize.EightByte;
+			this.All = parts.Skip(1).Select(p => new Parameter(this.Size, p)).ToList();
 
-				switch (this.Size) {
-					case InstructionSize.OneByte: this.Value = reader.ReadByte(); break;
-					case InstructionSize.TwoByte: this.Value = reader.ReadUInt16(); break;
-					case InstructionSize.FourByte: this.Value = reader.ReadUInt32(); break;
-					case InstructionSize.EightByte: this.Value = reader.ReadUInt64(); break;
-				}
-			}
+			if (this.Definition.ParameterCount != this.All.Count()) throw new Exception();
 		}
 
 		public void Serialize(BinaryWriter writer) {
 			writer.Write((byte)((this.Code << 2) | (((byte)this.Size) & 0x03)));
 
-			if (this.SupportsRa)
-				writer.Write((byte)((this.SupportsRb && Enum.IsDefined(typeof(Register), this.Rb) ? 0x00 : 0x80) | (byte)this.Ra));
+			byte b = 0;
+			for (var i = 0; i < this.Definition.ParameterCount; i++)
+				b |= (byte)(((byte)this.All[i].Type) << (i * 2));
 
-			if (this.SupportsRb)
-				writer.Write((byte)((this.SupportsRc && Enum.IsDefined(typeof(Register), this.Rc) ? 0x00 : 0x80) | (byte)this.Rb));
+			writer.Write(b);
 
-			if (this.SupportsRc)
-				writer.Write((byte)((this.SupportsValue ? 0x00 : 0x80) | (byte)this.Rc));
-
-			if (this.SupportsValue) {
-				switch (this.Size) {
-					case InstructionSize.OneByte: writer.Write((byte)this.Value); break;
-					case InstructionSize.TwoByte: writer.Write((ushort)this.Value); break;
-					case InstructionSize.FourByte: writer.Write((uint)this.Value); break;
-					case InstructionSize.EightByte: writer.Write(this.Value); break;
-				}
-			}
+            this.All.ForEach(p => p.Serialize(writer, this.Size));
 		}
-
-		public static Instruction Find(string mnemonic) {
-			if (!Instruction.mnemonics.ContainsKey(mnemonic))
-				return null;
-
-			return Instruction.mnemonics[mnemonic];
-		}
-
-		public static Instruction Find(byte code) {
-			if (!Instruction.codes.ContainsKey(code))
-				return null;
-
-			return Instruction.codes[code];
-		}
-
-		public static Instruction Hlt = new Instruction("HLT", 0, false, false, false, false);
-		public static Instruction Nop = new Instruction("NOP", 1, false, false, false, false);
-		public static Instruction Add = new Instruction("ADD", 5, true, true, true, false);
-		public static Instruction Jiz = new Instruction("JIZ", 51, false, false, false, true);
 	}
 }

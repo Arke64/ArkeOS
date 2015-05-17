@@ -1,6 +1,5 @@
 ﻿namespace ArkeOS.Executable {
 	public enum Register : byte {
-		RA,
 		RZ,
 		RS,
 		RC,

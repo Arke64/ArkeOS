@@ -72,34 +72,8 @@ namespace ArkeOS.Assembler {
 				var section = s.Key;
 
 				using (var stream = new MemoryStream()) {
-					using (var writer = new BinaryWriter(stream)) {
-						foreach (var parts in s.Value) {
-							var def = Instruction.Find(parts[0]);
-							var parameters = parts.Skip(1).Select(p => new Parameter(p));
-							var state = 0;
-
-							if (def == null) throw new InvalidInstructionException();
-							if (parameters.Any(p => !p.IsValid)) throw new InvalidParameterException();
-							if (parameters.Count() > 3) throw new InvalidParameterException();
-							if (parameters.Count(p => !p.IsRegister) > 1) throw new InvalidParameterException();
-							if (parameters.Count() > 0 && !parameters.Last().IsRegister && parameters.Count(p => !p.IsRegister) > 1) throw new InvalidParameterException();
-
-							foreach (var p in parameters) {
-								if (p.IsRegister) {
-									switch (state++) {
-										case 0: def.Ra = p.Register; break;
-										case 1: def.Rb = p.Register; break;
-										case 2: def.Rc = p.Register; break;
-									}
-								}
-								else {
-									def.Value = p.Literal;
-								}
-							}
-
-							def.Serialize(writer);
-						}
-					}
+					using (var writer = new BinaryWriter(stream))
+						s.Value.Select(p => new Instruction(p)).ToList().ForEach(i => i.Serialize(writer));
 
 					section.Data = stream.ToArray();
 					section.Size = (ulong)section.Data.LongLength;

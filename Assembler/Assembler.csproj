@@ -63,7 +63,6 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Exceptions.cs" />
-    <Compile Include="Parameter.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="AssemblyInfo.cs" />
   </ItemGroup>

@@ -2,7 +2,6 @@ Registers
 ---------
 R0-R63: General purpose use
 RI0-RI15: General purpose use for interrupts only
-RA: Accumulator
 RZ: Zero flag
 RS: Sign flag
 RC: Carry flag
@@ -24,63 +23,62 @@ IDT
 
 Format
 ------
-6b OP Code: The instruction code
-2b OP Size: The size of data to work with (00 = 1 byte, 01 = 2 byte, 10 = 4 byte, 11 = 8 byte)
-1b/0b Final Operand: If set, this is the last operand (only defined when not using an immediate value, any operands not set default to RA)
-0b-23b/8-64b Register/Value: The parameter registers (Ra, Rb, Rc) or an immediate value whose length is specified by OP Size
+6b Code: The instruction code
+2b Size: The size of data to work with (00 = 1 byte, 01 = 2 byte, 10 = 4 byte, 11 = 8 byte)
+2b Parameter 0: The type of the parameter (00 = value in register, 01 = immediate value with size specified by Size, 10 = value at literal address, 11 = value at address specified by register)
+2b Parameter 1: See above
+2b Parameter 2: See above
+2b Parameter 3: See above
+0b-32b: Parameters
 
 Basic
 -----
 00 HLT: Stops the processor
 01 NOP: No operation
-02 INT Ra: Raise the interrupt specified by the value in Ra
-03 PUSH Ra: Push the value in Ra onto the stack
-04 POP Ra: Pop a value from the stack into Ra
+02 INT A: Raise the interrupt specified by A
+03 MOV A B: Move B into A
+04 IN A B: Read from device ID specified in A into B
+05 OUT A B: Write to device ID specified in A from B
+06 PUSH A: Push A onto the stack
+07 POP A: Pop a value from the stack into A
+08 JZ A B: Sets the instruction pointer to B if A is zero.
+09 JNZ A B: Sets the instruction pointer to B if A is non-zero.
 
 Math
 ----
-05 ADD Ra Rb Rc: Add the value in Ra to Rb and store in Rc
-06 ADC Ra Rb Rc: Add the value in Ra with carry to Rb and store in Rc
-07 ADF Ra Rb Rc: Add the IEEE 754 value in Ra to Rb and store in Rc
-08 SUB Ra Rb Rc: Subtract the value in Ra from Rb and store in Rc
-09 SBB Ra Rb Rc: Subtract the value in Ra with borrow from Rb and store in Rc
-10 SBF Ra Rb Rc: Subtract the IEEE 754 value in Ra from Rb and store in Rc
-11 DIV Ra Rb Rc: Divide Rb by the value in Ra and store in Rc
-12 DVF Ra Rb Rc: Divide Rb by the IEEE 754 value in Ra and store in Rc
-13 MUL Ra Rb Rc: Multiply Rb by the value in Ra and store in Rc
-14 MLF Ra Rb Rc: Multiply Rb by the IEEE 754 value in Ra and store in Rc
-15 INC Ra: Add 1 to Ra
-16 DEC Ra: Subtract 1 from Ra
-17 NEG Ra: Reverse the sign of Ra
-18 MOD Ra Rb Rc: Take the remainder of dividing Rb by the value in Ra and store in Rc
-19 MDF Ra Rb Rc: Take the remainder of dividing Rb by the IEEE 754 value in Ra and store in Rc
+20 ADD A B C: Add A to B and store in C
+21 ADC A B C: Add A with carry to B and store in C
+22 ADF A B C: Add the IEEE 754 value in A to B and store in C
+23 SUB A B C: Subtract A from B and store in C
+24 SBB A B C: Subtract A with borrow from B and store in C
+25 SBF A B C: Subtract the IEEE 754 value in A from B and store in C
+26 DIV A B C: Divide B by A and store in C
+27 DVF A B C: Divide B by the IEEE 754 value in A and store in C
+28 MUL A B C: Multiply B by A and store in C
+29 MLF A B C: Multiply B by the IEEE 754 value in A and store in C
+30 INC A: Add 1 to A
+31 DEC A: Subtract 1 from A
+32 NEG A: Reverse the sign of A
+33 MOD A B C: Take the remainder of dividing B by A and store in C
+34 MDF A B C: Take the remainder of dividing B by the IEEE 754 value in A and store in C
 
 Logic
 -----
-20 RR Ra Rb Rc: Rotate Rb right by the value in Ra and store in Rc
-21 RL Ra Rb Rc: Rotate Rb left by the value in Ra and store in Rc
-22 RRC Ra Rb Rc: Rotate Rb right with carry by the value in Ra and store in Rc
-23 RLC Ra Rb Rc: Rotate Rb left with carry by the value in Ra and store in Rc
-24 NAND Ra Rb Rc: Store the NAND of Ra and Rb in Rc
-25 AND Ra Rb Rc: Store the AND of Ra and Rb in Rc
-26 XOR Ra Rb Rc: Store the XOR of Ra and Rb in Rc
-27 NOR Ra Rb Rc: Store the NOR of Ra and Rb in Rc
-28 OR Ra Rb Rc: Store the OR of Ra and Rb in Rc
-29 NOT Ra Rb: Store the NOT of Ra in Rb
-30 GT Ra Rb: Update flags to reflect if Rb is greater than Ra
-31 GTE Ra Rb: Update flags to reflect if Rb is greater than or equal to Ra
-32 LT Ra Rb: Update flags to reflect if Rb is less than Ra
-33 LTE Ra Rb: Update flags to reflect if Rb is less than or equal to Ra
-34 EQ Ra Rb: Update flags to reflect if Rb is equal to Ra
-35 NEQ Ra Rb: Update flags to reflect if Rb is not equal to Ra
-
-Control
--------
-36 MMR Ra Rb: Move the value at the location in memory specified by the address in Ra into Rb
-37 MDR Ra Rb: Read from the device specified by the value into Ra into Rb
-38 MRM Ra Rb: Move Rb into the memory location whose address is in Ra
-39 MRD Ra Rb: Write Rb out to the device specified by the value in Ra
-40 MRR Ra Rb: Move Ra into Rb
-41 MIR Ra value: Move value into Ra
-42 JZ Ra Rb: Sets the instruction pointer to the value in Rb if Ra is zero.
-43 JNZ Ra Rb: Sets the instruction pointer to the value in Rb if Ra is non-zero.
+40 RR A B C: Rotate B right by A and store in C
+41 RL A B C: Rotate B left by A and store in C
+42 RRC A B C: Rotate B right with carry by A and store in C
+43 RLC A B C: Rotate B left with carry by A and store in C
+44 XCHG A B: Swap A and B
+45 NAND A B C: Store the NAND of A and B in C
+46 AND A B C: Store the AND of A and B in C
+47 NOR A B C: Store the NOR of A and B in C
+48 OR A B C: Store the OR of A and B in C
+49 NXOR A B C: Store the NXOR of A and B in C
+50 XOR A B C: Store the XOR of A and B in C
+51 NOT A B: Store the NOT of A in B
+52 GT A B: Update flags to reflect if B is greater than A
+53 GTE A B: Update flags to reflect if B is greater than or equal to A
+54 LT A B: Update flags to reflect if B is less than A
+55 LTE A B: Update flags to reflect if B is less than or equal to A
+56 EQ A B: Update flags to reflect if B is equal to A
+57 NEQ A B: Update flags to reflect if B is not equal to A
