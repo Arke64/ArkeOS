@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using ArkeOS.Executable;
 
@@ -38,6 +39,7 @@ namespace ArkeOS.Assembler {
 			Section section = null;
 			var image = new Image();
 			var lines = File.ReadAllLines(input);
+			var pendingLabel = "";
 
 			image.Header.Magic = Header.MagicNumber;
 
@@ -45,8 +47,16 @@ namespace ArkeOS.Assembler {
 				var parts = line.Split(' ');
 
 				switch (parts[0]) {
-					case "ENTRY": image.Header.EntryPointAddress = Convert.ToUInt64(parts[1], 16); break;
-					case "STACK": image.Header.StackAddress = Convert.ToUInt64(parts[1], 16); break;
+					case "ENTRY":
+						image.Header.EntryPointAddress = Convert.ToUInt64(parts[1], 16);
+
+						break;
+
+					case "STACK":
+						image.Header.StackAddress = Convert.ToUInt64(parts[1], 16);
+
+						break;
+
 					case "ORIGIN":
 						section = new Section(Convert.ToUInt64(parts[1], 16));
 
@@ -55,6 +65,7 @@ namespace ArkeOS.Assembler {
 						break;
 
 					case "LABEL":
+						pendingLabel = parts[1];
 
 						break;
 
@@ -62,7 +73,14 @@ namespace ArkeOS.Assembler {
 						if (string.IsNullOrWhiteSpace(parts[0]))
 							continue;
 
-						section.AddInstruction(new Instruction(parts));
+						if (pendingLabel == "") {
+							section.AddInstruction(new Instruction(parts));
+						}
+						else {
+							section.AddInstruction(new Instruction(parts, pendingLabel));
+
+							pendingLabel = "";
+						}
 
 						break;
 				}

@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 
 namespace ArkeOS.Executable {
 	public class Image {
@@ -18,7 +19,7 @@ namespace ArkeOS.Executable {
 
 					writer.BaseStream.Seek(Header.Size, SeekOrigin.Begin);
 
-					this.Sections.ForEach(s => s.Serialize(writer));
+					this.Sections.ForEach(s => s.Serialize(writer, this));
 				}
 
 				return stream.ToArray();
@@ -34,6 +35,10 @@ namespace ArkeOS.Executable {
 				for (var i = 0; i < this.Header.SectionCount; i++)
 					this.Sections.Add(new Section(reader));
 			}
+		}
+
+		public Instruction FindByLabel(string label) {
+			return this.Sections.Select(s => s.FindByLabel(label)).SingleOrDefault(s => s != null);
 		}
 	}
 }

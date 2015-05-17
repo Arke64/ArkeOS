@@ -3,10 +3,11 @@ using System.IO;
 
 namespace ArkeOS.Executable {
 	public class Parameter {
-		public ParameterType Type { get; }
-		public Register Register { get; }
-		public ulong Literal { get; }
-		public byte Length { get; }
+		public ParameterType Type { get; private set; }
+		public Register Register { get; private set; }
+		public ulong Literal { get; private set; }
+		public byte Length { get; private set; }
+		public string Label { get; private set; }
 
 		public Parameter(InstructionSize size, ParameterType type, ulong value) {
 			this.Type = type;
@@ -20,7 +21,7 @@ namespace ArkeOS.Executable {
 
 				case ParameterType.Literal:
 					this.Literal = value;
-					
+
 					switch (size) {
 						case InstructionSize.OneByte:
 							this.Length = 1;
@@ -83,11 +84,21 @@ namespace ArkeOS.Executable {
 					this.Length = 1;
 				}
 			}
+			else if (value[0] == '{') {
+				this.Label = value.Substring(1, value.Length - 2).Trim();
+				this.Type = ParameterType.Label;
+				this.Length = 8;
+			}
 			else if (value[0] == 'R') {
 				this.Register = (Register)Enum.Parse(typeof(Register), value);
 				this.Type = ParameterType.Register;
 				this.Length = 1;
 			}
+		}
+
+		public void ResolveLabel(Image parentImage) {
+			this.Literal = parentImage.FindByLabel(this.Label).Address;
+			this.Type = ParameterType.Literal;
         }
 
 		public void Serialize(BinaryWriter writer, InstructionSize size) {

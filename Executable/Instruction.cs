@@ -8,6 +8,7 @@ namespace ArkeOS.Executable {
 		public ulong Address { get; set; }
 		public byte Code { get; }
 		public InstructionSize Size { get; }
+		public string Label { get; }
 		public byte SizeInBytes => Instruction.SizeToBytes(this.Size);
         public List<Parameter> All { get; }
 		public Parameter A => this.All[0];
@@ -46,15 +47,20 @@ namespace ArkeOS.Executable {
 			}
 		}
 
-		public Instruction(string[] parts) {
+		public Instruction(string[] parts) : this(parts, "") {
+
+		}
+
+		public Instruction(string[] parts, string label) {
 			this.Size = InstructionSize.EightByte;
 
 			var idx = parts[0].IndexOf(':');
-            if (idx != -1) {
+			if (idx != -1) {
 				this.Size = (InstructionSize)(byte.Parse(parts[0].Substring(idx + 1)) - 1);
 				parts[0] = parts[0].Substring(0, idx);
 			}
 
+			this.Label = label;
 			this.Address = 0;
 			this.Code = InstructionDefinition.Find(parts[0]).Code;
 			this.All = parts.Skip(1).Select(p => new Parameter(this.Size, p)).ToList();
@@ -62,8 +68,10 @@ namespace ArkeOS.Executable {
 			if (this.Definition.ParameterCount != this.All.Count()) throw new Exception();
 		}
 
-		public void Serialize(BinaryWriter writer) {
+		public void Serialize(BinaryWriter writer, Image parentImage) {
 			writer.Write((byte)((this.Code << 2) | (((byte)this.Size) & 0x03)));
+
+			this.All.Where(p => !string.IsNullOrWhiteSpace(p.Label)).ToList().ForEach(p => p.ResolveLabel(parentImage));
 
 			byte b = 0;
 			for (var i = 0; i < this.Definition.ParameterCount; i++)

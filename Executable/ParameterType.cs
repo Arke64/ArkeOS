@@ -3,6 +3,7 @@
 		Register,
 		Literal,
 		LiteralAddress,
-		RegisterAddress
+		RegisterAddress,
+		Label
 	}
 }
