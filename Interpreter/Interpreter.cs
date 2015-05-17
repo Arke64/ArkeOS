@@ -11,6 +11,7 @@ namespace ArkeOS.Interpreter {
 		private Dictionary<Register, ulong> registers;
 		private Dictionary<InstructionDefinition, Action<Instruction>> instructionHandlers;
 		private InstructionSize currentSize;
+		private bool supressRIPIncrement;
 		private bool running;
 
 		public Interpreter() {
@@ -23,6 +24,7 @@ namespace ArkeOS.Interpreter {
 			this.registers[Register.RO] = 0;
 			this.registers[Register.RF] = ulong.MaxValue;
 			this.running = true;
+			this.supressRIPIncrement = false;
 		}
 
 		public void Parse(byte[] data) {
@@ -42,6 +44,7 @@ namespace ArkeOS.Interpreter {
 		public void Run() {
 			while (this.running) {
 				this.memory.Reader.BaseStream.Seek((long)this.registers[Register.RIP], SeekOrigin.Begin);
+				this.supressRIPIncrement = false;
 
 				var instruction = new Instruction(this.memory.Reader);
 
@@ -52,8 +55,15 @@ namespace ArkeOS.Interpreter {
 
 				this.instructionHandlers[instruction.Definition](instruction);
 
-				this.registers[Register.RIP] += instruction.Length;
+				if (!this.supressRIPIncrement)
+					this.registers[Register.RIP] += instruction.Length;
 			}
+		}
+
+		private void UpdateFlags(ulong value) {
+			this.registers[Register.RZ] = value == 0 ? ulong.MaxValue : 0;
+			this.registers[Register.RS] = (value & (ulong)(1 << (2 ^ ((byte)this.currentSize * 8 - 1)))) != 0 ? ulong.MaxValue : 0;
+			this.registers[Register.RC] = 0;
 		}
 
 		private ulong GetValue(Parameter parameter) {
@@ -77,38 +87,7 @@ namespace ArkeOS.Interpreter {
 		}
 
 		private void SetValue(Parameter parameter, ulong value) {
-			this.registers[Register.RZ] = value == 0 ? ulong.MaxValue : 0;
-			this.registers[Register.RS] = (value & (ulong)(1 << (2 ^ ((byte)this.currentSize * 8 - 1)))) != 0 ? ulong.MaxValue : 0;
-			this.registers[Register.RC] = 0;
-
-			switch (this.currentSize) {
-				case InstructionSize.OneByte:
-					if (value > byte.MaxValue) {
-						value &= 0xFF;
-
-						this.registers[Register.RC] = ulong.MaxValue;
-					}
-
-					break;
-
-				case InstructionSize.TwoByte:
-					if (value > ushort.MaxValue) {
-						value &= 0xFFFF;
-
-						this.registers[Register.RC] = ulong.MaxValue;
-					}
-
-					break;
-
-				case InstructionSize.FourByte:
-					if (value > uint.MaxValue) {
-						value &= 0xFFFFFFFF;
-
-						this.registers[Register.RC] = ulong.MaxValue;
-					}
-
-					break;
-			}
+			this.UpdateFlags(value);
 
 			switch (parameter.Type) {
 				case ParameterType.Literal: break;
@@ -119,6 +98,8 @@ namespace ArkeOS.Interpreter {
 			}
 		}
 
+		private void Access(Parameter a, Action<ulong> operation) => operation(this.GetValue(a));
+		private void Access(Parameter destination, Func<ulong> operation) => this.SetValue(destination, operation());
 		private void Access(Parameter a, Parameter destination, Func<ulong, ulong> operation) => this.SetValue(destination, operation(this.GetValue(a)));
 		private void Access(Parameter a, Parameter b, Parameter destination, Func<ulong, ulong, ulong> operation) => this.SetValue(destination, operation(this.GetValue(a), this.GetValue(b)));
 	}

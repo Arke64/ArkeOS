@@ -24,7 +24,7 @@ namespace ArkeOS.Executable {
 			this.All = new List<Parameter>();
 
 			for (var i = 0; i < this.Definition.ParameterCount; i++) {
-				switch ((ParameterType)(b2 & (0x03 << (i * 2)))) {
+				switch ((ParameterType)((b2 >> (i * 2)) & 0x03)) {
 					case ParameterType.Register: this.All.Add(new Parameter(this.Size, ParameterType.Register, reader.ReadByte())); break;
 					case ParameterType.LiteralAddress: this.All.Add(new Parameter(this.Size, ParameterType.LiteralAddress, reader.ReadUInt64())); break;
 					case ParameterType.RegisterAddress: this.All.Add(new Parameter(this.Size, ParameterType.RegisterAddress, reader.ReadByte())); break;

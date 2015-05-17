@@ -43,6 +43,10 @@ Basic
 07 POP A: Pop a value from the stack into A
 08 JZ A B: Sets the instruction pointer to B if A is zero.
 09 JNZ A B: Sets the instruction pointer to B if A is non-zero.
+10 JIZ A B: Increments the instruction pointer by B if A is zero.
+11 JINZ A B: Increments the instruction pointer by B if A is non-zero.
+12 JDZ A B: Decrements the instruction pointer by B if A is zero.
+13 JDNZ A B: Decrements the instruction pointer by B if A is non-zero.
 
 Math
 ----
