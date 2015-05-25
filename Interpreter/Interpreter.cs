@@ -6,7 +6,6 @@ using ArkeOS.Executable;
 
 namespace ArkeOS.Interpreter {
 	public partial class Interpreter {
-		private Image image;
 		private MemoryManager memory;
 		private Dictionary<Register, ulong> registers;
 		private Dictionary<InstructionDefinition, Action<Instruction>> instructionHandlers;
@@ -17,12 +16,11 @@ namespace ArkeOS.Interpreter {
 		private Queue<Interrupt> pendingInterrupts;
 
 		public Interpreter() {
-			this.image = new Image();
 			this.memory = new MemoryManager();
 			this.pendingInterrupts = new Queue<Interrupt>();
 
 			this.instructionHandlers = InstructionDefinition.All.ToDictionary(i => i, i => (Action<Instruction>)Delegate.CreateDelegate(typeof(Action<Instruction>), this, i.Mnemonic, true));
-			this.registers = Enum.GetNames(typeof(Register)).Select(n => (Register)Enum.Parse(typeof(Register), n)).ToDictionary(e => e, e => 0UL);
+			this.registers = Enum.GetValues(typeof(Register)).Cast<Register>().ToDictionary(e => e, e => 0UL);
 
 			this.registers[Register.RO] = 0;
 			this.registers[Register.RF] = ulong.MaxValue;
@@ -31,18 +29,16 @@ namespace ArkeOS.Interpreter {
 			this.inProtectedIsr = false;
 		}
 
-		public void Parse(byte[] data) {
-			this.image.FromArray(data);
+		public void Load(byte[] data) {
+			var image = new Image(data);
 
-			if (this.image.Header.Magic != Header.MagicNumber) throw new InvalidProgramFormatException();
-			if (!this.image.Sections.Any()) throw new InvalidProgramFormatException();
+			if (image.Header.Magic != Header.MagicNumber) throw new InvalidProgramFormatException();
+			if (!image.Sections.Any()) throw new InvalidProgramFormatException();
 
-			this.image.Sections.ForEach(s => this.memory.CopyFrom(s.Data, s.Address, s.Size));
+			image.Sections.ForEach(s => this.memory.CopyFrom(s.Data, s.Address, s.Size));
 
-			this.registers[Register.RIP] = this.image.Header.EntryPointAddress;
-			this.registers[Register.RSP] = this.image.Header.StackAddress;
-
-			this.image = null;
+			this.registers[Register.RIP] = image.Header.EntryPointAddress;
+			this.registers[Register.RSP] = image.Header.StackAddress;
 		}
 
 		public void Run() {

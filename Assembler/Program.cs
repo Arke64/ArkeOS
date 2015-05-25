@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
 using ArkeOS.Executable;
 
@@ -11,7 +10,7 @@ namespace ArkeOS.Assembler {
 
 			if (args.Length != 2) {
 				input = "../../Program.asm";
-				output = "../../../Interpreter/Program.aoe";
+				output = "../../../Virtual Machine/Program.aoe";
 			}
 			else {
 				input = args[0];
