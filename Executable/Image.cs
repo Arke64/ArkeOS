@@ -15,9 +15,11 @@ namespace ArkeOS.Executable {
 			this.Sections = new List<Section>();
 		}
 
-		public Image(byte[] data) : this() {
-			using (var reader = new BinaryReader(new MemoryStream(data))) {
-				this.Header.Read(reader);
+		public Image(Stream data) {
+			this.Sections = new List<Section>();
+
+			using (var reader = new BinaryReader(data)) {
+				this.Header = new Header(reader);
 
 				reader.BaseStream.Seek(Header.Size, SeekOrigin.Begin);
 
@@ -27,9 +29,11 @@ namespace ArkeOS.Executable {
 		}
 
 		public byte[] ToArray() {
+			this.Header.SectionCount = (ushort)this.Sections.Count;
+
 			using (var stream = new MemoryStream()) {
 				using (var writer = new BinaryWriter(stream)) {
-					this.Header.Write(writer);
+					this.Header.Serialize(writer);
 
 					writer.BaseStream.Seek(Header.Size, SeekOrigin.Begin);
 

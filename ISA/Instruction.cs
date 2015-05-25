@@ -5,43 +5,47 @@ using System.Linq;
 
 namespace ArkeOS.ISA {
 	public class Instruction {
+		private List<Parameter> parameters;
+
 		public ulong Address { get; set; }
 		public byte Code { get; }
 		public InstructionSize Size { get; }
 		public string Label { get; }
+
+		public Parameter Parameter1 => this.parameters[0];
+		public Parameter Parameter2 => this.parameters[1];
+		public Parameter Parameter3 => this.parameters[2];
+		public Parameter Parameter4 => this.parameters[3];
 		public byte SizeInBytes => Instruction.SizeToBytes(this.Size);
-        public List<Parameter> All { get; }
-		public Parameter A => this.All[0];
-		public Parameter B => this.All[1];
-		public Parameter C => this.All[2];
-		public Parameter D => this.All[3];
-		public byte Length => (byte)(this.All.Sum(p => p.Length) + 2);
+		public byte Length => (byte)(this.parameters.Sum(p => p.Length) + 2);
 		public InstructionDefinition Definition => InstructionDefinition.Find(this.Code);
 
 		public static byte SizeToBytes(InstructionSize size) => (byte)Math.Pow(2, (byte)size);
 		public static byte SizeToBits(InstructionSize size) => (byte)(Instruction.SizeToBytes(size) * 8);
-		public static ulong SizeToMask(InstructionSize size) => (1UL << (Instruction.SizeToBytes(size) * 8 - 1)) | ((1UL << (Instruction.SizeToBytes(size) * 8 - 1)) - 1);
+		public static ulong SizeToMask(InstructionSize size) => (1UL << (Instruction.SizeToBits(size) - 1)) | ((1UL << (Instruction.SizeToBits(size) - 1)) - 1);
 
 		public Instruction(BinaryReader reader) {
+			this.Address = (ulong)reader.BaseStream.Position;
+
 			var b1 = reader.ReadByte();
 			var b2 = reader.ReadByte();
 
-			this.Address = (ulong)reader.BaseStream.Position - 2;
+			this.Label = string.Empty;
 			this.Code = (byte)((b1 & 0xFC) >> 2);
 			this.Size = (InstructionSize)(b1 & 0x03);
-			this.All = new List<Parameter>();
+			this.parameters = new List<Parameter>();
 
 			for (var i = 0; i < this.Definition.ParameterCount; i++) {
 				switch ((ParameterType)((b2 >> (i * 2)) & 0x03)) {
-					case ParameterType.Register: this.All.Add(new Parameter(this.Size, ParameterType.Register, reader.ReadByte())); break;
-					case ParameterType.LiteralAddress: this.All.Add(new Parameter(this.Size, ParameterType.LiteralAddress, reader.ReadUInt64())); break;
-					case ParameterType.RegisterAddress: this.All.Add(new Parameter(this.Size, ParameterType.RegisterAddress, reader.ReadByte())); break;
+					case ParameterType.RegisterAddress: this.parameters.Add(new Parameter(this.Size, ParameterType.RegisterAddress, reader.ReadByte())); break;
+					case ParameterType.Register: this.parameters.Add(new Parameter(this.Size, ParameterType.Register, reader.ReadByte())); break;
+					case ParameterType.LiteralAddress: this.parameters.Add(new Parameter(this.Size, ParameterType.LiteralAddress, reader.ReadUInt64())); break;
 					case ParameterType.Literal:
 						switch (this.Size) {
-							case InstructionSize.OneByte: this.All.Add(new Parameter(this.Size, ParameterType.Literal, reader.ReadByte())); break;
-							case InstructionSize.TwoByte: this.All.Add(new Parameter(this.Size, ParameterType.Literal, reader.ReadUInt16())); break;
-							case InstructionSize.FourByte: this.All.Add(new Parameter(this.Size, ParameterType.Literal, reader.ReadUInt32())); break;
-							case InstructionSize.EightByte: this.All.Add(new Parameter(this.Size, ParameterType.Literal, reader.ReadUInt64())); break;
+							case InstructionSize.OneByte: this.parameters.Add(new Parameter(this.Size, ParameterType.Literal, reader.ReadByte())); break;
+							case InstructionSize.TwoByte: this.parameters.Add(new Parameter(this.Size, ParameterType.Literal, reader.ReadUInt16())); break;
+							case InstructionSize.FourByte: this.parameters.Add(new Parameter(this.Size, ParameterType.Literal, reader.ReadUInt32())); break;
+							case InstructionSize.EightByte: this.parameters.Add(new Parameter(this.Size, ParameterType.Literal, reader.ReadUInt64())); break;
 						}
 
 						break;
@@ -49,31 +53,30 @@ namespace ArkeOS.ISA {
 			}
 		}
 
-		public Instruction(string[] parts) : this(parts, "") {
+		public Instruction(string[] parts) : this(parts, string.Empty) {
 
 		}
 
 		public Instruction(string[] parts, string label) {
 			this.Size = InstructionSize.EightByte;
 
-			var idx = parts[0].IndexOf(':');
-			if (idx != -1) {
-				this.Size = (InstructionSize)(byte.Parse(parts[0].Substring(idx + 1)) - 1);
-				parts[0] = parts[0].Substring(0, idx);
+			var index = parts[0].IndexOf(':');
+			if (index != -1) {
+				this.Size = (InstructionSize)(byte.Parse(parts[0].Substring(index + 1)) - 1);
+
+				parts[0] = parts[0].Substring(0, index);
 			}
 
 			this.Label = label;
 			this.Address = 0;
 			this.Code = InstructionDefinition.Find(parts[0]).Code;
-			this.All = parts.Skip(1).Select(p => new Parameter(this.Size, p)).ToList();
-
-			if (this.Definition.ParameterCount != this.All.Count()) throw new Exception();
+			this.parameters = parts.Skip(1).Select(p => new Parameter(this.Size, p)).ToList();
 		}
 
 		public void Serialize(BinaryWriter writer, Dictionary<string, Instruction> labels) {
 			writer.Write((byte)((this.Code << 2) | (((byte)this.Size) & 0x03)));
 
-			foreach (var p in this.All) {
+			foreach (var p in this.parameters) {
 				if (!string.IsNullOrWhiteSpace(p.Label)) {
 					p.Literal = labels[p.Label].Address;
 					p.Type = ParameterType.Literal;
@@ -82,11 +85,11 @@ namespace ArkeOS.ISA {
 
 			byte b = 0;
 			for (var i = 0; i < this.Definition.ParameterCount; i++)
-				b |= (byte)(((byte)this.All[i].Type) << (i * 2));
+				b |= (byte)(((byte)this.parameters[i].Type) << (i * 2));
 
 			writer.Write(b);
 
-            this.All.ForEach(p => p.Serialize(writer, this.Size));
+            this.parameters.ForEach(p => p.Serialize(writer));
 		}
 	}
 }

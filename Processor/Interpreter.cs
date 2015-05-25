@@ -30,7 +30,7 @@ namespace ArkeOS.Interpreter {
 			this.inProtectedIsr = false;
 		}
 
-		public void Load(byte[] data) {
+		public void Load(Stream data) {
 			var image = new Image(data);
 
 			if (image.Header.Magic != Header.MagicNumber) throw new InvalidProgramFormatException();

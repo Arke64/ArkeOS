@@ -15,10 +15,8 @@ namespace ArkeOS.VirtualMachine {
 
 		private void RunButton_Click(object sender, RoutedEventArgs e) {
 			if (File.Exists(this.FileNameTextBox.Text)) {
-				var file = File.ReadAllBytes(this.FileNameTextBox.Text);
-
 				try {
-					this.interpreter.Load(file);
+					this.interpreter.Load(File.OpenRead(this.FileNameTextBox.Text));
 				}
 				catch (Interpreter.InvalidProgramFormatException) {
 					MessageBox.Show("Invalid program format.");

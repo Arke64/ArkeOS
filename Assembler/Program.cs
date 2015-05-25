@@ -27,21 +27,11 @@ namespace ArkeOS.Assembler {
 			return true;
 		}
 
-		public static void Main(string[] args) {
-			string input, output;
-
-			if (!Program.CheckArgs(args, out input, out output)) {
-				Console.ReadLine();
-
-				return;
-			}
-
-			Section section = null;
+		private static byte[] Assemble(string input) {
+			Section currentSection = null;
 			var image = new Image();
 			var lines = File.ReadAllLines(input);
-			var pendingLabel = "";
-
-			image.Header.Magic = Header.MagicNumber;
+			var pendingLabel = string.Empty;
 
 			foreach (var line in lines) {
 				var parts = line.Split(' ');
@@ -58,9 +48,9 @@ namespace ArkeOS.Assembler {
 						break;
 
 					case "ORIGIN":
-						section = new Section(Convert.ToUInt64(parts[1], 16));
+						currentSection = new Section(Convert.ToUInt64(parts[1], 16));
 
-						image.Sections.Add(section);
+						image.Sections.Add(currentSection);
 
 						break;
 
@@ -70,25 +60,27 @@ namespace ArkeOS.Assembler {
 						break;
 
 					default:
-						if (string.IsNullOrWhiteSpace(parts[0]))
+						if (string.IsNullOrWhiteSpace(parts[0]) || parts[0].TrimStart().IndexOf("//") == 0)
 							continue;
 
-						if (pendingLabel == "") {
-							section.AddInstruction(new Instruction(parts));
-						}
-						else {
-							section.AddInstruction(new Instruction(parts, pendingLabel));
-
-							pendingLabel = "";
-						}
+						currentSection.AddInstruction(new Instruction(parts, pendingLabel));
+						pendingLabel = string.Empty;
 
 						break;
+
 				}
 			}
 
-			image.Header.SectionCount = (ushort)image.Sections.Count;
+			return image.ToArray();
+		}
 
-			File.WriteAllBytes(output, image.ToArray());
+		public static void Main(string[] args) {
+			string input, output;
+
+			if (!Program.CheckArgs(args, out input, out output))
+				return;
+
+			File.WriteAllBytes(output, Program.Assemble(input));
 		}
 	}
 }
