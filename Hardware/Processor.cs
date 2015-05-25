@@ -10,7 +10,6 @@ namespace ArkeOS.Hardware {
 	public partial class Processor {
 		private MemoryController memoryController;
 		private InterruptController interruptController;
-		private RegisterManager registers;
 		private Dictionary<InstructionDefinition, Action<Instruction>> instructionHandlers;
 		private Instruction currentInstruction;
 		private bool supressRIPIncrement;
@@ -18,6 +17,8 @@ namespace ArkeOS.Hardware {
 		private bool running;
 		private bool paused;
 		private AutoResetEvent pauseEvent;
+
+		public RegisterManager Registers { get; }
 
 		public Processor(MemoryController memoryController, InterruptController interruptController) {
 			this.memoryController = memoryController;
@@ -29,7 +30,8 @@ namespace ArkeOS.Hardware {
 			this.inProtectedIsr = false;
 			this.paused = false;
 			this.pauseEvent = new AutoResetEvent(false);
-			this.registers = new RegisterManager();
+
+			this.Registers = new RegisterManager();
 		}
 
 		public void LoadBootImage(Stream image) {
@@ -48,13 +50,13 @@ namespace ArkeOS.Hardware {
 					if (this.interruptController.AnyPending)
 						this.EnterInterrupt(this.interruptController.Dequeue());
 
-					this.currentInstruction = this.memoryController.ReadInstruction(this.registers[Register.RIP]);
+					this.currentInstruction = this.memoryController.ReadInstruction(this.Registers[Register.RIP]);
 
 					if (this.instructionHandlers.ContainsKey(this.currentInstruction.Definition)) {
 						this.instructionHandlers[this.currentInstruction.Definition](this.currentInstruction);
 
 						if (!this.supressRIPIncrement)
-							this.registers[Register.RIP] += this.currentInstruction.Length;
+							this.Registers[Register.RIP] += this.currentInstruction.Length;
 
 						this.supressRIPIncrement = false;
 					}
@@ -84,18 +86,18 @@ namespace ArkeOS.Hardware {
 		}
 
 		private void EnterInterrupt(Interrupt id) {
-			var table = this.memoryController.ReadU64(this.registers[Register.RIDT]);
+			var table = this.memoryController.ReadU64(this.Registers[Register.RIDT]);
 			var isr = this.memoryController.ReadU64(table + (ulong)id * 8);
 
-			this.registers[Register.RSIP] = this.registers[Register.RIP];
-			this.registers[Register.RIP] = isr;
+			this.Registers[Register.RSIP] = this.Registers[Register.RIP];
+			this.Registers[Register.RIP] = isr;
 
 			this.inProtectedIsr = (byte)id <= 0x07;
 		}
 
 		private void UpdateFlags(ulong value) {
-			this.registers[Register.RZ] = value == 0 ? ulong.MaxValue : 0;
-			this.registers[Register.RS] = (value & (ulong)(1 << (this.currentInstruction.SizeInBits - 1))) != 0 ? ulong.MaxValue : 0;
+			this.Registers[Register.RZ] = value == 0 ? ulong.MaxValue : 0;
+			this.Registers[Register.RS] = (value & (ulong)(1 << (this.currentInstruction.SizeInBits - 1))) != 0 ? ulong.MaxValue : 0;
 		}
 
 		private ulong GetValue(Parameter parameter) {
@@ -108,7 +110,7 @@ namespace ArkeOS.Hardware {
 
 				case ParameterType.Register:
 					if (this.IsRegisterReadAllowed(parameter.Register))
-						value = this.registers[parameter.Register];
+						value = this.Registers[parameter.Register];
 
 					break;
 
@@ -119,7 +121,7 @@ namespace ArkeOS.Hardware {
 
 				case ParameterType.RegisterAddress:
 					if (this.IsRegisterReadAllowed(parameter.Register))
-						value = this.memoryController.ReadU64(this.registers[parameter.Register]);
+						value = this.memoryController.ReadU64(this.Registers[parameter.Register]);
 
 					break;
 			}
@@ -135,12 +137,12 @@ namespace ArkeOS.Hardware {
 			value &= this.currentInstruction.SizeMask;
 
 			if (value != orig)
-				this.registers[Register.RC] = ulong.MaxValue;
+				this.Registers[Register.RC] = ulong.MaxValue;
 
 			switch (parameter.Type) {
 				case ParameterType.Register:
 					if (this.IsRegisterWriteAllowed(parameter.Register))
-						this.registers[parameter.Register] = value;
+						this.Registers[parameter.Register] = value;
 
 					break;
 
@@ -151,14 +153,14 @@ namespace ArkeOS.Hardware {
 
 				case ParameterType.RegisterAddress:
 					if (this.IsRegisterReadAllowed(parameter.Register))
-						this.memoryController.WriteU64(this.registers[parameter.Register], value);
+						this.memoryController.WriteU64(this.Registers[parameter.Register], value);
 
 					break;
 			}
 		}
 
-		private bool IsRegisterReadAllowed(Register register) => this.inProtectedIsr || this.registers[Register.RMDE] == 0 || !this.registers.ReadProtectedRegisters.Contains(register);
-		private bool IsRegisterWriteAllowed(Register register) => this.inProtectedIsr || this.registers[Register.RMDE] == 0 || !this.registers.WriteProtectedRegisters.Contains(register);
+		private bool IsRegisterReadAllowed(Register register) => this.inProtectedIsr || this.Registers[Register.RMDE] == 0 || !this.Registers.ReadProtectedRegisters.Contains(register);
+		private bool IsRegisterWriteAllowed(Register register) => this.inProtectedIsr || this.Registers[Register.RMDE] == 0 || !this.Registers.WriteProtectedRegisters.Contains(register);
 
 		private void Access(Parameter a, Action<ulong> operation) => operation(this.GetValue(a));
 		private void Access(Parameter a, Parameter b, Action<ulong, ulong> operation) => operation(this.GetValue(a), this.GetValue(b));

@@ -1,10 +1,11 @@
 ﻿using System;
 using System.IO;
 using System.Linq;
-using System.Threading.Tasks;
+using System.Reflection;
 using System.Windows;
-using ArkeOS.Executable;
+using System.Windows.Controls;
 using ArkeOS.Hardware;
+using ArkeOS.ISA;
 
 namespace ArkeOS.VirtualMachine {
 	public partial class MainWindow : Window {
@@ -27,7 +28,7 @@ namespace ArkeOS.VirtualMachine {
 				this.interruptController = new InterruptController();
 				this.processor = new Processor(this.memoryController, this.interruptController);
 
-				this.processor.LoadBootImage(new MemoryStream(new Image(File.OpenRead(this.BootImageTextBox.Text)).Sections.First().Data));
+				this.processor.LoadBootImage(new MemoryStream(new Executable.Image(File.OpenRead(this.BootImageTextBox.Text)).Sections.First().Data));
 
 				this.processor.Start();
 
@@ -45,6 +46,8 @@ namespace ArkeOS.VirtualMachine {
 			this.StopButton.IsEnabled = false;
 			this.PauseButton.IsEnabled = false;
 			this.UnpauseButton.IsEnabled = false;
+
+			this.RefreshRegisters();
 		}
 
 		private void PauseButton_Click(object sender, RoutedEventArgs e) {
@@ -54,6 +57,8 @@ namespace ArkeOS.VirtualMachine {
 			this.StopButton.IsEnabled = true;
 			this.PauseButton.IsEnabled = false;
 			this.UnpauseButton.IsEnabled = true;
+
+			this.RefreshRegisters();
 		}
 
 		private void UnpauseButton_Click(object sender, RoutedEventArgs e) {
@@ -63,6 +68,14 @@ namespace ArkeOS.VirtualMachine {
 			this.StopButton.IsEnabled = true;
 			this.PauseButton.IsEnabled = true;
 			this.UnpauseButton.IsEnabled = false;
+		}
+
+		private void RefreshRegisters() {
+			foreach (var r in Enum.GetNames(typeof(Register))) {
+				var textbox = (TextBox)this.GetType().GetField(r + "TextBox", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(this);
+					
+				textbox.Text = this.processor.Registers[(Register)Enum.Parse(typeof(Register), r)].ToString();
+			}
 		}
 	}
 }

@@ -86,6 +86,10 @@
       <Project>{4486659f-008c-4521-9e7d-ff7b49a96748}</Project>
       <Name>Hardware</Name>
     </ProjectReference>
+    <ProjectReference Include="..\ISA\ISA.csproj">
+      <Project>{22dc3407-82a5-465f-92e1-7acf5c13a66f}</Project>
+      <Name>ISA</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
