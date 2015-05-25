@@ -8,14 +8,16 @@ using ArkeOS.Hardware;
 
 namespace ArkeOS.VirtualMachine {
 	public partial class MainWindow : Window {
-		private MemoryManager memory;
+		private MemoryController memoryController;
+		private InterruptController interruptController;
 		private Processor processor;
 
 		public MainWindow() {
 			this.InitializeComponent();
 
-			this.memory = new MemoryManager(1 * 1024 * 1024);
-			this.processor = new Processor(this.memory);
+			this.memoryController = new MemoryController(1 * 1024 * 1024);
+			this.interruptController = new InterruptController();
+			this.processor = new Processor(this.memoryController, this.interruptController);
 		}
 
 		private void RunButton_Click(object sender, RoutedEventArgs e) {

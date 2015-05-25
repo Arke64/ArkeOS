@@ -6,19 +6,19 @@ using ArkeOS.ISA;
 
 namespace ArkeOS.Hardware {
 	public partial class Processor {
-		private MemoryManager memory;
+		private MemoryController memoryController;
+		private InterruptController interruptController;
 		private RegisterManager registers;
 		private Dictionary<InstructionDefinition, Action<Instruction>> instructionHandlers;
 		private Instruction currentInstruction;
 		private bool supressRIPIncrement;
 		private bool running;
 		private bool inProtectedIsr;
-		private Queue<Interrupt> pendingInterrupts;
 
-		public Processor(MemoryManager memory) {
-			this.memory = memory;
+		public Processor(MemoryController memoryController, InterruptController interruptController) {
+			this.memoryController = memoryController;
+			this.interruptController = interruptController;
 			this.registers = new RegisterManager();
-			this.pendingInterrupts = new Queue<Interrupt>();
 
 			this.instructionHandlers = InstructionDefinition.All.ToDictionary(i => i, i => (Action<Instruction>)Delegate.CreateDelegate(typeof(Action<Instruction>), this, i.Mnemonic, true));
 			
@@ -31,17 +31,17 @@ namespace ArkeOS.Hardware {
 
 			image.Read(buffer, 0, (int)image.Length);
 
-			this.memory.CopyFrom(buffer, 0, (ulong)image.Length);
+			this.memoryController.CopyFrom(buffer, 0, (ulong)image.Length);
 		}
 
 		public void Run() {
 			this.running = true;
 
 			while (this.running) {
-				if (this.pendingInterrupts.Any())
-					this.EnterInterrupt(this.pendingInterrupts.Dequeue());
+				if (this.interruptController.AnyPending)
+					this.EnterInterrupt(this.interruptController.Dequeue());
 
-				this.currentInstruction = this.memory.ReadInstruction(this.registers[Register.RIP]);
+				this.currentInstruction = this.memoryController.ReadInstruction(this.registers[Register.RIP]);
 
 				if (this.instructionHandlers.ContainsKey(this.currentInstruction.Definition)) {
 					this.instructionHandlers[this.currentInstruction.Definition](this.currentInstruction);
@@ -52,7 +52,7 @@ namespace ArkeOS.Hardware {
 					this.supressRIPIncrement = false;
 				}
 				else {
-					this.pendingInterrupts.Enqueue(Interrupt.InvalidInstruction);
+					this.interruptController.Enqueue(Interrupt.InvalidInstruction);
 				}
 			}
 		}
@@ -62,8 +62,8 @@ namespace ArkeOS.Hardware {
 		}
 
 		private void EnterInterrupt(Interrupt id) {
-			var table = this.memory.ReadU64(this.registers[Register.RIDT]);
-			var isr = this.memory.ReadU64(table + (ulong)id * 8);
+			var table = this.memoryController.ReadU64(this.registers[Register.RIDT]);
+			var isr = this.memoryController.ReadU64(table + (ulong)id * 8);
 
 			this.registers[Register.RSIP] = this.registers[Register.RIP];
 			this.registers[Register.RIP] = isr;
@@ -91,13 +91,13 @@ namespace ArkeOS.Hardware {
 					break;
 
 				case ParameterType.LiteralAddress:
-					value = this.memory.ReadU64(parameter.Literal);
+					value = this.memoryController.ReadU64(parameter.Literal);
 
 					break;
 
 				case ParameterType.RegisterAddress:
 					if (this.IsRegisterReadAllowed(parameter.Register))
-						value = this.memory.ReadU64(this.registers[parameter.Register]);
+						value = this.memoryController.ReadU64(this.registers[parameter.Register]);
 
 					break;
 			}
@@ -123,13 +123,13 @@ namespace ArkeOS.Hardware {
 					break;
 
 				case ParameterType.LiteralAddress:
-					this.memory.WriteU64(parameter.Literal, value);
+					this.memoryController.WriteU64(parameter.Literal, value);
 
 					break;
 
 				case ParameterType.RegisterAddress:
 					if (this.IsRegisterReadAllowed(parameter.Register))
-						this.memory.WriteU64(this.registers[parameter.Register], value);
+						this.memoryController.WriteU64(this.registers[parameter.Register], value);
 
 					break;
 			}

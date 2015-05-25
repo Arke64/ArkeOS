@@ -48,9 +48,10 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Instructions.cs" />
+    <Compile Include="InstructionHandlers.cs" />
+    <Compile Include="InterruptController.cs" />
     <Compile Include="Processor.cs" />
-    <Compile Include="MemoryManager.cs" />
+    <Compile Include="MemoryController.cs" />
     <Compile Include="AssemblyInfo.cs" />
     <Compile Include="RegisterManager.cs" />
   </ItemGroup>

@@ -3,11 +3,11 @@ using System.IO;
 using ArkeOS.ISA;
 
 namespace ArkeOS.Hardware {
-	public class MemoryManager {
+	public class MemoryController {
 		private byte[] memory;
 		private BinaryReader reader;
 
-		public MemoryManager(ulong physicalSize) {
+		public MemoryController(ulong physicalSize) {
 			this.memory = new byte[physicalSize];
 			this.reader = new BinaryReader(new MemoryStream(this.memory));
 		}

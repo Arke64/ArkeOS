@@ -6,7 +6,8 @@ namespace ArkeOS.Hardware {
 		#region Basic
 
 		private void Hlt(Instruction instruction) {
-			this.running = false;
+			this.interruptController.Wait(1000);
+			this.supressRIPIncrement = true;
 		}
 
 		private void Nop(Instruction instruction) {
@@ -47,10 +48,10 @@ namespace ArkeOS.Hardware {
 			this.registers[Register.RSP] -= instruction.SizeInBytes;
 
 			switch (instruction.Size) {
-				case InstructionSize.OneByte: this.Access(instruction.Parameter1, a => this.memory.WriteU8(this.registers[Register.RSP], (byte)a)); break;
-				case InstructionSize.TwoByte: this.Access(instruction.Parameter1, a => this.memory.WriteU16(this.registers[Register.RSP], (ushort)a)); break;
-				case InstructionSize.FourByte: this.Access(instruction.Parameter1, a => this.memory.WriteU32(this.registers[Register.RSP], (uint)a)); break;
-				case InstructionSize.EightByte: this.Access(instruction.Parameter1, a => this.memory.WriteU64(this.registers[Register.RSP], a)); break;
+				case InstructionSize.OneByte: this.Access(instruction.Parameter1, a => this.memoryController.WriteU8(this.registers[Register.RSP], (byte)a)); break;
+				case InstructionSize.TwoByte: this.Access(instruction.Parameter1, a => this.memoryController.WriteU16(this.registers[Register.RSP], (ushort)a)); break;
+				case InstructionSize.FourByte: this.Access(instruction.Parameter1, a => this.memoryController.WriteU32(this.registers[Register.RSP], (uint)a)); break;
+				case InstructionSize.EightByte: this.Access(instruction.Parameter1, a => this.memoryController.WriteU64(this.registers[Register.RSP], a)); break;
 			}
 		}
 
@@ -58,10 +59,10 @@ namespace ArkeOS.Hardware {
 			this.registers[Register.RSP] += instruction.SizeInBytes;
 
 			switch (instruction.Size) {
-				case InstructionSize.OneByte: this.Access(instruction.Parameter1, () => this.memory.ReadU8(this.registers[Register.RSP])); break;
-				case InstructionSize.TwoByte: this.Access(instruction.Parameter1, () => this.memory.ReadU16(this.registers[Register.RSP])); break;
-				case InstructionSize.FourByte: this.Access(instruction.Parameter1, () => this.memory.ReadU32(this.registers[Register.RSP])); break;
-				case InstructionSize.EightByte: this.Access(instruction.Parameter1, () => this.memory.ReadU64(this.registers[Register.RSP])); break;
+				case InstructionSize.OneByte: this.Access(instruction.Parameter1, () => this.memoryController.ReadU8(this.registers[Register.RSP])); break;
+				case InstructionSize.TwoByte: this.Access(instruction.Parameter1, () => this.memoryController.ReadU16(this.registers[Register.RSP])); break;
+				case InstructionSize.FourByte: this.Access(instruction.Parameter1, () => this.memoryController.ReadU32(this.registers[Register.RSP])); break;
+				case InstructionSize.EightByte: this.Access(instruction.Parameter1, () => this.memoryController.ReadU64(this.registers[Register.RSP])); break;
 			}
 		}
 
@@ -203,7 +204,7 @@ namespace ArkeOS.Hardware {
 				this.SetValue(instruction.Parameter3, b / a);
 			}
 			else {
-				this.pendingInterrupts.Enqueue(Interrupt.DivideByZero);
+				this.interruptController.Enqueue(Interrupt.DivideByZero);
 			}
 		}
 
@@ -219,7 +220,7 @@ namespace ArkeOS.Hardware {
 				this.SetValue(instruction.Parameter3, cc);
 			}
 			else {
-				this.pendingInterrupts.Enqueue(Interrupt.DivideByZero);
+				this.interruptController.Enqueue(Interrupt.DivideByZero);
 			}
 		}
 
