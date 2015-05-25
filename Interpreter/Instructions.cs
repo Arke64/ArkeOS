@@ -244,7 +244,7 @@ namespace ArkeOS.Interpreter {
 				this.registers[Register.RC] = ulong.MaxValue;
 
 			unchecked {
-				this.SetValue(instruction.C, max & ((max & a) + (max & b)));
+				this.SetValue(instruction.C, max & ((max & a) * (max & b)));
 			}
 		}
 
@@ -279,7 +279,7 @@ namespace ArkeOS.Interpreter {
 				this.registers[Register.RC] = ulong.MaxValue;
 
 			unchecked {
-				this.SetValue(instruction.B, max);
+				this.SetValue(instruction.B, a - 1);
 			}
 		}
 

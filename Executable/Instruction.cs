@@ -20,7 +20,7 @@ namespace ArkeOS.Executable {
 
 		public static byte SizeToBytes(InstructionSize size) => (byte)Math.Pow(2, (byte)size);
 		public static byte SizeToBits(InstructionSize size) => (byte)(Instruction.SizeToBytes(size) * 8);
-		public static ulong SizeToMask(InstructionSize size) => (1UL << ((Instruction.SizeToBytes(size) * 8))) - 1;
+		public static ulong SizeToMask(InstructionSize size) => (1UL << (Instruction.SizeToBytes(size) * 8 - 1)) | ((1UL << (Instruction.SizeToBytes(size) * 8 - 1)) - 1);
 
 		public Instruction(BinaryReader reader) {
 			var b1 = reader.ReadByte();
