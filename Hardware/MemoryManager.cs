@@ -1,26 +1,16 @@
 ﻿using System;
 using System.IO;
+using ArkeOS.ISA;
 
-namespace ArkeOS.Interpreter {
+namespace ArkeOS.Hardware {
 	public class MemoryManager {
 		private byte[] memory;
+		private BinaryReader reader;
 
-		public MemoryManager() {
-			this.memory = new byte[1 * 1024 * 1024];
-
-			this.Reader = new BinaryReader(new MemoryStream(this.memory));
+		public MemoryManager(ulong physicalSize) {
+			this.memory = new byte[physicalSize];
+			this.reader = new BinaryReader(new MemoryStream(this.memory));
 		}
-
-		public ulong this[ulong address] {
-			get {
-				return this.ReadU64(address);
-			}
-			set {
-				this.WriteU64(address, value);
-			}
-		}
-
-		public BinaryReader Reader { get; }
 
 		public byte ReadU8(ulong address) => this.memory[address];
 		public ushort ReadU16(ulong address) => BitConverter.ToUInt16(this.memory, (int)address);
@@ -41,6 +31,12 @@ namespace ArkeOS.Interpreter {
 
 		public void CopyTo(byte[] destination, ulong source, ulong length) {
 			Array.Copy(this.memory, 0, destination, (long)source, (long)length);
+		}
+
+		public Instruction ReadInstruction(ulong address) {
+			this.reader.BaseStream.Seek((long)address, SeekOrigin.Begin);
+
+			return new Instruction(this.reader);
 		}
 	}
 }

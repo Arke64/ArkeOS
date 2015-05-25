@@ -82,9 +82,9 @@
       <Project>{bbd646ea-bfc1-41fd-9b67-9936035f6eef}</Project>
       <Name>Executable</Name>
     </ProjectReference>
-    <ProjectReference Include="..\Processor\Processor.csproj">
+    <ProjectReference Include="..\Hardware\Hardware.csproj">
       <Project>{4486659f-008c-4521-9e7d-ff7b49a96748}</Project>
-      <Name>Processor</Name>
+      <Name>Hardware</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

@@ -6,8 +6,8 @@
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProjectGuid>{4486659F-008C-4521-9E7D-FF7B49A96748}</ProjectGuid>
     <OutputType>Library</OutputType>
-    <RootNamespace>ArkeOS.Processor</RootNamespace>
-    <AssemblyName>ArkeOS.Processor</AssemblyName>
+    <RootNamespace>ArkeOS.Hardware</RootNamespace>
+    <AssemblyName>ArkeOS.Hardware</AssemblyName>
     <TargetFrameworkVersion>v4.6</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
@@ -48,20 +48,16 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Exceptions.cs" />
     <Compile Include="Instructions.cs" />
-    <Compile Include="Interpreter.cs" />
+    <Compile Include="Processor.cs" />
     <Compile Include="MemoryManager.cs" />
     <Compile Include="AssemblyInfo.cs" />
+    <Compile Include="RegisterManager.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\Executable\Executable.csproj">
-      <Project>{bbd646ea-bfc1-41fd-9b67-9936035f6eef}</Project>
-      <Name>Executable</Name>
-    </ProjectReference>
     <ProjectReference Include="..\ISA\ISA.csproj">
       <Project>{22dc3407-82a5-465f-92e1-7acf5c13a66f}</Project>
       <Name>ISA</Name>

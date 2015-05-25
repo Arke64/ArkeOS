@@ -16,15 +16,21 @@ namespace ArkeOS.ISA {
 		public Parameter Parameter2 => this.parameters[1];
 		public Parameter Parameter3 => this.parameters[2];
 		public Parameter Parameter4 => this.parameters[3];
-		public byte SizeInBytes => Instruction.SizeToBytes(this.Size);
+
 		public byte Length => (byte)(this.parameters.Sum(p => p.Length) + 2);
 		public InstructionDefinition Definition => InstructionDefinition.Find(this.Code);
+
+		public byte SizeInBytes => Instruction.SizeToBytes(this.Size);
+		public byte SizeInBits => Instruction.SizeToBits(this.Size);
+		public ulong SizeMask => Instruction.SizeToMask(this.Size);
 
 		public static byte SizeToBytes(InstructionSize size) => (byte)Math.Pow(2, (byte)size);
 		public static byte SizeToBits(InstructionSize size) => (byte)(Instruction.SizeToBytes(size) * 8);
 		public static ulong SizeToMask(InstructionSize size) => (1UL << (Instruction.SizeToBits(size) - 1)) | ((1UL << (Instruction.SizeToBits(size) - 1)) - 1);
 
 		public Instruction(BinaryReader reader) {
+			this.parameters = new List<Parameter>();
+
 			this.Address = (ulong)reader.BaseStream.Position;
 
 			var b1 = reader.ReadByte();
@@ -33,7 +39,6 @@ namespace ArkeOS.ISA {
 			this.Label = string.Empty;
 			this.Code = (byte)((b1 & 0xFC) >> 2);
 			this.Size = (InstructionSize)(b1 & 0x03);
-			this.parameters = new List<Parameter>();
 
 			for (var i = 0; i < this.Definition.ParameterCount; i++) {
 				switch ((ParameterType)((b2 >> (i * 2)) & 0x03)) {
@@ -70,6 +75,7 @@ namespace ArkeOS.ISA {
 			this.Label = label;
 			this.Address = 0;
 			this.Code = InstructionDefinition.Find(parts[0]).Code;
+
 			this.parameters = parts.Skip(1).Select(p => new Parameter(this.Size, p)).ToList();
 		}
 

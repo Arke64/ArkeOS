@@ -1,8 +1,8 @@
 ﻿using System;
 using ArkeOS.ISA;
 
-namespace ArkeOS.Interpreter {
-	public partial class Interpreter {
+namespace ArkeOS.Hardware {
+	public partial class Processor {
 		#region Basic
 
 		private void Hlt(Instruction instruction) {
@@ -285,7 +285,7 @@ namespace ArkeOS.Interpreter {
 
 		private void Neg(Instruction instruction) {
 			var a = this.GetValue(instruction.Parameter1);
-			var mask = (ulong)(1 << (Instruction.SizeToBits(this.currentSize) - 1));
+			var mask = (ulong)(1 << (this.currentInstruction.SizeInBits - 1));
 
 			if ((a & mask) == 0) {
 				a |= mask;
