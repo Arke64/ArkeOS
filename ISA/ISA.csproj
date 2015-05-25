@@ -7,8 +7,8 @@
     <ProjectGuid>{22DC3407-82A5-465F-92E1-7ACF5C13A66F}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>ISA</RootNamespace>
-    <AssemblyName>ISA</AssemblyName>
+    <RootNamespace>ArkeOS.ISA</RootNamespace>
+    <AssemblyName>ArkeOS.ISA</AssemblyName>
     <TargetFrameworkVersion>v4.6</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
   </PropertyGroup>
