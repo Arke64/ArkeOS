@@ -1,4 +1,4 @@
-﻿namespace ArkeOS.Executable {
+﻿namespace ArkeOS.ISA {
 	public enum Interrupt {
 		InvalidInstruction,
 		DivideByZero,

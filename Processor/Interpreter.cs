@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using ArkeOS.Executable;
+using ArkeOS.ISA;
 
 namespace ArkeOS.Interpreter {
 	public partial class Interpreter {

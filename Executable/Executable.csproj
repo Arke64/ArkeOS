@@ -40,16 +40,15 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Image.cs" />
-    <Compile Include="InstructionDefinition.cs" />
-    <Compile Include="Instruction.cs" />
-    <Compile Include="InstructionSize.cs" />
-    <Compile Include="Interrupt.cs" />
-    <Compile Include="Parameter.cs" />
-    <Compile Include="ParameterType.cs" />
-    <Compile Include="Register.cs" />
     <Compile Include="Section.cs" />
     <Compile Include="Header.cs" />
     <Compile Include="AssemblyInfo.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\ISA\ISA.csproj">
+      <Project>{22dc3407-82a5-465f-92e1-7acf5c13a66f}</Project>
+      <Name>ISA</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 
-namespace ArkeOS.Executable {
+namespace ArkeOS.ISA {
 	public class Instruction {
 		public ulong Address { get; set; }
 		public byte Code { get; }
@@ -70,10 +70,15 @@ namespace ArkeOS.Executable {
 			if (this.Definition.ParameterCount != this.All.Count()) throw new Exception();
 		}
 
-		public void Serialize(BinaryWriter writer, Image parentImage) {
+		public void Serialize(BinaryWriter writer, Dictionary<string, Instruction> labels) {
 			writer.Write((byte)((this.Code << 2) | (((byte)this.Size) & 0x03)));
 
-			this.All.Where(p => !string.IsNullOrWhiteSpace(p.Label)).ToList().ForEach(p => p.ResolveLabel(parentImage));
+			foreach (var p in this.All) {
+				if (!string.IsNullOrWhiteSpace(p.Label)) {
+					p.Literal = labels[p.Label].Address;
+					p.Type = ParameterType.Literal;
+				}
+			}
 
 			byte b = 0;
 			for (var i = 0; i < this.Definition.ParameterCount; i++)

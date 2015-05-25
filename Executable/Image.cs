@@ -1,11 +1,14 @@
 ﻿using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using ArkeOS.ISA;
 
 namespace ArkeOS.Executable {
 	public class Image {
 		public Header Header { get; set; }
 		public List<Section> Sections { get; set; }
+
+		public Dictionary<string, Instruction> Labels => this.Sections.SelectMany(i => i.Labels).ToDictionary(i => i.Key, i => i.Value);
 
 		public Image() {
 			this.Header = new Header();
@@ -35,10 +38,6 @@ namespace ArkeOS.Executable {
 
 				return stream.ToArray();
 			}
-		}
-
-		public Instruction FindByLabel(string label) {
-			return this.Sections.Select(s => s.FindByLabel(label)).SingleOrDefault(s => s != null);
 		}
 	}
 }

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO;
 using ArkeOS.Executable;
+using ArkeOS.ISA;
 
 namespace ArkeOS.Assembler {
 	public static class Program {

@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 14
 VisualStudioVersion = 14.0.22823.1
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Interpreter", "Interpreter\Interpreter.csproj", "{4486659F-008C-4521-9E7D-FF7B49A96748}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Processor", "Processor\Processor.csproj", "{4486659F-008C-4521-9E7D-FF7B49A96748}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Assembler", "Assembler\Assembler.csproj", "{E9776C8D-E3AD-4BCA-AA37-0C4883463480}"
 EndProject
@@ -14,6 +14,8 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Executable", "Executable\Executable.csproj", "{BBD646EA-BFC1-41FD-9B67-9936035F6EEF}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Virtual Machine", "Virtual Machine\Virtual Machine.csproj", "{FF835E85-60DB-4159-8AAC-9B20F58E38C9}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ISA", "ISA\ISA.csproj", "{22DC3407-82A5-465F-92E1-7ACF5C13A66F}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -45,6 +47,10 @@ Global
 		{FF835E85-60DB-4159-8AAC-9B20F58E38C9}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{FF835E85-60DB-4159-8AAC-9B20F58E38C9}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{FF835E85-60DB-4159-8AAC-9B20F58E38C9}.Release|Any CPU.Build.0 = Release|Any CPU
+		{22DC3407-82A5-465F-92E1-7ACF5C13A66F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{22DC3407-82A5-465F-92E1-7ACF5C13A66F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{22DC3407-82A5-465F-92E1-7ACF5C13A66F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{22DC3407-82A5-465F-92E1-7ACF5C13A66F}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

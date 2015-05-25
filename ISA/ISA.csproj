@@ -4,16 +4,15 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{4486659F-008C-4521-9E7D-FF7B49A96748}</ProjectGuid>
+    <ProjectGuid>{22DC3407-82A5-465F-92E1-7ACF5C13A66F}</ProjectGuid>
     <OutputType>Library</OutputType>
-    <RootNamespace>ArkeOS.Interpreter</RootNamespace>
-    <AssemblyName>ArkeOS.Interpreter</AssemblyName>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>ISA</RootNamespace>
+    <AssemblyName>ISA</AssemblyName>
     <TargetFrameworkVersion>v4.6</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
-    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <PlatformTarget>AnyCPU</PlatformTarget>
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
@@ -21,21 +20,14 @@
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
-    <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <PlatformTarget>AnyCPU</PlatformTarget>
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
     <OutputPath>bin\Release\</OutputPath>
     <DefineConstants>TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
-    <Prefer32Bit>false</Prefer32Bit>
-  </PropertyGroup>
-  <PropertyGroup>
-    <StartupObject>
-    </StartupObject>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
@@ -48,20 +40,17 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Exceptions.cs" />
-    <Compile Include="Instructions.cs" />
-    <Compile Include="Interpreter.cs" />
-    <Compile Include="MemoryManager.cs" />
     <Compile Include="AssemblyInfo.cs" />
+    <Compile Include="Instruction.cs" />
+    <Compile Include="InstructionDefinition.cs" />
+    <Compile Include="InstructionSize.cs" />
+    <Compile Include="Interrupt.cs" />
+    <Compile Include="Parameter.cs" />
+    <Compile Include="ParameterType.cs" />
+    <Compile Include="Register.cs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="App.config" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\Executable\Executable.csproj">
-      <Project>{bbd646ea-bfc1-41fd-9b67-9936035f6eef}</Project>
-      <Name>Executable</Name>
-    </ProjectReference>
+    <Content Include="ISA.txt" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

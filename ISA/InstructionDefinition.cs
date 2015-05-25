@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 
-namespace ArkeOS.Executable {
+namespace ArkeOS.ISA {
 	public class InstructionDefinition {
 		private static Dictionary<string, InstructionDefinition> mnemonics = new Dictionary<string, InstructionDefinition>();
 		private static Dictionary<byte, InstructionDefinition> codes = new Dictionary<byte, InstructionDefinition>();

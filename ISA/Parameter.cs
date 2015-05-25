@@ -1,13 +1,14 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 
-namespace ArkeOS.Executable {
+namespace ArkeOS.ISA {
 	public class Parameter {
-		public ParameterType Type { get; private set; }
-		public Register Register { get; private set; }
-		public ulong Literal { get; private set; }
-		public byte Length { get; private set; }
-		public string Label { get; private set; }
+		public ParameterType Type { get; set; }
+		public Register Register { get; set; }
+		public ulong Literal { get; set; }
+		public byte Length { get; set; }
+		public string Label { get; set; }
 
 		public Parameter(InstructionSize size, ParameterType type, ulong value) {
 			this.Type = type;
@@ -95,11 +96,6 @@ namespace ArkeOS.Executable {
 				this.Length = 1;
 			}
 		}
-
-		public void ResolveLabel(Image parentImage) {
-			this.Literal = parentImage.FindByLabel(this.Label).Address;
-			this.Type = ParameterType.Literal;
-        }
 
 		public void Serialize(BinaryWriter writer, InstructionSize size) {
 			switch (this.Type) {

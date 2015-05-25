@@ -1,5 +1,5 @@
 ﻿using System;
-using ArkeOS.Executable;
+using ArkeOS.ISA;
 
 namespace ArkeOS.Interpreter {
 	public partial class Interpreter {
