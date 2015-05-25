@@ -6,7 +6,7 @@ namespace ArkeOS.Hardware {
 		#region Basic
 
 		private void Hlt(Instruction instruction) {
-			this.interruptController.Wait(1000);
+			this.interruptController.Wait(50);
 			this.supressRIPIncrement = true;
 		}
 

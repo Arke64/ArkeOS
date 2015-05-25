@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using ArkeOS.ISA;
 
 namespace ArkeOS.Hardware {
@@ -12,18 +14,22 @@ namespace ArkeOS.Hardware {
 		private Dictionary<InstructionDefinition, Action<Instruction>> instructionHandlers;
 		private Instruction currentInstruction;
 		private bool supressRIPIncrement;
-		private bool running;
 		private bool inProtectedIsr;
+		private bool running;
+		private bool paused;
+		private AutoResetEvent pauseEvent;
 
 		public Processor(MemoryController memoryController, InterruptController interruptController) {
 			this.memoryController = memoryController;
 			this.interruptController = interruptController;
-			this.registers = new RegisterManager();
 
 			this.instructionHandlers = InstructionDefinition.All.ToDictionary(i => i, i => (Action<Instruction>)Delegate.CreateDelegate(typeof(Action<Instruction>), this, i.Mnemonic, true));
 			
 			this.supressRIPIncrement = false;
 			this.inProtectedIsr = false;
+			this.paused = false;
+			this.pauseEvent = new AutoResetEvent(false);
+			this.registers = new RegisterManager();
 		}
 
 		public void LoadBootImage(Stream image) {
@@ -34,31 +40,47 @@ namespace ArkeOS.Hardware {
 			this.memoryController.CopyFrom(buffer, 0, (ulong)image.Length);
 		}
 
-		public void Run() {
+		public void Start() {
 			this.running = true;
 
-			while (this.running) {
-				if (this.interruptController.AnyPending)
-					this.EnterInterrupt(this.interruptController.Dequeue());
+			Task.Run(() => {
+				while (this.running) {
+					if (this.interruptController.AnyPending)
+						this.EnterInterrupt(this.interruptController.Dequeue());
 
-				this.currentInstruction = this.memoryController.ReadInstruction(this.registers[Register.RIP]);
+					this.currentInstruction = this.memoryController.ReadInstruction(this.registers[Register.RIP]);
 
-				if (this.instructionHandlers.ContainsKey(this.currentInstruction.Definition)) {
-					this.instructionHandlers[this.currentInstruction.Definition](this.currentInstruction);
+					if (this.instructionHandlers.ContainsKey(this.currentInstruction.Definition)) {
+						this.instructionHandlers[this.currentInstruction.Definition](this.currentInstruction);
 
-					if (!this.supressRIPIncrement)
-						this.registers[Register.RIP] += this.currentInstruction.Length;
+						if (!this.supressRIPIncrement)
+							this.registers[Register.RIP] += this.currentInstruction.Length;
 
-					this.supressRIPIncrement = false;
+						this.supressRIPIncrement = false;
+					}
+					else {
+						this.interruptController.Enqueue(Interrupt.InvalidInstruction);
+					}
+
+					if (this.paused)
+						this.pauseEvent.WaitOne();
 				}
-				else {
-					this.interruptController.Enqueue(Interrupt.InvalidInstruction);
-				}
-			}
+			});
 		}
 
 		public void Stop() {
 			this.running = false;
+
+			this.Unpause();
+		}
+
+		public void Pause() {
+			this.paused = true;
+		}
+
+		public void Unpause() {
+			this.paused = false;
+			this.pauseEvent.Set();
 		}
 
 		private void EnterInterrupt(Interrupt id) {

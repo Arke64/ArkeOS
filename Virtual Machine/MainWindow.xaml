@@ -1,6 +1,14 @@
-﻿<Window Title="MainWindow" Height="350" Width="525" x:Class="ArkeOS.VirtualMachine.MainWindow" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:d="http://schemas.microsoft.com/expression/blend/2008" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:local="clr-namespace:ArkeOS.VirtualMachine" mc:Ignorable="d">
+﻿<Window Title="MainWindow" Height="350" Width="300" x:Class="ArkeOS.VirtualMachine.MainWindow" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:d="http://schemas.microsoft.com/expression/blend/2008" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:local="clr-namespace:ArkeOS.VirtualMachine" mc:Ignorable="d">
 	<StackPanel>
-		<TextBox Name="FileNameTextBox" Width="250" Text="..\..\Program.aoe" />
-		<Button Content="Run" Click="RunButton_Click" />
+		<StackPanel Orientation="Horizontal">
+			<Label Content="Boot Image: " />
+			<TextBox Name="BootImageTextBox" Text="..\..\Program.aoe" />
+		</StackPanel>
+		<StackPanel Orientation="Horizontal">
+			<Button Name="StartButton" Content="Start" Click="StartButton_Click" />
+			<Button Name="StopButton" Content="Stop" Click="StopButton_Click" />
+			<Button Name="PauseButton" Content="Pause" Click="PauseButton_Click" />
+			<Button Name="UnpauseButton"  Content="Unpause" Click="UnpauseButton_Click" />
+		</StackPanel>
 	</StackPanel>
 </Window>
