@@ -286,7 +286,7 @@ namespace ArkeOS.Hardware {
 
 		private void Neg(Instruction instruction) {
 			var a = this.GetValue(instruction.Parameter1);
-			var mask = (ulong)(1 << (this.currentInstruction.SizeInBits - 1));
+			var mask = (ulong)(1 << (this.CurrentInstruction.SizeInBits - 1));
 
 			if ((a & mask) == 0) {
 				a |= mask;

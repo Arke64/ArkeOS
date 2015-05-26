@@ -11,13 +11,13 @@ namespace ArkeOS.Hardware {
 		private MemoryController memoryController;
 		private InterruptController interruptController;
 		private Dictionary<InstructionDefinition, Action<Instruction>> instructionHandlers;
-		private Instruction currentInstruction;
 		private bool supressRIPIncrement;
 		private bool inProtectedIsr;
 		private bool running;
-		private bool paused;
-		private AutoResetEvent pauseEvent;
+		private bool broken;
+		private AutoResetEvent breakEvent;
 
+		public Instruction CurrentInstruction { get; private set; }
 		public RegisterManager Registers { get; }
 
 		public Processor(MemoryController memoryController, InterruptController interruptController) {
@@ -26,10 +26,7 @@ namespace ArkeOS.Hardware {
 
 			this.instructionHandlers = InstructionDefinition.All.ToDictionary(i => i, i => (Action<Instruction>)Delegate.CreateDelegate(typeof(Action<Instruction>), this, i.Mnemonic, true));
 			
-			this.supressRIPIncrement = false;
-			this.inProtectedIsr = false;
-			this.paused = false;
-			this.pauseEvent = new AutoResetEvent(false);
+			this.breakEvent = new AutoResetEvent(false);
 
 			this.Registers = new RegisterManager();
 		}
@@ -43,46 +40,56 @@ namespace ArkeOS.Hardware {
 		}
 
 		public void Start() {
+			this.supressRIPIncrement = false;
+			this.inProtectedIsr = false;
 			this.running = true;
+			this.broken = true;
 
 			Task.Run(() => {
-				while (this.running) {
-					if (this.interruptController.AnyPending)
-						this.EnterInterrupt(this.interruptController.Dequeue());
-
-					this.currentInstruction = this.memoryController.ReadInstruction(this.Registers[Register.RIP]);
-
-					if (this.instructionHandlers.ContainsKey(this.currentInstruction.Definition)) {
-						this.instructionHandlers[this.currentInstruction.Definition](this.currentInstruction);
-
-						if (!this.supressRIPIncrement)
-							this.Registers[Register.RIP] += this.currentInstruction.Length;
-
-						this.supressRIPIncrement = false;
-					}
-					else {
-						this.interruptController.Enqueue(Interrupt.InvalidInstruction);
-					}
-
-					if (this.paused)
-						this.pauseEvent.WaitOne();
-				}
+				while (this.running)
+					this.Tick();
 			});
 		}
 
 		public void Stop() {
 			this.running = false;
 
-			this.Unpause();
+			this.Continue();
 		}
 
-		public void Pause() {
-			this.paused = true;
+		public void Break() {
+			this.broken = true;
 		}
 
-		public void Unpause() {
-			this.paused = false;
-			this.pauseEvent.Set();
+		public void Continue() {
+			this.broken = false;
+			this.breakEvent.Set();
+		}
+
+		public void Step() {
+			this.breakEvent.Set();
+		}
+
+		private void Tick() {
+			if (this.interruptController.AnyPending)
+				this.EnterInterrupt(this.interruptController.Dequeue());
+
+			this.CurrentInstruction = this.memoryController.ReadInstruction(this.Registers[Register.RIP]);
+
+			if (this.broken)
+				this.breakEvent.WaitOne();
+
+			if (this.instructionHandlers.ContainsKey(this.CurrentInstruction.Definition)) {
+				this.instructionHandlers[this.CurrentInstruction.Definition](this.CurrentInstruction);
+
+				if (!this.supressRIPIncrement)
+					this.Registers[Register.RIP] += this.CurrentInstruction.Length;
+
+				this.supressRIPIncrement = false;
+			}
+			else {
+				this.interruptController.Enqueue(Interrupt.InvalidInstruction);
+			}
 		}
 
 		private void EnterInterrupt(Interrupt id) {
@@ -97,7 +104,7 @@ namespace ArkeOS.Hardware {
 
 		private void UpdateFlags(ulong value) {
 			this.Registers[Register.RZ] = value == 0 ? ulong.MaxValue : 0;
-			this.Registers[Register.RS] = (value & (ulong)(1 << (this.currentInstruction.SizeInBits - 1))) != 0 ? ulong.MaxValue : 0;
+			this.Registers[Register.RS] = (value & (ulong)(1 << (this.CurrentInstruction.SizeInBits - 1))) != 0 ? ulong.MaxValue : 0;
 		}
 
 		private ulong GetValue(Parameter parameter) {
@@ -126,7 +133,7 @@ namespace ArkeOS.Hardware {
 					break;
 			}
 
-			return value & this.currentInstruction.SizeMask;
+			return value & this.CurrentInstruction.SizeMask;
 		}
 
 		private void SetValue(Parameter parameter, ulong value) {
@@ -134,7 +141,7 @@ namespace ArkeOS.Hardware {
 
 			var orig = value;
 
-			value &= this.currentInstruction.SizeMask;
+			value &= this.CurrentInstruction.SizeMask;
 
 			if (value != orig)
 				this.Registers[Register.RC] = ulong.MaxValue;

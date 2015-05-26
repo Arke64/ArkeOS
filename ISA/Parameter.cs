@@ -93,6 +93,16 @@ namespace ArkeOS.ISA {
 			}
 		}
 
+		public override string ToString() {
+			switch (this.Type) {
+				case ParameterType.Literal: return "0x" + this.Literal.ToString("X8");
+				case ParameterType.LiteralAddress: return $"[0x{this.Literal.ToString("X8")}]";
+				case ParameterType.Register: return this.Register.ToString();
+				case ParameterType.RegisterAddress: return $"[{this.Register.ToString()}]";
+				default: return string.Empty;
+			}
+		}
+
 		private ulong ParseLiteral(string value) {
 			if (value.IndexOf("0x") == 0) {
 				return Convert.ToUInt64(value.Substring(2), 16);

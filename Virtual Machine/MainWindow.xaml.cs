@@ -2,6 +2,7 @@
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using ArkeOS.Hardware;
@@ -15,28 +16,30 @@ namespace ArkeOS.VirtualMachine {
 
 		public MainWindow() {
 			this.InitializeComponent();
-			
+
 			this.StartButton.IsEnabled = true;
 			this.StopButton.IsEnabled = false;
-			this.PauseButton.IsEnabled = false;
-			this.UnpauseButton.IsEnabled = false;
+			this.BreakButton.IsEnabled = false;
+			this.ContinueButton.IsEnabled = false;
+			this.StepButton.IsEnabled = false;
 		}
 
 		private void StartButton_Click(object sender, RoutedEventArgs e) {
-			if (File.Exists(this.BootImageTextBox.Text)) {
-				this.memoryController = new MemoryController(1 * 1024 * 1024);
-				this.interruptController = new InterruptController();
-				this.processor = new Processor(this.memoryController, this.interruptController);
+			this.memoryController = new MemoryController(1 * 1024 * 1024);
+			this.interruptController = new InterruptController();
+			this.processor = new Processor(this.memoryController, this.interruptController);
 
-				this.processor.LoadBootImage(new MemoryStream(new Executable.Image(File.OpenRead(this.BootImageTextBox.Text)).Sections.First().Data));
+			this.processor.LoadBootImage(new MemoryStream(new Executable.Image(File.OpenRead(this.BootImageTextBox.Text)).Sections.First().Data));
 
-				this.processor.Start();
+			this.processor.Start();
 
-				this.StartButton.IsEnabled = false;
-				this.StopButton.IsEnabled = true;
-				this.PauseButton.IsEnabled = true;
-				this.UnpauseButton.IsEnabled = false;
-			}
+			this.Refresh();
+
+			this.StartButton.IsEnabled = false;
+			this.StopButton.IsEnabled = true;
+			this.BreakButton.IsEnabled = false;
+			this.ContinueButton.IsEnabled = true;
+			this.StepButton.IsEnabled = true;
 		}
 
 		private void StopButton_Click(object sender, RoutedEventArgs e) {
@@ -44,37 +47,62 @@ namespace ArkeOS.VirtualMachine {
 
 			this.StartButton.IsEnabled = true;
 			this.StopButton.IsEnabled = false;
-			this.PauseButton.IsEnabled = false;
-			this.UnpauseButton.IsEnabled = false;
+			this.BreakButton.IsEnabled = false;
+			this.ContinueButton.IsEnabled = false;
+			this.StepButton.IsEnabled = false;
 
-			this.RefreshRegisters();
+			this.Refresh();
+
+			this.processor = null;
+			this.memoryController = null;
+			this.interruptController = null;
 		}
 
-		private void PauseButton_Click(object sender, RoutedEventArgs e) {
-			this.processor.Pause();
+		private void BreakButton_Click(object sender, RoutedEventArgs e) {
+			this.processor.Break();
 
-			this.StartButton.IsEnabled = false;
-			this.StopButton.IsEnabled = true;
-			this.PauseButton.IsEnabled = false;
-			this.UnpauseButton.IsEnabled = true;
+			this.BreakButton.IsEnabled = false;
+			this.ContinueButton.IsEnabled = true;
+			this.StepButton.IsEnabled = true;
 
-			this.RefreshRegisters();
+			this.Refresh();
 		}
 
-		private void UnpauseButton_Click(object sender, RoutedEventArgs e) {
-			this.processor.Unpause();
+		private void ContinueButton_Click(object sender, RoutedEventArgs e) {
+			this.Apply();
 
-			this.StartButton.IsEnabled = false;
-			this.StopButton.IsEnabled = true;
-			this.PauseButton.IsEnabled = true;
-			this.UnpauseButton.IsEnabled = false;
+			this.processor.Continue();
+
+			this.BreakButton.IsEnabled = true;
+			this.ContinueButton.IsEnabled = false;
+			this.StepButton.IsEnabled = false;
 		}
 
-		private void RefreshRegisters() {
+		private void StepButton_Click(object sender, RoutedEventArgs e) {
+			this.Apply();
+
+			this.processor.Step();
+
+			this.Refresh();
+		}
+
+		private async void Refresh() {
+			await Task.Delay(250);
+
 			foreach (var r in Enum.GetNames(typeof(Register))) {
 				var textbox = (TextBox)this.GetType().GetField(r + "TextBox", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(this);
-					
-				textbox.Text = this.processor.Registers[(Register)Enum.Parse(typeof(Register), r)].ToString();
+
+				textbox.Text = "0x" + this.processor.Registers[(Register)Enum.Parse(typeof(Register), r)].ToString("X8");
+			}
+
+			this.CurrentInstructionLabel.Content = this.processor.CurrentInstruction.ToString();
+		}
+
+		private void Apply() {
+			foreach (var r in Enum.GetNames(typeof(Register))) {
+				var textbox = (TextBox)this.GetType().GetField(r + "TextBox", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(this);
+
+				this.processor.Registers[(Register)Enum.Parse(typeof(Register), r)] = Convert.ToUInt64(textbox.Text.Substring(2), 16);
 			}
 		}
 	}

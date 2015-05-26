@@ -67,7 +67,12 @@ namespace ArkeOS.ISA {
 
 			var index = parts[0].IndexOf(':');
 			if (index != -1) {
-				this.Size = (InstructionSize)(byte.Parse(parts[0].Substring(index + 1)) - 1);
+				switch (parts[0][index + 1]) {
+					case '1': this.Size = InstructionSize.OneByte; break;
+					case '2': this.Size = InstructionSize.TwoByte; break;
+					case '4': this.Size = InstructionSize.FourByte; break;
+					case '8': this.Size = InstructionSize.EightByte; break;
+				}
 
 				parts[0] = parts[0].Substring(0, index);
 			}
@@ -96,6 +101,10 @@ namespace ArkeOS.ISA {
 			writer.Write(b);
 
             this.parameters.ForEach(p => p.Serialize(writer));
+		}
+
+		public override string ToString() {
+			return this.Definition.Mnemonic + ":" + this.SizeInBytes + " " + string.Join(" ", this.parameters.Select(p => p.ToString()));
 		}
 	}
 }
