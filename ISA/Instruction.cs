@@ -8,18 +8,17 @@ namespace ArkeOS.ISA {
 		private List<Parameter> parameters;
 
 		public ulong Address { get; set; }
+		public string Label { get; set; }
 		public byte Code { get; }
 		public InstructionSize Size { get; }
-		public string Label { get; }
+		public byte Length { get; }
+		public InstructionDefinition Definition { get; }
 
 		public Parameter Parameter1 => this.parameters[0];
 		public Parameter Parameter2 => this.parameters[1];
 		public Parameter Parameter3 => this.parameters[2];
 		public Parameter Parameter4 => this.parameters[3];
-
-		public byte Length => (byte)(this.parameters.Sum(p => p.Length) + 2);
-		public InstructionDefinition Definition => InstructionDefinition.Find(this.Code);
-
+		
 		public byte SizeInBytes => Instruction.SizeToBytes(this.Size);
 		public byte SizeInBits => Instruction.SizeToBits(this.Size);
 		public ulong SizeMask => Instruction.SizeToMask(this.Size);
@@ -36,9 +35,11 @@ namespace ArkeOS.ISA {
 			var b1 = reader.ReadByte();
 			var b2 = reader.ReadByte();
 
+			this.Size = (InstructionSize)(b1 & 0x03);
 			this.Label = string.Empty;
 			this.Code = (byte)((b1 & 0xFC) >> 2);
-			this.Size = (InstructionSize)(b1 & 0x03);
+			this.Definition = InstructionDefinition.Find(this.Code);
+			this.Length = 2;
 
 			for (var i = 0; i < this.Definition.ParameterCount; i++) {
 				switch ((ParameterType)((b2 >> (i * 2)) & 0x03)) {
@@ -55,14 +56,12 @@ namespace ArkeOS.ISA {
 
 						break;
 				}
+
+				this.Length += this.parameters[i].Length;
 			}
-		}
+        }
 
-		public Instruction(string[] parts) : this(parts, string.Empty) {
-
-		}
-
-		public Instruction(string[] parts, string label) {
+		public Instruction(string[] parts) { 
 			this.Size = InstructionSize.EightByte;
 
 			var index = parts[0].IndexOf(':');
@@ -77,11 +76,14 @@ namespace ArkeOS.ISA {
 				parts[0] = parts[0].Substring(0, index);
 			}
 
-			this.Label = label;
+			this.Label = string.Empty;
 			this.Address = 0;
 			this.Code = InstructionDefinition.Find(parts[0]).Code;
+			this.Definition = InstructionDefinition.Find(this.Code);
 
 			this.parameters = parts.Skip(1).Select(p => new Parameter(this.Size, p)).ToList();
+
+			this.Length = (byte)(this.parameters.Sum(p => p.Length) + 2);
 		}
 
 		public void Serialize(BinaryWriter writer, Dictionary<string, Instruction> labels) {

@@ -10,7 +10,7 @@ namespace ArkeOS.Hardware {
 	public partial class Processor {
 		private MemoryController memoryController;
 		private InterruptController interruptController;
-		private Dictionary<InstructionDefinition, Action<Instruction>> instructionHandlers;
+		private Dictionary<byte, Action<Instruction>> instructionHandlers;
 		private bool supressRIPIncrement;
 		private bool inProtectedIsr;
 		private bool running;
@@ -24,7 +24,7 @@ namespace ArkeOS.Hardware {
 			this.memoryController = memoryController;
 			this.interruptController = interruptController;
 
-			this.instructionHandlers = InstructionDefinition.All.ToDictionary(i => i, i => (Action<Instruction>)Delegate.CreateDelegate(typeof(Action<Instruction>), this, i.Mnemonic, true));
+			this.instructionHandlers = InstructionDefinition.All.ToDictionary(i => i.Code, i => (Action<Instruction>)Delegate.CreateDelegate(typeof(Action<Instruction>), this, i.Mnemonic, true));
 			
 			this.breakEvent = new AutoResetEvent(false);
 
@@ -79,8 +79,8 @@ namespace ArkeOS.Hardware {
 			if (this.broken)
 				this.breakEvent.WaitOne();
 
-			if (this.instructionHandlers.ContainsKey(this.CurrentInstruction.Definition)) {
-				this.instructionHandlers[this.CurrentInstruction.Definition](this.CurrentInstruction);
+			if (this.instructionHandlers.ContainsKey(this.CurrentInstruction.Code)) {
+				this.instructionHandlers[this.CurrentInstruction.Code](this.CurrentInstruction);
 
 				if (!this.supressRIPIncrement)
 					this.Registers[Register.RIP] += this.CurrentInstruction.Length;

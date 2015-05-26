@@ -48,7 +48,7 @@ namespace ArkeOS.Assembler {
 						break;
 
 					case "ORIGIN":
-						currentSection = new Section(Convert.ToUInt64(parts[1], 16));
+						currentSection = new Section(image, Convert.ToUInt64(parts[1], 16));
 
 						image.Sections.Add(currentSection);
 
@@ -63,7 +63,7 @@ namespace ArkeOS.Assembler {
 						if (string.IsNullOrWhiteSpace(parts[0]) || parts[0].TrimStart().IndexOf("//") == 0)
 							continue;
 
-						currentSection.AddInstruction(new Instruction(parts, pendingLabel));
+						currentSection.AddInstruction(new Instruction(parts), pendingLabel);
 						pendingLabel = string.Empty;
 
 						break;

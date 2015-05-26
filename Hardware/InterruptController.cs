@@ -1,5 +1,4 @@
 ﻿using System.Collections.Generic;
-using System.Linq;
 using System.Threading;
 using ArkeOS.ISA;
 
@@ -8,7 +7,7 @@ namespace ArkeOS.Hardware {
 		private Queue<Interrupt> pending;
 		private ManualResetEvent evt;
 
-		public bool AnyPending => this.pending.Any();
+		public bool AnyPending => this.pending.Count > 0;
 
 		public InterruptController() {
 			this.pending = new Queue<Interrupt>();

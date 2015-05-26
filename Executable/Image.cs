@@ -1,18 +1,17 @@
 ﻿using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using ArkeOS.ISA;
 
 namespace ArkeOS.Executable {
 	public class Image {
-		public Header Header { get; set; }
-		public List<Section> Sections { get; set; }
-
-		public Dictionary<string, Instruction> Labels => this.Sections.SelectMany(i => i.Labels).ToDictionary(i => i.Key, i => i.Value);
+		public Header Header { get; private set; }
+		public List<Section> Sections { get; private set; }
+		public Dictionary<string, Instruction> Labels { get; private set; }
 
 		public Image() {
 			this.Header = new Header();
 			this.Sections = new List<Section>();
+			this.Labels = new Dictionary<string, Instruction>();
 		}
 
 		public Image(Stream data) {
@@ -37,7 +36,7 @@ namespace ArkeOS.Executable {
 
 					writer.BaseStream.Seek(Header.Size, SeekOrigin.Begin);
 
-					this.Sections.ForEach(s => s.Serialize(writer, this));
+					this.Sections.ForEach(s => s.Serialize(writer));
 				}
 
 				return stream.ToArray();

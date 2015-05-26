@@ -25,7 +25,7 @@ namespace ArkeOS.VirtualMachine {
 		}
 
 		private void StartButton_Click(object sender, RoutedEventArgs e) {
-			this.memoryController = new MemoryController(1 * 1024 * 1024);
+			this.memoryController = new MemoryController(10 * 1024 * 1024);
 			this.interruptController = new InterruptController();
 			this.processor = new Processor(this.memoryController, this.interruptController);
 
