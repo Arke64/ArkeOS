@@ -1,7 +1,7 @@
 Registers
 ---------
-R0-R63: General purpose use
-RI0-RI15: General purpose use for interrupts only
+R0-R15: General purpose use
+RI0-RI7: General purpose use for interrupts only
 RZ: Zero flag
 RS: Sign flag
 RC: Carry flag
@@ -35,7 +35,7 @@ Format
 2b Parameter 1: See above
 2b Parameter 2: See above
 2b Parameter 3: See above
-0b-32b: Parameters
+0b-64b: Parameters
 
 Basic
 -----
