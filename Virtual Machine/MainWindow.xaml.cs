@@ -51,7 +51,7 @@ namespace ArkeOS.VirtualMachine {
 			this.ContinueButton.IsEnabled = false;
 			this.StepButton.IsEnabled = false;
 
-			this.Refresh();
+			this.Clear();
 
 			this.processor = null;
 			this.memoryController = null;
@@ -87,7 +87,7 @@ namespace ArkeOS.VirtualMachine {
 		}
 
 		private async void Refresh() {
-			await Task.Delay(250);
+			await Task.Delay(50);
 
 			foreach (var r in Enum.GetNames(typeof(Register))) {
 				var textbox = (TextBox)this.GetType().GetField(r + "TextBox", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(this);
@@ -96,6 +96,18 @@ namespace ArkeOS.VirtualMachine {
 			}
 
 			this.CurrentInstructionLabel.Content = this.processor.CurrentInstruction.ToString();
+		}
+
+		private async void Clear() {
+			await Task.Delay(50);
+
+			foreach (var r in Enum.GetNames(typeof(Register))) {
+				var textbox = (TextBox)this.GetType().GetField(r + "TextBox", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(this);
+
+				textbox.Text = "0x" + 0.ToString("X8");
+			}
+
+			this.CurrentInstructionLabel.Content = string.Empty;
 		}
 
 		private void Apply() {
