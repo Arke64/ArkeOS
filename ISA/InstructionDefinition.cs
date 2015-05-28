@@ -63,6 +63,8 @@ namespace ArkeOS.ISA {
 			new InstructionDefinition("LTE", 54, 2);
 			new InstructionDefinition("EQ", 55, 2);
 			new InstructionDefinition("NEQ", 56, 2);
+
+			new InstructionDefinition("DBG", 60, 1);
 		}
 
 		private InstructionDefinition(string mnemonic, byte code, byte parameterCount) {

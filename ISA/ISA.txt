@@ -90,3 +90,7 @@ Logic
 54 LTE A B: Update RZ to reflect if B is less than or equal to A
 55 EQ A B: Update RZ to reflect if B is equal to A
 56 NEQ A B: Update RZ to reflect if B is not equal to A
+
+Debug
+-----
+80 DBG A: Debug use

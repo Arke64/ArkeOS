@@ -396,5 +396,13 @@ namespace ArkeOS.Hardware {
 		}
 
 		#endregion
+
+		#region Debug
+
+		private void Dbg(Instruction instruction) {
+			this.Access(instruction.Parameter1, () => (ulong)DateTime.UtcNow.TimeOfDay.TotalMilliseconds);
+		}
+
+		#endregion
 	}
 }
