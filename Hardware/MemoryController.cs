@@ -1,15 +1,12 @@
 ﻿using System;
-using System.IO;
 using ArkeOS.ISA;
 
 namespace ArkeOS.Hardware {
 	public class MemoryController {
 		private byte[] memory;
-		private BinaryReader reader;
 
 		public MemoryController(ulong physicalSize) {
 			this.memory = new byte[physicalSize];
-			this.reader = new BinaryReader(new MemoryStream(this.memory));
 		}
 
 		public byte ReadU8(ulong address) => this.memory[address];
@@ -34,9 +31,7 @@ namespace ArkeOS.Hardware {
 		}
 
 		public Instruction ReadInstruction(ulong address) {
-			this.reader.BaseStream.Seek((long)address, SeekOrigin.Begin);
-
-			return new Instruction(this.reader);
+			return new Instruction(this.memory, address);
 		}
 	}
 }

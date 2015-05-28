@@ -27,13 +27,13 @@ namespace ArkeOS.ISA {
 		public static byte SizeToBits(InstructionSize size) => (byte)(Instruction.SizeToBytes(size) * 8);
 		public static ulong SizeToMask(InstructionSize size) => (1UL << (Instruction.SizeToBits(size) - 1)) | ((1UL << (Instruction.SizeToBits(size) - 1)) - 1);
 
-		public Instruction(BinaryReader reader) {
+		public Instruction(byte[] memory, ulong address) {
 			this.parameters = new List<Parameter>();
 
-			this.Address = (ulong)reader.BaseStream.Position;
+			this.Address = address;
 
-			var b1 = reader.ReadByte();
-			var b2 = reader.ReadByte();
+			var b1 = memory[address++];
+			var b2 = memory[address++];
 
 			this.Size = (InstructionSize)(b1 & 0x03);
 			this.Label = string.Empty;
@@ -43,15 +43,15 @@ namespace ArkeOS.ISA {
 
 			for (var i = 0; i < this.Definition.ParameterCount; i++) {
 				switch ((ParameterType)((b2 >> (i * 2)) & 0x03)) {
-					case ParameterType.RegisterAddress: this.parameters.Add(new Parameter(this.Size, ParameterType.RegisterAddress, reader.ReadByte())); break;
-					case ParameterType.Register: this.parameters.Add(new Parameter(this.Size, ParameterType.Register, reader.ReadByte())); break;
-					case ParameterType.LiteralAddress: this.parameters.Add(new Parameter(this.Size, ParameterType.LiteralAddress, reader.ReadUInt64())); break;
+					case ParameterType.RegisterAddress: this.parameters.Add(new Parameter(this.Size, ParameterType.RegisterAddress, memory[address++])); break;
+					case ParameterType.Register: this.parameters.Add(new Parameter(this.Size, ParameterType.Register, memory[address++])); break;
+					case ParameterType.LiteralAddress: this.parameters.Add(new Parameter(this.Size, ParameterType.LiteralAddress, BitConverter.ToUInt64(memory, (int)address))); address += 8; break;
 					case ParameterType.Literal:
 						switch (this.Size) {
-							case InstructionSize.OneByte: this.parameters.Add(new Parameter(this.Size, ParameterType.Literal, reader.ReadByte())); break;
-							case InstructionSize.TwoByte: this.parameters.Add(new Parameter(this.Size, ParameterType.Literal, reader.ReadUInt16())); break;
-							case InstructionSize.FourByte: this.parameters.Add(new Parameter(this.Size, ParameterType.Literal, reader.ReadUInt32())); break;
-							case InstructionSize.EightByte: this.parameters.Add(new Parameter(this.Size, ParameterType.Literal, reader.ReadUInt64())); break;
+							case InstructionSize.OneByte: this.parameters.Add(new Parameter(this.Size, ParameterType.Literal, memory[address++])); break;
+							case InstructionSize.TwoByte: this.parameters.Add(new Parameter(this.Size, ParameterType.Literal, BitConverter.ToUInt16(memory, (int)address))); address += 2; break;
+							case InstructionSize.FourByte: this.parameters.Add(new Parameter(this.Size, ParameterType.Literal, BitConverter.ToUInt32(memory, (int)address))); address += 4; break;
+							case InstructionSize.EightByte: this.parameters.Add(new Parameter(this.Size, ParameterType.Literal, BitConverter.ToUInt64(memory, (int)address))); address += 8; break;
 						}
 
 						break;
