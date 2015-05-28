@@ -46,25 +46,11 @@ namespace ArkeOS.Hardware {
 		}
 
 		private void Push(Instruction instruction) {
-			this.Registers[Register.RSP] -= instruction.SizeInBytes;
-
-			switch (instruction.Size) {
-				case InstructionSize.OneByte: this.Access(instruction.Parameter1, a => this.memoryController.WriteU8(this.Registers[Register.RSP], (byte)a)); break;
-				case InstructionSize.TwoByte: this.Access(instruction.Parameter1, a => this.memoryController.WriteU16(this.Registers[Register.RSP], (ushort)a)); break;
-				case InstructionSize.FourByte: this.Access(instruction.Parameter1, a => this.memoryController.WriteU32(this.Registers[Register.RSP], (uint)a)); break;
-				case InstructionSize.EightByte: this.Access(instruction.Parameter1, a => this.memoryController.WriteU64(this.Registers[Register.RSP], a)); break;
-			}
+			this.Access(instruction.Parameter1, a => this.Push(instruction.Size, a));
 		}
 
 		private void Pop(Instruction instruction) {
-			this.Registers[Register.RSP] += instruction.SizeInBytes;
-
-			switch (instruction.Size) {
-				case InstructionSize.OneByte: this.Access(instruction.Parameter1, () => this.memoryController.ReadU8(this.Registers[Register.RSP])); break;
-				case InstructionSize.TwoByte: this.Access(instruction.Parameter1, () => this.memoryController.ReadU16(this.Registers[Register.RSP])); break;
-				case InstructionSize.FourByte: this.Access(instruction.Parameter1, () => this.memoryController.ReadU32(this.Registers[Register.RSP])); break;
-				case InstructionSize.EightByte: this.Access(instruction.Parameter1, () => this.memoryController.ReadU64(this.Registers[Register.RSP])); break;
-			}
+			this.Access(instruction.Parameter1, () => this.Pop(instruction.Size));
 		}
 
 		private void Jz(Instruction instruction) {
@@ -85,6 +71,20 @@ namespace ArkeOS.Hardware {
 
 		private void Jmp(Instruction instruction) {
 			this.Registers[Register.RIP] = this.GetValue(instruction.Parameter1);
+
+			this.supressRIPIncrement = true;
+		}
+
+		private void Call(Instruction instruction) {
+			this.Push(instruction.Size, this.Registers[Register.RIP] + instruction.Length);
+
+			this.Registers[Register.RIP] = this.GetValue(instruction.Parameter1);
+
+			this.supressRIPIncrement = true;
+		}
+
+		private void Ret(Instruction instruction) {
+			this.Registers[Register.RIP] = this.Pop(instruction.Size);
 
 			this.supressRIPIncrement = true;
 		}

@@ -176,6 +176,32 @@ namespace ArkeOS.Hardware {
 			}
 		}
 
+		private void Push(InstructionSize size, ulong value) {
+			this.Registers[Register.RSP] -= Instruction.SizeToBytes(size);
+
+			switch (size) {
+				case InstructionSize.OneByte: this.memoryController.WriteU8(this.Registers[Register.RSP], (byte)value); break;
+				case InstructionSize.TwoByte: this.memoryController.WriteU16(this.Registers[Register.RSP], (ushort)value); break;
+				case InstructionSize.FourByte: this.memoryController.WriteU32(this.Registers[Register.RSP], (uint)value); break;
+				case InstructionSize.EightByte: this.memoryController.WriteU64(this.Registers[Register.RSP], value); break;
+			}
+		}
+
+		private ulong Pop(InstructionSize size) {
+			var value = 0UL;
+
+			switch (size) {
+				case InstructionSize.OneByte: value = this.memoryController.ReadU8(this.Registers[Register.RSP]); break;
+				case InstructionSize.TwoByte: value = this.memoryController.ReadU16(this.Registers[Register.RSP]); break;
+				case InstructionSize.FourByte: value = this.memoryController.ReadU32(this.Registers[Register.RSP]); break;
+				case InstructionSize.EightByte: value = this.memoryController.ReadU64(this.Registers[Register.RSP]); break;
+			}
+
+			this.Registers[Register.RSP] += Instruction.SizeToBytes(size);
+
+			return value;
+		}
+
 		private bool IsRegisterReadAllowed(Register register) => this.inProtectedIsr || this.Registers[Register.RMDE] == 0 || !this.Registers.ReadProtectedRegisters.Contains(register);
 		private bool IsRegisterWriteAllowed(Register register) => this.inProtectedIsr || this.Registers[Register.RMDE] == 0 || !this.Registers.WriteProtectedRegisters.Contains(register);
 
