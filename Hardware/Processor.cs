@@ -10,7 +10,7 @@ namespace ArkeOS.Hardware {
 	public partial class Processor {
 		private MemoryController memoryController;
 		private InterruptController interruptController;
-		private Dictionary<byte, Action<Instruction>> instructionHandlers;
+		private Action<Instruction>[] instructionHandlers;
 		private bool supressRIPIncrement;
 		private bool inProtectedIsr;
 		private bool running;
@@ -24,9 +24,11 @@ namespace ArkeOS.Hardware {
 			this.memoryController = memoryController;
 			this.interruptController = interruptController;
 
-			this.instructionHandlers = InstructionDefinition.All.ToDictionary(i => i.Code, i => (Action<Instruction>)Delegate.CreateDelegate(typeof(Action<Instruction>), this, i.Mnemonic, true));
-			
 			this.breakEvent = new AutoResetEvent(false);
+			this.instructionHandlers = new Action<Instruction>[InstructionDefinition.All.Max(i => i.Code) + 1];
+
+			foreach (var i in InstructionDefinition.All)
+				this.instructionHandlers[i.Code] = (Action<Instruction>)Delegate.CreateDelegate(typeof(Action<Instruction>), this, i.Mnemonic, true);
 
 			this.Registers = new RegisterManager();
 		}
@@ -79,7 +81,7 @@ namespace ArkeOS.Hardware {
 			if (this.broken)
 				this.breakEvent.WaitOne();
 
-			if (this.instructionHandlers.ContainsKey(this.CurrentInstruction.Code)) {
+			if (this.instructionHandlers.Length >= this.CurrentInstruction.Code && this.instructionHandlers[this.CurrentInstruction.Code] != null) {
 				this.instructionHandlers[this.CurrentInstruction.Code](this.CurrentInstruction);
 
 				if (!this.supressRIPIncrement)
