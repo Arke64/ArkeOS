@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading;
@@ -11,11 +10,13 @@ namespace ArkeOS.Hardware {
 		private MemoryController memoryController;
 		private InterruptController interruptController;
 		private Action<Instruction>[] instructionHandlers;
+		private AutoResetEvent breakEvent;
+		private Timer systemTimer;
 		private bool supressRIPIncrement;
 		private bool inProtectedIsr;
+		private bool inIsr;
 		private bool running;
 		private bool broken;
-		private AutoResetEvent breakEvent;
 
 		public Instruction CurrentInstruction { get; private set; }
 		public RegisterManager Registers { get; }
@@ -25,6 +26,7 @@ namespace ArkeOS.Hardware {
 			this.interruptController = interruptController;
 
 			this.breakEvent = new AutoResetEvent(false);
+			this.systemTimer = new Timer(s => this.interruptController.Enqueue(Interrupt.SystemTimer), null, Timeout.Infinite, Timeout.Infinite);
 			this.instructionHandlers = new Action<Instruction>[InstructionDefinition.All.Max(i => i.Code) + 1];
 
 			foreach (var i in InstructionDefinition.All)
@@ -33,12 +35,12 @@ namespace ArkeOS.Hardware {
 			this.Registers = new RegisterManager();
 		}
 
-		public void LoadBootImage(Stream image) {
+		public void LoadImage(ulong address, Stream image) {
 			var buffer = new byte[image.Length];
 
 			image.Read(buffer, 0, (int)image.Length);
 
-			this.memoryController.CopyFrom(buffer, 0, (ulong)image.Length);
+			this.memoryController.CopyFrom(buffer, address, (ulong)image.Length);
 		}
 
 		public void Start() {
@@ -55,17 +57,20 @@ namespace ArkeOS.Hardware {
 
 		public void Stop() {
 			this.running = false;
-
-			this.Continue();
+			this.broken = false;
+			this.breakEvent.Set();
+			this.systemTimer.Change(Timeout.Infinite, Timeout.Infinite);
 		}
 
 		public void Break() {
 			this.broken = true;
+			this.systemTimer.Change(Timeout.Infinite, Timeout.Infinite);
 		}
 
 		public void Continue() {
 			this.broken = false;
 			this.breakEvent.Set();
+			this.systemTimer.Change(50, 50);
 		}
 
 		public void Step() {
@@ -73,7 +78,7 @@ namespace ArkeOS.Hardware {
 		}
 
 		private void Tick() {
-			if (this.interruptController.AnyPending)
+			if (!this.inIsr && this.interruptController.AnyPending)
 				this.EnterInterrupt(this.interruptController.Dequeue());
 
 			this.CurrentInstruction = this.memoryController.ReadInstruction(this.Registers[Register.RIP]);
@@ -95,13 +100,16 @@ namespace ArkeOS.Hardware {
 		}
 
 		private void EnterInterrupt(Interrupt id) {
-			var table = this.memoryController.ReadU64(this.Registers[Register.RIDT]);
-			var isr = this.memoryController.ReadU64(table + (ulong)id * 8);
+			var isr = this.memoryController.ReadU64(this.Registers[Register.RIDT] + (ulong)id * 8);
+
+			if (isr == 0)
+				return;
 
 			this.Registers[Register.RSIP] = this.Registers[Register.RIP];
 			this.Registers[Register.RIP] = isr;
 
 			this.inProtectedIsr = (byte)id <= 0x07;
+			this.inIsr = true;
 		}
 
 		private void UpdateFlags(ulong value) {

@@ -23,6 +23,7 @@ namespace ArkeOS.Hardware {
 		private void Eint(Instruction instruction) {
 			this.Registers[Register.RIP] = this.Registers[Register.RSIP];
 
+			this.inIsr = false;
 			this.inProtectedIsr = false;
 			this.supressRIPIncrement = true;
 		}

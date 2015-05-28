@@ -19,7 +19,7 @@ namespace ArkeOS.ISA {
 			new InstructionDefinition("HLT", 0, 0);
 			new InstructionDefinition("NOP", 1, 0);
 			new InstructionDefinition("INT", 2, 1);
-			new InstructionDefinition("EINT", 3, 1);
+			new InstructionDefinition("EINT", 3, 0);
 			new InstructionDefinition("MOV", 4, 2);
 			new InstructionDefinition("XCHG", 5, 2);
 			new InstructionDefinition("IN", 6, 2);

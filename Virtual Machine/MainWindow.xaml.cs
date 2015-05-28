@@ -29,7 +29,8 @@ namespace ArkeOS.VirtualMachine {
 			this.interruptController = new InterruptController();
 			this.processor = new Processor(this.memoryController, this.interruptController);
 
-			this.processor.LoadBootImage(new MemoryStream(new Executable.Image(File.OpenRead(this.BootImageTextBox.Text)).Sections.First().Data));
+			foreach (var section in new Executable.Image(File.OpenRead(this.BootImageTextBox.Text)).Sections)
+				this.processor.LoadImage(section.Address, new MemoryStream(section.Data));
 
 			this.processor.Start();
 
