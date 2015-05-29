@@ -86,12 +86,12 @@ namespace ArkeOS.ISA {
 			this.Length = (byte)(this.parameters.Sum(p => p.Length) + 2);
 		}
 
-		public void Serialize(BinaryWriter writer, Dictionary<string, Instruction> labels) {
+		public void Serialize(BinaryWriter writer, Dictionary<string, ulong> labels) {
 			writer.Write((byte)((this.Code << 2) | (((byte)this.Size) & 0x03)));
 
 			foreach (var p in this.parameters) {
 				if (!string.IsNullOrWhiteSpace(p.Label)) {
-					p.Literal = labels[p.Label].Address;
+					p.Literal = labels[p.Label];
 					p.Type = ParameterType.Literal;
 				}
 			}

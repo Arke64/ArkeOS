@@ -46,7 +46,7 @@ namespace ArkeOS.ISA {
 			this.Size = size;
 
 			if (value[0] == '0') {
-				this.Literal = this.ParseLiteral(value);
+				this.Literal = Parameter.ParseLiteral(value);
 				this.Type = ParameterType.Literal;
 				this.Length = Instruction.SizeToBytes(size);
 			}
@@ -64,7 +64,7 @@ namespace ArkeOS.ISA {
 				value = value.Substring(1, value.Length - 2).Trim();
 
 				if (value[0] == '0') {
-					this.Literal = this.ParseLiteral(value);
+					this.Literal = Parameter.ParseLiteral(value);
 					this.Type = ParameterType.LiteralAddress;
 					this.Length = 8;
 				}
@@ -99,11 +99,12 @@ namespace ArkeOS.ISA {
 				case ParameterType.LiteralAddress: return $"[0x{this.Literal.ToString("X8")}]";
 				case ParameterType.Register: return this.Register.ToString();
 				case ParameterType.RegisterAddress: return $"[{this.Register.ToString()}]";
+				case ParameterType.Label: return $"{{{this.Label}}}";
 				default: return string.Empty;
 			}
 		}
 
-		private ulong ParseLiteral(string value) {
+		public static ulong ParseLiteral(string value) {
 			if (value.IndexOf("0x") == 0) {
 				return Convert.ToUInt64(value.Substring(2), 16);
 			}

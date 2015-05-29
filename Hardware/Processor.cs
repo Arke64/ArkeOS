@@ -100,6 +100,9 @@ namespace ArkeOS.Hardware {
 		}
 
 		private void EnterInterrupt(Interrupt id) {
+			if (this.Registers[Register.RIDT] == 0)
+				return;
+
 			var isr = this.memoryController.ReadU64(this.Registers[Register.RIDT] + (ulong)id * 8);
 
 			if (isr == 0)

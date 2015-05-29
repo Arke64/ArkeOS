@@ -39,7 +39,9 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="DataSection.cs" />
     <Compile Include="Image.cs" />
+    <Compile Include="CodeSection.cs" />
     <Compile Include="Section.cs" />
     <Compile Include="Header.cs" />
     <Compile Include="AssemblyInfo.cs" />

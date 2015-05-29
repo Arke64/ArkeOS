@@ -28,7 +28,8 @@ namespace ArkeOS.Assembler {
 		}
 
 		private static byte[] Assemble(string input) {
-			Section currentSection = null;
+			CodeSection codeSection = null;
+			DataSection dataSection = null;
 			var image = new Image();
 			var lines = File.ReadAllLines(input);
 			var pendingLabel = string.Empty;
@@ -47,10 +48,19 @@ namespace ArkeOS.Assembler {
 
 						break;
 
-					case "ORIGIN":
-						currentSection = new Section(image, Convert.ToUInt64(parts[1], 16));
+					case "CODE":
+						codeSection = new CodeSection(image, Convert.ToUInt64(parts[1], 16));
+						dataSection = null;
 
-						image.Sections.Add(currentSection);
+						image.Sections.Add(codeSection);
+
+						break;
+
+					case "DATA":
+						dataSection = new DataSection(image, Convert.ToUInt64(parts[1], 16));
+						codeSection = null;
+
+						image.Sections.Add(dataSection);
 
 						break;
 
@@ -63,7 +73,13 @@ namespace ArkeOS.Assembler {
 						if (string.IsNullOrWhiteSpace(parts[0]) || parts[0].TrimStart().IndexOf("//") == 0)
 							continue;
 
-						currentSection.AddInstruction(new Instruction(parts), pendingLabel);
+						if (codeSection != null) {
+							codeSection.AddInstruction(new Instruction(parts), pendingLabel);
+						}
+						else {
+							dataSection.AddLiteral(parts, pendingLabel);
+						}
+
 						pendingLabel = string.Empty;
 
 						break;

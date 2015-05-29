@@ -1,50 +1,43 @@
-﻿using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using ArkeOS.ISA;
+﻿using System.IO;
 
 namespace ArkeOS.Executable {
-	public class Section {
-		private List<Instruction> instructions;
-		private ulong currentAddress;
-		private Image parent;
+	public abstract class Section {
+		protected Image Parent { get; private set; }
+		protected ulong CurrentAddress { get; set; }
 
 		public ulong Address { get; }
-		public ulong Size { get; private set; }
+		public ulong Size { get; protected set; }
+		public bool IsCode { get; private set; }
 		public byte[] Data { get; private set; }
 
-		public Dictionary<string, Instruction> Labels => this.instructions.Where(i => !string.IsNullOrWhiteSpace(i.Label)).ToDictionary(i => i.Label, i => i);
+		public Section(Image parent, ulong address, bool isCode) {
+			this.CurrentAddress = address;
+			this.Parent = parent;
 
-		public Section(Image parent, ulong address) {
-			this.instructions = new List<Instruction>();
-			this.currentAddress = 0;
-			this.parent = parent;
-
+			this.IsCode = isCode;
 			this.Address = address;
 		}
 
-		public Section(BinaryReader reader) {
-			this.Address = reader.ReadUInt64();
-			this.Size = reader.ReadUInt64();
-			this.Data = reader.ReadBytes((int)this.Size);
+		public Section(ulong address, ulong size, bool isCode, byte[] data) {
+			this.Address = address;
+			this.Size = size;
+			this.IsCode = isCode;
+			this.Data = data;
 		}
 
-		public void AddInstruction(Instruction instruction, string pendingLabel) {
-			instruction.Address = this.currentAddress;
-			instruction.Label = pendingLabel;
+		public static Section Parse(BinaryReader reader) {
+			var address = reader.ReadUInt64();
+			var size = reader.ReadUInt64();
+			var isCode = reader.ReadBoolean();
+			var data = reader.ReadBytes((int)size);
 
-			if (pendingLabel != string.Empty)
-				this.parent.Labels[pendingLabel] = instruction;
-
-			this.currentAddress += instruction.Length;
-			this.instructions.Add(instruction);
+			return isCode ? new CodeSection(address, size, data) : (Section)(new DataSection(address, size, data));
 		}
 
-		public void Serialize(BinaryWriter writer) {
+		public virtual void Serialize(BinaryWriter writer) {
 			writer.Write(this.Address);
-			writer.Write((ulong)this.instructions.Sum(i => i.Length));
-
-			this.instructions.ForEach(i => i.Serialize(writer, this.parent.Labels));
+			writer.Write(this.Size);
+			writer.Write(this.IsCode);
 		}
 	}
 }
