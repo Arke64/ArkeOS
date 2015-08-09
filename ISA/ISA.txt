@@ -7,13 +7,19 @@ RS: Sign flag
 RC: Carry flag
 RO: 0x00.. register
 RF: 0xFF.. register
-RMDE: Mode register (0 = no protection, 1 = protected)
+RCFG: Physical address of the processor configuration table
 RSIP: Address of the instruction executing when an interrupt fires
 RIP: Address of the current instruction
 RSP: Address of the current stack position
 RIDT: Physical address of the interrupt descriptor table
 RMDT: Physical address of the memory descriptor table
 RTDT: Physical address of the task descriptor table
+
+CFG
+---
+2b: system tick interval
+2b: cached instructions
+1b: protection mode (0 = no protection, 1 = protected)
 
 IDT
 ---
@@ -43,7 +49,7 @@ Basic
 01 NOP: No operation
 02 INT A: Raise the interrupt specified by A
 03 EINT: Return from the interrupt
-04 MOV A B: Move B into A
+04 MOV A B: Move A into B
 05 XCHG A B: Swap A and B
 06 IN A B: Read from device ID specified in A into B
 07 OUT A B: Write to device ID specified in A from B

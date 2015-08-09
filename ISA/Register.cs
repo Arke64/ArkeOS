@@ -8,7 +8,7 @@
 		RIP,
 		RSP,
 		RSIP,
-		RMDE,
+		RCFG,
 		RIDT,
 		RMDT,
 		RTDT,

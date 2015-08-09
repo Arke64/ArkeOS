@@ -7,8 +7,8 @@ namespace ArkeOS.Hardware {
 	public class RegisterManager {
 		private ulong[] registers;
 
-		public IReadOnlyList<Register> ReadProtectedRegisters => new List<Register> { Register.RSIP, Register.RIDT, Register.RMDT, Register.RTDT };
-		public IReadOnlyList<Register> WriteProtectedRegisters => new List<Register> { Register.RSIP, Register.RIDT, Register.RMDT, Register.RTDT, Register.RMDE, Register.RO, Register.RF };
+		public IReadOnlyList<Register> ReadProtectedRegisters => new List<Register> { Register.RSIP, Register.RIDT, Register.RMDT, Register.RTDT, Register.RCFG };
+		public IReadOnlyList<Register> WriteProtectedRegisters => new List<Register> { Register.RSIP, Register.RIDT, Register.RMDT, Register.RTDT, Register.RCFG, Register.RO, Register.RF };
 
 		public RegisterManager() {
 			var values = Enum.GetValues(typeof(Register)).Cast<Register>();

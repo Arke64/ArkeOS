@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -8,6 +9,13 @@ using ArkeOS.ISA;
 
 namespace ArkeOS.Hardware {
 	public partial class Processor {
+		private class Configuration {
+			public ushort SystemTickInterval { get; set; }
+			public ushort CachedInstructions { get; set; }
+			public byte ProtectionMode { get; set; }
+		}
+
+		private Dictionary<ulong, Instruction> instructionCache;
 		private MemoryController memoryController;
 		private InterruptController interruptController;
 		private Action<Instruction>[] instructionHandlers;
@@ -18,6 +26,7 @@ namespace ArkeOS.Hardware {
 		private bool inIsr;
 		private bool running;
 		private bool broken;
+		private Configuration configuration;
 
 		public Instruction CurrentInstruction { get; private set; }
 		public RegisterManager Registers { get; }
@@ -28,6 +37,8 @@ namespace ArkeOS.Hardware {
 			this.memoryController = memoryController;
 			this.interruptController = interruptController;
 
+			this.configuration = new Configuration() { CachedInstructions = 64, ProtectionMode = 0, SystemTickInterval = 100 };
+			this.instructionCache = new Dictionary<ulong, Instruction>();
 			this.breakEvent = new AutoResetEvent(false);
 			this.systemTimer = new Timer(s => this.interruptController.Enqueue(Interrupt.SystemTimer), null, Timeout.Infinite, Timeout.Infinite);
 			this.instructionHandlers = new Action<Instruction>[InstructionDefinition.All.Max(i => i.Code) + 1];
@@ -73,18 +84,44 @@ namespace ArkeOS.Hardware {
 		public void Continue() {
 			this.broken = false;
 			this.breakEvent.Set();
-			this.systemTimer.Change(50, 50);
+
+			if (this.configuration.SystemTickInterval > 0)
+				this.systemTimer.Change(this.configuration.SystemTickInterval, this.configuration.SystemTickInterval);
 		}
 
 		public void Step() {
 			this.breakEvent.Set();
 		}
 
+		private Instruction GetNextInstruction() {
+			var address = this.Registers[Register.RIP];
+
+			if (this.configuration.CachedInstructions == 0)
+				return this.memoryController.ReadInstruction(address);
+
+			if (!this.instructionCache.ContainsKey(address))
+				this.RebuildCache(address);
+
+			return this.instructionCache[address];
+		}
+
+		private void RebuildCache(ulong address) {
+			this.instructionCache.Clear();
+
+			for (var i = 0; i < this.configuration.CachedInstructions; i++) {
+				var instruction = this.memoryController.ReadInstruction(address);
+
+				this.instructionCache[address] = instruction;
+
+				address += instruction.Length;
+			}
+		}
+
 		private void Tick() {
 			if (!this.inIsr && this.interruptController.AnyPending)
 				this.EnterInterrupt(this.interruptController.Dequeue());
 
-			this.CurrentInstruction = this.memoryController.ReadInstruction(this.Registers[Register.RIP]);
+			this.CurrentInstruction = this.GetNextInstruction();
 
 			if (this.broken)
 				this.breakEvent.WaitOne();
@@ -121,6 +158,12 @@ namespace ArkeOS.Hardware {
 		private void UpdateFlags(ulong value) {
 			this.Registers[Register.RZ] = value == 0 ? ulong.MaxValue : 0;
 			this.Registers[Register.RS] = (value & (ulong)(1 << (this.CurrentInstruction.SizeInBits - 1))) != 0 ? ulong.MaxValue : 0;
+		}
+
+		private void UpdateConfiguration() {
+			this.configuration.SystemTickInterval = this.memoryController.ReadU16(this.Registers[Register.RCFG] + 0);
+			this.configuration.CachedInstructions = this.memoryController.ReadU16(this.Registers[Register.RCFG] + 2);
+			this.configuration.ProtectionMode = this.memoryController.ReadU8(this.Registers[Register.RCFG] + 4);
 		}
 
 		private ulong GetValue(Parameter parameter) {
@@ -164,8 +207,12 @@ namespace ArkeOS.Hardware {
 
 			switch (parameter.Type) {
 				case ParameterType.Register:
-					if (this.IsRegisterWriteAllowed(parameter.Register))
+					if (this.IsRegisterWriteAllowed(parameter.Register)) {
 						this.Registers[parameter.Register] = value;
+
+						if (parameter.Register == Register.RCFG)
+							this.UpdateConfiguration();
+					}
 
 					break;
 
@@ -208,8 +255,8 @@ namespace ArkeOS.Hardware {
 			return value;
 		}
 
-		private bool IsRegisterReadAllowed(Register register) => this.inProtectedIsr || this.Registers[Register.RMDE] == 0 || !this.Registers.ReadProtectedRegisters.Contains(register);
-		private bool IsRegisterWriteAllowed(Register register) => this.inProtectedIsr || this.Registers[Register.RMDE] == 0 || !this.Registers.WriteProtectedRegisters.Contains(register);
+		private bool IsRegisterReadAllowed(Register register) => this.inProtectedIsr || this.configuration.ProtectionMode == 0 || !this.Registers.ReadProtectedRegisters.Contains(register);
+		private bool IsRegisterWriteAllowed(Register register) => this.inProtectedIsr || this.configuration.ProtectionMode == 0 || !this.Registers.WriteProtectedRegisters.Contains(register);
 
 		private void Access(Parameter a, Action<ulong> operation) => operation(this.GetValue(a));
 		private void Access(Parameter a, Parameter b, Action<ulong, ulong> operation) => operation(this.GetValue(a), this.GetValue(b));
