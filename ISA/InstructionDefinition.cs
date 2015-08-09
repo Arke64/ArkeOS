@@ -10,6 +10,8 @@ namespace ArkeOS.ISA {
 		public byte Code { get; }
 		public byte ParameterCount { get; }
 
+		public string CamelCaseMnemonic => this.Mnemonic[0] + this.Mnemonic.Substring(1).ToLower();
+
 		public static IReadOnlyList<InstructionDefinition> All => InstructionDefinition.instructions.Where(c => c != null).ToList();
 
 		static InstructionDefinition() {
@@ -67,6 +69,7 @@ namespace ArkeOS.ISA {
 			new InstructionDefinition("NEQ", 56, 2);
 
 			new InstructionDefinition("DBG", 60, 1);
+			new InstructionDefinition("PAU", 61, 0);
 		}
 
 		private InstructionDefinition(string mnemonic, byte code, byte parameterCount) {

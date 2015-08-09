@@ -1,19 +1,22 @@
 ﻿using System;
 using System.IO;
 using System.Reflection;
-using System.Threading.Tasks;
-using System.Windows;
-using System.Windows.Controls;
+using System.Runtime.InteropServices.WindowsRuntime;
 using ArkeOS.Hardware;
 using ArkeOS.ISA;
+using Windows.Storage;
+using Windows.Storage.Pickers;
+using Windows.UI.Core;
+using Windows.UI.Xaml;
+using Windows.UI.Xaml.Controls;
 
 namespace ArkeOS.VirtualMachine {
-	public partial class MainWindow : Window {
+	public partial class MainPage : Page {
 		private MemoryController memoryController;
 		private InterruptController interruptController;
 		private Processor processor;
 
-		public MainWindow() {
+		public MainPage() {
 			this.InitializeComponent();
 
 			this.StartButton.IsEnabled = true;
@@ -23,12 +26,22 @@ namespace ArkeOS.VirtualMachine {
 			this.StepButton.IsEnabled = false;
 		}
 
-		private void StartButton_Click(object sender, RoutedEventArgs e) {
+		private async void StartButton_Click(object sender, RoutedEventArgs e) {
 			this.memoryController = new MemoryController(10 * 1024 * 1024);
 			this.interruptController = new InterruptController();
 			this.processor = new Processor(this.memoryController, this.interruptController);
+			this.processor.ExecutionPaused += async (ss, ee) => await this.Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () => this.BreakButton_Click(null, null));
 
-			foreach (var section in new Executable.Image(File.OpenRead(this.BootImageTextBox.Text)).Sections)
+			var picker = new FileOpenPicker();
+			picker.ViewMode = PickerViewMode.List;
+			picker.SuggestedStartLocation = PickerLocationId.ComputerFolder;
+			picker.FileTypeFilter.Add(".aoe");
+
+			var file = await picker.PickSingleFileAsync();
+			var buffer = await FileIO.ReadBufferAsync(file);
+			var stream = new MemoryStream(buffer.ToArray());
+
+			foreach (var section in new Executable.Image(stream).Sections)
 				this.processor.LoadImage(section.Address, new MemoryStream(section.Data));
 
 			this.processor.Start();
@@ -86,28 +99,24 @@ namespace ArkeOS.VirtualMachine {
 			this.Refresh();
 		}
 
-		private async void Refresh() {
-			await Task.Delay(50);
-
+		private void Refresh() {
 			foreach (var r in Enum.GetNames(typeof(Register))) {
 				var textbox = (TextBox)this.GetType().GetField(r + "TextBox", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(this);
 
 				textbox.Text = "0x" + this.processor.Registers[(Register)Enum.Parse(typeof(Register), r)].ToString("X8");
 			}
 
-			this.CurrentInstructionLabel.Content = this.processor.CurrentInstruction.ToString();
+			this.CurrentInstructionLabel.Text = this.processor.CurrentInstruction.ToString();
 		}
 
-		private async void Clear() {
-			await Task.Delay(50);
-
+		private void Clear() {
 			foreach (var r in Enum.GetNames(typeof(Register))) {
 				var textbox = (TextBox)this.GetType().GetField(r + "TextBox", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(this);
 
 				textbox.Text = "0x" + 0.ToString("X8");
 			}
 
-			this.CurrentInstructionLabel.Content = string.Empty;
+			this.CurrentInstructionLabel.Text = string.Empty;
 		}
 
 		private void Apply() {

@@ -19,15 +19,18 @@ namespace ArkeOS.Hardware {
 		public void WriteU64(ulong address, ulong data) => this.CopyFrom(BitConverter.GetBytes(data), address, 8);
 
 		public void Copy(ulong source, ulong destination, ulong length) {
-			Array.Copy(this.memory, (long)source, this.memory, (long)destination, (long)length);
+			for (var i = 0UL; i < length; i++)
+				this.memory[destination + i] = this.memory[source + i];
 		}
 
 		public void CopyFrom(byte[] source, ulong destination, ulong length) {
-			Array.Copy(source, 0, this.memory, (long)destination, (long)length);
+			for (var i = 0UL; i < length; i++)
+				this.memory[destination + i] = source[i];
 		}
 
 		public void CopyTo(byte[] destination, ulong source, ulong length) {
-			Array.Copy(this.memory, 0, destination, (long)source, (long)length);
+			for (var i = 0UL; i < length; i++)
+				destination[i] = this.memory[i];
 		}
 
 		public Instruction ReadInstruction(ulong address) {

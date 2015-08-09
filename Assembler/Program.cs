@@ -5,28 +5,6 @@ using ArkeOS.ISA;
 
 namespace ArkeOS.Assembler {
 	public static class Program {
-		private static bool CheckArgs(string[] args, out string input, out string output) {
-			input = string.Empty;
-			output = string.Empty;
-
-			if (args.Length != 2) {
-				input = "../../Program.asm";
-				output = "../../../Virtual Machine/Program.aoe";
-			}
-			else {
-				input = args[0];
-				output = args[1];
-			}
-
-			if (!File.Exists(input)) {
-				Console.WriteLine("The specified file cannot be found.");
-
-				return false;
-			}
-
-			return true;
-		}
-
 		private static byte[] Assemble(string input) {
 			CodeSection codeSection = null;
 			DataSection dataSection = null;
@@ -76,8 +54,11 @@ namespace ArkeOS.Assembler {
 						if (codeSection != null) {
 							codeSection.AddInstruction(new Instruction(parts), pendingLabel);
 						}
-						else {
+						else if (dataSection != null) {
 							dataSection.AddLiteral(parts, pendingLabel);
+						}
+						else {
+							throw new InvalidDirectiveOutsideSectionException();
 						}
 
 						pendingLabel = string.Empty;
@@ -91,12 +72,24 @@ namespace ArkeOS.Assembler {
 		}
 
 		public static void Main(string[] args) {
-			string input, output;
+			Console.Write("Input file: ");
 
-			if (!Program.CheckArgs(args, out input, out output))
-				return;
+			var input = Console.ReadLine();
 
-			File.WriteAllBytes(output, Program.Assemble(input));
+			if (!input.EndsWith(".asm"))
+				input += ".asm";
+
+			if (!input.Contains("\\"))
+				input = @"D:\Code\ArkeOS\Images\" + input;
+
+			var output = Path.ChangeExtension(input, "aoe");
+
+			if (File.Exists(input)) {
+				File.WriteAllBytes(output, Program.Assemble(input));
+			}
+			else {
+				Console.WriteLine("The specified file cannot be found.");
+			}
 		}
 	}
 }

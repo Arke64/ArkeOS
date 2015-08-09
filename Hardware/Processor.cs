@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using ArkeOS.ISA;
@@ -21,6 +22,8 @@ namespace ArkeOS.Hardware {
 		public Instruction CurrentInstruction { get; private set; }
 		public RegisterManager Registers { get; }
 
+		public event EventHandler ExecutionPaused;
+
 		public Processor(MemoryController memoryController, InterruptController interruptController) {
 			this.memoryController = memoryController;
 			this.interruptController = interruptController;
@@ -30,7 +33,7 @@ namespace ArkeOS.Hardware {
 			this.instructionHandlers = new Action<Instruction>[InstructionDefinition.All.Max(i => i.Code) + 1];
 
 			foreach (var i in InstructionDefinition.All)
-				this.instructionHandlers[i.Code] = (Action<Instruction>)Delegate.CreateDelegate(typeof(Action<Instruction>), this, i.Mnemonic, true);
+				this.instructionHandlers[i.Code] = (Action<Instruction>)this.GetType().GetMethod("Execute" + i.CamelCaseMnemonic, BindingFlags.NonPublic | BindingFlags.Instance).CreateDelegate(typeof(Action<Instruction>), this);
 
 			this.Registers = new RegisterManager();
 		}

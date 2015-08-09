@@ -95,4 +95,5 @@ Logic
 
 Debug
 -----
-80 DBG A: Debug use
+60 DBG A: Debug use
+61 PAU: Pause execution

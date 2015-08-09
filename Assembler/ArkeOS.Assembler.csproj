@@ -83,16 +83,13 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Executable\ArkeOS.Executable.csproj">
-      <Project>{bbd646ea-bfc1-41fd-9b67-9936035f6eef}</Project>
-      <Name>Executable</Name>
+      <Project>{2531be7f-42d5-485a-8695-ebf598937ef2}</Project>
+      <Name>ArkeOS.Executable</Name>
     </ProjectReference>
     <ProjectReference Include="..\ISA\ArkeOS.ISA.csproj">
-      <Project>{22dc3407-82a5-465f-92e1-7acf5c13a66f}</Project>
-      <Name>ISA</Name>
+      <Project>{f983d92b-e6a3-490f-9177-d578da2efb80}</Project>
+      <Name>ArkeOS.ISA</Name>
     </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
-    <Content Include="Program.asm" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
