@@ -3,19 +3,19 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 14
 VisualStudioVersion = 14.0.22823.1
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Hardware", "Hardware\Hardware.csproj", "{4486659F-008C-4521-9E7D-FF7B49A96748}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ArkeOS.Hardware", "Hardware\ArkeOS.Hardware.csproj", "{4486659F-008C-4521-9E7D-FF7B49A96748}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Assembler", "Assembler\Assembler.csproj", "{E9776C8D-E3AD-4BCA-AA37-0C4883463480}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ArkeOS.Assembler", "Assembler\ArkeOS.Assembler.csproj", "{E9776C8D-E3AD-4BCA-AA37-0C4883463480}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Linker", "Linker\Linker.csproj", "{53262617-800D-4DDE-8D6F-15AFAC2BED99}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ArkeOS.Linker", "Linker\ArkeOS.Linker.csproj", "{53262617-800D-4DDE-8D6F-15AFAC2BED99}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Compiler", "Compiler\Compiler.csproj", "{86B8F678-D2A9-4DAD-9F80-7D3925E630EF}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ArkeOS.Compiler", "Compiler\ArkeOS.Compiler.csproj", "{86B8F678-D2A9-4DAD-9F80-7D3925E630EF}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Executable", "Executable\Executable.csproj", "{BBD646EA-BFC1-41FD-9B67-9936035F6EEF}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ArkeOS.Executable", "Executable\ArkeOS.Executable.csproj", "{BBD646EA-BFC1-41FD-9B67-9936035F6EEF}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Virtual Machine", "Virtual Machine\Virtual Machine.csproj", "{FF835E85-60DB-4159-8AAC-9B20F58E38C9}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ArkeOS.VirtualMachine", "Virtual Machine\ArkeOS.VirtualMachine.csproj", "{FF835E85-60DB-4159-8AAC-9B20F58E38C9}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ISA", "ISA\ISA.csproj", "{22DC3407-82A5-465F-92E1-7ACF5C13A66F}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ArkeOS.ISA", "ISA\ArkeOS.ISA.csproj", "{22DC3407-82A5-465F-92E1-7ACF5C13A66F}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
