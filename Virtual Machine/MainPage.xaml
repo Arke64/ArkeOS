@@ -66,8 +66,8 @@
 				<TextBox Name="RSIPTextBox" />
 			</StackPanel>
 			<StackPanel Grid.Column="3" Grid.Row="1">
-				<TextBlock>RMDE</TextBlock>
-				<TextBox Name="RMDETextBox" />
+				<TextBlock>RCFG</TextBlock>
+				<TextBox Name="RCFGTextBox" />
 			</StackPanel>
 			<StackPanel Grid.Column="4" Grid.Row="1">
 				<TextBlock>RIDT</TextBlock>

@@ -10,9 +10,9 @@ using ArkeOS.ISA;
 namespace ArkeOS.Hardware {
 	public partial class Processor {
 		private class Configuration {
-			public ushort SystemTickInterval { get; set; }
-			public ushort CachedInstructions { get; set; }
-			public byte ProtectionMode { get; set; }
+			public ushort SystemTickInterval { get; set; } = 50;
+			public ushort CachedInstructions { get; set; } = 64;
+			public byte ProtectionMode { get; set; } = 0;
 		}
 
 		private Dictionary<ulong, Instruction> instructionCache;
@@ -26,6 +26,7 @@ namespace ArkeOS.Hardware {
 		private bool inIsr;
 		private bool running;
 		private bool broken;
+		private bool interruptsEnabled;
 		private Configuration configuration;
 
 		public Instruction CurrentInstruction { get; private set; }
@@ -37,7 +38,7 @@ namespace ArkeOS.Hardware {
 			this.memoryController = memoryController;
 			this.interruptController = interruptController;
 
-			this.configuration = new Configuration() { CachedInstructions = 64, ProtectionMode = 0, SystemTickInterval = 100 };
+			this.configuration = new Configuration();
 			this.instructionCache = new Dictionary<ulong, Instruction>();
 			this.breakEvent = new AutoResetEvent(false);
 			this.systemTimer = new Timer(s => this.interruptController.Enqueue(Interrupt.SystemTimer), null, Timeout.Infinite, Timeout.Infinite);
@@ -118,7 +119,7 @@ namespace ArkeOS.Hardware {
 		}
 
 		private void Tick() {
-			if (!this.inIsr && this.interruptController.AnyPending)
+			if (this.interruptsEnabled && !this.inIsr && this.interruptController.AnyPending)
 				this.EnterInterrupt(this.interruptController.Dequeue());
 
 			this.CurrentInstruction = this.GetNextInstruction();

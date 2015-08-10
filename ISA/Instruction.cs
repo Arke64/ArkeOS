@@ -18,12 +18,12 @@ namespace ArkeOS.ISA {
 		public Parameter Parameter2 => this.parameters[1];
 		public Parameter Parameter3 => this.parameters[2];
 		public Parameter Parameter4 => this.parameters[3];
-		
+
 		public byte SizeInBytes => Instruction.SizeToBytes(this.Size);
 		public byte SizeInBits => Instruction.SizeToBits(this.Size);
 		public ulong SizeMask => Instruction.SizeToMask(this.Size);
 
-		public static byte SizeToBytes(InstructionSize size) => (byte)Math.Pow(2, (byte)size);
+		public static byte SizeToBytes(InstructionSize size) => (byte)(1 << (byte)size);
 		public static byte SizeToBits(InstructionSize size) => (byte)(Instruction.SizeToBytes(size) * 8);
 		public static ulong SizeToMask(InstructionSize size) => (1UL << (Instruction.SizeToBits(size) - 1)) | ((1UL << (Instruction.SizeToBits(size) - 1)) - 1);
 
@@ -59,9 +59,9 @@ namespace ArkeOS.ISA {
 
 				this.Length += this.parameters[i].Length;
 			}
-        }
+		}
 
-		public Instruction(string[] parts) { 
+		public Instruction(string[] parts) {
 			this.Size = InstructionSize.EightByte;
 
 			var index = parts[0].IndexOf(':');
@@ -102,7 +102,7 @@ namespace ArkeOS.ISA {
 
 			writer.Write(b);
 
-            this.parameters.ForEach(p => p.Serialize(writer));
+			this.parameters.ForEach(p => p.Serialize(writer));
 		}
 
 		public override string ToString() {

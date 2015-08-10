@@ -13,6 +13,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 	ProjectSection(SolutionItems) = preProject
 		Images\Program.aoe = Images\Program.aoe
 		Images\Program.asm = Images\Program.asm
+		Images\TimedLoop.aoe = Images\TimedLoop.aoe
+		Images\TimedLoop.asm = Images\TimedLoop.asm
 		Images\TimedNop.aoe = Images\TimedNop.aoe
 		Images\TimedNop.asm = Images\TimedNop.asm
 	EndProjectSection

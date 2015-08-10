@@ -89,6 +89,14 @@ namespace ArkeOS.Hardware {
 			this.supressRIPIncrement = true;
 		}
 
+		private void ExecuteInte(Instruction instruction) {
+			this.interruptsEnabled = true;
+		}
+
+		private void ExecuteIntd(Instruction instruction) {
+			this.interruptsEnabled = false;
+		}
+
 		#endregion
 
 		#region Math

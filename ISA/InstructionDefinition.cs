@@ -33,6 +33,8 @@ namespace ArkeOS.ISA {
 			new InstructionDefinition("JMP", 12, 1);
 			new InstructionDefinition("CALL", 13, 1);
 			new InstructionDefinition("RET", 14, 0);
+			new InstructionDefinition("INTE", 15, 0);
+			new InstructionDefinition("INTD", 16, 0);
 
 			new InstructionDefinition("ADD", 20, 3);
 			new InstructionDefinition("ADC", 21, 3);
