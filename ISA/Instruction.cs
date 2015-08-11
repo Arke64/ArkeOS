@@ -23,6 +23,8 @@ namespace ArkeOS.ISA {
 		public byte SizeInBits => Instruction.SizeToBits(this.Size);
 		public ulong SizeMask => Instruction.SizeToMask(this.Size);
 
+		public static InstructionSize BytesToSize(int bytes) => (InstructionSize)(int)Math.Log(bytes, 2);
+
 		public static byte SizeToBytes(InstructionSize size) => (byte)(1 << (byte)size);
 		public static byte SizeToBits(InstructionSize size) => (byte)(Instruction.SizeToBytes(size) * 8);
 		public static ulong SizeToMask(InstructionSize size) => (1UL << (Instruction.SizeToBits(size) - 1)) | ((1UL << (Instruction.SizeToBits(size) - 1)) - 1);
@@ -86,15 +88,12 @@ namespace ArkeOS.ISA {
 			this.Length = (byte)(this.parameters.Sum(p => p.Length) + 2);
 		}
 
-		public void Serialize(BinaryWriter writer, Dictionary<string, ulong> labels) {
+		public void Serialize(BinaryWriter writer, Dictionary<string, List<Tuple<ulong, InstructionSize>>> labels) {
 			writer.Write((byte)((this.Code << 2) | (((byte)this.Size) & 0x03)));
 
-			foreach (var p in this.parameters) {
-				if (!string.IsNullOrWhiteSpace(p.Label)) {
-					p.Literal = labels[p.Label];
+			foreach (var p in this.parameters)
+				if (!string.IsNullOrWhiteSpace(p.Label))
 					p.Type = ParameterType.Literal;
-				}
-			}
 
 			byte b = 0;
 			for (var i = 0; i < this.Definition.ParameterCount; i++)
@@ -102,7 +101,12 @@ namespace ArkeOS.ISA {
 
 			writer.Write(b);
 
-			this.parameters.ForEach(p => p.Serialize(writer));
+			foreach (var p in this.parameters) {
+				if (!string.IsNullOrWhiteSpace(p.Label))
+					labels[p.Label].Add(Tuple.Create((ulong)writer.BaseStream.Position, p.Size));
+
+				p.Serialize(writer);
+			}
 		}
 
 		public override string ToString() {

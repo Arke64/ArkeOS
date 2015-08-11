@@ -16,10 +16,10 @@ namespace ArkeOS.Assembler {
 		protected InvalidParameterException(SerializationInfo info, StreamingContext context) : base(info, context) { }
 	}
 
-	public class InvalidDirectiveOutsideSectionException : Exception {
-		public InvalidDirectiveOutsideSectionException() { }
-		public InvalidDirectiveOutsideSectionException(string message) : base(message) { }
-		public InvalidDirectiveOutsideSectionException(string message, Exception innerException) : base(message, innerException) { }
-		protected InvalidDirectiveOutsideSectionException(SerializationInfo info, StreamingContext context) : base(info, context) { }
+	public class InvalidDirectiveException : Exception {
+		public InvalidDirectiveException() { }
+		public InvalidDirectiveException(string message) : base(message) { }
+		public InvalidDirectiveException(string message, Exception innerException) : base(message, innerException) { }
+		protected InvalidDirectiveException(SerializationInfo info, StreamingContext context) : base(info, context) { }
 	}
 }

@@ -81,15 +81,7 @@ namespace ArkeOS.ISA {
 				case ParameterType.RegisterAddress: writer.Write((byte)this.Register); break;
 				case ParameterType.Register: writer.Write((byte)this.Register); break;
 				case ParameterType.LiteralAddress: writer.Write(this.Literal); break;
-				case ParameterType.Literal:
-					switch (this.Size) {
-						case InstructionSize.OneByte: writer.Write((byte)this.Literal); break;
-						case InstructionSize.TwoByte: writer.Write((ushort)this.Literal); break;
-						case InstructionSize.FourByte: writer.Write((uint)this.Literal); break;
-						case InstructionSize.EightByte: writer.Write(this.Literal); break;
-					}
-
-					break;
+				case ParameterType.Literal: Parameter.Write(writer, this.Literal, this.Size); break;
 			}
 		}
 
@@ -101,6 +93,15 @@ namespace ArkeOS.ISA {
 				case ParameterType.RegisterAddress: return $"[{this.Register.ToString()}]";
 				case ParameterType.Label: return $"{{{this.Label}}}";
 				default: return string.Empty;
+			}
+		}
+
+		public static void Write(BinaryWriter writer, ulong value, InstructionSize size) {
+			switch (size) {
+				case InstructionSize.OneByte: writer.Write((byte)value); break;
+				case InstructionSize.TwoByte: writer.Write((ushort)value); break;
+				case InstructionSize.FourByte: writer.Write((uint)value); break;
+				case InstructionSize.EightByte: writer.Write(value); break;
 			}
 		}
 

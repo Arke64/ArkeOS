@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Threading;
@@ -20,6 +19,7 @@ namespace ArkeOS.Hardware {
 		private InterruptController interruptController;
 		private Action<Instruction>[] instructionHandlers;
 		private AutoResetEvent breakEvent;
+		private AutoResetEvent stepEvent;
 		private Timer systemTimer;
 		private bool supressRIPIncrement;
 		private bool inProtectedIsr;
@@ -41,6 +41,7 @@ namespace ArkeOS.Hardware {
 			this.configuration = new Configuration();
 			this.instructionCache = new Dictionary<ulong, Instruction>();
 			this.breakEvent = new AutoResetEvent(false);
+			this.stepEvent = new AutoResetEvent(false);
 			this.systemTimer = new Timer(s => this.interruptController.Enqueue(Interrupt.SystemTimer), null, Timeout.Infinite, Timeout.Infinite);
 			this.instructionHandlers = new Action<Instruction>[InstructionDefinition.All.Max(i => i.Code) + 1];
 
@@ -50,12 +51,8 @@ namespace ArkeOS.Hardware {
 			this.Registers = new RegisterManager();
 		}
 
-		public void LoadImage(ulong address, Stream image) {
-			var buffer = new byte[image.Length];
-
-			image.Read(buffer, 0, (int)image.Length);
-
-			this.memoryController.CopyFrom(buffer, address, (ulong)image.Length);
+		public void LoadStartupImage(byte[] image) {
+			this.memoryController.CopyFrom(image, 0, (ulong)image.Length);
 		}
 
 		public void Start() {
@@ -78,6 +75,7 @@ namespace ArkeOS.Hardware {
 		}
 
 		public void Break() {
+			this.stepEvent.Reset();
 			this.broken = true;
 			this.systemTimer.Change(Timeout.Infinite, Timeout.Infinite);
 		}
@@ -92,6 +90,7 @@ namespace ArkeOS.Hardware {
 
 		public void Step() {
 			this.breakEvent.Set();
+			this.stepEvent.WaitOne();
 		}
 
 		private Instruction GetNextInstruction() {
@@ -124,8 +123,10 @@ namespace ArkeOS.Hardware {
 
 			this.CurrentInstruction = this.GetNextInstruction();
 
-			if (this.broken)
+			if (this.broken) {
+				this.stepEvent.Set();
 				this.breakEvent.WaitOne();
+			}
 
 			if (this.instructionHandlers.Length >= this.CurrentInstruction.Code && this.instructionHandlers[this.CurrentInstruction.Code] != null) {
 				this.instructionHandlers[this.CurrentInstruction.Code](this.CurrentInstruction);

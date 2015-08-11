@@ -63,6 +63,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Exceptions.cs" />
+    <Compile Include="Assembler.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="AssemblyInfo.cs" />
   </ItemGroup>
@@ -82,10 +83,6 @@
     </BootstrapperPackage>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\Executable\ArkeOS.Executable.csproj">
-      <Project>{2531be7f-42d5-485a-8695-ebf598937ef2}</Project>
-      <Name>ArkeOS.Executable</Name>
-    </ProjectReference>
     <ProjectReference Include="..\ISA\ArkeOS.ISA.csproj">
       <Project>{f983d92b-e6a3-490f-9177-d578da2efb80}</Project>
       <Name>ArkeOS.ISA</Name>

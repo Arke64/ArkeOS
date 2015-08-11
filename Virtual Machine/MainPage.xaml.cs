@@ -1,5 +1,4 @@
 ﻿using System;
-using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices.WindowsRuntime;
 using ArkeOS.Hardware;
@@ -24,6 +23,7 @@ namespace ArkeOS.VirtualMachine {
 			this.BreakButton.IsEnabled = false;
 			this.ContinueButton.IsEnabled = false;
 			this.StepButton.IsEnabled = false;
+			this.ApplyButton.IsEnabled = false;
 		}
 
 		private async void StartButton_Click(object sender, RoutedEventArgs e) {
@@ -35,14 +35,12 @@ namespace ArkeOS.VirtualMachine {
 			var picker = new FileOpenPicker();
 			picker.ViewMode = PickerViewMode.List;
 			picker.SuggestedStartLocation = PickerLocationId.ComputerFolder;
-			picker.FileTypeFilter.Add(".aoe");
+			picker.FileTypeFilter.Add(".bin");
 
 			var file = await picker.PickSingleFileAsync();
 			var buffer = await FileIO.ReadBufferAsync(file);
-			var stream = new MemoryStream(buffer.ToArray());
 
-			foreach (var section in new Executable.Image(stream).Sections)
-				this.processor.LoadImage(section.Address, new MemoryStream(section.Data));
+			this.processor.LoadStartupImage(buffer.ToArray());
 
 			this.processor.Start();
 
@@ -53,6 +51,7 @@ namespace ArkeOS.VirtualMachine {
 			this.BreakButton.IsEnabled = false;
 			this.ContinueButton.IsEnabled = true;
 			this.StepButton.IsEnabled = true;
+			this.ApplyButton.IsEnabled = true;
 		}
 
 		private void StopButton_Click(object sender, RoutedEventArgs e) {
@@ -63,6 +62,7 @@ namespace ArkeOS.VirtualMachine {
 			this.BreakButton.IsEnabled = false;
 			this.ContinueButton.IsEnabled = false;
 			this.StepButton.IsEnabled = false;
+			this.ApplyButton.IsEnabled = false;
 
 			this.Clear();
 
@@ -77,26 +77,32 @@ namespace ArkeOS.VirtualMachine {
 			this.BreakButton.IsEnabled = false;
 			this.ContinueButton.IsEnabled = true;
 			this.StepButton.IsEnabled = true;
+			this.ApplyButton.IsEnabled = true;
 
 			this.Refresh();
 		}
 
 		private void ContinueButton_Click(object sender, RoutedEventArgs e) {
-			this.Apply();
-
 			this.processor.Continue();
 
 			this.BreakButton.IsEnabled = true;
 			this.ContinueButton.IsEnabled = false;
 			this.StepButton.IsEnabled = false;
+			this.ApplyButton.IsEnabled = false;
 		}
 
 		private void StepButton_Click(object sender, RoutedEventArgs e) {
-			this.Apply();
-
 			this.processor.Step();
 
 			this.Refresh();
+		}
+
+		private void ApplyButton_Click(object sender, RoutedEventArgs e) {
+			foreach (var r in Enum.GetNames(typeof(Register))) {
+				var textbox = (TextBox)this.GetType().GetField(r + "TextBox", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(this);
+
+				this.processor.Registers[(Register)Enum.Parse(typeof(Register), r)] = Convert.ToUInt64(textbox.Text.Substring(2), 16);
+			}
 		}
 
 		private void Refresh() {
@@ -117,14 +123,6 @@ namespace ArkeOS.VirtualMachine {
 			}
 
 			this.CurrentInstructionLabel.Text = string.Empty;
-		}
-
-		private void Apply() {
-			foreach (var r in Enum.GetNames(typeof(Register))) {
-				var textbox = (TextBox)this.GetType().GetField(r + "TextBox", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(this);
-
-				this.processor.Registers[(Register)Enum.Parse(typeof(Register), r)] = Convert.ToUInt64(textbox.Text.Substring(2), 16);
-			}
 		}
 	}
 }

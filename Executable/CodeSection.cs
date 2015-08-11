@@ -30,9 +30,9 @@ namespace ArkeOS.Executable {
 		public override void Serialize(BinaryWriter writer) {
 			this.Size = (ulong)this.instructions.Sum(i => i.Length);
 
-            base.Serialize(writer);
+			base.Serialize(writer);
 
-			this.instructions.ForEach(i => i.Serialize(writer, this.Parent.Labels));
+			//this.instructions.ForEach(i => i.Serialize(writer, this.Parent.Labels));
 		}
 	}
 }
