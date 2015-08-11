@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Threading;
@@ -10,11 +9,11 @@ namespace ArkeOS.Hardware {
 	public partial class Processor {
 		private class Configuration {
 			public ushort SystemTickInterval { get; set; } = 50;
-			public ushort CachedInstructions { get; set; } = 64;
+			public bool CacheEnabled { get; set; } = true;
 			public byte ProtectionMode { get; set; } = 0;
 		}
 
-		private Dictionary<ulong, Instruction> instructionCache;
+		private Tuple<ulong, Instruction>[] instructionCache;
 		private MemoryController memoryController;
 		private InterruptController interruptController;
 		private Action<Instruction>[] instructionHandlers;
@@ -39,7 +38,7 @@ namespace ArkeOS.Hardware {
 			this.interruptController = interruptController;
 
 			this.configuration = new Configuration();
-			this.instructionCache = new Dictionary<ulong, Instruction>();
+			this.instructionCache = new Tuple<ulong, Instruction>[64];
 			this.breakEvent = new AutoResetEvent(false);
 			this.stepEvent = new AutoResetEvent(false);
 			this.systemTimer = new Timer(s => this.interruptController.Enqueue(Interrupt.SystemTimer), null, Timeout.Infinite, Timeout.Infinite);
@@ -61,10 +60,12 @@ namespace ArkeOS.Hardware {
 			this.running = true;
 			this.broken = true;
 
-			Task.Run(() => {
+			this.BuildCache(0);
+
+			new Task(() => {
 				while (this.running)
 					this.Tick();
-			});
+			}, TaskCreationOptions.LongRunning).Start();
 		}
 
 		public void Stop() {
@@ -96,22 +97,23 @@ namespace ArkeOS.Hardware {
 		private Instruction GetNextInstruction() {
 			var address = this.Registers[Register.RIP];
 
-			if (this.configuration.CachedInstructions == 0)
+			if (!this.configuration.CacheEnabled)
 				return this.memoryController.ReadInstruction(address);
 
-			if (!this.instructionCache.ContainsKey(address))
-				this.RebuildCache(address);
+			foreach (var e in this.instructionCache)
+				if (e?.Item1 == address)
+					return e.Item2;
 
-			return this.instructionCache[address];
+			this.BuildCache(address);
+
+			return this.instructionCache[0].Item2;
 		}
 
-		private void RebuildCache(ulong address) {
-			this.instructionCache.Clear();
-
-			for (var i = 0; i < this.configuration.CachedInstructions; i++) {
+		private void BuildCache(ulong address) {
+			for (var i = 0; i < this.instructionCache.Length; i++) {
 				var instruction = this.memoryController.ReadInstruction(address);
 
-				this.instructionCache[address] = instruction;
+				this.instructionCache[i] = Tuple.Create(address, instruction);
 
 				address += instruction.Length;
 			}
@@ -164,8 +166,8 @@ namespace ArkeOS.Hardware {
 
 		private void UpdateConfiguration() {
 			this.configuration.SystemTickInterval = this.memoryController.ReadU16(this.Registers[Register.RCFG] + 0);
-			this.configuration.CachedInstructions = this.memoryController.ReadU16(this.Registers[Register.RCFG] + 2);
-			this.configuration.ProtectionMode = this.memoryController.ReadU8(this.Registers[Register.RCFG] + 4);
+			this.configuration.CacheEnabled = this.memoryController.ReadU16(this.Registers[Register.RCFG] + 2) != 0;
+			this.configuration.ProtectionMode = this.memoryController.ReadU8(this.Registers[Register.RCFG] + 3);
 		}
 
 		private ulong GetValue(Parameter parameter) {

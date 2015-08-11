@@ -5,7 +5,7 @@ using System.Linq;
 
 namespace ArkeOS.ISA {
 	public class Instruction {
-		private List<Parameter> parameters;
+		private Parameter[] parameters;
 
 		public ulong Address { get; set; }
 		public string Label { get; set; }
@@ -30,8 +30,6 @@ namespace ArkeOS.ISA {
 		public static ulong SizeToMask(InstructionSize size) => (1UL << (Instruction.SizeToBits(size) - 1)) | ((1UL << (Instruction.SizeToBits(size) - 1)) - 1);
 
 		public Instruction(byte[] memory, ulong address) {
-			this.parameters = new List<Parameter>();
-
 			this.Address = address;
 
 			var b1 = memory[address++];
@@ -43,17 +41,19 @@ namespace ArkeOS.ISA {
 			this.Definition = InstructionDefinition.Find(this.Code);
 			this.Length = 2;
 
+			this.parameters = new Parameter[this.Definition.ParameterCount];
+
 			for (var i = 0; i < this.Definition.ParameterCount; i++) {
 				switch ((ParameterType)((b2 >> (i * 2)) & 0x03)) {
-					case ParameterType.RegisterAddress: this.parameters.Add(new Parameter(this.Size, ParameterType.RegisterAddress, memory[address++])); break;
-					case ParameterType.Register: this.parameters.Add(new Parameter(this.Size, ParameterType.Register, memory[address++])); break;
-					case ParameterType.LiteralAddress: this.parameters.Add(new Parameter(this.Size, ParameterType.LiteralAddress, BitConverter.ToUInt64(memory, (int)address))); address += 8; break;
+					case ParameterType.RegisterAddress: this.parameters[i] = new Parameter(this.Size, ParameterType.RegisterAddress, memory[address++]); break;
+					case ParameterType.Register: this.parameters[i] = new Parameter(this.Size, ParameterType.Register, memory[address++]); break;
+					case ParameterType.LiteralAddress: this.parameters[i] = new Parameter(this.Size, ParameterType.LiteralAddress, BitConverter.ToUInt64(memory, (int)address)); address += 8; break;
 					case ParameterType.Literal:
 						switch (this.Size) {
-							case InstructionSize.OneByte: this.parameters.Add(new Parameter(this.Size, ParameterType.Literal, memory[address++])); break;
-							case InstructionSize.TwoByte: this.parameters.Add(new Parameter(this.Size, ParameterType.Literal, BitConverter.ToUInt16(memory, (int)address))); address += 2; break;
-							case InstructionSize.FourByte: this.parameters.Add(new Parameter(this.Size, ParameterType.Literal, BitConverter.ToUInt32(memory, (int)address))); address += 4; break;
-							case InstructionSize.EightByte: this.parameters.Add(new Parameter(this.Size, ParameterType.Literal, BitConverter.ToUInt64(memory, (int)address))); address += 8; break;
+							case InstructionSize.OneByte: this.parameters[i] = new Parameter(this.Size, ParameterType.Literal, memory[address++]); break;
+							case InstructionSize.TwoByte: this.parameters[i] = new Parameter(this.Size, ParameterType.Literal, BitConverter.ToUInt16(memory, (int)address)); address += 2; break;
+							case InstructionSize.FourByte: this.parameters[i] = new Parameter(this.Size, ParameterType.Literal, BitConverter.ToUInt32(memory, (int)address)); address += 4; break;
+							case InstructionSize.EightByte: this.parameters[i] = new Parameter(this.Size, ParameterType.Literal, BitConverter.ToUInt64(memory, (int)address)); address += 8; break;
 						}
 
 						break;
@@ -83,7 +83,7 @@ namespace ArkeOS.ISA {
 			this.Code = InstructionDefinition.Find(parts[0]).Code;
 			this.Definition = InstructionDefinition.Find(this.Code);
 
-			this.parameters = parts.Skip(1).Select(p => new Parameter(this.Size, p)).ToList();
+			this.parameters = parts.Skip(1).Select(p => new Parameter(this.Size, p)).ToArray();
 
 			this.Length = (byte)(this.parameters.Sum(p => p.Length) + 2);
 		}
