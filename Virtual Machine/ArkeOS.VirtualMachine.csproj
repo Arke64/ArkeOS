@@ -148,9 +148,9 @@
       <Project>{36396d22-3ccd-4283-a0c4-2d865da2d863}</Project>
       <Name>ArkeOS.Hardware</Name>
     </ProjectReference>
-    <ProjectReference Include="..\ISA\ArkeOS.ISA.csproj">
+    <ProjectReference Include="..\Architecture\ArkeOS.Architecture.csproj">
       <Project>{f983d92b-e6a3-490f-9177-d578da2efb80}</Project>
-      <Name>ArkeOS.ISA</Name>
+      <Name>ArkeOS.Architecture</Name>
     </ProjectReference>
   </ItemGroup>
   <PropertyGroup Condition=" '$(VisualStudioVersion)' == '' or '$(VisualStudioVersion)' &lt; '14.0' ">

@@ -83,9 +83,9 @@
     </BootstrapperPackage>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\ISA\ArkeOS.ISA.csproj">
+    <ProjectReference Include="..\Architecture\ArkeOS.Architecture.csproj">
       <Project>{f983d92b-e6a3-490f-9177-d578da2efb80}</Project>
-      <Name>ArkeOS.ISA</Name>
+      <Name>ArkeOS.Architecture</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

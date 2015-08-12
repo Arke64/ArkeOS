@@ -25,7 +25,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ArkeOS.Executable", "Execut
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ArkeOS.Hardware", "Hardware\ArkeOS.Hardware.csproj", "{36396D22-3CCD-4283-A0C4-2D865DA2D863}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ArkeOS.ISA", "ISA\ArkeOS.ISA.csproj", "{F983D92B-E6A3-490F-9177-D578DA2EFB80}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ArkeOS.Architecture", "Architecture\ArkeOS.Architecture.csproj", "{F983D92B-E6A3-490F-9177-D578DA2EFB80}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
