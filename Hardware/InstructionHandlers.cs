@@ -33,8 +33,10 @@ namespace ArkeOS.Hardware {
 		}
 
 		private void ExecuteXchg(Instruction instruction) {
-			this.SetValue(instruction.Parameter1, this.GetValue(instruction.Parameter1));
-			this.SetValue(instruction.Parameter2, this.GetValue(instruction.Parameter2));
+			var temp = this.GetValue(instruction.Parameter1);
+
+			this.SetValue(instruction.Parameter1, this.GetValue(instruction.Parameter2));
+			this.SetValue(instruction.Parameter2, temp);
 		}
 
 		private void ExecuteIn(Instruction instruction) {
