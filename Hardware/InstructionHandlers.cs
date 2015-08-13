@@ -1,5 +1,5 @@
 ﻿using System;
-using ArkeOS.ISA;
+using ArkeOS.Architecture;
 
 namespace ArkeOS.Hardware {
 	public partial class Processor {
@@ -104,7 +104,7 @@ namespace ArkeOS.Hardware {
 		private void ExecuteAdd(Instruction instruction) {
 			var a = this.GetValue(instruction.Parameter1);
 			var b = this.GetValue(instruction.Parameter2);
-			var max = Instruction.SizeToMask(instruction.Size);
+			var max = Helpers.SizeToMask(instruction.Size);
 
 			if (max - a < b)
 				this.Registers[Register.RC] = ulong.MaxValue;
@@ -118,7 +118,7 @@ namespace ArkeOS.Hardware {
 			var a = this.GetValue(instruction.Parameter1);
 			var b = this.GetValue(instruction.Parameter2);
 			var carry = this.Registers[Register.RC] > 0 ? 1UL : 0UL;
-			var max = Instruction.SizeToMask(instruction.Size);
+			var max = Helpers.SizeToMask(instruction.Size);
 
 			if (a < max) {
 				a += carry;
@@ -156,7 +156,7 @@ namespace ArkeOS.Hardware {
 		private void ExecuteSub(Instruction instruction) {
 			var a = this.GetValue(instruction.Parameter1);
 			var b = this.GetValue(instruction.Parameter2);
-			var max = Instruction.SizeToMask(instruction.Size);
+			var max = Helpers.SizeToMask(instruction.Size);
 
 			if (a > b)
 				this.Registers[Register.RC] = ulong.MaxValue;
@@ -170,7 +170,7 @@ namespace ArkeOS.Hardware {
 			var a = this.GetValue(instruction.Parameter1);
 			var b = this.GetValue(instruction.Parameter2);
 			var carry = this.Registers[Register.RC] > 0 ? 1UL : 0UL;
-			var max = Instruction.SizeToMask(instruction.Size);
+			var max = Helpers.SizeToMask(instruction.Size);
 
 			if (a > 0) {
 				a -= carry;
@@ -236,7 +236,7 @@ namespace ArkeOS.Hardware {
 		private void ExecuteMul(Instruction instruction) {
 			var a = this.GetValue(instruction.Parameter1);
 			var b = this.GetValue(instruction.Parameter2);
-			var max = Instruction.SizeToMask(instruction.Size);
+			var max = Helpers.SizeToMask(instruction.Size);
 
 			if (a == 0) {
 				var t = a;
@@ -271,7 +271,7 @@ namespace ArkeOS.Hardware {
 
 		private void ExecuteInc(Instruction instruction) {
 			var a = this.GetValue(instruction.Parameter1);
-			var max = Instruction.SizeToMask(instruction.Size);
+			var max = Helpers.SizeToMask(instruction.Size);
 
 			if (max == a)
 				this.Registers[Register.RC] = ulong.MaxValue;
@@ -283,7 +283,7 @@ namespace ArkeOS.Hardware {
 
 		private void ExecuteDec(Instruction instruction) {
 			var a = this.GetValue(instruction.Parameter1);
-			var max = Instruction.SizeToMask(instruction.Size);
+			var max = Helpers.SizeToMask(instruction.Size);
 
 			if (a == 0)
 				this.Registers[Register.RC] = ulong.MaxValue;
@@ -349,11 +349,11 @@ namespace ArkeOS.Hardware {
 		}
 
 		private void ExecuteRr(Instruction instruction) {
-			this.Access(instruction.Parameter1, instruction.Parameter2, instruction.Parameter3, (a, b) => (b >> (byte)a) | (b << (Instruction.SizeToBits(instruction.Size) - (byte)a)));
+			this.Access(instruction.Parameter1, instruction.Parameter2, instruction.Parameter3, (a, b) => (b >> (byte)a) | (b << (Helpers.SizeToBits(instruction.Size) - (byte)a)));
 		}
 
 		private void ExecuteRl(Instruction instruction) {
-			this.Access(instruction.Parameter1, instruction.Parameter2, instruction.Parameter3, (a, b) => (b << (byte)a) | (b >> (Instruction.SizeToBits(instruction.Size) - (byte)a)));
+			this.Access(instruction.Parameter1, instruction.Parameter2, instruction.Parameter3, (a, b) => (b << (byte)a) | (b >> (Helpers.SizeToBits(instruction.Size) - (byte)a)));
 		}
 
 		private void ExecuteNand(Instruction instruction) {

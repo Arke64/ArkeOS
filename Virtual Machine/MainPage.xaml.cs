@@ -1,8 +1,8 @@
 ﻿using System;
 using System.Reflection;
 using System.Runtime.InteropServices.WindowsRuntime;
+using ArkeOS.Architecture;
 using ArkeOS.Hardware;
-using ArkeOS.ISA;
 using Windows.Storage;
 using Windows.Storage.Pickers;
 using Windows.UI.Core;

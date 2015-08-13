@@ -1,4 +1,4 @@
-﻿namespace ArkeOS.ISA {
+﻿namespace ArkeOS.Architecture {
 	public enum Register : byte {
 		RZ,
 		RS,

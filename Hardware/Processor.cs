@@ -3,13 +3,13 @@ using System.Linq;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
-using ArkeOS.ISA;
+using ArkeOS.Architecture;
 
 namespace ArkeOS.Hardware {
 	public partial class Processor {
 		private class Configuration {
 			public ushort SystemTickInterval { get; set; } = 50;
-			public bool CacheEnabled { get; set; } = true;
+			public bool InstructionPreParseEnabled { get; set; } = true;
 			public byte ProtectionMode { get; set; } = 0;
 		}
 
@@ -41,7 +41,7 @@ namespace ArkeOS.Hardware {
 			this.instructionCache = new Tuple<ulong, Instruction>[64];
 			this.breakEvent = new AutoResetEvent(false);
 			this.stepEvent = new AutoResetEvent(false);
-			this.systemTimer = new Timer(s => this.interruptController.Enqueue(Interrupt.SystemTimer), null, Timeout.Infinite, Timeout.Infinite);
+			this.systemTimer = new Timer(this.OnSystemTimerTick, null, Timeout.Infinite, Timeout.Infinite);
 			this.instructionHandlers = new Action<Instruction>[InstructionDefinition.All.Max(i => i.Code) + 1];
 
 			foreach (var i in InstructionDefinition.All)
@@ -59,6 +59,7 @@ namespace ArkeOS.Hardware {
 			this.inProtectedIsr = false;
 			this.running = true;
 			this.broken = true;
+			this.interruptsEnabled = true;
 
 			this.BuildCache(0);
 
@@ -84,9 +85,7 @@ namespace ArkeOS.Hardware {
 		public void Continue() {
 			this.broken = false;
 			this.breakEvent.Set();
-
-			if (this.configuration.SystemTickInterval > 0)
-				this.systemTimer.Change(this.configuration.SystemTickInterval, this.configuration.SystemTickInterval);
+			this.systemTimer.Change(this.configuration.SystemTickInterval, this.configuration.SystemTickInterval);
 		}
 
 		public void Step() {
@@ -94,10 +93,15 @@ namespace ArkeOS.Hardware {
 			this.stepEvent.WaitOne();
 		}
 
+		private void OnSystemTimerTick(object state) {
+			if (this.configuration.SystemTickInterval != 0)
+				this.interruptController.Enqueue(Interrupt.SystemTimer);
+		}
+
 		private Instruction GetNextInstruction() {
 			var address = this.Registers[Register.RIP];
 
-			if (!this.configuration.CacheEnabled)
+			if (!this.configuration.InstructionPreParseEnabled)
 				return this.memoryController.ReadInstruction(address);
 
 			foreach (var e in this.instructionCache)
@@ -166,7 +170,7 @@ namespace ArkeOS.Hardware {
 
 		private void UpdateConfiguration() {
 			this.configuration.SystemTickInterval = this.memoryController.ReadU16(this.Registers[Register.RCFG] + 0);
-			this.configuration.CacheEnabled = this.memoryController.ReadU16(this.Registers[Register.RCFG] + 2) != 0;
+			this.configuration.InstructionPreParseEnabled = this.memoryController.ReadU16(this.Registers[Register.RCFG] + 2) != 0;
 			this.configuration.ProtectionMode = this.memoryController.ReadU8(this.Registers[Register.RCFG] + 3);
 		}
 
@@ -234,7 +238,7 @@ namespace ArkeOS.Hardware {
 		}
 
 		private void Push(InstructionSize size, ulong value) {
-			this.Registers[Register.RSP] -= Instruction.SizeToBytes(size);
+			this.Registers[Register.RSP] -= Helpers.SizeToBytes(size);
 
 			switch (size) {
 				case InstructionSize.OneByte: this.memoryController.WriteU8(this.Registers[Register.RSP], (byte)value); break;
@@ -254,7 +258,7 @@ namespace ArkeOS.Hardware {
 				case InstructionSize.EightByte: value = this.memoryController.ReadU64(this.Registers[Register.RSP]); break;
 			}
 
-			this.Registers[Register.RSP] += Instruction.SizeToBytes(size);
+			this.Registers[Register.RSP] += Helpers.SizeToBytes(size);
 
 			return value;
 		}

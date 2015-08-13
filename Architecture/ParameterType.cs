@@ -1,9 +1,8 @@
-﻿namespace ArkeOS.ISA {
+﻿namespace ArkeOS.Architecture {
 	public enum ParameterType {
 		Register,
 		Literal,
 		LiteralAddress,
 		RegisterAddress,
-		Label
 	}
 }

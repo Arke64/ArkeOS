@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using ArkeOS.ISA;
+using ArkeOS.Architecture;
 
 namespace ArkeOS.Hardware {
 	public class RegisterManager {

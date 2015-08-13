@@ -1,87 +1,50 @@
 ﻿using System;
 using System.IO;
 
-namespace ArkeOS.ISA {
+namespace ArkeOS.Architecture {
 	public class Parameter {
-		public InstructionSize Size { get; set; }
-		public ParameterType Type { get; set; }
-		public Register Register { get; set; }
-		public ulong Literal { get; set; }
-		public string Label { get; set; }
-		public byte Length { get; set; }
+		public ParameterType Type { get; }
+		public Register Register { get; }
+		public ulong Literal { get; }
+		public byte Length { get; }
 
-		public Parameter(InstructionSize size, ParameterType type, ulong value) {
-			this.Size = size;
+		public Parameter(ParameterType type, Register register) {
 			this.Type = type;
-			this.Label = string.Empty;
+			this.Register = register;
+			this.Length = 1;
+		}
+
+		public Parameter(ParameterType type, ulong literal, byte length) {
+			this.Type = type;
+			this.Literal = literal;
+			this.Length = length;
+		}
+
+		public Parameter(ParameterType type, InstructionSize size, byte[] memory, ulong address) {
+			this.Type = type;
 
 			switch (type) {
-				case ParameterType.Register:
-					this.Register = (Register)value;
-					this.Length = 1;
-
-					break;
-
-				case ParameterType.RegisterAddress:
-					this.Register = (Register)value;
-					this.Length = 1;
-
-					break;
-
+				case ParameterType.RegisterAddress: this.Register = (Register)memory[address]; this.Length = 1; break;
+				case ParameterType.Register: this.Register = (Register)memory[address]; this.Length = 1; break;
+				case ParameterType.LiteralAddress: this.Literal = BitConverter.ToUInt64(memory, (int)address); this.Length = 8; break;
 				case ParameterType.Literal:
-					this.Literal = value & Instruction.SizeToMask(size);
-					this.Length = Instruction.SizeToBytes(size);
-
-					break;
-
-				case ParameterType.LiteralAddress:
-					this.Literal = value;
-					this.Length = 8;
+					switch (size) {
+						case InstructionSize.OneByte: this.Literal = memory[address]; this.Length = 1; break;
+						case InstructionSize.TwoByte: this.Literal = BitConverter.ToUInt16(memory, (int)address); this.Length = 2; break;
+						case InstructionSize.FourByte: this.Literal = BitConverter.ToUInt32(memory, (int)address); this.Length = 4; break;
+						case InstructionSize.EightByte: this.Literal = BitConverter.ToUInt64(memory, (int)address); this.Length = 8; break;
+					}
 
 					break;
 			}
 		}
 
-		public Parameter(InstructionSize size, string value) {
-			this.Size = size;
-
-			if (value[0] == '0') {
-				this.Literal = Parameter.ParseLiteral(value);
-				this.Type = ParameterType.Literal;
-				this.Length = Instruction.SizeToBytes(size);
-			}
-			else if (value[0] == 'R') {
-				this.Register = (Register)Enum.Parse(typeof(Register), value);
-				this.Type = ParameterType.Register;
-				this.Length = 1;
-			}
-			else if (value[0] == '{') {
-				this.Label = value.Substring(1, value.Length - 2).Trim();
-				this.Type = ParameterType.Label;
-				this.Length = 8;
-			}
-			else if (value[0] == '[') {
-				value = value.Substring(1, value.Length - 2).Trim();
-
-				if (value[0] == '0') {
-					this.Literal = Parameter.ParseLiteral(value);
-					this.Type = ParameterType.LiteralAddress;
-					this.Length = 8;
-				}
-				else if (value[0] == 'R') {
-					this.Register = (Register)Enum.Parse(typeof(Register), value);
-					this.Type = ParameterType.RegisterAddress;
-					this.Length = 1;
-				}
-			}
-		}
-
-		public void Serialize(BinaryWriter writer) {
+		public void Encode(BinaryWriter writer) {
 			switch (this.Type) {
 				case ParameterType.RegisterAddress: writer.Write((byte)this.Register); break;
 				case ParameterType.Register: writer.Write((byte)this.Register); break;
 				case ParameterType.LiteralAddress: writer.Write(this.Literal); break;
-				case ParameterType.Literal: Parameter.Write(writer, this.Literal, this.Size); break;
+				case ParameterType.Literal: Helpers.SizedWrite(writer, this.Literal, this.Length); break;
 			}
 		}
 
@@ -91,35 +54,7 @@ namespace ArkeOS.ISA {
 				case ParameterType.LiteralAddress: return $"[0x{this.Literal.ToString("X8")}]";
 				case ParameterType.Register: return this.Register.ToString();
 				case ParameterType.RegisterAddress: return $"[{this.Register.ToString()}]";
-				case ParameterType.Label: return $"{{{this.Label}}}";
 				default: return string.Empty;
-			}
-		}
-
-		public static void Write(BinaryWriter writer, ulong value, InstructionSize size) {
-			switch (size) {
-				case InstructionSize.OneByte: writer.Write((byte)value); break;
-				case InstructionSize.TwoByte: writer.Write((ushort)value); break;
-				case InstructionSize.FourByte: writer.Write((uint)value); break;
-				case InstructionSize.EightByte: writer.Write(value); break;
-			}
-		}
-
-		public static ulong ParseLiteral(string value) {
-			if (value.IndexOf("0x") == 0) {
-				return Convert.ToUInt64(value.Substring(2), 16);
-			}
-			else if (value.IndexOf("0d") == 0) {
-				return Convert.ToUInt64(value.Substring(2), 10);
-			}
-			else if (value.IndexOf("0o") == 0) {
-				return Convert.ToUInt64(value.Substring(2), 8);
-			}
-			else if (value.IndexOf("0b") == 0) {
-				return Convert.ToUInt64(value.Substring(2), 2);
-			}
-			else {
-				return 0;
 			}
 		}
 	}

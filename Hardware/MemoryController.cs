@@ -1,5 +1,5 @@
 ﻿using System;
-using ArkeOS.ISA;
+using ArkeOS.Architecture;
 
 namespace ArkeOS.Hardware {
 	public class MemoryController {

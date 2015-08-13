@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Threading;
-using ArkeOS.ISA;
+using ArkeOS.Architecture;
 
 namespace ArkeOS.Hardware {
 	public class InterruptController {

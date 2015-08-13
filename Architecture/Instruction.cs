@@ -1,116 +1,67 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 
-namespace ArkeOS.ISA {
+namespace ArkeOS.Architecture {
 	public class Instruction {
 		private Parameter[] parameters;
+		private InstructionDefinition definition;
 
-		public ulong Address { get; set; }
-		public string Label { get; set; }
 		public byte Code { get; }
 		public InstructionSize Size { get; }
 		public byte Length { get; }
-		public InstructionDefinition Definition { get; }
 
 		public Parameter Parameter1 => this.parameters[0];
 		public Parameter Parameter2 => this.parameters[1];
 		public Parameter Parameter3 => this.parameters[2];
 		public Parameter Parameter4 => this.parameters[3];
 
-		public byte SizeInBytes => Instruction.SizeToBytes(this.Size);
-		public byte SizeInBits => Instruction.SizeToBits(this.Size);
-		public ulong SizeMask => Instruction.SizeToMask(this.Size);
+		public byte SizeInBytes => Helpers.SizeToBytes(this.Size);
+		public byte SizeInBits => Helpers.SizeToBits(this.Size);
+		public ulong SizeMask => Helpers.SizeToMask(this.Size);
 
-		public static InstructionSize BytesToSize(int bytes) => (InstructionSize)(int)Math.Log(bytes, 2);
+		public Instruction(byte code, InstructionSize size, List<Parameter> parameters) {
+			this.Code = code;
+			this.Size = size;
 
-		public static byte SizeToBytes(InstructionSize size) => (byte)(1 << (byte)size);
-		public static byte SizeToBits(InstructionSize size) => (byte)(Instruction.SizeToBytes(size) * 8);
-		public static ulong SizeToMask(InstructionSize size) => (1UL << (Instruction.SizeToBits(size) - 1)) | ((1UL << (Instruction.SizeToBits(size) - 1)) - 1);
-
-		public Instruction(byte[] memory, ulong address) {
-			this.Address = address;
-
-			var b1 = memory[address++];
-			var b2 = memory[address++];
-
-			this.Size = (InstructionSize)(b1 & 0x03);
-			this.Label = string.Empty;
-			this.Code = (byte)((b1 & 0xFC) >> 2);
-			this.Definition = InstructionDefinition.Find(this.Code);
-			this.Length = 2;
-
-			this.parameters = new Parameter[this.Definition.ParameterCount];
-
-			for (var i = 0; i < this.Definition.ParameterCount; i++) {
-				switch ((ParameterType)((b2 >> (i * 2)) & 0x03)) {
-					case ParameterType.RegisterAddress: this.parameters[i] = new Parameter(this.Size, ParameterType.RegisterAddress, memory[address++]); break;
-					case ParameterType.Register: this.parameters[i] = new Parameter(this.Size, ParameterType.Register, memory[address++]); break;
-					case ParameterType.LiteralAddress: this.parameters[i] = new Parameter(this.Size, ParameterType.LiteralAddress, BitConverter.ToUInt64(memory, (int)address)); address += 8; break;
-					case ParameterType.Literal:
-						switch (this.Size) {
-							case InstructionSize.OneByte: this.parameters[i] = new Parameter(this.Size, ParameterType.Literal, memory[address++]); break;
-							case InstructionSize.TwoByte: this.parameters[i] = new Parameter(this.Size, ParameterType.Literal, BitConverter.ToUInt16(memory, (int)address)); address += 2; break;
-							case InstructionSize.FourByte: this.parameters[i] = new Parameter(this.Size, ParameterType.Literal, BitConverter.ToUInt32(memory, (int)address)); address += 4; break;
-							case InstructionSize.EightByte: this.parameters[i] = new Parameter(this.Size, ParameterType.Literal, BitConverter.ToUInt64(memory, (int)address)); address += 8; break;
-						}
-
-						break;
-				}
-
-				this.Length += this.parameters[i].Length;
-			}
-		}
-
-		public Instruction(string[] parts) {
-			this.Size = InstructionSize.EightByte;
-
-			var index = parts[0].IndexOf(':');
-			if (index != -1) {
-				switch (parts[0][index + 1]) {
-					case '1': this.Size = InstructionSize.OneByte; break;
-					case '2': this.Size = InstructionSize.TwoByte; break;
-					case '4': this.Size = InstructionSize.FourByte; break;
-					case '8': this.Size = InstructionSize.EightByte; break;
-				}
-
-				parts[0] = parts[0].Substring(0, index);
-			}
-
-			this.Label = string.Empty;
-			this.Address = 0;
-			this.Code = InstructionDefinition.Find(parts[0]).Code;
-			this.Definition = InstructionDefinition.Find(this.Code);
-
-			this.parameters = parts.Skip(1).Select(p => new Parameter(this.Size, p)).ToArray();
+			this.definition = InstructionDefinition.Find(this.Code);
+			this.parameters = parameters.ToArray();
 
 			this.Length = (byte)(this.parameters.Sum(p => p.Length) + 2);
 		}
 
-		public void Serialize(BinaryWriter writer, Dictionary<string, List<Tuple<ulong, InstructionSize>>> labels) {
+		public Instruction(byte[] memory, ulong address) {
+			var startAddress = address;
+			var b1 = memory[address++];
+			var b2 = memory[address++];
+
+			this.Size = (InstructionSize)(b1 & 0x03);
+			this.Code = (byte)((b1 & 0xFC) >> 2);
+
+			this.definition = InstructionDefinition.Find(this.Code);
+			this.parameters = new Parameter[this.definition.ParameterCount];
+
+			for (var i = 0; i < this.definition.ParameterCount; address += this.parameters[i++].Length)
+				this.parameters[i] = new Parameter((ParameterType)((b2 >> (i * 2)) & 0x03), this.Size, memory, address);
+
+			this.Length = (byte)(address - startAddress);
+		}
+
+		public void Encode(BinaryWriter writer) {
 			writer.Write((byte)((this.Code << 2) | (((byte)this.Size) & 0x03)));
 
-			foreach (var p in this.parameters)
-				if (!string.IsNullOrWhiteSpace(p.Label))
-					p.Type = ParameterType.Literal;
-
 			byte b = 0;
-			for (var i = 0; i < this.Definition.ParameterCount; i++)
+			for (var i = 0; i < this.definition.ParameterCount; i++)
 				b |= (byte)(((byte)this.parameters[i].Type) << (i * 2));
 
 			writer.Write(b);
 
-			foreach (var p in this.parameters) {
-				if (!string.IsNullOrWhiteSpace(p.Label))
-					labels[p.Label].Add(Tuple.Create((ulong)writer.BaseStream.Position, p.Size));
-
-				p.Serialize(writer);
-			}
+			foreach (var p in this.parameters)
+				p.Encode(writer);
 		}
 
 		public override string ToString() {
-			return this.Definition.Mnemonic + ":" + this.SizeInBytes + " " + string.Join(" ", this.parameters.Select(p => p.ToString()));
+			return this.definition.Mnemonic + ":" + this.SizeInBytes + " " + string.Join(" ", this.parameters.Select(p => p.ToString()));
 		}
 	}
 }

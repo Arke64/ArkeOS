@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 
-namespace ArkeOS.ISA {
+namespace ArkeOS.Architecture {
 	public class InstructionDefinition {
 		private static Dictionary<string, InstructionDefinition> mnemonics;
 		private static InstructionDefinition[] instructions;

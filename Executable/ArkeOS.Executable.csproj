@@ -40,8 +40,6 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AssemblyInfo.cs" />
-    <Compile Include="CodeSection.cs" />
-    <Compile Include="DataSection.cs" />
     <Compile Include="Header.cs" />
     <Compile Include="Image.cs" />
     <Compile Include="Section.cs" />
