@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Threading;
@@ -13,7 +14,7 @@ namespace ArkeOS.Hardware {
 			public byte ProtectionMode { get; set; } = 0;
 		}
 
-		private Tuple<ulong, Instruction>[] instructionCache;
+		private Dictionary<ulong, Instruction> instructionCache;
 		private MemoryController memoryController;
 		private InterruptController interruptController;
 		private Action<Instruction>[] instructionHandlers;
@@ -38,7 +39,7 @@ namespace ArkeOS.Hardware {
 			this.interruptController = interruptController;
 
 			this.configuration = new Configuration();
-			this.instructionCache = new Tuple<ulong, Instruction>[64];
+			this.instructionCache = new Dictionary<ulong, Instruction>();
 			this.breakEvent = new AutoResetEvent(false);
 			this.stepEvent = new AutoResetEvent(false);
 			this.systemTimer = new Timer(this.OnSystemTimerTick, null, Timeout.Infinite, Timeout.Infinite);
@@ -60,8 +61,6 @@ namespace ArkeOS.Hardware {
 			this.running = true;
 			this.broken = true;
 			this.interruptsEnabled = true;
-
-			this.BuildCache(0);
 
 			new Task(() => {
 				while (this.running)
@@ -104,23 +103,15 @@ namespace ArkeOS.Hardware {
 			if (!this.configuration.InstructionPreParseEnabled)
 				return this.memoryController.ReadInstruction(address);
 
-			foreach (var e in this.instructionCache)
-				if (e?.Item1 == address)
-					return e.Item2;
+			Instruction instruction;
 
-			this.BuildCache(address);
+			if (!this.instructionCache.TryGetValue(address, out instruction)) {
+				instruction = this.memoryController.ReadInstruction(address);
 
-			return this.instructionCache[0].Item2;
-		}
-
-		private void BuildCache(ulong address) {
-			for (var i = 0; i < this.instructionCache.Length; i++) {
-				var instruction = this.memoryController.ReadInstruction(address);
-
-				this.instructionCache[i] = Tuple.Create(address, instruction);
-
-				address += instruction.Length;
+				this.instructionCache[address] = instruction;
 			}
+
+			return instruction;
 		}
 
 		private void Tick() {
