@@ -63,12 +63,12 @@ namespace ArkeOS.Architecture {
 			new InstructionDefinition("NXOR", 48, 3);
 			new InstructionDefinition("XOR", 49, 3);
 			new InstructionDefinition("NOT", 50, 2);
-			new InstructionDefinition("GT", 51, 2);
-			new InstructionDefinition("GTE", 52, 2);
-			new InstructionDefinition("LT", 53, 2);
-			new InstructionDefinition("LTE", 54, 2);
-			new InstructionDefinition("EQ", 55, 2);
-			new InstructionDefinition("NEQ", 56, 2);
+			new InstructionDefinition("GT", 51, 3);
+			new InstructionDefinition("GTE", 52, 3);
+			new InstructionDefinition("LT", 53, 3);
+			new InstructionDefinition("LTE", 54, 3);
+			new InstructionDefinition("EQ", 55, 3);
+			new InstructionDefinition("NEQ", 56, 3);
 
 			new InstructionDefinition("DBG", 60, 1);
 			new InstructionDefinition("PAU", 61, 0);

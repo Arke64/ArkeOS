@@ -40,7 +40,6 @@ Format
 2b Parameter 0: The type of the parameter (00 = value in register, 01 = immediate value with size specified by Size, 10 = value at literal address, 11 = value at address specified by register)
 2b Parameter 1: See above
 2b Parameter 2: See above
-2b Parameter 3: See above
 0b-64b: Parameters
 
 Basic
@@ -94,12 +93,12 @@ Logic
 48 NXOR A B C: Store the NXOR of A and B in C
 49 XOR A B C: Store the XOR of A and B in C
 50 NOT A B: Store the NOT of A in B
-51 GT A B: Update RZ to reflect if B is greater than A
-52 GTE A B: Update RZ to reflect if B is greater than or equal to A
-53 LT A B: Update RZ to reflect if B is less than A
-54 LTE A B: Update RZ to reflect if B is less than or equal to A
-55 EQ A B: Update RZ to reflect if B is equal to A
-56 NEQ A B: Update RZ to reflect if B is not equal to A
+51 GT A B C: Store in C if B is greater than A
+52 GTE A B C: Store in C if B is greater than or equal to A
+53 LT A B C: Store in C if B is less than A
+54 LTE A B C: Store in C if B is less than or equal to A
+55 EQ A B C: Store in C if B is equal to A
+56 NEQ A B C: Store in C if B is not equal to A
 
 Debug
 -----

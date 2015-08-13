@@ -15,22 +15,19 @@ namespace ArkeOS.Hardware {
 		}
 
 		private Dictionary<ulong, Instruction> instructionCache;
+		private Configuration configuration;
 		private MemoryController memoryController;
 		private InterruptController interruptController;
 		private Action<Instruction>[] instructionHandlers;
-		private AutoResetEvent breakEvent;
-		private AutoResetEvent stepEvent;
 		private Timer systemTimer;
 		private bool supressRIPIncrement;
+		private bool interruptsEnabled;
 		private bool inProtectedIsr;
 		private bool inIsr;
 		private bool running;
-		private bool broken;
-		private bool interruptsEnabled;
-		private Configuration configuration;
 
 		public Instruction CurrentInstruction { get; private set; }
-		public RegisterManager Registers { get; }
+		public RegisterManager Registers { get; private set; }
 
 		public event EventHandler ExecutionPaused;
 
@@ -38,17 +35,11 @@ namespace ArkeOS.Hardware {
 			this.memoryController = memoryController;
 			this.interruptController = interruptController;
 
-			this.configuration = new Configuration();
-			this.instructionCache = new Dictionary<ulong, Instruction>();
-			this.breakEvent = new AutoResetEvent(false);
-			this.stepEvent = new AutoResetEvent(false);
 			this.systemTimer = new Timer(this.OnSystemTimerTick, null, Timeout.Infinite, Timeout.Infinite);
 			this.instructionHandlers = new Action<Instruction>[InstructionDefinition.All.Max(i => i.Code) + 1];
 
 			foreach (var i in InstructionDefinition.All)
 				this.instructionHandlers[i.Code] = (Action<Instruction>)this.GetType().GetMethod("Execute" + i.CamelCaseMnemonic, BindingFlags.NonPublic | BindingFlags.Instance).CreateDelegate(typeof(Action<Instruction>), this);
-
-			this.Registers = new RegisterManager();
 		}
 
 		public void LoadStartupImage(byte[] image) {
@@ -56,11 +47,25 @@ namespace ArkeOS.Hardware {
 		}
 
 		public void Start() {
-			this.supressRIPIncrement = false;
-			this.inProtectedIsr = false;
 			this.running = true;
-			this.broken = true;
-			this.interruptsEnabled = true;
+
+			this.Reset();
+
+			this.SetNextInstruction();
+		}
+
+		public void Stop() {
+			this.Break();
+		}
+
+		public void Break() {
+			this.running = false;
+			this.systemTimer.Change(Timeout.Infinite, Timeout.Infinite);
+		}
+
+		public void Continue() {
+			this.running = true;
+			this.systemTimer.Change(this.configuration.SystemTickInterval, this.configuration.SystemTickInterval);
 
 			new Task(() => {
 				while (this.running)
@@ -68,28 +73,20 @@ namespace ArkeOS.Hardware {
 			}, TaskCreationOptions.LongRunning).Start();
 		}
 
-		public void Stop() {
-			this.running = false;
-			this.broken = false;
-			this.breakEvent.Set();
-			this.systemTimer.Change(Timeout.Infinite, Timeout.Infinite);
-		}
-
-		public void Break() {
-			this.stepEvent.Reset();
-			this.broken = true;
-			this.systemTimer.Change(Timeout.Infinite, Timeout.Infinite);
-		}
-
-		public void Continue() {
-			this.broken = false;
-			this.breakEvent.Set();
-			this.systemTimer.Change(this.configuration.SystemTickInterval, this.configuration.SystemTickInterval);
-		}
-
 		public void Step() {
-			this.breakEvent.Set();
-			this.stepEvent.WaitOne();
+			this.Tick();
+		}
+
+		private void Reset() {
+			this.Registers = new RegisterManager();
+
+			this.configuration = new Configuration();
+			this.instructionCache = new Dictionary<ulong, Instruction>();
+
+			this.supressRIPIncrement = false;
+			this.interruptsEnabled = true;
+			this.inProtectedIsr = false;
+			this.inIsr = false;
 		}
 
 		private void OnSystemTimerTick(object state) {
@@ -97,34 +94,24 @@ namespace ArkeOS.Hardware {
 				this.interruptController.Enqueue(Interrupt.SystemTimer);
 		}
 
-		private Instruction GetNextInstruction() {
+		private void SetNextInstruction() {
 			var address = this.Registers[Register.RIP];
-
-			if (!this.configuration.InstructionPreParseEnabled)
-				return this.memoryController.ReadInstruction(address);
 
 			Instruction instruction;
 
-			if (!this.instructionCache.TryGetValue(address, out instruction)) {
+			if (!this.configuration.InstructionPreParseEnabled) {
+				instruction = this.memoryController.ReadInstruction(address);
+			}
+			else if (!this.instructionCache.TryGetValue(address, out instruction)) {
 				instruction = this.memoryController.ReadInstruction(address);
 
 				this.instructionCache[address] = instruction;
 			}
 
-			return instruction;
+			this.CurrentInstruction = instruction;
 		}
 
 		private void Tick() {
-			if (this.interruptsEnabled && !this.inIsr && this.interruptController.AnyPending)
-				this.EnterInterrupt(this.interruptController.Dequeue());
-
-			this.CurrentInstruction = this.GetNextInstruction();
-
-			if (this.broken) {
-				this.stepEvent.Set();
-				this.breakEvent.WaitOne();
-			}
-
 			if (this.instructionHandlers.Length >= this.CurrentInstruction.Code && this.instructionHandlers[this.CurrentInstruction.Code] != null) {
 				this.instructionHandlers[this.CurrentInstruction.Code](this.CurrentInstruction);
 
@@ -136,6 +123,11 @@ namespace ArkeOS.Hardware {
 			else {
 				this.interruptController.Enqueue(Interrupt.InvalidInstruction);
 			}
+
+			if (this.interruptsEnabled && !this.inIsr && this.interruptController.AnyPending)
+				this.EnterInterrupt(this.interruptController.Dequeue());
+
+			this.SetNextInstruction();
 		}
 
 		private void EnterInterrupt(Interrupt id) {
@@ -152,11 +144,6 @@ namespace ArkeOS.Hardware {
 
 			this.inProtectedIsr = (byte)id <= 0x07;
 			this.inIsr = true;
-		}
-
-		private void UpdateFlags(ulong value) {
-			this.Registers[Register.RZ] = value == 0 ? ulong.MaxValue : 0;
-			this.Registers[Register.RS] = (value & (ulong)(1 << (this.CurrentInstruction.SizeInBits - 1))) != 0 ? ulong.MaxValue : 0;
 		}
 
 		private void UpdateConfiguration() {
@@ -195,15 +182,6 @@ namespace ArkeOS.Hardware {
 		}
 
 		private void SetValue(Parameter parameter, ulong value) {
-			this.UpdateFlags(value);
-
-			var orig = value;
-
-			value &= this.CurrentInstruction.SizeMask;
-
-			if (value != orig)
-				this.Registers[Register.RC] = ulong.MaxValue;
-
 			switch (parameter.Type) {
 				case ParameterType.Register:
 					if (this.IsRegisterWriteAllowed(parameter.Register)) {

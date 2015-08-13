@@ -387,27 +387,27 @@ namespace ArkeOS.Hardware {
 		}
 
 		private void ExecuteGt(Instruction instruction) {
-			this.Access(instruction.Parameter1, instruction.Parameter2, (a, b) => this.Registers[Register.RZ] = b > a ? ulong.MaxValue : 0);
+			this.Access(instruction.Parameter1, instruction.Parameter2, instruction.Parameter3, (a, b) => b > a ? ulong.MaxValue : 0);
 		}
 
 		private void ExecuteGte(Instruction instruction) {
-			this.Access(instruction.Parameter1, instruction.Parameter2, (a, b) => this.Registers[Register.RZ] = b >= a ? ulong.MaxValue : 0);
+			this.Access(instruction.Parameter1, instruction.Parameter2, instruction.Parameter3, (a, b) => b >= a ? ulong.MaxValue : 0);
 		}
 
 		private void ExecuteLt(Instruction instruction) {
-			this.Access(instruction.Parameter1, instruction.Parameter2, (a, b) => this.Registers[Register.RZ] = b < a ? ulong.MaxValue : 0);
+			this.Access(instruction.Parameter1, instruction.Parameter2, instruction.Parameter3, (a, b) => b < a ? ulong.MaxValue : 0);
 		}
 
 		private void ExecuteLte(Instruction instruction) {
-			this.Access(instruction.Parameter1, instruction.Parameter2, (a, b) => this.Registers[Register.RZ] = b <= a ? ulong.MaxValue : 0);
+			this.Access(instruction.Parameter1, instruction.Parameter2, instruction.Parameter3, (a, b) => b <= a ? ulong.MaxValue : 0);
 		}
 
 		private void ExecuteEq(Instruction instruction) {
-			this.Access(instruction.Parameter1, instruction.Parameter2, (a, b) => this.Registers[Register.RZ] = b == a ? ulong.MaxValue : 0);
+			this.Access(instruction.Parameter1, instruction.Parameter2, instruction.Parameter3, (a, b) => b == a ? ulong.MaxValue : 0);
 		}
 
 		private void ExecuteNeq(Instruction instruction) {
-			this.Access(instruction.Parameter1, instruction.Parameter2, (a, b) => this.Registers[Register.RZ] = b != a ? ulong.MaxValue : 0);
+			this.Access(instruction.Parameter1, instruction.Parameter2, instruction.Parameter3, (a, b) => b != a ? ulong.MaxValue : 0);
 		}
 
 		#endregion

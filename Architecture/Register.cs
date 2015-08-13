@@ -1,7 +1,5 @@
 ﻿namespace ArkeOS.Architecture {
 	public enum Register : byte {
-		RZ,
-		RS,
 		RC,
 		RO,
 		RF,

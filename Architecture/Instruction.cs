@@ -14,7 +14,6 @@ namespace ArkeOS.Architecture {
 		public Parameter Parameter1 => this.parameters[0];
 		public Parameter Parameter2 => this.parameters[1];
 		public Parameter Parameter3 => this.parameters[2];
-		public Parameter Parameter4 => this.parameters[3];
 
 		public byte SizeInBytes => Helpers.SizeToBytes(this.Size);
 		public byte SizeInBits => Helpers.SizeToBits(this.Size);
