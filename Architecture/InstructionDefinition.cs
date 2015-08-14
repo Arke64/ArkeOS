@@ -9,6 +9,7 @@ namespace ArkeOS.Architecture {
 		public string Mnemonic { get; }
 		public byte Code { get; }
 		public byte ParameterCount { get; }
+		public bool IsJump { get; }
 
 		public string CamelCaseMnemonic => this.Mnemonic[0] + this.Mnemonic.Substring(1).ToLower();
 
@@ -28,13 +29,11 @@ namespace ArkeOS.Architecture {
 			new InstructionDefinition("OUT", 7, 2);
 			new InstructionDefinition("PUSH", 8, 1);
 			new InstructionDefinition("POP", 9, 1);
-			new InstructionDefinition("JZ", 10, 2);
-			new InstructionDefinition("JNZ", 11, 2);
-			new InstructionDefinition("JMP", 12, 1);
-			new InstructionDefinition("CALL", 13, 1);
-			new InstructionDefinition("RET", 14, 0);
-			new InstructionDefinition("INTE", 15, 0);
-			new InstructionDefinition("INTD", 16, 0);
+			new InstructionDefinition("JZ", 10, 2, true);
+			new InstructionDefinition("JNZ", 11, 2, true);
+			new InstructionDefinition("JMP", 12, 1, true);
+			new InstructionDefinition("INTE", 13, 0);
+			new InstructionDefinition("INTD", 14, 0);
 
 			new InstructionDefinition("ADD", 20, 3);
 			new InstructionDefinition("ADC", 21, 3);
@@ -74,10 +73,11 @@ namespace ArkeOS.Architecture {
 			new InstructionDefinition("PAU", 61, 0);
 		}
 
-		private InstructionDefinition(string mnemonic, byte code, byte parameterCount) {
+		private InstructionDefinition(string mnemonic, byte code, byte parameterCount, bool isJump = false) {
 			this.Mnemonic = mnemonic;
 			this.Code = code;
 			this.ParameterCount = parameterCount;
+			this.IsJump = isJump;
 
 			InstructionDefinition.mnemonics.Add(mnemonic, this);
 			InstructionDefinition.instructions[code] = this;

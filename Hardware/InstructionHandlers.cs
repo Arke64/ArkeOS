@@ -15,9 +15,7 @@ namespace ArkeOS.Hardware {
 		}
 
 		private void ExecuteInt(Instruction instruction) {
-			this.EnterInterrupt((Interrupt)this.GetValue(instruction.Parameter1));
-
-			this.supressRIPIncrement = true;
+			this.interruptController.Enqueue((Interrupt)this.GetValue(instruction.Parameter1));
 		}
 
 		private void ExecuteEint(Instruction instruction) {
@@ -48,24 +46,46 @@ namespace ArkeOS.Hardware {
 		}
 
 		private void ExecutePush(Instruction instruction) {
-			this.Access(instruction.Parameter1, a => this.Push(instruction.Size, a));
+			this.Access(instruction.Parameter1, a => {
+				this.Registers[Register.RSP] -= Helpers.SizeToBytes(instruction.Size);
+
+				switch (instruction.Size) {
+					case InstructionSize.OneByte: this.memoryController.WriteU8(this.Registers[Register.RSP], (byte)a); break;
+					case InstructionSize.TwoByte: this.memoryController.WriteU16(this.Registers[Register.RSP], (ushort)a); break;
+					case InstructionSize.FourByte: this.memoryController.WriteU32(this.Registers[Register.RSP], (uint)a); break;
+					case InstructionSize.EightByte: this.memoryController.WriteU64(this.Registers[Register.RSP], a); break;
+				}
+			});
 		}
 
 		private void ExecutePop(Instruction instruction) {
-			this.Access(instruction.Parameter1, () => this.Pop(instruction.Size));
+			this.Access(instruction.Parameter1, () => {
+				var value = 0UL;
+
+				switch (instruction.Size) {
+					case InstructionSize.OneByte: value = this.memoryController.ReadU8(this.Registers[Register.RSP]); break;
+					case InstructionSize.TwoByte: value = this.memoryController.ReadU16(this.Registers[Register.RSP]); break;
+					case InstructionSize.FourByte: value = this.memoryController.ReadU32(this.Registers[Register.RSP]); break;
+					case InstructionSize.EightByte: value = this.memoryController.ReadU64(this.Registers[Register.RSP]); break;
+				}
+
+				this.Registers[Register.RSP] += Helpers.SizeToBytes(instruction.Size);
+
+				return value;
+			});
 		}
 
 		private void ExecuteJz(Instruction instruction) {
-			if (this.GetValue(instruction.Parameter1) == 0) {
-				this.Registers[Register.RIP] = this.GetValue(instruction.Parameter2);
+			if (this.GetValue(instruction.Parameter2) == 0) {
+				this.Registers[Register.RIP] = this.GetValue(instruction.Parameter1);
 
 				this.supressRIPIncrement = true;
 			}
 		}
 
 		private void ExecuteJnz(Instruction instruction) {
-			if (this.GetValue(instruction.Parameter1) != 0) {
-				this.Registers[Register.RIP] = this.GetValue(instruction.Parameter2);
+			if (this.GetValue(instruction.Parameter2) != 0) {
+				this.Registers[Register.RIP] = this.GetValue(instruction.Parameter1);
 
 				this.supressRIPIncrement = true;
 			}
@@ -73,20 +93,6 @@ namespace ArkeOS.Hardware {
 
 		private void ExecuteJmp(Instruction instruction) {
 			this.Registers[Register.RIP] = this.GetValue(instruction.Parameter1);
-
-			this.supressRIPIncrement = true;
-		}
-
-		private void ExecuteCall(Instruction instruction) {
-			this.Push(instruction.Size, this.Registers[Register.RIP] + instruction.Length);
-
-			this.Registers[Register.RIP] = this.GetValue(instruction.Parameter1);
-
-			this.supressRIPIncrement = true;
-		}
-
-		private void ExecuteRet(Instruction instruction) {
-			this.Registers[Register.RIP] = this.Pop(instruction.Size);
 
 			this.supressRIPIncrement = true;
 		}

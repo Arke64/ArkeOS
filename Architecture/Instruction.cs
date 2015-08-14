@@ -5,8 +5,8 @@ using System.Linq;
 namespace ArkeOS.Architecture {
 	public class Instruction {
 		private Parameter[] parameters;
-		private InstructionDefinition definition;
 
+		public InstructionDefinition Definition { get; private set; }
 		public byte Code { get; }
 		public InstructionSize Size { get; }
 		public byte Length { get; }
@@ -23,7 +23,7 @@ namespace ArkeOS.Architecture {
 			this.Code = code;
 			this.Size = size;
 
-			this.definition = InstructionDefinition.Find(this.Code);
+			this.Definition = InstructionDefinition.Find(this.Code);
 			this.parameters = parameters.ToArray();
 
 			this.Length = (byte)(this.parameters.Sum(p => p.Length) + 2);
@@ -37,10 +37,10 @@ namespace ArkeOS.Architecture {
 			this.Size = (InstructionSize)(b1 & 0x03);
 			this.Code = (byte)((b1 & 0xFC) >> 2);
 
-			this.definition = InstructionDefinition.Find(this.Code);
-			this.parameters = new Parameter[this.definition.ParameterCount];
+			this.Definition = InstructionDefinition.Find(this.Code);
+			this.parameters = new Parameter[this.Definition.ParameterCount];
 
-			for (var i = 0; i < this.definition.ParameterCount; address += this.parameters[i++].Length)
+			for (var i = 0; i < this.Definition.ParameterCount; address += this.parameters[i++].Length)
 				this.parameters[i] = new Parameter((ParameterType)((b2 >> (i * 2)) & 0x03), this.Size, memory, address);
 
 			this.Length = (byte)(address - startAddress);
@@ -50,7 +50,7 @@ namespace ArkeOS.Architecture {
 			writer.Write((byte)((this.Code << 2) | (((byte)this.Size) & 0x03)));
 
 			byte b = 0;
-			for (var i = 0; i < this.definition.ParameterCount; i++)
+			for (var i = 0; i < this.Definition.ParameterCount; i++)
 				b |= (byte)(((byte)this.parameters[i].Type) << (i * 2));
 
 			writer.Write(b);
@@ -60,7 +60,7 @@ namespace ArkeOS.Architecture {
 		}
 
 		public override string ToString() {
-			return this.definition.Mnemonic + ":" + this.SizeInBytes + " " + string.Join(" ", this.parameters.Select(p => p.ToString()));
+			return this.Definition.Mnemonic + ":" + this.SizeInBytes + " " + string.Join(" ", this.parameters.Select(p => p.ToString()));
 		}
 	}
 }

@@ -8,22 +8,33 @@ using ArkeOS.Architecture;
 
 namespace ArkeOS.Hardware {
 	public partial class Processor {
+		private static int MaxInstructionPipelineLength => 64;
+
 		private class Configuration {
 			public ushort SystemTickInterval { get; set; } = 50;
-			public bool InstructionPreParseEnabled { get; set; } = true;
+			public bool InstructionPipelineEnabled { get; set; } = true;
 			public byte ProtectionMode { get; set; } = 0;
 		}
 
-		private Dictionary<ulong, Instruction> instructionCache;
+		private struct CachedInstruction {
+			public Instruction Instruction { get; set; }
+			public ulong ExpectedAddress { get; set; }
+		}
+
 		private Configuration configuration;
 		private MemoryController memoryController;
 		private InterruptController interruptController;
 		private Action<Instruction>[] instructionHandlers;
 		private Timer systemTimer;
+		private Queue<CachedInstruction> decodedInstructions;
+		private AutoResetEvent flushPipelineEvent;
+		private Dictionary<ulong, ulong> jumpHistory;
+		private bool flushPipeline;
 		private bool supressRIPIncrement;
 		private bool interruptsEnabled;
 		private bool inProtectedIsr;
 		private bool inIsr;
+		private bool broken;
 		private bool running;
 
 		public Instruction CurrentInstruction { get; private set; }
@@ -35,6 +46,7 @@ namespace ArkeOS.Hardware {
 			this.memoryController = memoryController;
 			this.interruptController = interruptController;
 
+			this.flushPipelineEvent = new AutoResetEvent(false);
 			this.systemTimer = new Timer(this.OnSystemTimerTick, null, Timeout.Infinite, Timeout.Infinite);
 			this.instructionHandlers = new Action<Instruction>[InstructionDefinition.All.Max(i => i.Code) + 1];
 
@@ -47,28 +59,33 @@ namespace ArkeOS.Hardware {
 		}
 
 		public void Start() {
+			this.broken = true;
 			this.running = true;
 
 			this.Reset();
+
+			new Task(this.MaintainInstructionPipeline, TaskCreationOptions.LongRunning).Start();
 
 			this.SetNextInstruction();
 		}
 
 		public void Stop() {
+			this.running = false;
+
 			this.Break();
 		}
 
 		public void Break() {
-			this.running = false;
+			this.broken = true;
 			this.systemTimer.Change(Timeout.Infinite, Timeout.Infinite);
 		}
 
 		public void Continue() {
-			this.running = true;
+			this.broken = false;
 			this.systemTimer.Change(this.configuration.SystemTickInterval, this.configuration.SystemTickInterval);
 
 			new Task(() => {
-				while (this.running)
+				while (!this.broken)
 					this.Tick();
 			}, TaskCreationOptions.LongRunning).Start();
 		}
@@ -81,8 +98,10 @@ namespace ArkeOS.Hardware {
 			this.Registers = new RegisterManager();
 
 			this.configuration = new Configuration();
-			this.instructionCache = new Dictionary<ulong, Instruction>();
+			this.decodedInstructions = new Queue<CachedInstruction>();
+			this.jumpHistory = new Dictionary<ulong, ulong>();
 
+			this.flushPipeline = false;
 			this.supressRIPIncrement = false;
 			this.interruptsEnabled = true;
 			this.inProtectedIsr = false;
@@ -94,31 +113,87 @@ namespace ArkeOS.Hardware {
 				this.interruptController.Enqueue(Interrupt.SystemTimer);
 		}
 
+		private void MaintainInstructionPipeline() {
+			var address = 0UL;
+
+			while (this.running) {
+				if (this.flushPipeline) {
+					this.decodedInstructions = new Queue<CachedInstruction>();
+					this.flushPipelineEvent.Set();
+					this.flushPipeline = false;
+
+					address = this.Registers[Register.RIP];
+				}
+
+				if (this.decodedInstructions.Count < Processor.MaxInstructionPipelineLength) {
+					ulong jumpAddress;
+
+					var instruction = this.memoryController.ReadInstruction(address);
+
+					lock (this.decodedInstructions)
+						this.decodedInstructions.Enqueue(new CachedInstruction() { Instruction = instruction, ExpectedAddress = address });
+
+					if (instruction.Definition.IsJump && this.jumpHistory.TryGetValue(address, out jumpAddress)) {
+						address = jumpAddress;
+					}
+					else {
+						address += instruction.Length;
+					}
+				}
+			}
+		}
+
 		private void SetNextInstruction() {
 			var address = this.Registers[Register.RIP];
 
-			Instruction instruction;
+			if (!this.configuration.InstructionPipelineEnabled) {
+				this.CurrentInstruction = this.memoryController.ReadInstruction(address);
 
-			if (!this.configuration.InstructionPreParseEnabled) {
-				instruction = this.memoryController.ReadInstruction(address);
-			}
-			else if (!this.instructionCache.TryGetValue(address, out instruction)) {
-				instruction = this.memoryController.ReadInstruction(address);
-
-				this.instructionCache[address] = instruction;
+				return;
 			}
 
-			this.CurrentInstruction = instruction;
+			while (true) {
+				CachedInstruction cached;
+
+				lock (this.decodedInstructions) {
+					if (this.decodedInstructions.Any()) {
+						cached = this.decodedInstructions.Dequeue();
+					}
+					else {
+						continue;
+					}
+				}
+
+				if (cached.ExpectedAddress == address) {
+					this.CurrentInstruction = cached.Instruction;
+
+					return;
+				}
+				else {
+					this.flushPipeline = true;
+					this.flushPipelineEvent.WaitOne();
+				}
+			}
 		}
 
 		private void Tick() {
+			var startIP = this.Registers[Register.RIP];
+
 			if (this.instructionHandlers.Length >= this.CurrentInstruction.Code && this.instructionHandlers[this.CurrentInstruction.Code] != null) {
 				this.instructionHandlers[this.CurrentInstruction.Code](this.CurrentInstruction);
 
-				if (!this.supressRIPIncrement)
+				if (!this.supressRIPIncrement) {
 					this.Registers[Register.RIP] += this.CurrentInstruction.Length;
 
-				this.supressRIPIncrement = false;
+					if (this.CurrentInstruction.Definition.IsJump && this.jumpHistory.ContainsKey(startIP))
+						this.jumpHistory.Remove(startIP);
+				}
+				else {
+					if (this.CurrentInstruction.Definition.IsJump)
+						this.jumpHistory[startIP] = this.Registers[Register.RIP];
+
+					this.supressRIPIncrement = false;
+				}
 			}
 			else {
 				this.interruptController.Enqueue(Interrupt.InvalidInstruction);
@@ -148,88 +223,47 @@ namespace ArkeOS.Hardware {
 
 		private void UpdateConfiguration() {
 			this.configuration.SystemTickInterval = this.memoryController.ReadU16(this.Registers[Register.RCFG] + 0);
-			this.configuration.InstructionPreParseEnabled = this.memoryController.ReadU16(this.Registers[Register.RCFG] + 2) != 0;
+			this.configuration.InstructionPipelineEnabled = this.memoryController.ReadU16(this.Registers[Register.RCFG] + 2) != 0;
 			this.configuration.ProtectionMode = this.memoryController.ReadU8(this.Registers[Register.RCFG] + 3);
 		}
 
 		private ulong GetValue(Parameter parameter) {
 			var value = 0UL;
 
-			switch (parameter.Type) {
-				case ParameterType.Literal:
-					value = parameter.Literal;
-					break;
-
-				case ParameterType.Register:
-					if (this.IsRegisterReadAllowed(parameter.Register))
-						value = this.Registers[parameter.Register];
-
-					break;
-
-				case ParameterType.LiteralAddress:
-					value = this.memoryController.ReadU64(parameter.Literal);
-
-					break;
-
-				case ParameterType.RegisterAddress:
-					if (this.IsRegisterReadAllowed(parameter.Register))
-						value = this.memoryController.ReadU64(this.Registers[parameter.Register]);
-
-					break;
+			if (parameter.Type == ParameterType.Literal) {
+				value = parameter.Literal;
+			}
+			else if (parameter.Type == ParameterType.Register) {
+				if (this.IsRegisterReadAllowed(parameter.Register))
+					value = this.Registers[parameter.Register];
+			}
+			else if (parameter.Type == ParameterType.LiteralAddress) {
+				value = this.memoryController.ReadU64(parameter.Literal);
+			}
+			else if (parameter.Type == ParameterType.RegisterAddress) {
+				if (this.IsRegisterReadAllowed(parameter.Register))
+					value = this.memoryController.ReadU64(this.Registers[parameter.Register]);
 			}
 
 			return value & this.CurrentInstruction.SizeMask;
 		}
 
 		private void SetValue(Parameter parameter, ulong value) {
-			switch (parameter.Type) {
-				case ParameterType.Register:
-					if (this.IsRegisterWriteAllowed(parameter.Register)) {
-						this.Registers[parameter.Register] = value;
+			if (parameter.Type == ParameterType.Register) {
+				if (this.IsRegisterWriteAllowed(parameter.Register)) {
+					this.Registers[parameter.Register] = value;
 
-						if (parameter.Register == Register.RCFG)
-							this.UpdateConfiguration();
-					}
-
-					break;
-
-				case ParameterType.LiteralAddress:
-					this.memoryController.WriteU64(parameter.Literal, value);
-
-					break;
-
-				case ParameterType.RegisterAddress:
-					if (this.IsRegisterReadAllowed(parameter.Register))
-						this.memoryController.WriteU64(this.Registers[parameter.Register], value);
-
-					break;
+					if (parameter.Register == Register.RCFG)
+						this.UpdateConfiguration();
+				}
 			}
-		}
-
-		private void Push(InstructionSize size, ulong value) {
-			this.Registers[Register.RSP] -= Helpers.SizeToBytes(size);
-
-			switch (size) {
-				case InstructionSize.OneByte: this.memoryController.WriteU8(this.Registers[Register.RSP], (byte)value); break;
-				case InstructionSize.TwoByte: this.memoryController.WriteU16(this.Registers[Register.RSP], (ushort)value); break;
-				case InstructionSize.FourByte: this.memoryController.WriteU32(this.Registers[Register.RSP], (uint)value); break;
-				case InstructionSize.EightByte: this.memoryController.WriteU64(this.Registers[Register.RSP], value); break;
+			else if (parameter.Type == ParameterType.LiteralAddress) {
+				this.memoryController.WriteU64(parameter.Literal, value);
 			}
-		}
-
-		private ulong Pop(InstructionSize size) {
-			var value = 0UL;
-
-			switch (size) {
-				case InstructionSize.OneByte: value = this.memoryController.ReadU8(this.Registers[Register.RSP]); break;
-				case InstructionSize.TwoByte: value = this.memoryController.ReadU16(this.Registers[Register.RSP]); break;
-				case InstructionSize.FourByte: value = this.memoryController.ReadU32(this.Registers[Register.RSP]); break;
-				case InstructionSize.EightByte: value = this.memoryController.ReadU64(this.Registers[Register.RSP]); break;
+			else if (parameter.Type == ParameterType.RegisterAddress) {
+				if (this.IsRegisterReadAllowed(parameter.Register))
+					this.memoryController.WriteU64(this.Registers[parameter.Register], value);
 			}
-
-			this.Registers[Register.RSP] += Helpers.SizeToBytes(size);
-
-			return value;
 		}
 
 		private bool IsRegisterReadAllowed(Register register) => this.inProtectedIsr || this.configuration.ProtectionMode == 0 || !this.Registers.IsReadProtected(register);
