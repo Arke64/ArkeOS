@@ -9,75 +9,96 @@ namespace ArkeOS.Architecture {
 		public string Mnemonic { get; }
 		public byte Code { get; }
 		public byte ParameterCount { get; }
-		public bool IsJump { get; }
 
-		public string CamelCaseMnemonic => this.Mnemonic[0] + this.Mnemonic.Substring(1).ToLower();
+		public ParameterDirection Parameter1Direction { get; }
+		public ParameterDirection Parameter2Direction { get; }
+		public ParameterDirection Parameter3Direction { get; }
 
 		public static IReadOnlyList<InstructionDefinition> All => InstructionDefinition.instructions.Where(c => c != null).ToList();
+
+		public enum ParameterDirection {
+			Read,
+			Write,
+		}
 
 		static InstructionDefinition() {
 			InstructionDefinition.mnemonics = new Dictionary<string, InstructionDefinition>();
 			InstructionDefinition.instructions = new InstructionDefinition[256];
 
-			new InstructionDefinition("HLT", 0, 0);
-			new InstructionDefinition("NOP", 1, 0);
-			new InstructionDefinition("INT", 2, 1);
-			new InstructionDefinition("EINT", 3, 0);
-			new InstructionDefinition("MOV", 4, 2);
-			new InstructionDefinition("XCHG", 5, 2);
-			new InstructionDefinition("IN", 6, 2);
-			new InstructionDefinition("OUT", 7, 2);
-			new InstructionDefinition("PUSH", 8, 1);
-			new InstructionDefinition("POP", 9, 1);
-			new InstructionDefinition("JZ", 10, 2, true);
-			new InstructionDefinition("JNZ", 11, 2, true);
-			new InstructionDefinition("JMP", 12, 1, true);
-			new InstructionDefinition("INTE", 13, 0);
-			new InstructionDefinition("INTD", 14, 0);
+			new InstructionDefinition("HLT", 0);
+			new InstructionDefinition("NOP", 1);
+			new InstructionDefinition("INT", 2, ParameterDirection.Read);
+			new InstructionDefinition("EINT", 3, ParameterDirection.Read);
+			new InstructionDefinition("INTE", 4, ParameterDirection.Read);
+			new InstructionDefinition("INTD", 5, ParameterDirection.Read);
+			new InstructionDefinition("MOV", 6, ParameterDirection.Read, ParameterDirection.Write);
+			new InstructionDefinition("XCHG", 7, ParameterDirection.Write, ParameterDirection.Write);
+			new InstructionDefinition("IN", 8, ParameterDirection.Read, ParameterDirection.Write);
+			new InstructionDefinition("OUT", 9, ParameterDirection.Read, ParameterDirection.Read);
+			new InstructionDefinition("JZ", 10, ParameterDirection.Read, ParameterDirection.Read);
+			new InstructionDefinition("JNZ", 11, ParameterDirection.Read, ParameterDirection.Read);
+			new InstructionDefinition("JMP", 12, ParameterDirection.Read);
+			new InstructionDefinition("PUSH", 13, ParameterDirection.Read);
+			new InstructionDefinition("POP", 14, ParameterDirection.Write);
 
-			new InstructionDefinition("ADD", 20, 3);
-			new InstructionDefinition("ADC", 21, 3);
-			new InstructionDefinition("ADF", 22, 3);
-			new InstructionDefinition("SUB", 23, 3);
-			new InstructionDefinition("SBB", 24, 3);
-			new InstructionDefinition("SBF", 25, 3);
-			new InstructionDefinition("DIV", 26, 3);
-			new InstructionDefinition("DVF", 27, 3);
-			new InstructionDefinition("MUL", 28, 3);
-			new InstructionDefinition("MLF", 39, 3);
-			new InstructionDefinition("INC", 30, 2);
-			new InstructionDefinition("DEC", 31, 2);
-			new InstructionDefinition("NEG", 32, 2);
-			new InstructionDefinition("MOD", 33, 3);
-			new InstructionDefinition("MDF", 34, 3);
+			new InstructionDefinition("ADD", 20, ParameterDirection.Read, ParameterDirection.Read, ParameterDirection.Write);
+			new InstructionDefinition("ADDC", 21, ParameterDirection.Read, ParameterDirection.Read, ParameterDirection.Write);
+			new InstructionDefinition("ADDF", 22, ParameterDirection.Read, ParameterDirection.Read, ParameterDirection.Write);
+			new InstructionDefinition("SUB", 23, ParameterDirection.Read, ParameterDirection.Read, ParameterDirection.Write);
+			new InstructionDefinition("SUBC", 24, ParameterDirection.Read, ParameterDirection.Read, ParameterDirection.Write);
+			new InstructionDefinition("SUBF", 25, ParameterDirection.Read, ParameterDirection.Read, ParameterDirection.Write);
+			new InstructionDefinition("DIV", 26, ParameterDirection.Read, ParameterDirection.Read, ParameterDirection.Write);
+			new InstructionDefinition("DIVF", 27, ParameterDirection.Read, ParameterDirection.Read, ParameterDirection.Write);
+			new InstructionDefinition("MUL", 28, ParameterDirection.Read, ParameterDirection.Read, ParameterDirection.Write);
+			new InstructionDefinition("MULF", 29, ParameterDirection.Read, ParameterDirection.Read, ParameterDirection.Write);
+			new InstructionDefinition("MOD", 30, ParameterDirection.Read, ParameterDirection.Read, ParameterDirection.Write);
+			new InstructionDefinition("MODF", 31, ParameterDirection.Read, ParameterDirection.Read, ParameterDirection.Write);
 
-			new InstructionDefinition("SR", 40, 3);
-			new InstructionDefinition("SL", 41, 3);
-			new InstructionDefinition("RR", 42, 3);
-			new InstructionDefinition("RL", 43, 3);
-			new InstructionDefinition("NAND", 44, 3);
-			new InstructionDefinition("AND", 45, 3);
-			new InstructionDefinition("NOR", 46, 3);
-			new InstructionDefinition("OR", 47, 3);
-			new InstructionDefinition("NXOR", 48, 3);
-			new InstructionDefinition("XOR", 49, 3);
-			new InstructionDefinition("NOT", 50, 2);
-			new InstructionDefinition("GT", 51, 3);
-			new InstructionDefinition("GTE", 52, 3);
-			new InstructionDefinition("LT", 53, 3);
-			new InstructionDefinition("LTE", 54, 3);
-			new InstructionDefinition("EQ", 55, 3);
-			new InstructionDefinition("NEQ", 56, 3);
+			new InstructionDefinition("SR", 40, ParameterDirection.Read, ParameterDirection.Read, ParameterDirection.Write);
+			new InstructionDefinition("SL", 41, ParameterDirection.Read, ParameterDirection.Read, ParameterDirection.Write);
+			new InstructionDefinition("RR", 42, ParameterDirection.Read, ParameterDirection.Read, ParameterDirection.Write);
+			new InstructionDefinition("RL", 43, ParameterDirection.Read, ParameterDirection.Read, ParameterDirection.Write);
+			new InstructionDefinition("NAND", 44, ParameterDirection.Read, ParameterDirection.Read, ParameterDirection.Write);
+			new InstructionDefinition("AND", 45, ParameterDirection.Read, ParameterDirection.Read, ParameterDirection.Write);
+			new InstructionDefinition("NOR", 46, ParameterDirection.Read, ParameterDirection.Read, ParameterDirection.Write);
+			new InstructionDefinition("OR", 47, ParameterDirection.Read, ParameterDirection.Read, ParameterDirection.Write);
+			new InstructionDefinition("NXOR", 48, ParameterDirection.Read, ParameterDirection.Read, ParameterDirection.Write);
+			new InstructionDefinition("XOR", 49, ParameterDirection.Read, ParameterDirection.Read, ParameterDirection.Write);
+			new InstructionDefinition("NOT", 50, ParameterDirection.Read, ParameterDirection.Write);
+			new InstructionDefinition("GT", 51, ParameterDirection.Read, ParameterDirection.Read, ParameterDirection.Write);
+			new InstructionDefinition("GTE", 52, ParameterDirection.Read, ParameterDirection.Read, ParameterDirection.Write);
+			new InstructionDefinition("LT", 53, ParameterDirection.Read, ParameterDirection.Read, ParameterDirection.Write);
+			new InstructionDefinition("LTE", 54, ParameterDirection.Read, ParameterDirection.Read, ParameterDirection.Write);
+			new InstructionDefinition("EQ", 55, ParameterDirection.Read, ParameterDirection.Read, ParameterDirection.Write);
+			new InstructionDefinition("NEQ", 56, ParameterDirection.Read, ParameterDirection.Read, ParameterDirection.Write);
 
-			new InstructionDefinition("DBG", 60, 1);
-			new InstructionDefinition("PAU", 61, 0);
+			new InstructionDefinition("DBG", 60, ParameterDirection.Write);
+			new InstructionDefinition("PAU", 61);
 		}
 
-		private InstructionDefinition(string mnemonic, byte code, byte parameterCount, bool isJump = false) {
+		private InstructionDefinition(string mnemonic, byte code) : this(mnemonic, code, (byte)0) {
+
+		}
+
+		private InstructionDefinition(string mnemonic, byte code, ParameterDirection parameter1Direction) : this(mnemonic, code, 1) {
+			this.Parameter1Direction = parameter1Direction;
+		}
+
+		private InstructionDefinition(string mnemonic, byte code, ParameterDirection parameter1Direction, ParameterDirection parameter2Direction) : this(mnemonic, code, 2) {
+			this.Parameter1Direction = parameter1Direction;
+			this.Parameter2Direction = parameter2Direction;
+		}
+
+		private InstructionDefinition(string mnemonic, byte code, ParameterDirection parameter1Direction, ParameterDirection parameter2Direction, ParameterDirection parameter3Direction) : this(mnemonic, code, 3) {
+			this.Parameter1Direction = parameter1Direction;
+			this.Parameter2Direction = parameter2Direction;
+			this.Parameter3Direction = parameter3Direction;
+		}
+
+		private InstructionDefinition(string mnemonic, byte code, byte parameterCount) {
 			this.Mnemonic = mnemonic;
 			this.Code = code;
 			this.ParameterCount = parameterCount;
-			this.IsJump = isJump;
 
 			InstructionDefinition.mnemonics.Add(mnemonic, this);
 			InstructionDefinition.instructions[code] = this;

@@ -15,11 +15,12 @@ namespace ArkeOS.Hardware {
 			public byte ProtectionMode { get; set; } = 0;
 		}
 
+		private delegate void Handler(ref ulong a, ref ulong b, ref ulong c);
 
 		private Configuration configuration;
 		private MemoryController memoryController;
 		private InterruptController interruptController;
-		private Action<Instruction>[] instructionHandlers;
+		private Handler[] instructionHandlers;
 		private Timer systemTimer;
 		private Instruction[] cachedInstructions;
 		private ulong cacheBaseAddress;
@@ -39,10 +40,10 @@ namespace ArkeOS.Hardware {
 			this.interruptController = interruptController;
 
 			this.systemTimer = new Timer(this.OnSystemTimerTick, null, Timeout.Infinite, Timeout.Infinite);
-			this.instructionHandlers = new Action<Instruction>[InstructionDefinition.All.Max(i => i.Code) + 1];
+			this.instructionHandlers = new Handler[InstructionDefinition.All.Max(i => i.Code) + 1];
 
 			foreach (var i in InstructionDefinition.All)
-				this.instructionHandlers[i.Code] = (Action<Instruction>)this.GetType().GetMethod("Execute" + i.CamelCaseMnemonic, BindingFlags.NonPublic | BindingFlags.Instance).CreateDelegate(typeof(Action<Instruction>), this);
+				this.instructionHandlers[i.Code] = (Handler)this.GetType().GetMethod("Execute" + i.Mnemonic, BindingFlags.NonPublic | BindingFlags.Instance).CreateDelegate(typeof(Handler), this);
 		}
 
 		public void LoadStartupImage(byte[] image) {
@@ -119,12 +120,17 @@ namespace ArkeOS.Hardware {
 			else {
 				this.CurrentInstruction = this.cachedInstructions[offset] = this.memoryController.ReadInstruction(address);
 			}
-
 		}
 
 		private void Tick() {
+			ulong a = 0, b = 0, c = 0;
+
 			if (this.instructionHandlers.Length >= this.CurrentInstruction.Code && this.instructionHandlers[this.CurrentInstruction.Code] != null) {
-				this.instructionHandlers[this.CurrentInstruction.Code](this.CurrentInstruction);
+				this.LoadParameters(ref a, ref b, ref c);
+
+				this.instructionHandlers[this.CurrentInstruction.Code](ref a, ref b, ref c);
+
+				this.SaveParameters(a, b, c);
 
 				if (!this.supressRIPIncrement) {
 					this.Registers[Register.RIP] += this.CurrentInstruction.Length;
@@ -141,6 +147,28 @@ namespace ArkeOS.Hardware {
 				this.EnterInterrupt(this.interruptController.Dequeue());
 
 			this.SetNextInstruction();
+		}
+
+		private void LoadParameters(ref ulong a, ref ulong b, ref ulong c) {
+			if (this.CurrentInstruction.Definition.ParameterCount >= 3 && this.CurrentInstruction.Definition.Parameter3Direction == InstructionDefinition.ParameterDirection.Read)
+				c = this.GetValue(this.CurrentInstruction.Parameter3);
+
+			if (this.CurrentInstruction.Definition.ParameterCount >= 2 && this.CurrentInstruction.Definition.Parameter2Direction == InstructionDefinition.ParameterDirection.Read)
+				b = this.GetValue(this.CurrentInstruction.Parameter2);
+
+			if (this.CurrentInstruction.Definition.ParameterCount >= 1 && this.CurrentInstruction.Definition.Parameter1Direction == InstructionDefinition.ParameterDirection.Read)
+				a = this.GetValue(this.CurrentInstruction.Parameter1);
+		}
+
+		private void SaveParameters(ulong a, ulong b, ulong c) {
+			if (this.CurrentInstruction.Definition.ParameterCount >= 3 && this.CurrentInstruction.Definition.Parameter3Direction == InstructionDefinition.ParameterDirection.Write)
+				this.SetValue(this.CurrentInstruction.Parameter3, c);
+
+			if (this.CurrentInstruction.Definition.ParameterCount >= 2 && this.CurrentInstruction.Definition.Parameter2Direction == InstructionDefinition.ParameterDirection.Write)
+				this.SetValue(this.CurrentInstruction.Parameter2, b);
+
+			if (this.CurrentInstruction.Definition.ParameterCount >= 1 && this.CurrentInstruction.Definition.Parameter1Direction == InstructionDefinition.ParameterDirection.Write)
+				this.SetValue(this.CurrentInstruction.Parameter1, a);
 		}
 
 		private void EnterInterrupt(Interrupt id) {
@@ -206,11 +234,5 @@ namespace ArkeOS.Hardware {
 
 		private bool IsRegisterReadAllowed(Register register) => this.inProtectedIsr || this.configuration.ProtectionMode == 0 || !this.Registers.IsReadProtected(register);
 		private bool IsRegisterWriteAllowed(Register register) => this.inProtectedIsr || this.configuration.ProtectionMode == 0 || !this.Registers.IsWriteProtected(register);
-
-		private void Access(Instruction instruction, Action<ulong> operation) => operation(this.GetValue(instruction.Parameter1));
-		private void Access(Instruction instruction, Action<ulong, ulong> operation) => operation(this.GetValue(instruction.Parameter1), this.GetValue(instruction.Parameter2));
-		private void Access(Instruction instruction, Func<ulong> operation) => this.SetValue(instruction.Parameter1, operation());
-		private void Access(Instruction instruction, Func<ulong, ulong> operation) => this.SetValue(instruction.Parameter2, operation(this.GetValue(instruction.Parameter1)));
-		private void Access(Instruction instruction, Func<ulong, ulong, ulong> operation) => this.SetValue(instruction.Parameter3, operation(this.GetValue(instruction.Parameter1), this.GetValue(instruction.Parameter2)));
 	}
 }
