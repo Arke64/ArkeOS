@@ -10,6 +10,7 @@
 		RIDT,
 		RMDT,
 		RTDT,
+		RINT,
 		RI0,
 		RI1,
 		RI2,

@@ -5,13 +5,14 @@ RI0-RI7: General purpose use for interrupts only
 RC: Carry flag
 RO: 0x00.. register
 RF: 0xFF.. register
-RCFG: Physical address of the processor configuration table
-RSIP: Address of the instruction executing when an interrupt fires
-RIP: Address of the current instruction
 RSP: Address of the current stack position
+RIP: Address of the current instruction
+RSIP: Address of the instruction executing when an interrupt fires
+RCFG: Physical address of the processor configuration table
 RIDT: Physical address of the interrupt descriptor table
 RMDT: Physical address of the memory descriptor table
 RTDT: Physical address of the task descriptor table
+RINT: Data made available from an interrupt
 
 CFG
 ---
@@ -31,14 +32,17 @@ IDT
 0x07-0x0F: Reserved
 0x10-0xFF: User defined
 
-Format
-------
-6b Code: The instruction code
-2b Size: The size of data to work with (00 = 1 byte, 01 = 2 byte, 10 = 4 byte, 11 = 8 byte)
-2b Parameter 0: The type of the parameter (00 = value in register, 01 = immediate value with size specified by Size, 10 = value at literal address, 11 = value at address specified by register)
-2b Parameter 1: See above
-2b Parameter 2: See above
-0b-64b: Parameters
+Instruction Format
+------------------
+8b Code: The instruction code
+2b Size: 0 = 1 byte, 1 = 2 byte, 2 = 4 byte, 3 = 8 byte
+9b Parameters: 3 bits per parameter.
+    3b Type: 0 = register, 1 = register value as address to dereference, 2 = literal value, 3 = literal value as address to dereference, 4 = taken from stack, 5 = calculated value as address to dereference (base + index * scale + offset).
+0b-280b Parameter data: Parameter values in order of appearance
+
+Calculated Parameter
+--------------------
+First byte is the format. Each field is one bit: has index (default 0), has scale (default 1), has offset (default 0), register/literal base, register/literal index, register/literal scale, register/literal offset, positive/negative index
 
 Basic
 -----

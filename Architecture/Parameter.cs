@@ -27,6 +27,8 @@ namespace ArkeOS.Architecture {
 				case ParameterType.RegisterAddress: this.Register = (Register)memory[address]; this.Length = 1; break;
 				case ParameterType.Register: this.Register = (Register)memory[address]; this.Length = 1; break;
 				case ParameterType.LiteralAddress: this.Literal = BitConverter.ToUInt64(memory, (int)address); this.Length = 8; break;
+				case ParameterType.Stack: break;
+				case ParameterType.CalculatedAddress: break;
 				case ParameterType.Literal:
 					switch (size) {
 						case InstructionSize.OneByte: this.Literal = memory[address]; this.Length = 1; break;
@@ -45,6 +47,8 @@ namespace ArkeOS.Architecture {
 				case ParameterType.Register: writer.Write((byte)this.Register); break;
 				case ParameterType.LiteralAddress: writer.Write(this.Literal); break;
 				case ParameterType.Literal: Helpers.SizedWrite(writer, this.Literal, this.Length); break;
+				case ParameterType.Stack: break;
+				case ParameterType.CalculatedAddress: break;
 			}
 		}
 
@@ -54,6 +58,8 @@ namespace ArkeOS.Architecture {
 				case ParameterType.LiteralAddress: return $"[0x{this.Literal.ToString("X8")}]";
 				case ParameterType.Register: return this.Register.ToString();
 				case ParameterType.RegisterAddress: return $"[{this.Register.ToString()}]";
+				case ParameterType.Stack: return "";
+				case ParameterType.CalculatedAddress: return "";
 				default: return string.Empty;
 			}
 		}
