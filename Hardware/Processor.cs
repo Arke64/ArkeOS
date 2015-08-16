@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -16,7 +17,7 @@ namespace ArkeOS.Hardware {
 			public byte ProtectionMode { get; set; } = 0;
 		}
 
-		private struct CachedInstruction {
+		private struct DecodedInstruction {
 			public Instruction Instruction { get; set; }
 			public ulong ExpectedAddress { get; set; }
 		}
@@ -26,7 +27,8 @@ namespace ArkeOS.Hardware {
 		private InterruptController interruptController;
 		private Action<Instruction>[] instructionHandlers;
 		private Timer systemTimer;
-		private Queue<CachedInstruction> decodedInstructions;
+		private ConcurrentQueue<DecodedInstruction> decodedInstructions;
+		private Dictionary<ulong, Instruction> cachedInstructions;
 		private AutoResetEvent flushPipelineEvent;
 		private Dictionary<ulong, ulong> jumpHistory;
 		private bool flushPipeline;
@@ -98,8 +100,9 @@ namespace ArkeOS.Hardware {
 			this.Registers = new RegisterManager();
 
 			this.configuration = new Configuration();
-			this.decodedInstructions = new Queue<CachedInstruction>();
+			this.decodedInstructions = new ConcurrentQueue<DecodedInstruction>();
 			this.jumpHistory = new Dictionary<ulong, ulong>();
+			this.cachedInstructions = new Dictionary<ulong, Instruction>();
 
 			this.flushPipeline = false;
 			this.supressRIPIncrement = false;
@@ -118,7 +121,7 @@ namespace ArkeOS.Hardware {
 
 			while (this.running) {
 				if (this.flushPipeline) {
-					this.decodedInstructions = new Queue<CachedInstruction>();
+					this.decodedInstructions = new ConcurrentQueue<DecodedInstruction>();
 					this.flushPipelineEvent.Set();
 					this.flushPipeline = false;
 
@@ -126,12 +129,15 @@ namespace ArkeOS.Hardware {
 				}
 
 				if (this.decodedInstructions.Count < Processor.MaxInstructionPipelineLength) {
+					Instruction instruction;
 					ulong jumpAddress;
 
-					var instruction = this.memoryController.ReadInstruction(address);
+					if (!this.cachedInstructions.TryGetValue(address, out instruction)) {
+						instruction = this.memoryController.ReadInstruction(address);
+						this.cachedInstructions.Add(address, instruction);
+					}
 
-					lock (this.decodedInstructions)
-						this.decodedInstructions.Enqueue(new CachedInstruction() { Instruction = instruction, ExpectedAddress = address });
+					this.decodedInstructions.Enqueue(new DecodedInstruction() { Instruction = instruction, ExpectedAddress = address });
 
 					if (instruction.Definition.IsJump && this.jumpHistory.TryGetValue(address, out jumpAddress)) {
 						address = jumpAddress;
@@ -153,25 +159,18 @@ namespace ArkeOS.Hardware {
 			}
 
 			while (true) {
-				CachedInstruction cached;
+				DecodedInstruction cached;
 
-				lock (this.decodedInstructions) {
-					if (this.decodedInstructions.Any()) {
-						cached = this.decodedInstructions.Dequeue();
+				if (this.decodedInstructions.TryDequeue(out cached)) {
+					if (cached.ExpectedAddress == address) {
+						this.CurrentInstruction = cached.Instruction;
+
+						return;
 					}
 					else {
-						continue;
+						this.flushPipeline = true;
+						this.flushPipelineEvent.WaitOne();
 					}
-				}
-
-				if (cached.ExpectedAddress == address) {
-					this.CurrentInstruction = cached.Instruction;
-
-					return;
-				}
-				else {
-					this.flushPipeline = true;
-					this.flushPipelineEvent.WaitOne();
 				}
 			}
 		}
