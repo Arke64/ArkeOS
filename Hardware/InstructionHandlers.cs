@@ -15,7 +15,9 @@ namespace ArkeOS.Hardware {
 		}
 
 		private void ExecuteInt(Instruction instruction) {
-			this.interruptController.Enqueue((Interrupt)this.GetValue(instruction.Parameter1));
+			this.Access(instruction, a => {
+				this.interruptController.Enqueue((Interrupt)a);
+			});
 		}
 
 		private void ExecuteEint(Instruction instruction) {
@@ -27,14 +29,14 @@ namespace ArkeOS.Hardware {
 		}
 
 		private void ExecuteMov(Instruction instruction) {
-			this.Access(instruction.Parameter1, instruction.Parameter2, a => a);
+			this.Access(instruction, a => a);
 		}
 
 		private void ExecuteXchg(Instruction instruction) {
-			var temp = this.GetValue(instruction.Parameter1);
-
-			this.SetValue(instruction.Parameter1, this.GetValue(instruction.Parameter2));
-			this.SetValue(instruction.Parameter2, temp);
+			this.Access(instruction, (a, b) => {
+				this.SetValue(instruction.Parameter1, b);
+				this.SetValue(instruction.Parameter2, a);
+			});
 		}
 
 		private void ExecuteIn(Instruction instruction) {
@@ -46,7 +48,7 @@ namespace ArkeOS.Hardware {
 		}
 
 		private void ExecutePush(Instruction instruction) {
-			this.Access(instruction.Parameter1, a => {
+			this.Access(instruction, a => {
 				this.Registers[Register.RSP] -= Helpers.SizeToBytes(instruction.Size);
 
 				switch (instruction.Size) {
@@ -59,7 +61,7 @@ namespace ArkeOS.Hardware {
 		}
 
 		private void ExecutePop(Instruction instruction) {
-			this.Access(instruction.Parameter1, () => {
+			this.Access(instruction, () => {
 				var value = 0UL;
 
 				switch (instruction.Size) {
@@ -76,16 +78,16 @@ namespace ArkeOS.Hardware {
 		}
 
 		private void ExecuteJz(Instruction instruction) {
-			if (this.GetValue(instruction.Parameter2) == 0) {
-				this.Registers[Register.RIP] = this.GetValue(instruction.Parameter1);
+			if (this.GetValue(instruction.Parameter1) == 0) {
+				this.Registers[Register.RIP] = this.GetValue(instruction.Parameter2);
 
 				this.supressRIPIncrement = true;
 			}
 		}
 
 		private void ExecuteJnz(Instruction instruction) {
-			if (this.GetValue(instruction.Parameter2) != 0) {
-				this.Registers[Register.RIP] = this.GetValue(instruction.Parameter1);
+			if (this.GetValue(instruction.Parameter1) != 0) {
+				this.Registers[Register.RIP] = this.GetValue(instruction.Parameter2);
 
 				this.supressRIPIncrement = true;
 			}
@@ -349,71 +351,71 @@ namespace ArkeOS.Hardware {
 		#region Logic
 
 		private void ExecuteSr(Instruction instruction) {
-			this.Access(instruction.Parameter1, instruction.Parameter2, instruction.Parameter3, (a, b) => b >> (byte)a);
+			this.Access(instruction, (a, b) => b >> (byte)a);
 		}
 
 		private void ExecuteSl(Instruction instruction) {
-			this.Access(instruction.Parameter1, instruction.Parameter2, instruction.Parameter3, (a, b) => b << (byte)a);
+			this.Access(instruction, (a, b) => b << (byte)a);
 		}
 
 		private void ExecuteRr(Instruction instruction) {
-			this.Access(instruction.Parameter1, instruction.Parameter2, instruction.Parameter3, (a, b) => (b >> (byte)a) | (b << (Helpers.SizeToBits(instruction.Size) - (byte)a)));
+			this.Access(instruction, (a, b) => (b >> (byte)a) | (b << (Helpers.SizeToBits(instruction.Size) - (byte)a)));
 		}
 
 		private void ExecuteRl(Instruction instruction) {
-			this.Access(instruction.Parameter1, instruction.Parameter2, instruction.Parameter3, (a, b) => (b << (byte)a) | (b >> (Helpers.SizeToBits(instruction.Size) - (byte)a)));
+			this.Access(instruction, (a, b) => (b << (byte)a) | (b >> (Helpers.SizeToBits(instruction.Size) - (byte)a)));
 		}
 
 		private void ExecuteNand(Instruction instruction) {
-			this.Access(instruction.Parameter1, instruction.Parameter2, instruction.Parameter3, (a, b) => ~(a & b));
+			this.Access(instruction, (a, b) => ~(a & b));
 		}
 
 		private void ExecuteAnd(Instruction instruction) {
-			this.Access(instruction.Parameter1, instruction.Parameter2, instruction.Parameter3, (a, b) => a & b);
+			this.Access(instruction, (a, b) => a & b);
 		}
 
 		private void ExecuteNor(Instruction instruction) {
-			this.Access(instruction.Parameter1, instruction.Parameter2, instruction.Parameter3, (a, b) => ~(a | b));
+			this.Access(instruction, (a, b) => ~(a | b));
 		}
 
 		private void ExecuteOr(Instruction instruction) {
-			this.Access(instruction.Parameter1, instruction.Parameter2, instruction.Parameter3, (a, b) => a | b);
+			this.Access(instruction, (a, b) => a | b);
 		}
 
 		private void ExecuteNxor(Instruction instruction) {
-			this.Access(instruction.Parameter1, instruction.Parameter2, instruction.Parameter3, (a, b) => ~(a ^ b));
+			this.Access(instruction, (a, b) => ~(a ^ b));
 		}
 
 		private void ExecuteXor(Instruction instruction) {
-			this.Access(instruction.Parameter1, instruction.Parameter2, instruction.Parameter3, (a, b) => a ^ b);
+			this.Access(instruction, (a, b) => a ^ b);
 		}
 
 		private void ExecuteNot(Instruction instruction) {
-			this.Access(instruction.Parameter1, instruction.Parameter2, a => ~a);
+			this.Access(instruction, a => ~a);
 		}
 
 		private void ExecuteGt(Instruction instruction) {
-			this.Access(instruction.Parameter1, instruction.Parameter2, instruction.Parameter3, (a, b) => b > a ? ulong.MaxValue : 0);
+			this.Access(instruction, (a, b) => b > a ? ulong.MaxValue : 0);
 		}
 
 		private void ExecuteGte(Instruction instruction) {
-			this.Access(instruction.Parameter1, instruction.Parameter2, instruction.Parameter3, (a, b) => b >= a ? ulong.MaxValue : 0);
+			this.Access(instruction, (a, b) => b >= a ? ulong.MaxValue : 0);
 		}
 
 		private void ExecuteLt(Instruction instruction) {
-			this.Access(instruction.Parameter1, instruction.Parameter2, instruction.Parameter3, (a, b) => b < a ? ulong.MaxValue : 0);
+			this.Access(instruction, (a, b) => b < a ? ulong.MaxValue : 0);
 		}
 
 		private void ExecuteLte(Instruction instruction) {
-			this.Access(instruction.Parameter1, instruction.Parameter2, instruction.Parameter3, (a, b) => b <= a ? ulong.MaxValue : 0);
+			this.Access(instruction, (a, b) => b <= a ? ulong.MaxValue : 0);
 		}
 
 		private void ExecuteEq(Instruction instruction) {
-			this.Access(instruction.Parameter1, instruction.Parameter2, instruction.Parameter3, (a, b) => b == a ? ulong.MaxValue : 0);
+			this.Access(instruction, (a, b) => b == a ? ulong.MaxValue : 0);
 		}
 
 		private void ExecuteNeq(Instruction instruction) {
-			this.Access(instruction.Parameter1, instruction.Parameter2, instruction.Parameter3, (a, b) => b != a ? ulong.MaxValue : 0);
+			this.Access(instruction, (a, b) => b != a ? ulong.MaxValue : 0);
 		}
 
 		#endregion
@@ -421,7 +423,7 @@ namespace ArkeOS.Hardware {
 		#region Debug
 
 		private void ExecuteDbg(Instruction instruction) {
-			this.Access(instruction.Parameter1, () => (ulong)DateTime.UtcNow.TimeOfDay.TotalMilliseconds);
+			this.Access(instruction, () => (ulong)DateTime.UtcNow.TimeOfDay.TotalMilliseconds);
 		}
 
 		private void ExecutePau(Instruction instruction) {

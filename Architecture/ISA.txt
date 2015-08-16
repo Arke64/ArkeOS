@@ -54,8 +54,8 @@ Basic
 07 OUT A B: Write to device ID specified in A from B
 08 PUSH A: Push A onto the stack
 09 POP A: Pop a value from the stack into A
-10 JZ A B: Sets RIP to A if B is zero
-11 JNZ A B: Sets RIP to A if B is non-zero
+10 JZ A B: Sets RIP to B if A is zero
+11 JNZ A B: Sets RIP to B if A is non-zero
 12 JMP A: Sets RIP to A
 13 INTE: Enables interrupts
 14 INTD: DArchitecturebles interrupts

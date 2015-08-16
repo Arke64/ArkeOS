@@ -67,7 +67,7 @@ namespace ArkeOS.Architecture {
 
 		public void Encode(BinaryWriter writer) {
 			writer.Write((byte)((this.Code << 2) | (((byte)this.Size) & 0x03)));
-			writer.Write((byte)((byte)this.Parameter1?.Type << 0 | (byte)this.Parameter2?.Type << 2 | (byte)this.Parameter3?.Type << 4));
+			writer.Write((byte)((((byte?)this.Parameter1?.Type ?? 0) << 0) | (((byte?)this.Parameter2?.Type ?? 0) << 2) | (((byte?)this.Parameter3?.Type ?? 0) << 4)));
 
 			this.Parameter1?.Encode(writer);
 			this.Parameter2?.Encode(writer);

@@ -207,10 +207,10 @@ namespace ArkeOS.Hardware {
 		private bool IsRegisterReadAllowed(Register register) => this.inProtectedIsr || this.configuration.ProtectionMode == 0 || !this.Registers.IsReadProtected(register);
 		private bool IsRegisterWriteAllowed(Register register) => this.inProtectedIsr || this.configuration.ProtectionMode == 0 || !this.Registers.IsWriteProtected(register);
 
-		private void Access(Parameter a, Action<ulong> operation) => operation(this.GetValue(a));
-		private void Access(Parameter a, Parameter b, Action<ulong, ulong> operation) => operation(this.GetValue(a), this.GetValue(b));
-		private void Access(Parameter destination, Func<ulong> operation) => this.SetValue(destination, operation());
-		private void Access(Parameter a, Parameter destination, Func<ulong, ulong> operation) => this.SetValue(destination, operation(this.GetValue(a)));
-		private void Access(Parameter a, Parameter b, Parameter destination, Func<ulong, ulong, ulong> operation) => this.SetValue(destination, operation(this.GetValue(a), this.GetValue(b)));
+		private void Access(Instruction instruction, Action<ulong> operation) => operation(this.GetValue(instruction.Parameter1));
+		private void Access(Instruction instruction, Action<ulong, ulong> operation) => operation(this.GetValue(instruction.Parameter1), this.GetValue(instruction.Parameter2));
+		private void Access(Instruction instruction, Func<ulong> operation) => this.SetValue(instruction.Parameter1, operation());
+		private void Access(Instruction instruction, Func<ulong, ulong> operation) => this.SetValue(instruction.Parameter2, operation(this.GetValue(instruction.Parameter1)));
+		private void Access(Instruction instruction, Func<ulong, ulong, ulong> operation) => this.SetValue(instruction.Parameter3, operation(this.GetValue(instruction.Parameter1), this.GetValue(instruction.Parameter2)));
 	}
 }

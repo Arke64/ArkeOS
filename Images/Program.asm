@@ -10,7 +10,7 @@ HLT
 LABEL Add
 ADD R0 R1 R1
 SUB 0d1 R0 R0
-JNZ {Add} R0
+JNZ R0 {Add}
 POP RIP
 
 LABEL SystemTimer
