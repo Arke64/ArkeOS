@@ -1,6 +1,4 @@
 ﻿using System;
-using System.Collections.Concurrent;
-using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Threading;
@@ -9,35 +7,27 @@ using ArkeOS.Architecture;
 
 namespace ArkeOS.Hardware {
 	public partial class Processor {
-		private static int MaxInstructionPipelineLength => 64;
+		private static int MaxCachedInstuctions => 1024;
 
 		private class Configuration {
 			public ushort SystemTickInterval { get; set; } = 50;
-			public bool InstructionPipelineEnabled { get; set; } = true;
+			public bool InstructionCachingEnabled { get; set; } = true;
 			public byte ProtectionMode { get; set; } = 0;
 		}
 
-		private struct DecodedInstruction {
-			public Instruction Instruction { get; set; }
-			public ulong ExpectedAddress { get; set; }
-		}
 
 		private Configuration configuration;
 		private MemoryController memoryController;
 		private InterruptController interruptController;
 		private Action<Instruction>[] instructionHandlers;
 		private Timer systemTimer;
-		private ConcurrentQueue<DecodedInstruction> decodedInstructions;
-		private Dictionary<ulong, Instruction> cachedInstructions;
-		private AutoResetEvent flushPipelineEvent;
-		private Dictionary<ulong, ulong> jumpHistory;
-		private bool flushPipeline;
+		private Instruction[] cachedInstructions;
+		private ulong cacheBaseAddress;
 		private bool supressRIPIncrement;
 		private bool interruptsEnabled;
 		private bool inProtectedIsr;
 		private bool inIsr;
 		private bool broken;
-		private bool running;
 
 		public Instruction CurrentInstruction { get; private set; }
 		public RegisterManager Registers { get; private set; }
@@ -48,7 +38,6 @@ namespace ArkeOS.Hardware {
 			this.memoryController = memoryController;
 			this.interruptController = interruptController;
 
-			this.flushPipelineEvent = new AutoResetEvent(false);
 			this.systemTimer = new Timer(this.OnSystemTimerTick, null, Timeout.Infinite, Timeout.Infinite);
 			this.instructionHandlers = new Action<Instruction>[InstructionDefinition.All.Max(i => i.Code) + 1];
 
@@ -62,18 +51,13 @@ namespace ArkeOS.Hardware {
 
 		public void Start() {
 			this.broken = true;
-			this.running = true;
 
 			this.Reset();
-
-			new Task(this.MaintainInstructionPipeline, TaskCreationOptions.LongRunning).Start();
 
 			this.SetNextInstruction();
 		}
 
 		public void Stop() {
-			this.running = false;
-
 			this.Break();
 		}
 
@@ -100,11 +84,8 @@ namespace ArkeOS.Hardware {
 			this.Registers = new RegisterManager();
 
 			this.configuration = new Configuration();
-			this.decodedInstructions = new ConcurrentQueue<DecodedInstruction>();
-			this.jumpHistory = new Dictionary<ulong, ulong>();
-			this.cachedInstructions = new Dictionary<ulong, Instruction>();
+			this.cacheBaseAddress = ulong.MaxValue;
 
-			this.flushPipeline = false;
 			this.supressRIPIncrement = false;
 			this.interruptsEnabled = true;
 			this.inProtectedIsr = false;
@@ -116,81 +97,39 @@ namespace ArkeOS.Hardware {
 				this.interruptController.Enqueue(Interrupt.SystemTimer);
 		}
 
-		private void MaintainInstructionPipeline() {
-			var address = 0UL;
-
-			while (this.running) {
-				if (this.flushPipeline) {
-					this.decodedInstructions = new ConcurrentQueue<DecodedInstruction>();
-					this.flushPipelineEvent.Set();
-					this.flushPipeline = false;
-
-					address = this.Registers[Register.RIP];
-				}
-
-				if (this.decodedInstructions.Count < Processor.MaxInstructionPipelineLength) {
-					Instruction instruction;
-					ulong jumpAddress;
-
-					if (!this.cachedInstructions.TryGetValue(address, out instruction)) {
-						instruction = this.memoryController.ReadInstruction(address);
-						this.cachedInstructions.Add(address, instruction);
-					}
-
-					this.decodedInstructions.Enqueue(new DecodedInstruction() { Instruction = instruction, ExpectedAddress = address });
-
-					if (instruction.Definition.IsJump && this.jumpHistory.TryGetValue(address, out jumpAddress)) {
-						address = jumpAddress;
-					}
-					else {
-						address += instruction.Length;
-					}
-				}
-			}
-		}
-
 		private void SetNextInstruction() {
 			var address = this.Registers[Register.RIP];
 
-			if (!this.configuration.InstructionPipelineEnabled) {
+			if (!this.configuration.InstructionCachingEnabled) {
 				this.CurrentInstruction = this.memoryController.ReadInstruction(address);
 
 				return;
 			}
 
-			while (true) {
-				DecodedInstruction cached;
-
-				if (this.decodedInstructions.TryDequeue(out cached)) {
-					if (cached.ExpectedAddress == address) {
-						this.CurrentInstruction = cached.Instruction;
-
-						return;
-					}
-					else {
-						this.flushPipeline = true;
-						this.flushPipelineEvent.WaitOne();
-					}
-				}
+			if (address < this.cacheBaseAddress || address >= this.cacheBaseAddress + (ulong)Processor.MaxCachedInstuctions) {
+				this.cacheBaseAddress = address;
+				this.cachedInstructions = new Instruction[Processor.MaxCachedInstuctions];
 			}
+
+			var offset = address - this.cacheBaseAddress;
+
+			if (this.cachedInstructions[offset] != null) {
+				this.CurrentInstruction = this.cachedInstructions[offset];
+			}
+			else {
+				this.CurrentInstruction = this.cachedInstructions[offset] = this.memoryController.ReadInstruction(address);
+			}
+
 		}
 
 		private void Tick() {
-			var startIP = this.Registers[Register.RIP];
-
 			if (this.instructionHandlers.Length >= this.CurrentInstruction.Code && this.instructionHandlers[this.CurrentInstruction.Code] != null) {
 				this.instructionHandlers[this.CurrentInstruction.Code](this.CurrentInstruction);
 
 				if (!this.supressRIPIncrement) {
 					this.Registers[Register.RIP] += this.CurrentInstruction.Length;
-
-					if (this.CurrentInstruction.Definition.IsJump && this.jumpHistory.ContainsKey(startIP))
-						this.jumpHistory.Remove(startIP);
 				}
 				else {
-					if (this.CurrentInstruction.Definition.IsJump)
-						this.jumpHistory[startIP] = this.Registers[Register.RIP];
-
 					this.supressRIPIncrement = false;
 				}
 			}
@@ -222,7 +161,7 @@ namespace ArkeOS.Hardware {
 
 		private void UpdateConfiguration() {
 			this.configuration.SystemTickInterval = this.memoryController.ReadU16(this.Registers[Register.RCFG] + 0);
-			this.configuration.InstructionPipelineEnabled = this.memoryController.ReadU16(this.Registers[Register.RCFG] + 2) != 0;
+			this.configuration.InstructionCachingEnabled = this.memoryController.ReadU16(this.Registers[Register.RCFG] + 2) != 0;
 			this.configuration.ProtectionMode = this.memoryController.ReadU8(this.Registers[Register.RCFG] + 3);
 		}
 
