@@ -5,20 +5,20 @@ namespace ArkeOS.Hardware {
 	public partial class Processor {
 		#region Basic
 
-		private void ExecuteHLT(ref ulong a, ref ulong b, ref ulong c) {
+		private void ExecuteHLT(Operand a, Operand b, Operand c) {
 			this.interruptController.Wait(50);
 			this.supressRIPIncrement = true;
 		}
 
-		private void ExecuteNOP(ref ulong a, ref ulong b, ref ulong c) {
+		private void ExecuteNOP(Operand a, Operand b, Operand c) {
 
 		}
 
-		private void ExecuteINT(ref ulong a, ref ulong b, ref ulong c) {
-			this.interruptController.Enqueue((Interrupt)a);
+		private void ExecuteINT(Operand a, Operand b, Operand c) {
+			this.interruptController.Enqueue((Interrupt)a.Value);
 		}
 
-		private void ExecuteEINT(ref ulong a, ref ulong b, ref ulong c) {
+		private void ExecuteEINT(Operand a, Operand b, Operand c) {
 			this.Registers[Register.RIP] = this.Registers[Register.RSIP];
 
 			this.inIsr = false;
@@ -26,121 +26,109 @@ namespace ArkeOS.Hardware {
 			this.supressRIPIncrement = true;
 		}
 
-		private void ExecuteINTE(ref ulong a, ref ulong b, ref ulong c) {
+		private void ExecuteINTE(Operand a, Operand b, Operand c) {
 			this.interruptsEnabled = true;
 		}
 
-		private void ExecuteINTD(ref ulong a, ref ulong b, ref ulong c) {
+		private void ExecuteINTD(Operand a, Operand b, Operand c) {
 			this.interruptsEnabled = false;
 		}
 
-		private void ExecuteMOV(ref ulong a, ref ulong b, ref ulong c) {
-			b = a;
+		private void ExecuteMOV(Operand a, Operand b, Operand c) {
+			b.Value = a.Value;
 		}
 
-		private void ExecuteXCHG(ref ulong a, ref ulong b, ref ulong c) {
-			var t = a;
-
-			a = b;
-			b = t;
+		private void ExecuteMVZ(Operand a, Operand b, Operand c) {
+			if (a.Value == 0)
+				c.Value = b.Value;
 		}
 
-		private void ExecuteIN(ref ulong a, ref ulong b, ref ulong c) {
+		private void ExecuteMVNZ(Operand a, Operand b, Operand c) {
+			if (a.Value != 0)
+				c.Value = b.Value;
+		}
+
+		private void ExecuteXCHG(Operand a, Operand b, Operand c) {
+			var t = a.Value;
+
+			a.Value = b.Value;
+			b.Value = t;
+		}
+
+		private void ExecuteIN(Operand a, Operand b, Operand c) {
 
 		}
 
-		private void ExecuteOUT(ref ulong a, ref ulong b, ref ulong c) {
+		private void ExecuteOUT(Operand a, Operand b, Operand c) {
 
-		}
-
-		private void ExecuteJZ(ref ulong a, ref ulong b, ref ulong c) {
-			if (a == 0) {
-				this.Registers[Register.RIP] = b;
-
-				this.supressRIPIncrement = true;
-			}
-		}
-
-		private void ExecuteJNZ(ref ulong a, ref ulong b, ref ulong c) {
-			if (a != 0) {
-				this.Registers[Register.RIP] = b;
-
-				this.supressRIPIncrement = true;
-			}
-		}
-
-		private void ExecuteJMP(ref ulong a, ref ulong b, ref ulong c) {
-			this.Registers[Register.RIP] = a;
-
-			this.supressRIPIncrement = true;
 		}
 
 		#endregion
 
 		#region Math
 
-		private void ExecuteADD(ref ulong a, ref ulong b, ref ulong c) {
+		private void ExecuteADD(Operand a, Operand b, Operand c) {
 			var max = Helpers.SizeToMask(this.CurrentInstruction.Size);
 
-			if (max - a < b)
+			if (max - a.Value < b.Value)
 				this.Registers[Register.RC] = ulong.MaxValue;
 
 			unchecked {
-				c = max & ((max & a) + (max & b));
+				c.Value = max & ((max & a.Value) + (max & b.Value));
 			}
 		}
 
-		private void ExecuteADDC(ref ulong a, ref ulong b, ref ulong c) {
+		private void ExecuteADDC(Operand a, Operand b, Operand c) {
 			var carry = this.Registers[Register.RC] > 0 ? 1UL : 0UL;
 			var max = Helpers.SizeToMask(this.CurrentInstruction.Size);
 
-			if (a < max) {
-				a += carry;
+			if (a.Value < max) {
+				a.Value += carry;
 			}
-			else if (b < max) {
-				b += carry;
+			else if (b.Value < max) {
+				b.Value += carry;
 			}
 			else if (carry == 1) {
 				this.Registers[Register.RC] = ulong.MaxValue;
 
-				c = max;
+				c.Value = max;
 			}
 
-			if (max - a < b)
+			if (max - a.Value < b.Value)
 				this.Registers[Register.RC] = ulong.MaxValue;
 
 			unchecked {
-				c = max & ((max & a) + (max & b));
+				c.Value = max & ((max & a.Value) + (max & b.Value));
 			}
 		}
 
-		private void ExecuteADDF(ref ulong a, ref ulong b, ref ulong c) {
-			var aa = BitConverter.ToDouble(BitConverter.GetBytes(a), 0);
-			var bb = BitConverter.ToDouble(BitConverter.GetBytes(b), 0);
+		private void ExecuteADDF(Operand a, Operand b, Operand c) {
+			var aa = BitConverter.ToDouble(BitConverter.GetBytes(a.Value), 0);
+			var bb = BitConverter.ToDouble(BitConverter.GetBytes(b.Value), 0);
 
-			c = BitConverter.ToUInt64(BitConverter.GetBytes(aa + bb), 0);
+			c.Value = BitConverter.ToUInt64(BitConverter.GetBytes(aa + bb), 0);
 		}
 
-		private void ExecuteSUB(ref ulong a, ref ulong b, ref ulong c) {
+		private void ExecuteSUB(Operand a, Operand b, Operand c) {
 			var max = Helpers.SizeToMask(this.CurrentInstruction.Size);
 
-			if (a > b)
+			if (a.Value > b.Value)
 				this.Registers[Register.RC] = ulong.MaxValue;
 
 			unchecked {
-				c = max & ((max & b) - (max & a));
+				c.Value = max & ((max & b.Value) - (max & a.Value));
 			}
 		}
 
-		private void ExecuteSUBC(ref ulong a, ref ulong b, ref ulong c) {
+		private void ExecuteSUBC(Operand a, Operand b, Operand c) {
 			var carry = this.Registers[Register.RC] > 0 ? 1UL : 0UL;
 			var max = Helpers.SizeToMask(this.CurrentInstruction.Size);
 
-			if (a > 0) {
-				a -= carry;
+			if (a.Value > 0) {
+				a.Value -= carry;
 			}
-			else if (b > 0) {
-				b -= carry;
+			else if (b.Value > 0) {
+				b.Value -= carry;
 			}
 			else if (carry == 1) {
 				this.Registers[Register.RC] = ulong.MaxValue;
@@ -148,85 +136,85 @@ namespace ArkeOS.Hardware {
 				return;
 			}
 
-			if (a > b)
+			if (a.Value > b.Value)
 				this.Registers[Register.RC] = ulong.MaxValue;
 
 			unchecked {
-				c = max & ((max & b) - (max & a));
+				c.Value = max & ((max & b.Value) - (max & a.Value));
 			}
 		}
 
-		private void ExecuteSUBF(ref ulong a, ref ulong b, ref ulong c) {
-			var aa = BitConverter.ToDouble(BitConverter.GetBytes(a), 0);
-			var bb = BitConverter.ToDouble(BitConverter.GetBytes(b), 0);
+		private void ExecuteSUBF(Operand a, Operand b, Operand c) {
+			var aa = BitConverter.ToDouble(BitConverter.GetBytes(a.Value), 0);
+			var bb = BitConverter.ToDouble(BitConverter.GetBytes(b.Value), 0);
 
-			c = BitConverter.ToUInt64(BitConverter.GetBytes(bb - aa), 0);
+			c.Value = BitConverter.ToUInt64(BitConverter.GetBytes(bb - aa), 0);
 		}
 
-		private void ExecuteDIV(ref ulong a, ref ulong b, ref ulong c) {
-			if (a != 0) {
-				c = b / a;
+		private void ExecuteDIV(Operand a, Operand b, Operand c) {
+			if (a.Value != 0) {
+				c.Value = b.Value / a.Value;
 			}
 			else {
 				this.interruptController.Enqueue(Interrupt.DivideByZero);
 			}
 		}
 
-		private void ExecuteDIVF(ref ulong a, ref ulong b, ref ulong c) {
-			if (a != 0) {
-				var aa = BitConverter.ToDouble(BitConverter.GetBytes(a), 0);
-				var bb = BitConverter.ToDouble(BitConverter.GetBytes(b), 0);
+		private void ExecuteDIVF(Operand a, Operand b, Operand c) {
+			if (a.Value != 0) {
+				var aa = BitConverter.ToDouble(BitConverter.GetBytes(a.Value), 0);
+				var bb = BitConverter.ToDouble(BitConverter.GetBytes(b.Value), 0);
 
-				c = BitConverter.ToUInt64(BitConverter.GetBytes(bb / aa), 0);
+				c.Value = BitConverter.ToUInt64(BitConverter.GetBytes(bb / aa), 0);
 			}
 			else {
 				this.interruptController.Enqueue(Interrupt.DivideByZero);
 			}
 		}
 
-		private void ExecuteMUL(ref ulong a, ref ulong b, ref ulong c) {
+		private void ExecuteMUL(Operand a, Operand b, Operand c) {
 			var max = Helpers.SizeToMask(this.CurrentInstruction.Size);
 
-			if (a == 0) {
-				var t = a;
+			if (a.Value == 0) {
+				var t = a.Value;
 
-				a = b;
-				b = t;
+				a.Value = b.Value;
+				b.Value = t;
 			}
 
-			if (a == 0)
+			if (a.Value == 0)
 				return;
 
-			if (max / a > b)
+			if (max / a.Value > b.Value)
 				this.Registers[Register.RC] = ulong.MaxValue;
 
 			unchecked {
-				c = max & ((max & a) * (max & b));
+				c.Value = max & ((max & a.Value) * (max & b.Value));
 			}
 		}
 
-		private void ExecuteMULF(ref ulong a, ref ulong b, ref ulong c) {
-			var aa = BitConverter.ToDouble(BitConverter.GetBytes(a), 0);
-			var bb = BitConverter.ToDouble(BitConverter.GetBytes(b), 0);
+		private void ExecuteMULF(Operand a, Operand b, Operand c) {
+			var aa = BitConverter.ToDouble(BitConverter.GetBytes(a.Value), 0);
+			var bb = BitConverter.ToDouble(BitConverter.GetBytes(b.Value), 0);
 
-			c = BitConverter.ToUInt64(BitConverter.GetBytes(bb * aa), 0);
+			c.Value = BitConverter.ToUInt64(BitConverter.GetBytes(bb * aa), 0);
 		}
 
-		private void ExecuteMOD(ref ulong a, ref ulong b, ref ulong c) {
-			if (a != 0) {
-				c = b % a;
+		private void ExecuteMOD(Operand a, Operand b, Operand c) {
+			if (a.Value != 0) {
+				c.Value = b.Value % a.Value;
 			}
 			else {
 				this.interruptController.Enqueue(Interrupt.DivideByZero);
 			}
 		}
 
-		private void ExecuteMODF(ref ulong a, ref ulong b, ref ulong c) {
-			if (a != 0) {
-				var aa = BitConverter.ToDouble(BitConverter.GetBytes(a), 0);
-				var bb = BitConverter.ToDouble(BitConverter.GetBytes(b), 0);
+		private void ExecuteMODF(Operand a, Operand b, Operand c) {
+			if (a.Value != 0) {
+				var aa = BitConverter.ToDouble(BitConverter.GetBytes(a.Value), 0);
+				var bb = BitConverter.ToDouble(BitConverter.GetBytes(b.Value), 0);
 
-				c = BitConverter.ToUInt64(BitConverter.GetBytes(bb % aa), 0);
+				c.Value = BitConverter.ToUInt64(BitConverter.GetBytes(bb % aa), 0);
 			}
 			else {
 				this.interruptController.Enqueue(Interrupt.DivideByZero);
@@ -237,33 +225,33 @@ namespace ArkeOS.Hardware {
 
 		#region Logic
 
-		private void ExecuteSR(ref ulong a, ref ulong b, ref ulong c) => c = b >> (byte)a;
-		private void ExecuteSL(ref ulong a, ref ulong b, ref ulong c) => c = b << (byte)a;
-		private void ExecuteRR(ref ulong a, ref ulong b, ref ulong c) => c = (b >> (byte)a) | (b << (Helpers.SizeToBits(this.CurrentInstruction.Size) - (byte)a));
-		private void ExecuteRL(ref ulong a, ref ulong b, ref ulong c) => c = (b << (byte)a) | (b >> (Helpers.SizeToBits(this.CurrentInstruction.Size) - (byte)a));
-		private void ExecuteNAND(ref ulong a, ref ulong b, ref ulong c) => c = ~(a & b);
-		private void ExecuteAND(ref ulong a, ref ulong b, ref ulong c) => c = a & b;
-		private void ExecuteNOR(ref ulong a, ref ulong b, ref ulong c) => c = ~(a | b);
-		private void ExecuteOR(ref ulong a, ref ulong b, ref ulong c) => c = a | b;
-		private void ExecuteNXOR(ref ulong a, ref ulong b, ref ulong c) => c = ~(a ^ b);
-		private void ExecuteXOR(ref ulong a, ref ulong b, ref ulong c) => c = a ^ b;
-		private void ExecuteNOT(ref ulong a, ref ulong b, ref ulong c) => b = ~a;
-		private void ExecuteGT(ref ulong a, ref ulong b, ref ulong c) => c = b > a ? ulong.MaxValue : 0;
-		private void ExecuteGTE(ref ulong a, ref ulong b, ref ulong c) => c = b >= a ? ulong.MaxValue : 0;
-		private void ExecuteLT(ref ulong a, ref ulong b, ref ulong c) => c = b < a ? ulong.MaxValue : 0;
-		private void ExecuteLTE(ref ulong a, ref ulong b, ref ulong c) => c = b <= a ? ulong.MaxValue : 0;
-		private void ExecuteEQ(ref ulong a, ref ulong b, ref ulong c) => c = b == a ? ulong.MaxValue : 0;
-		private void ExecuteNEQ(ref ulong a, ref ulong b, ref ulong c) => c = b != a ? ulong.MaxValue : 0;
+		private void ExecuteSR(Operand a, Operand b, Operand c) => c.Value = b.Value >> (byte)a.Value;
+		private void ExecuteSL(Operand a, Operand b, Operand c) => c.Value = b.Value << (byte)a.Value;
+		private void ExecuteRR(Operand a, Operand b, Operand c) => c.Value = (b.Value >> (byte)a.Value) | (b.Value << (Helpers.SizeToBits(this.CurrentInstruction.Size) - (byte)a.Value));
+		private void ExecuteRL(Operand a, Operand b, Operand c) => c.Value = (b.Value << (byte)a.Value) | (b.Value >> (Helpers.SizeToBits(this.CurrentInstruction.Size) - (byte)a.Value));
+		private void ExecuteNAND(Operand a, Operand b, Operand c) => c.Value = ~(a.Value & b.Value);
+		private void ExecuteAND(Operand a, Operand b, Operand c) => c.Value = a.Value & b.Value;
+		private void ExecuteNOR(Operand a, Operand b, Operand c) => c.Value = ~(a.Value | b.Value);
+		private void ExecuteOR(Operand a, Operand b, Operand c) => c.Value = a.Value | b.Value;
+		private void ExecuteNXOR(Operand a, Operand b, Operand c) => c.Value = ~(a.Value ^ b.Value);
+		private void ExecuteXOR(Operand a, Operand b, Operand c) => c.Value = a.Value ^ b.Value;
+		private void ExecuteNOT(Operand a, Operand b, Operand c) => b.Value = ~a.Value;
+		private void ExecuteGT(Operand a, Operand b, Operand c) => c.Value = b.Value > a.Value ? ulong.MaxValue : 0;
+		private void ExecuteGTE(Operand a, Operand b, Operand c) => c.Value = b.Value >= a.Value ? ulong.MaxValue : 0;
+		private void ExecuteLT(Operand a, Operand b, Operand c) => c.Value = b.Value < a.Value ? ulong.MaxValue : 0;
+		private void ExecuteLTE(Operand a, Operand b, Operand c) => c.Value = b.Value <= a.Value ? ulong.MaxValue : 0;
+		private void ExecuteEQ(Operand a, Operand b, Operand c) => c.Value = b.Value == a.Value ? ulong.MaxValue : 0;
+		private void ExecuteNEQ(Operand a, Operand b, Operand c) => c.Value = b.Value != a.Value ? ulong.MaxValue : 0;
 
 		#endregion
 
 		#region Debug
 
-		private void ExecuteDBG(ref ulong a, ref ulong b, ref ulong c) {
-			a = (ulong)DateTime.UtcNow.TimeOfDay.TotalMilliseconds;
+		private void ExecuteDBG(Operand a, Operand b, Operand c) {
+			a.Value = (ulong)DateTime.UtcNow.TimeOfDay.TotalMilliseconds;
 		}
 
-		private void ExecutePAU(ref ulong a, ref ulong b, ref ulong c) {
+		private void ExecutePAU(Operand a, Operand b, Operand c) {
 			this.Break();
 
 			this.ExecutionPaused?.Invoke(this, EventArgs.Empty);

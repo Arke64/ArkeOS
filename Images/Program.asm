@@ -2,17 +2,18 @@
 MOV 0x200 RSP
 MOV {IDT} RIDT
 MOV RIP S
-JMP {Add}
+MOV {Add} RIP
 PAU
 MOV RIP S
-JMP {AddressingTest}
+MOV {AddressingTest} RIP
 HLT
 
 LABEL Add
 MOV 0d10 R0
+LABEL AddStart
 ADD R0 R1 R1
 SUB 0d1 R0 R0
-JNZ R0 {Add}
+MVNZ R0 {AddStart} RIP
 MOV S RIP
 
 LABEL AddressingTest
@@ -32,7 +33,7 @@ MOV S R7
 MOV S RIP
 
 LABEL SystemTimer
-ADD 0d1 R2 R2
+ADD 0d1 R8 R8
 EINT
 
 ORIGIN 0x100

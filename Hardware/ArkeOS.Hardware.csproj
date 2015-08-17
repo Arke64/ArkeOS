@@ -43,6 +43,7 @@
     <Compile Include="InstructionHandlers.cs" />
     <Compile Include="InterruptController.cs" />
     <Compile Include="MemoryController.cs" />
+    <Compile Include="Operand.cs" />
     <Compile Include="Processor.cs" />
     <Compile Include="RegisterManager.cs" />
   </ItemGroup>

@@ -15,12 +15,10 @@ namespace ArkeOS.Hardware {
 			public byte ProtectionMode { get; set; } = 0;
 		}
 
-		private delegate void Handler(ref ulong a, ref ulong b, ref ulong c);
-
 		private Configuration configuration;
 		private MemoryController memoryController;
 		private InterruptController interruptController;
-		private Handler[] instructionHandlers;
+		private Action<Operand, Operand, Operand>[] instructionHandlers;
 		private Timer systemTimer;
 		private Instruction[] cachedInstructions;
 		private ulong cacheBaseAddress;
@@ -40,10 +38,10 @@ namespace ArkeOS.Hardware {
 			this.interruptController = interruptController;
 
 			this.systemTimer = new Timer(this.OnSystemTimerTick, null, Timeout.Infinite, Timeout.Infinite);
-			this.instructionHandlers = new Handler[InstructionDefinition.All.Max(i => i.Code) + 1];
+			this.instructionHandlers = new Action<Operand, Operand, Operand>[InstructionDefinition.All.Max(i => i.Code) + 1];
 
 			foreach (var i in InstructionDefinition.All)
-				this.instructionHandlers[i.Code] = (Handler)this.GetType().GetMethod("Execute" + i.Mnemonic, BindingFlags.NonPublic | BindingFlags.Instance).CreateDelegate(typeof(Handler), this);
+				this.instructionHandlers[i.Code] = (Action<Operand, Operand, Operand>)this.GetType().GetMethod("Execute" + i.Mnemonic, BindingFlags.NonPublic | BindingFlags.Instance).CreateDelegate(typeof(Action<Operand, Operand, Operand>), this);
 		}
 
 		public void LoadStartupImage(byte[] image) {
@@ -123,12 +121,12 @@ namespace ArkeOS.Hardware {
 		}
 
 		private void Tick() {
-			ulong a = 0, b = 0, c = 0;
+			Operand a, b, c;
 
 			if (this.instructionHandlers.Length >= this.CurrentInstruction.Code && this.instructionHandlers[this.CurrentInstruction.Code] != null) {
-				this.LoadParameters(ref a, ref b, ref c);
+				this.LoadParameters(out a, out b, out c);
 
-				this.instructionHandlers[this.CurrentInstruction.Code](ref a, ref b, ref c);
+				this.instructionHandlers[this.CurrentInstruction.Code](a, b, c);
 
 				this.SaveParameters(a, b, c);
 
@@ -149,26 +147,21 @@ namespace ArkeOS.Hardware {
 			this.SetNextInstruction();
 		}
 
-		private void LoadParameters(ref ulong a, ref ulong b, ref ulong c) {
-			if (this.CurrentInstruction.Definition.ParameterCount >= 3 && this.CurrentInstruction.Definition.Parameter3Direction == InstructionDefinition.ParameterDirection.Read)
-				c = this.GetValue(this.CurrentInstruction.Parameter3);
-
-			if (this.CurrentInstruction.Definition.ParameterCount >= 2 && this.CurrentInstruction.Definition.Parameter2Direction == InstructionDefinition.ParameterDirection.Read)
-				b = this.GetValue(this.CurrentInstruction.Parameter2);
-
-			if (this.CurrentInstruction.Definition.ParameterCount >= 1 && this.CurrentInstruction.Definition.Parameter1Direction == InstructionDefinition.ParameterDirection.Read)
-				a = this.GetValue(this.CurrentInstruction.Parameter1);
+		private void LoadParameters(out Operand a, out Operand b, out Operand c) {
+			c = (this.CurrentInstruction.Definition.ParameterCount >= 3 && this.CurrentInstruction.Definition.Parameter3Direction == InstructionDefinition.ParameterDirection.Read) ? new Operand(this.GetValue(this.CurrentInstruction.Parameter3)) : new Operand(0);
+			b = (this.CurrentInstruction.Definition.ParameterCount >= 2 && this.CurrentInstruction.Definition.Parameter2Direction == InstructionDefinition.ParameterDirection.Read) ? new Operand(this.GetValue(this.CurrentInstruction.Parameter2)) : new Operand(0);
+			a = (this.CurrentInstruction.Definition.ParameterCount >= 1 && this.CurrentInstruction.Definition.Parameter1Direction == InstructionDefinition.ParameterDirection.Read) ? new Operand(this.GetValue(this.CurrentInstruction.Parameter1)) : new Operand(0);
 		}
 
-		private void SaveParameters(ulong a, ulong b, ulong c) {
-			if (this.CurrentInstruction.Definition.ParameterCount >= 3 && this.CurrentInstruction.Definition.Parameter3Direction == InstructionDefinition.ParameterDirection.Write)
-				this.SetValue(this.CurrentInstruction.Parameter3, c);
+		private void SaveParameters(Operand a, Operand b, Operand c) {
+			if (this.CurrentInstruction.Definition.ParameterCount >= 3 && this.CurrentInstruction.Definition.Parameter3Direction == InstructionDefinition.ParameterDirection.Write && c.Dirty)
+				this.SetValue(this.CurrentInstruction.Parameter3, c.Value);
 
-			if (this.CurrentInstruction.Definition.ParameterCount >= 2 && this.CurrentInstruction.Definition.Parameter2Direction == InstructionDefinition.ParameterDirection.Write)
-				this.SetValue(this.CurrentInstruction.Parameter2, b);
+			if (this.CurrentInstruction.Definition.ParameterCount >= 2 && this.CurrentInstruction.Definition.Parameter2Direction == InstructionDefinition.ParameterDirection.Write && b.Dirty)
+				this.SetValue(this.CurrentInstruction.Parameter2, b.Value);
 
-			if (this.CurrentInstruction.Definition.ParameterCount >= 1 && this.CurrentInstruction.Definition.Parameter1Direction == InstructionDefinition.ParameterDirection.Write)
-				this.SetValue(this.CurrentInstruction.Parameter1, a);
+			if (this.CurrentInstruction.Definition.ParameterCount >= 1 && this.CurrentInstruction.Definition.Parameter1Direction == InstructionDefinition.ParameterDirection.Write && a.Dirty)
+				this.SetValue(this.CurrentInstruction.Parameter1, a.Value);
 		}
 
 		private void EnterInterrupt(Interrupt id) {
@@ -225,8 +218,12 @@ namespace ArkeOS.Hardware {
 				if (this.IsRegisterWriteAllowed(parameter.Register)) {
 					this.Registers[parameter.Register] = value;
 
-					if (parameter.Register == Register.RCFG)
+					if (parameter.Register == Register.RCFG) {
 						this.UpdateConfiguration();
+					}
+					else if (parameter.Register == Register.RIP) {
+						this.supressRIPIncrement = true;
+					}
 				}
 			}
 			else if (parameter.Type == ParameterType.LiteralAddress) {

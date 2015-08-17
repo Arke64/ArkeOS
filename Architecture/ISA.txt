@@ -53,12 +53,11 @@ Basic
 03 INTE: Enables interrupts
 04 INTD: Disables interrupts
 06 MOV A B: Move A into B
-07 XCHG A B: Swap A and B
-08 IN A B: Read from device ID specified in A into B
-09 OUT A B: Write to device ID specified in A from B
-10 JZ A B: Sets RIP to B if A is zero
-11 JNZ A B: Sets RIP to B if A is non-zero
-12 JMP A: Sets RIP to A
+07 MVZ A B C: Moves B into C if A is zero
+08 MVNZ A B C: Moves B into C if A is non-zero
+09 XCHG A B: Swap A and B
+10 IN A B: Read from device ID specified in A into B
+11 OUT A B: Write to device ID specified in A from B
 
 Math
 ----
