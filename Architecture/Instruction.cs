@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.IO;
 
 namespace ArkeOS.Architecture {
@@ -40,7 +41,7 @@ namespace ArkeOS.Architecture {
 		}
 
 		public Instruction(byte[] memory, ulong address) {
-			var paraDef = memory[address + 1] << 8 | memory[address + 2];
+			var paraDef = BitConverter.ToUInt16(memory, (int)(address + 1));
 
 			this.Size = (InstructionSize)(paraDef & 0x03);
 			this.Code = memory[address];
@@ -49,24 +50,24 @@ namespace ArkeOS.Architecture {
 			this.Definition = InstructionDefinition.Find(this.Code);
 
 			if (this.Definition.ParameterCount >= 1) {
-				this.Parameter1 = new Parameter((ParameterType)((paraDef >> 2) & 0x07), this.Size, memory, address + this.Length);
+				this.Parameter1 = Parameter.CreateFromMemory((ParameterType)((paraDef >> 2) & 0x07), this.Size, memory, address + this.Length);
 				this.Length += this.Parameter1.Length;
 			}
 
 			if (this.Definition.ParameterCount >= 2) {
-				this.Parameter2 = new Parameter((ParameterType)((paraDef >> 5) & 0x07), this.Size, memory, address + this.Length);
+				this.Parameter2 = Parameter.CreateFromMemory((ParameterType)((paraDef >> 5) & 0x07), this.Size, memory, address + this.Length);
 				this.Length += this.Parameter2.Length;
 			}
 
 			if (this.Definition.ParameterCount >= 3) {
-				this.Parameter3 = new Parameter((ParameterType)((paraDef >> 8) & 0x07), this.Size, memory, address + this.Length);
+				this.Parameter3 = Parameter.CreateFromMemory((ParameterType)((paraDef >> 8) & 0x07), this.Size, memory, address + this.Length);
 				this.Length += this.Parameter3.Length;
 			}
 		}
 
 		public void Encode(BinaryWriter writer) {
 			writer.Write(this.Code);
-			writer.Write((byte)((byte)this.Size | (((byte?)this.Parameter1?.Type ?? 0) << 2) | (((byte?)this.Parameter2?.Type ?? 0) << 5) | (((byte?)this.Parameter3?.Type ?? 0) << 8)));
+			writer.Write((ushort)((byte)this.Size | (((byte?)this.Parameter1?.Type ?? 0) << 2) | (((byte?)this.Parameter2?.Type ?? 0) << 5) | (((byte?)this.Parameter3?.Type ?? 0) << 8)));
 
 			this.Parameter1?.Encode(writer);
 			this.Parameter2?.Encode(writer);

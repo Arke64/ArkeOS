@@ -15,7 +15,7 @@ namespace ArkeOS.Assembler {
 		}
 
 		public byte[] Assemble() {
-			var lines = File.ReadAllLines(this.inputFile).Where(l => !string.IsNullOrWhiteSpace(l));
+			var lines = File.ReadAllLines(this.inputFile).Where(l => !string.IsNullOrWhiteSpace(l)).Select(l => l.Replace(" + ", "+").Replace(" * ", "*").Replace(" - ", "-"));
 
 			using (var stream = new MemoryStream()) {
 				using (var writer = new BinaryWriter(stream)) {
@@ -108,34 +108,49 @@ namespace ArkeOS.Assembler {
 		}
 
 		private Parameter ParseParameter(InstructionSize size, string value, bool resolveLabels) {
-			if (value[0] == '0') {
-				return new Parameter(ParameterType.Literal, Helpers.ParseLiteral(value), Helpers.SizeToBytes(size));
-			}
-			else if (value[0] == 'R') {
-				return new Parameter(ParameterType.Register, Helpers.ParseEnum<Register>(value));
-			}
-			else if (value[0] == '{') {
-				value = value.Substring(1, value.Length - 2).Trim();
+			if (value[0] == '[' && value[1] == '[') {
+				value = value.Substring(2, value.Length - 4).Trim();
 
-				return new Parameter(ParameterType.Literal, resolveLabels ? this.labels[value] : 0, Helpers.SizeToBytes(size));
+				Parameter calculatedBase = null, calculatedIndex = null, calculatedScale = null, calculatedOffset = null;
+				var parts = value.Split('+', '-', '*');
+
+				calculatedBase = this.ParseParameterType(size, resolveLabels, false, parts[0]);
+				calculatedIndex = this.ParseParameterType(size, resolveLabels, false, parts[1]);
+
+				if (!string.IsNullOrWhiteSpace(parts[2]))
+					calculatedScale = this.ParseParameterType(size, resolveLabels, false, parts[2]);
+
+				if (!string.IsNullOrWhiteSpace(parts[3]))
+					calculatedOffset = this.ParseParameterType(size, resolveLabels, false, parts[3]);
+
+				return Parameter.CreateCalculated(calculatedBase, calculatedIndex, calculatedScale, calculatedOffset, value[parts[0].Length] == '+');
 			}
 			else if (value[0] == '[') {
-				value = value.Substring(1, value.Length - 2).Trim();
-
-				if (value[0] == '0') {
-					return new Parameter(ParameterType.LiteralAddress, Helpers.ParseLiteral(value), 8);
-				}
-				else if (value[0] == 'R') {
-					return new Parameter(ParameterType.RegisterAddress, Helpers.ParseEnum<Register>(value));
-				}
-				else if (value[0] == '{') {
-					value = value.Substring(1, value.Length - 2).Trim();
-
-					return new Parameter(ParameterType.LiteralAddress, resolveLabels ? this.labels[value] : 0, 8);
-				}
+				return this.ParseParameterType(InstructionSize.EightByte, resolveLabels, true, value.Substring(1, value.Length - 2).Trim());
+			}
+			else {
+				return this.ParseParameterType(size, resolveLabels, false, value);
 			}
 
 			throw new InvalidParameterException();
+		}
+
+		private Parameter ParseParameterType(InstructionSize size, bool resolveLabels, bool isAddress, string value) {
+			if (value[0] == '{') {
+				return Parameter.CreateLiteral(false, resolveLabels ? this.labels[value.Substring(1, value.Length - 2).Trim()] : 0, Helpers.SizeToBytes(size));
+			}
+			else if (value[0] == '0') {
+				return Parameter.CreateLiteral(isAddress, Helpers.ParseLiteral(value), Helpers.SizeToBytes(size));
+			}
+			else if (value[0] == 'R') {
+				return Parameter.CreateRegister(isAddress, Helpers.ParseEnum<Register>(value));
+			}
+			else if (value == "S") {
+				return Parameter.CreateStack();
+			}
+			else {
+				return null;
+			}
 		}
 	}
 }

@@ -75,32 +75,6 @@ namespace ArkeOS.Hardware {
 			this.supressRIPIncrement = true;
 		}
 
-		private void ExecutePUSH(ref ulong a, ref ulong b, ref ulong c) {
-			this.Registers[Register.RSP] -= Helpers.SizeToBytes(this.CurrentInstruction.Size);
-
-			switch (this.CurrentInstruction.Size) {
-				case InstructionSize.OneByte: this.memoryController.WriteU8(this.Registers[Register.RSP], (byte)a); break;
-				case InstructionSize.TwoByte: this.memoryController.WriteU16(this.Registers[Register.RSP], (ushort)a); break;
-				case InstructionSize.FourByte: this.memoryController.WriteU32(this.Registers[Register.RSP], (uint)a); break;
-				case InstructionSize.EightByte: this.memoryController.WriteU64(this.Registers[Register.RSP], a); break;
-			}
-		}
-
-		private void ExecutePOP(ref ulong a, ref ulong b, ref ulong c) {
-			var value = 0UL;
-
-			switch (this.CurrentInstruction.Size) {
-				case InstructionSize.OneByte: value = this.memoryController.ReadU8(this.Registers[Register.RSP]); break;
-				case InstructionSize.TwoByte: value = this.memoryController.ReadU16(this.Registers[Register.RSP]); break;
-				case InstructionSize.FourByte: value = this.memoryController.ReadU32(this.Registers[Register.RSP]); break;
-				case InstructionSize.EightByte: value = this.memoryController.ReadU64(this.Registers[Register.RSP]); break;
-			}
-
-			this.Registers[Register.RSP] += Helpers.SizeToBytes(this.CurrentInstruction.Size);
-
-			a = value;
-		}
-
 		#endregion
 
 		#region Math

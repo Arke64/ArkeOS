@@ -210,6 +210,12 @@ namespace ArkeOS.Hardware {
 				if (this.IsRegisterReadAllowed(parameter.Register))
 					value = this.memoryController.ReadU64(this.Registers[parameter.Register]);
 			}
+			else if (parameter.Type == ParameterType.CalculatedAddress) {
+				value = this.memoryController.ReadU64(this.GetCalculatedAddress(parameter));
+			}
+			else if (parameter.Type == ParameterType.Stack) {
+				value = this.Pop(this.CurrentInstruction.Size);
+			}
 
 			return value & this.CurrentInstruction.SizeMask;
 		}
@@ -230,6 +236,58 @@ namespace ArkeOS.Hardware {
 				if (this.IsRegisterReadAllowed(parameter.Register))
 					this.memoryController.WriteU64(this.Registers[parameter.Register], value);
 			}
+			else if (parameter.Type == ParameterType.CalculatedAddress) {
+				this.memoryController.WriteU64(this.GetCalculatedAddress(parameter), value);
+			}
+			else if (parameter.Type == ParameterType.Stack) {
+				this.Push(this.CurrentInstruction.Size, value);
+			}
+		}
+
+		private ulong GetCalculatedAddress(Parameter parameter) {
+			var address = this.GetValue(parameter.CalculatedBase);
+
+			if (parameter.CalculatedIndex != null) {
+				var calc = this.GetValue(parameter.CalculatedIndex) * (parameter.CalculatedScale != null ? this.GetValue(parameter.CalculatedScale) : 1);
+
+				if (parameter.CalculatedIndexSign) {
+					address += calc;
+				}
+				else {
+					address -= calc;
+				}
+			}
+
+			if (parameter.CalculatedOffset != null)
+				address += this.GetValue(parameter.CalculatedOffset);
+
+			return address;
+		}
+
+		private void Push(InstructionSize size, ulong value) {
+			this.Registers[Register.RSP] -= Helpers.SizeToBytes(size);
+
+			switch (size) {
+				case InstructionSize.OneByte: this.memoryController.WriteU8(this.Registers[Register.RSP], (byte)value); break;
+				case InstructionSize.TwoByte: this.memoryController.WriteU16(this.Registers[Register.RSP], (ushort)value); break;
+				case InstructionSize.FourByte: this.memoryController.WriteU32(this.Registers[Register.RSP], (uint)value); break;
+				case InstructionSize.EightByte: this.memoryController.WriteU64(this.Registers[Register.RSP], value); break;
+			}
+		}
+
+		private ulong Pop(InstructionSize size) {
+			var value = 0UL;
+
+			switch (size) {
+				case InstructionSize.OneByte: value = this.memoryController.ReadU8(this.Registers[Register.RSP]); break;
+				case InstructionSize.TwoByte: value = this.memoryController.ReadU16(this.Registers[Register.RSP]); break;
+				case InstructionSize.FourByte: value = this.memoryController.ReadU32(this.Registers[Register.RSP]); break;
+				case InstructionSize.EightByte: value = this.memoryController.ReadU64(this.Registers[Register.RSP]); break;
+			}
+
+			this.Registers[Register.RSP] += Helpers.SizeToBytes(size);
+
+			return value;
 		}
 
 		private bool IsRegisterReadAllowed(Register register) => this.inProtectedIsr || this.configuration.ProtectionMode == 0 || !this.Registers.IsReadProtected(register);

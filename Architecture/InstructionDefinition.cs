@@ -28,9 +28,9 @@ namespace ArkeOS.Architecture {
 			new InstructionDefinition("HLT", 0);
 			new InstructionDefinition("NOP", 1);
 			new InstructionDefinition("INT", 2, ParameterDirection.Read);
-			new InstructionDefinition("EINT", 3, ParameterDirection.Read);
-			new InstructionDefinition("INTE", 4, ParameterDirection.Read);
-			new InstructionDefinition("INTD", 5, ParameterDirection.Read);
+			new InstructionDefinition("EINT", 3);
+			new InstructionDefinition("INTE", 4);
+			new InstructionDefinition("INTD", 5);
 			new InstructionDefinition("MOV", 6, ParameterDirection.Read, ParameterDirection.Write);
 			new InstructionDefinition("XCHG", 7, ParameterDirection.Write, ParameterDirection.Write);
 			new InstructionDefinition("IN", 8, ParameterDirection.Read, ParameterDirection.Write);
@@ -38,8 +38,6 @@ namespace ArkeOS.Architecture {
 			new InstructionDefinition("JZ", 10, ParameterDirection.Read, ParameterDirection.Read);
 			new InstructionDefinition("JNZ", 11, ParameterDirection.Read, ParameterDirection.Read);
 			new InstructionDefinition("JMP", 12, ParameterDirection.Read);
-			new InstructionDefinition("PUSH", 13, ParameterDirection.Read);
-			new InstructionDefinition("POP", 14, ParameterDirection.Write);
 
 			new InstructionDefinition("ADD", 20, ParameterDirection.Read, ParameterDirection.Read, ParameterDirection.Write);
 			new InstructionDefinition("ADDC", 21, ParameterDirection.Read, ParameterDirection.Read, ParameterDirection.Write);

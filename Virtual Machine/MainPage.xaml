@@ -77,13 +77,17 @@
 			<StackPanel Grid.Column="5" Grid.Row="1">
 				<TextBlock>RMDT</TextBlock>
 				<TextBox Name="RMDTTextBox" />
-			</StackPanel>
-			<StackPanel Grid.Column="6" Grid.Row="1">
-				<TextBlock>RTDT</TextBlock>
-				<TextBox Name="RTDTTextBox" />
-			</StackPanel>
+            </StackPanel>
+            <StackPanel Grid.Column="6" Grid.Row="1">
+                <TextBlock>RTDT</TextBlock>
+                <TextBox Name="RTDTTextBox" />
+            </StackPanel>
+            <StackPanel Grid.Column="7" Grid.Row="1">
+                <TextBlock>RINT</TextBlock>
+                <TextBox Name="RINTTextBox" />
+            </StackPanel>
 
-			<StackPanel Grid.Column="0" Grid.Row="2">
+            <StackPanel Grid.Column="0" Grid.Row="2">
 				<TextBlock>RI0</TextBlock>
 				<TextBox Name="RI0TextBox" />
 			</StackPanel>

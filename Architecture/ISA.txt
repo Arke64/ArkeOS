@@ -42,16 +42,16 @@ Instruction Format
 
 Calculated Parameter
 --------------------
-First byte is the format. Each field is one bit: has index (default 0), has scale (default 1), has offset (default 0), register/literal base, register/literal index, register/literal scale, register/literal offset, positive/negative index
+First byte is the format. Each field is one bit: has index (default 0), has scale (default 1), has offset (default 0), register/literal base (0 = register, 1 = literal), register/literal index, register/literal scale, register/literal offset, positive/negative index. Followed by the registers and literals base, index, scale, offset.
 
 Basic
 -----
 00 HLT: Stops the processor
 01 NOP: No operation
 02 INT A: Raise the interrupt specified by A
+05 EINT: Return from the interrupt
 03 INTE: Enables interrupts
 04 INTD: Disables interrupts
-05 EINT: Return from the interrupt
 06 MOV A B: Move A into B
 07 XCHG A B: Swap A and B
 08 IN A B: Read from device ID specified in A into B
@@ -59,8 +59,6 @@ Basic
 10 JZ A B: Sets RIP to B if A is zero
 11 JNZ A B: Sets RIP to B if A is non-zero
 12 JMP A: Sets RIP to A
-13 PUSH A: Push A onto the stack
-14 POP A: Pop a value from the stack into A
 
 Math
 ----
