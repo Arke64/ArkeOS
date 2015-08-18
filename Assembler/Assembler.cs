@@ -142,7 +142,7 @@ namespace ArkeOS.Assembler {
 
 		private Parameter ParseParameterType(InstructionSize size, bool resolveLabels, bool isAddress, string value) {
 			if (value[0] == '{') {
-				return Parameter.CreateLiteral(false, resolveLabels ? this.labels[value.Substring(1, value.Length - 2).Trim()] : 0, Helpers.SizeToBytes(size));
+				return Parameter.CreateLiteral(isAddress, resolveLabels ? this.labels[value.Substring(1, value.Length - 2).Trim()] : 0, Helpers.SizeToBytes(size));
 			}
 			else if (value[0] == '0') {
 				return Parameter.CreateLiteral(isAddress, Helpers.ParseLiteral(value), Helpers.SizeToBytes(size));
