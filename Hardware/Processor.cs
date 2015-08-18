@@ -192,25 +192,28 @@ namespace ArkeOS.Hardware {
 			if (parameter.Type == ParameterType.Literal) {
 				value = parameter.Literal;
 			}
+			else if (parameter.Type == ParameterType.LiteralAddress) {
+				value = this.memoryController.ReadU64(parameter.Literal);
+			}
 			else if (parameter.Type == ParameterType.Register) {
 				if (this.IsRegisterReadAllowed(parameter.Register))
 					value = this.Registers[parameter.Register];
-			}
-			else if (parameter.Type == ParameterType.LiteralAddress) {
-				value = this.memoryController.ReadU64(parameter.Literal);
 			}
 			else if (parameter.Type == ParameterType.RegisterAddress) {
 				if (this.IsRegisterReadAllowed(parameter.Register))
 					value = this.memoryController.ReadU64(this.Registers[parameter.Register]);
 			}
-			else if (parameter.Type == ParameterType.CalculatedAddress) {
-				value = this.memoryController.ReadU64(this.GetCalculatedLiteral(parameter));
-			}
 			else if (parameter.Type == ParameterType.CalculatedLiteral) {
 				value = this.GetCalculatedLiteral(parameter);
 			}
-			else if (parameter.Type == ParameterType.Stack) {
+			else if (parameter.Type == ParameterType.CalculatedAddress) {
+				value = this.memoryController.ReadU64(this.GetCalculatedLiteral(parameter));
+			}
+			else if (parameter.Type == ParameterType.StackLiteral) {
 				value = this.Pop(this.CurrentInstruction.Size);
+			}
+			else if (parameter.Type == ParameterType.StackAddress) {
+				value = this.memoryController.ReadU64(this.Pop(this.CurrentInstruction.Size));
 			}
 
 			return value & this.CurrentInstruction.SizeMask;
@@ -229,18 +232,21 @@ namespace ArkeOS.Hardware {
 					}
 				}
 			}
-			else if (parameter.Type == ParameterType.LiteralAddress) {
-				this.memoryController.WriteU64(parameter.Literal, value);
-			}
 			else if (parameter.Type == ParameterType.RegisterAddress) {
 				if (this.IsRegisterReadAllowed(parameter.Register))
 					this.memoryController.WriteU64(this.Registers[parameter.Register], value);
 			}
+			else if (parameter.Type == ParameterType.LiteralAddress) {
+				this.memoryController.WriteU64(parameter.Literal, value);
+			}
 			else if (parameter.Type == ParameterType.CalculatedAddress) {
 				this.memoryController.WriteU64(this.GetCalculatedLiteral(parameter), value);
 			}
-			else if (parameter.Type == ParameterType.Stack) {
+			else if (parameter.Type == ParameterType.StackLiteral) {
 				this.Push(this.CurrentInstruction.Size, value);
+			}
+			else if (parameter.Type == ParameterType.StackAddress) {
+				this.memoryController.WriteU64(this.Pop(this.CurrentInstruction.Size), value);
 			}
 		}
 

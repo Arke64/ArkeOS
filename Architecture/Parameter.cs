@@ -18,9 +18,9 @@ namespace ArkeOS.Architecture {
 
 		}
 
-		public static Parameter CreateStack() {
+		public static Parameter CreateStack(bool isAddress) {
 			return new Parameter() {
-				Type = ParameterType.Stack,
+				Type = isAddress ? ParameterType.StackAddress : ParameterType.StackLiteral,
 				Length = 0
 			};
 		}
@@ -41,7 +41,7 @@ namespace ArkeOS.Architecture {
 			};
 		}
 
-		public static Parameter CreateCalculatedAddress(Parameter calculatedBase, Parameter calculatedIndex, Parameter calculatedScale, Parameter calculatedOffset, bool calculatedIndexSign) {
+		public static Parameter CreateCalculated(bool isAddress, Parameter calculatedBase, Parameter calculatedIndex, Parameter calculatedScale, Parameter calculatedOffset, bool calculatedIndexSign) {
 			return new Parameter() {
 				CalculatedBase = calculatedBase,
 				CalculatedIndex = calculatedIndex,
@@ -49,20 +49,7 @@ namespace ArkeOS.Architecture {
 				CalculatedOffset = calculatedOffset,
 				CalculatedIndexSign = calculatedIndexSign,
 
-				Type = ParameterType.CalculatedAddress,
-				Length = (byte)(1 + calculatedBase.Length + calculatedIndex.Length + (calculatedScale?.Length ?? 0) + (calculatedOffset?.Length ?? 0))
-			};
-		}
-
-		public static Parameter CreateCalculatedLiteral(Parameter calculatedBase, Parameter calculatedIndex, Parameter calculatedScale, Parameter calculatedOffset, bool calculatedIndexSign) {
-			return new Parameter() {
-				CalculatedBase = calculatedBase,
-				CalculatedIndex = calculatedIndex,
-				CalculatedScale = calculatedScale,
-				CalculatedOffset = calculatedOffset,
-				CalculatedIndexSign = calculatedIndexSign,
-
-				Type = ParameterType.CalculatedLiteral,
+				Type = isAddress ? ParameterType.CalculatedAddress : ParameterType.CalculatedLiteral,
 				Length = (byte)(1 + calculatedBase.Length + calculatedIndex.Length + (calculatedScale?.Length ?? 0) + (calculatedOffset?.Length ?? 0))
 			};
 		}
@@ -76,7 +63,7 @@ namespace ArkeOS.Architecture {
 				case ParameterType.RegisterAddress: result.Register = (Register)memory[address]; result.Length = 1; break;
 				case ParameterType.Register: result.Register = (Register)memory[address]; result.Length = 1; break;
 				case ParameterType.LiteralAddress: result.Literal = BitConverter.ToUInt64(memory, (int)address); result.Length = 8; break;
-				case ParameterType.Stack: result.Length = 0; break;
+				case ParameterType.StackLiteral: result.Length = 0; break;
 				case ParameterType.Literal:
 					result.Literal = result.ReadSized(size, memory, ref address);
 					result.Length = Helpers.SizeToBytes(size);
@@ -108,7 +95,7 @@ namespace ArkeOS.Architecture {
 				case ParameterType.Register: writer.Write((byte)this.Register); break;
 				case ParameterType.LiteralAddress: writer.Write(this.Literal); break;
 				case ParameterType.Literal: Helpers.SizedWrite(writer, this.Literal, this.Length); break;
-				case ParameterType.Stack: break;
+				case ParameterType.StackLiteral: break;
 				case ParameterType.CalculatedLiteral:
 				case ParameterType.CalculatedAddress:
 					byte format = 0;
@@ -148,7 +135,7 @@ namespace ArkeOS.Architecture {
 				case ParameterType.LiteralAddress: return $"[0x{this.ParameterToString()}]";
 				case ParameterType.Register: return this.ParameterToString();
 				case ParameterType.RegisterAddress: return $"[{this.ParameterToString()}]";
-				case ParameterType.Stack: return "S";
+				case ParameterType.StackLiteral: return "S";
 				default: return string.Empty;
 				case ParameterType.CalculatedLiteral:
 				case ParameterType.CalculatedAddress:

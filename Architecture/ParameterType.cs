@@ -4,7 +4,8 @@
 		RegisterAddress,
 		Literal,
 		LiteralAddress,
-		Stack,
+		StackLiteral,
+		StackAddress,
 		CalculatedAddress,
 		CalculatedLiteral
 	}
