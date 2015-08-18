@@ -251,7 +251,7 @@ namespace ArkeOS.Hardware {
 			a.Value = (ulong)DateTime.UtcNow.TimeOfDay.TotalMilliseconds;
 		}
 
-		private void ExecutePAU(Operand a, Operand b, Operand c) {
+		private void ExecuteBRK(Operand a, Operand b, Operand c) {
 			this.Break();
 
 			this.ExecutionPaused?.Invoke(this, EventArgs.Empty);

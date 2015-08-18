@@ -49,9 +49,9 @@ Basic
 00 HLT: Stops the processor
 01 NOP: No operation
 02 INT A: Raise the interrupt specified by A
-05 EINT: Return from the interrupt
-03 INTE: Enables interrupts
-04 INTD: Disables interrupts
+03 EINT: Return from the interrupt
+04 INTE: Enables interrupts
+05 INTD: Disables interrupts
 06 MOV A B: Move A into B
 07 MVZ A B C: Moves B into C if A is zero
 08 MVNZ A B C: Moves B into C if A is non-zero

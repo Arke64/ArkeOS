@@ -70,7 +70,7 @@ namespace ArkeOS.Architecture {
 			new InstructionDefinition("NEQ", 56, ParameterDirection.Read, ParameterDirection.Read, ParameterDirection.Write);
 
 			new InstructionDefinition("DBG", 60, ParameterDirection.Write);
-			new InstructionDefinition("PAU", 61);
+			new InstructionDefinition("BRK", 61);
 		}
 
 		private InstructionDefinition(string mnemonic, byte code) : this(mnemonic, code, (byte)0) {

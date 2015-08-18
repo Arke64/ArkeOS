@@ -3,10 +3,10 @@ MOV 0x500 RSP
 MOV {IDT} RIDT
 MOV (RIP + 0d25) S
 MOV {Add} RIP
-PAU
+BRK
 MOV (RIP + 0d25) S
 MOV {AddressingTest} RIP
-PAU
+BRK
 HLT
 
 LABEL Add
