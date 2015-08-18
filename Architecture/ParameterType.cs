@@ -6,5 +6,6 @@
 		LiteralAddress,
 		Stack,
 		CalculatedAddress,
+		CalculatedLiteral
 	}
 }

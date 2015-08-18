@@ -37,7 +37,7 @@ Instruction Format
 8b Code: The instruction code
 2b Size: 0 = 1 byte, 1 = 2 byte, 2 = 4 byte, 3 = 8 byte
 9b Parameters: 3 bits per parameter.
-    3b Type: 0 = register, 1 = register value as address to dereference, 2 = literal value, 3 = literal value as address to dereference, 4 = taken from stack, 5 = calculated value as address to dereference (base + index * scale + offset).
+    3b Type: 0 = register, 1 = register value as address to dereference, 2 = literal value, 3 = literal value as address to dereference, 4 = taken from stack, 5 = calculated value as address to dereference (base + index * scale + offset), 6 = same as 5, but not dereferenced.
 0b-280b Parameter data: Parameter values in order of appearance
 
 Calculated Parameter

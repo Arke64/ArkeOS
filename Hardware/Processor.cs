@@ -204,7 +204,10 @@ namespace ArkeOS.Hardware {
 					value = this.memoryController.ReadU64(this.Registers[parameter.Register]);
 			}
 			else if (parameter.Type == ParameterType.CalculatedAddress) {
-				value = this.memoryController.ReadU64(this.GetCalculatedAddress(parameter));
+				value = this.memoryController.ReadU64(this.GetCalculatedLiteral(parameter));
+			}
+			else if (parameter.Type == ParameterType.CalculatedLiteral) {
+				value = this.GetCalculatedLiteral(parameter);
 			}
 			else if (parameter.Type == ParameterType.Stack) {
 				value = this.Pop(this.CurrentInstruction.Size);
@@ -234,14 +237,14 @@ namespace ArkeOS.Hardware {
 					this.memoryController.WriteU64(this.Registers[parameter.Register], value);
 			}
 			else if (parameter.Type == ParameterType.CalculatedAddress) {
-				this.memoryController.WriteU64(this.GetCalculatedAddress(parameter), value);
+				this.memoryController.WriteU64(this.GetCalculatedLiteral(parameter), value);
 			}
 			else if (parameter.Type == ParameterType.Stack) {
 				this.Push(this.CurrentInstruction.Size, value);
 			}
 		}
 
-		private ulong GetCalculatedAddress(Parameter parameter) {
+		private ulong GetCalculatedLiteral(Parameter parameter) {
 			var address = this.GetValue(parameter.CalculatedBase);
 
 			if (parameter.CalculatedIndex != null) {

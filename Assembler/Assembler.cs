@@ -108,22 +108,21 @@ namespace ArkeOS.Assembler {
 		}
 
 		private Parameter ParseParameter(InstructionSize size, string value, bool resolveLabels) {
-			if (value[0] == '[' && value[1] == '[') {
-				value = value.Substring(2, value.Length - 4).Trim();
-
+			if (value[0] == '[' && value[1] == '(') {
 				Parameter calculatedBase = null, calculatedIndex = null, calculatedScale = null, calculatedOffset = null;
-				var parts = value.Split('+', '-', '*');
+				bool sign = false;
 
-				calculatedBase = this.ParseParameterType(size, resolveLabels, false, parts[0]);
-				calculatedIndex = this.ParseParameterType(size, resolveLabels, false, parts[1]);
+				this.ParseCalculated(size, value.Substring(2, value.Length - 4).Trim(), resolveLabels, ref calculatedBase, ref calculatedIndex, ref calculatedScale, ref calculatedOffset, ref sign);
 
-				if (!string.IsNullOrWhiteSpace(parts[2]))
-					calculatedScale = this.ParseParameterType(size, resolveLabels, false, parts[2]);
+				return Parameter.CreateCalculatedAddress(calculatedBase, calculatedIndex, calculatedScale, calculatedOffset, sign);
+			}
+			else if (value[0] == '(') {
+				Parameter calculatedBase = null, calculatedIndex = null, calculatedScale = null, calculatedOffset = null;
+				bool sign = false;
 
-				if (!string.IsNullOrWhiteSpace(parts[3]))
-					calculatedOffset = this.ParseParameterType(size, resolveLabels, false, parts[3]);
+				this.ParseCalculated(size, value.Substring(1, value.Length - 2).Trim(), resolveLabels, ref calculatedBase, ref calculatedIndex, ref calculatedScale, ref calculatedOffset, ref sign);
 
-				return Parameter.CreateCalculated(calculatedBase, calculatedIndex, calculatedScale, calculatedOffset, value[parts[0].Length] == '+');
+				return Parameter.CreateCalculatedLiteral(calculatedBase, calculatedIndex, calculatedScale, calculatedOffset, sign);
 			}
 			else if (value[0] == '[') {
 				return this.ParseParameterType(InstructionSize.EightByte, resolveLabels, true, value.Substring(1, value.Length - 2).Trim());
@@ -133,6 +132,21 @@ namespace ArkeOS.Assembler {
 			}
 
 			throw new InvalidParameterException();
+		}
+
+		private void ParseCalculated(InstructionSize size, string value, bool resolveLabels, ref Parameter calculatedBase, ref Parameter calculatedIndex, ref Parameter calculatedScale, ref Parameter calculatedOffset, ref bool sign) {
+			var parts = value.Split('+', '-', '*');
+
+			calculatedBase = this.ParseParameterType(size, resolveLabels, false, parts[0]);
+			calculatedIndex = this.ParseParameterType(size, resolveLabels, false, parts[1]);
+
+			if (parts.Length > 2 && !string.IsNullOrWhiteSpace(parts[2]))
+				calculatedScale = this.ParseParameterType(size, resolveLabels, false, parts[2]);
+
+			if (parts.Length > 3 && !string.IsNullOrWhiteSpace(parts[3]))
+				calculatedOffset = this.ParseParameterType(size, resolveLabels, false, parts[3]);
+
+			sign = value[parts[0].Length] == '+';
 		}
 
 		private Parameter ParseParameterType(InstructionSize size, bool resolveLabels, bool isAddress, string value) {
