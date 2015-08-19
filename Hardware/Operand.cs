@@ -15,8 +15,13 @@
 			}
 		}
 
-		public Operand(ulong initialValue) {
-			this.value = initialValue;
+		public Operand() {
+			this.value = 0;
+			this.Dirty = false;
+		}
+
+		public void Reset(ulong value) {
+			this.value = value;
 			this.Dirty = false;
 		}
 	}

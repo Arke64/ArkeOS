@@ -125,10 +125,10 @@ namespace ArkeOS.Hardware {
 		}
 
 		private void Tick() {
-			Operand a, b, c;
+			Operand a = new Operand(), b = new Operand(), c = new Operand();
 
 			if (this.instructionHandlers.Length >= this.CurrentInstruction.Code && this.instructionHandlers[this.CurrentInstruction.Code] != null) {
-				this.LoadParameters(out a, out b, out c);
+				this.LoadParameters(a, b, c);
 
 				this.instructionHandlers[this.CurrentInstruction.Code](a, b, c);
 
@@ -151,10 +151,15 @@ namespace ArkeOS.Hardware {
 			this.SetNextInstruction();
 		}
 
-		private void LoadParameters(out Operand a, out Operand b, out Operand c) {
-			c = (this.CurrentInstruction.Definition.ParameterCount >= 3 && this.CurrentInstruction.Definition.Parameter3Direction == InstructionDefinition.ParameterDirection.Read) ? new Operand(this.GetValue(this.CurrentInstruction.Parameter3)) : new Operand(0);
-			b = (this.CurrentInstruction.Definition.ParameterCount >= 2 && this.CurrentInstruction.Definition.Parameter2Direction == InstructionDefinition.ParameterDirection.Read) ? new Operand(this.GetValue(this.CurrentInstruction.Parameter2)) : new Operand(0);
-			a = (this.CurrentInstruction.Definition.ParameterCount >= 1 && this.CurrentInstruction.Definition.Parameter1Direction == InstructionDefinition.ParameterDirection.Read) ? new Operand(this.GetValue(this.CurrentInstruction.Parameter1)) : new Operand(0);
+		private void LoadParameters(Operand a, Operand b, Operand c) {
+			if (this.CurrentInstruction.Definition.ParameterCount >= 3 && this.CurrentInstruction.Definition.Parameter3Direction == InstructionDefinition.ParameterDirection.Read)
+				c.Reset(this.GetValue(this.CurrentInstruction.Parameter3));
+
+			if (this.CurrentInstruction.Definition.ParameterCount >= 2 && this.CurrentInstruction.Definition.Parameter2Direction == InstructionDefinition.ParameterDirection.Read)
+				b.Reset(this.GetValue(this.CurrentInstruction.Parameter2));
+
+			if (this.CurrentInstruction.Definition.ParameterCount >= 1 && this.CurrentInstruction.Definition.Parameter1Direction == InstructionDefinition.ParameterDirection.Read)
+				a.Reset(this.GetValue(this.CurrentInstruction.Parameter1));
 		}
 
 		private void SaveParameters(Operand a, Operand b, Operand c) {
