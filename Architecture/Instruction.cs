@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.IO;
 
 namespace ArkeOS.Architecture {
@@ -14,7 +13,7 @@ namespace ArkeOS.Architecture {
 
 		public Instruction(byte code, IList<Parameter> parameters) {
 			this.Code = code;
-			this.Length = 3;
+			this.Length = 1;
 
 			this.Definition = InstructionDefinition.Find(this.Code);
 
@@ -34,33 +33,36 @@ namespace ArkeOS.Architecture {
 			}
 		}
 
-		public Instruction(byte[] memory, ulong address) {
-			var paraDef = BitConverter.ToUInt16(memory, (int)(address + 1));
-
-			this.Code = memory[address];
-			this.Length = 3;
+		public Instruction(ulong[] memory, ulong address) {
+			this.Code = (byte)((memory[address] & 0xFF00000000000000UL) >> 56);
+			this.Length = 1;
 
 			this.Definition = InstructionDefinition.Find(this.Code);
 
 			if (this.Definition.ParameterCount >= 1) {
-				this.Parameter1 = Parameter.CreateFromMemory((ParameterType)((paraDef >> 2) & 0x07), memory, address + this.Length);
+				this.Parameter1 = Parameter.CreateFromMemory((ParameterType)((memory[address] >> 53) & 0x07), memory, address + this.Length);
 				this.Length += this.Parameter1.Length;
 			}
 
 			if (this.Definition.ParameterCount >= 2) {
-				this.Parameter2 = Parameter.CreateFromMemory((ParameterType)((paraDef >> 5) & 0x07), memory, address + this.Length);
+				this.Parameter2 = Parameter.CreateFromMemory((ParameterType)((memory[address] >> 50) & 0x07), memory, address + this.Length);
 				this.Length += this.Parameter2.Length;
 			}
 
 			if (this.Definition.ParameterCount >= 3) {
-				this.Parameter3 = Parameter.CreateFromMemory((ParameterType)((paraDef >> 8) & 0x07), memory, address + this.Length);
+				this.Parameter3 = Parameter.CreateFromMemory((ParameterType)((memory[address] >> 47) & 0x07), memory, address + this.Length);
 				this.Length += this.Parameter3.Length;
 			}
 		}
 
 		public void Encode(BinaryWriter writer) {
-			writer.Write(this.Code);
-			writer.Write((ushort)((((byte?)this.Parameter1?.Type ?? 0) << 2) | (((byte?)this.Parameter2?.Type ?? 0) << 5) | (((byte?)this.Parameter3?.Type ?? 0) << 8)));
+			var value = (ulong)this.Code << 56;
+
+			value |= (ulong)(this.Parameter1?.Type ?? 0) << 53;
+			value |= (ulong)(this.Parameter2?.Type ?? 0) << 50;
+			value |= (ulong)(this.Parameter3?.Type ?? 0) << 47;
+
+			writer.Write(value);
 
 			this.Parameter1?.Encode(writer);
 			this.Parameter2?.Encode(writer);

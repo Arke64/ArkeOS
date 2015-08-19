@@ -26,12 +26,12 @@ namespace ArkeOS.Assembler {
 						var parts = line.Split(' ');
 
 						if (parts[0] == "ORIGIN") {
-							stream.Seek((long)Helpers.ParseLiteral(parts[1]), SeekOrigin.Begin);
+							stream.Seek((long)Helpers.ParseLiteral(parts[1]) * 8, SeekOrigin.Begin);
 						}
 						else if (parts[0] == "LABEL") {
 
 						}
-						else if (parts[0].StartsWith("CONST")) {
+						else if (parts[0] == "CONST") {
 							if (parts[1].StartsWith("0")) {
 								writer.Write(Helpers.ParseLiteral(parts[1]));
 							}
@@ -42,8 +42,11 @@ namespace ArkeOS.Assembler {
 						else if (parts[0] == "STRING") {
 							var start = line.IndexOf("\"") + 1;
 							var end = line.LastIndexOf("\"");
+							var str = line.Substring(start, end - start);
 
-							writer.Write(Encoding.UTF8.GetBytes(line.Substring(start, end - start)));
+							str.PadRight(str.Length + str.Length % 8, '\0');
+
+							writer.Write(Encoding.UTF8.GetBytes(str));
 						}
 						else if (!parts[0].StartsWith(@"//")) {
 							this.ParseInstruction(parts, true).Encode(writer);
@@ -68,7 +71,7 @@ namespace ArkeOS.Assembler {
 					this.labels.Add(parts[1], address);
 				}
 				else if (parts[0].StartsWith("CONST")) {
-					address += 8;
+					address += 1;
 				}
 				else if (parts[0] == "STRING") {
 					var start = line.IndexOf("\"") + 1;
@@ -77,7 +80,8 @@ namespace ArkeOS.Assembler {
 					address += (ulong)(end - start);
 				}
 				else if (!parts[0].StartsWith(@"//")) {
-					address += this.ParseInstruction(parts, false).Length;
+					var inst = this.ParseInstruction(parts, false);
+					address += inst.Length;
 				}
 			}
 		}

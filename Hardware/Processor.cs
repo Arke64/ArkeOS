@@ -10,9 +10,9 @@ namespace ArkeOS.Hardware {
 		private static int MaxCachedInstuctions => 1024;
 
 		private class Configuration {
-			public ushort SystemTickInterval { get; set; } = 50;
+			public ulong SystemTickInterval { get; set; } = 50;
 			public bool InstructionCachingEnabled { get; set; } = true;
-			public byte ProtectionMode { get; set; } = 0;
+			public ulong ProtectionMode { get; set; } = 0;
 		}
 
 		private Configuration configuration;
@@ -45,7 +45,11 @@ namespace ArkeOS.Hardware {
 		}
 
 		public void LoadStartupImage(byte[] image) {
-			this.memoryController.CopyFrom(image, 0, (ulong)image.Length);
+			var newImage = new ulong[image.Length / 8];
+
+			Buffer.BlockCopy(image, 0, newImage, 0, image.Length);
+
+			this.memoryController.CopyFrom(newImage, 0, (ulong)newImage.Length);
 		}
 
 		public void Start() {
@@ -67,7 +71,7 @@ namespace ArkeOS.Hardware {
 
 		public void Continue() {
 			this.broken = false;
-			this.systemTimer.Change(this.configuration.SystemTickInterval, this.configuration.SystemTickInterval);
+			this.systemTimer.Change((int)this.configuration.SystemTickInterval, (int)this.configuration.SystemTickInterval);
 
 			new Task(() => {
 				while (!this.broken)
@@ -168,7 +172,7 @@ namespace ArkeOS.Hardware {
 			if (this.Registers[Register.RIDT] == 0)
 				return;
 
-			var isr = this.memoryController.ReadU64(this.Registers[Register.RIDT] + (ulong)id * 8);
+			var isr = this.memoryController.ReadWord(this.Registers[Register.RIDT] + (ulong)id);
 
 			if (isr == 0)
 				return;
@@ -181,9 +185,9 @@ namespace ArkeOS.Hardware {
 		}
 
 		private void UpdateConfiguration() {
-			this.configuration.SystemTickInterval = this.memoryController.ReadU16(this.Registers[Register.RCFG] + 0);
-			this.configuration.InstructionCachingEnabled = this.memoryController.ReadU16(this.Registers[Register.RCFG] + 2) != 0;
-			this.configuration.ProtectionMode = this.memoryController.ReadU8(this.Registers[Register.RCFG] + 3);
+			this.configuration.SystemTickInterval = this.memoryController.ReadWord(this.Registers[Register.RCFG] + 0);
+			this.configuration.InstructionCachingEnabled = this.memoryController.ReadWord(this.Registers[Register.RCFG] + 1) != 0;
+			this.configuration.ProtectionMode = this.memoryController.ReadWord(this.Registers[Register.RCFG] + 2);
 		}
 
 		private ulong GetValue(Parameter parameter) {
@@ -193,7 +197,7 @@ namespace ArkeOS.Hardware {
 				value = parameter.Literal;
 			}
 			else if (parameter.Type == ParameterType.LiteralAddress) {
-				value = this.memoryController.ReadU64(parameter.Literal);
+				value = this.memoryController.ReadWord(parameter.Literal);
 			}
 			else if (parameter.Type == ParameterType.Register) {
 				if (this.IsRegisterReadAllowed(parameter.Register))
@@ -201,19 +205,19 @@ namespace ArkeOS.Hardware {
 			}
 			else if (parameter.Type == ParameterType.RegisterAddress) {
 				if (this.IsRegisterReadAllowed(parameter.Register))
-					value = this.memoryController.ReadU64(this.Registers[parameter.Register]);
+					value = this.memoryController.ReadWord(this.Registers[parameter.Register]);
 			}
 			else if (parameter.Type == ParameterType.CalculatedLiteral) {
 				value = this.GetCalculatedLiteral(parameter);
 			}
 			else if (parameter.Type == ParameterType.CalculatedAddress) {
-				value = this.memoryController.ReadU64(this.GetCalculatedLiteral(parameter));
+				value = this.memoryController.ReadWord(this.GetCalculatedLiteral(parameter));
 			}
 			else if (parameter.Type == ParameterType.StackLiteral) {
 				value = this.Pop();
 			}
 			else if (parameter.Type == ParameterType.StackAddress) {
-				value = this.memoryController.ReadU64(this.Pop());
+				value = this.memoryController.ReadWord(this.Pop());
 			}
 
 			return value;
@@ -234,19 +238,19 @@ namespace ArkeOS.Hardware {
 			}
 			else if (parameter.Type == ParameterType.RegisterAddress) {
 				if (this.IsRegisterReadAllowed(parameter.Register))
-					this.memoryController.WriteU64(this.Registers[parameter.Register], value);
+					this.memoryController.WriteWord(this.Registers[parameter.Register], value);
 			}
 			else if (parameter.Type == ParameterType.LiteralAddress) {
-				this.memoryController.WriteU64(parameter.Literal, value);
+				this.memoryController.WriteWord(parameter.Literal, value);
 			}
 			else if (parameter.Type == ParameterType.CalculatedAddress) {
-				this.memoryController.WriteU64(this.GetCalculatedLiteral(parameter), value);
+				this.memoryController.WriteWord(this.GetCalculatedLiteral(parameter), value);
 			}
 			else if (parameter.Type == ParameterType.StackLiteral) {
 				this.Push(value);
 			}
 			else if (parameter.Type == ParameterType.StackAddress) {
-				this.memoryController.WriteU64(this.Pop(), value);
+				this.memoryController.WriteWord(this.Pop(), value);
 			}
 		}
 
@@ -273,11 +277,11 @@ namespace ArkeOS.Hardware {
 		private void Push(ulong value) {
 			this.Registers[Register.RSP] -= 8;
 
-			this.memoryController.WriteU64(this.Registers[Register.RSP], value);
+			this.memoryController.WriteWord(this.Registers[Register.RSP], value);
 		}
 
 		private ulong Pop() {
-			var value = this.memoryController.ReadU64(this.Registers[Register.RSP]);
+			var value = this.memoryController.ReadWord(this.Registers[Register.RSP]);
 
 			this.Registers[Register.RSP] += 8;
 

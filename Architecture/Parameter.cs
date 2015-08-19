@@ -1,5 +1,4 @@
-﻿using System;
-using System.IO;
+﻿using System.IO;
 
 namespace ArkeOS.Architecture {
 	public class Parameter {
@@ -37,7 +36,7 @@ namespace ArkeOS.Architecture {
 			return new Parameter() {
 				Type = isAddress ? ParameterType.LiteralAddress : ParameterType.Literal,
 				Literal = literal,
-				Length = 8
+				Length = 1
 			};
 		}
 
@@ -54,7 +53,7 @@ namespace ArkeOS.Architecture {
 			};
 		}
 
-		public static Parameter CreateFromMemory(ParameterType type, byte[] memory, ulong address) {
+		public static Parameter CreateFromMemory(ParameterType type, ulong[] memory, ulong address) {
 			var result = new Parameter();
 
 			result.Type = type;
@@ -62,12 +61,12 @@ namespace ArkeOS.Architecture {
 			switch (type) {
 				case ParameterType.RegisterAddress: result.Register = (Register)memory[address]; result.Length = 1; break;
 				case ParameterType.Register: result.Register = (Register)memory[address]; result.Length = 1; break;
-				case ParameterType.LiteralAddress: result.Literal = BitConverter.ToUInt64(memory, (int)address); result.Length = 8; break;
+				case ParameterType.LiteralAddress: result.Literal = memory[address]; result.Length = 1; break;
 				case ParameterType.StackLiteral: result.Length = 0; break;
-				case ParameterType.Literal: result.Literal = BitConverter.ToUInt64(memory, (int)address); result.Length = 8; break;
+				case ParameterType.Literal: result.Literal = memory[address]; result.Length = 1; break;
 				case ParameterType.CalculatedAddress:
 				case ParameterType.CalculatedLiteral:
-					var format = memory[address++];
+					var format = (byte)memory[address++];
 
 					result.CalculatedBase = result.ReadCalculatedParameter(memory, ref address, format, -1, 0x08);
 					result.CalculatedIndex = result.ReadCalculatedParameter(memory, ref address, format, 0x01, 0x10);
@@ -86,8 +85,8 @@ namespace ArkeOS.Architecture {
 
 		public void Encode(BinaryWriter writer) {
 			switch (this.Type) {
-				case ParameterType.RegisterAddress: writer.Write((byte)this.Register); break;
-				case ParameterType.Register: writer.Write((byte)this.Register); break;
+				case ParameterType.RegisterAddress: writer.Write((ulong)this.Register); break;
+				case ParameterType.Register: writer.Write((ulong)this.Register); break;
 				case ParameterType.LiteralAddress: writer.Write(this.Literal); break;
 				case ParameterType.Literal: writer.Write(this.Literal); break;
 				case ParameterType.StackLiteral: break;
@@ -113,7 +112,7 @@ namespace ArkeOS.Architecture {
 						format |= (byte)(this.CalculatedOffset.Type == ParameterType.Literal ? 0x40 : 0x00);
 					}
 
-					writer.Write(format);
+					writer.Write((ulong)format);
 
 					this.CalculatedBase.Encode(writer);
 					this.CalculatedIndex.Encode(writer);
@@ -161,7 +160,7 @@ namespace ArkeOS.Architecture {
 			}
 		}
 
-		private Parameter ReadCalculatedParameter(byte[] memory, ref ulong address, byte format, int hasIndex, int typeIndex) {
+		private Parameter ReadCalculatedParameter(ulong[] memory, ref ulong address, byte format, int hasIndex, int typeIndex) {
 			if (hasIndex != -1 && (format & hasIndex) == 0)
 				return null;
 
@@ -169,7 +168,7 @@ namespace ArkeOS.Architecture {
 				return Parameter.CreateRegister(false, (Register)memory[address++]);
 			}
 			else {
-				return Parameter.CreateLiteral(false, BitConverter.ToUInt64(memory, (int)address));
+				return Parameter.CreateLiteral(false, memory[address]);
 			}
 		}
 	}
