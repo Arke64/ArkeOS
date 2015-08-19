@@ -2,7 +2,6 @@ Registers
 ---------
 R0-R15: General purpose use
 RI0-RI7: General purpose use for interrupts only
-RC: Carry flag
 RO: 0x00.. register
 RF: 0xFF.. register
 RSP: Address of the current stack position
@@ -61,17 +60,15 @@ Basic
 Math
 ----
 20 ADD A B C: Add A to B and store in C
-21 ADDC A B C: Add A with carry to B and store in C
-22 ADDF A B C: Add the IEEE 754 value in A to B and store in C
-23 SUB A B C: Subtract A from B and store in C
-24 SUBC A B C: Subtract A with borrow from B and store in C
-25 SUBF A B C: Subtract the IEEE 754 value in A from B and store in C
-26 DIV A B C: Divide B by A and store in C
-27 DIVF A B C: Divide B by the IEEE 754 value in A and store in C
-28 MUL A B C: Multiply B by A and store in C
-29 MULF A B C: Multiply B by the IEEE 754 value in A and store in C
-30 MOD A B C: Take the remainder of dividing B by A and store in C
-31 MODF A B C: Take the remainder of dividing B by the IEEE 754 value in A and store in C
+21 ADDF A B C: Add the IEEE 754 value in A to B and store in C
+22 SUB A B C: Subtract A from B and store in C
+23 SUBF A B C: Subtract the IEEE 754 value in A from B and store in C
+24 DIV A B C: Divide B by A and store in C
+25 DIVF A B C: Divide B by the IEEE 754 value in A and store in C
+26 MUL A B C: Multiply B by A and store in C
+27 MULF A B C: Multiply B by the IEEE 754 value in A and store in C
+28 MOD A B C: Take the remainder of dividing B by A and store in C
+29 MODF A B C: Take the remainder of dividing B by the IEEE 754 value in A and store in C
 
 Logic
 -----

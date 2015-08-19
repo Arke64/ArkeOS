@@ -39,17 +39,15 @@ namespace ArkeOS.Architecture {
 			new InstructionDefinition("OUT", 11, ParameterDirection.Read, ParameterDirection.Read);
 
 			new InstructionDefinition("ADD", 20, ParameterDirection.Read, ParameterDirection.Read, ParameterDirection.Write);
-			new InstructionDefinition("ADDC", 21, ParameterDirection.Read, ParameterDirection.Read, ParameterDirection.Write);
-			new InstructionDefinition("ADDF", 22, ParameterDirection.Read, ParameterDirection.Read, ParameterDirection.Write);
-			new InstructionDefinition("SUB", 23, ParameterDirection.Read, ParameterDirection.Read, ParameterDirection.Write);
-			new InstructionDefinition("SUBC", 24, ParameterDirection.Read, ParameterDirection.Read, ParameterDirection.Write);
-			new InstructionDefinition("SUBF", 25, ParameterDirection.Read, ParameterDirection.Read, ParameterDirection.Write);
-			new InstructionDefinition("DIV", 26, ParameterDirection.Read, ParameterDirection.Read, ParameterDirection.Write);
-			new InstructionDefinition("DIVF", 27, ParameterDirection.Read, ParameterDirection.Read, ParameterDirection.Write);
-			new InstructionDefinition("MUL", 28, ParameterDirection.Read, ParameterDirection.Read, ParameterDirection.Write);
-			new InstructionDefinition("MULF", 29, ParameterDirection.Read, ParameterDirection.Read, ParameterDirection.Write);
-			new InstructionDefinition("MOD", 30, ParameterDirection.Read, ParameterDirection.Read, ParameterDirection.Write);
-			new InstructionDefinition("MODF", 31, ParameterDirection.Read, ParameterDirection.Read, ParameterDirection.Write);
+			new InstructionDefinition("ADDF", 21, ParameterDirection.Read, ParameterDirection.Read, ParameterDirection.Write);
+			new InstructionDefinition("SUB", 22, ParameterDirection.Read, ParameterDirection.Read, ParameterDirection.Write);
+			new InstructionDefinition("SUBF", 23, ParameterDirection.Read, ParameterDirection.Read, ParameterDirection.Write);
+			new InstructionDefinition("DIV", 24, ParameterDirection.Read, ParameterDirection.Read, ParameterDirection.Write);
+			new InstructionDefinition("DIVF", 25, ParameterDirection.Read, ParameterDirection.Read, ParameterDirection.Write);
+			new InstructionDefinition("MUL", 26, ParameterDirection.Read, ParameterDirection.Read, ParameterDirection.Write);
+			new InstructionDefinition("MULF", 27, ParameterDirection.Read, ParameterDirection.Read, ParameterDirection.Write);
+			new InstructionDefinition("MOD", 28, ParameterDirection.Read, ParameterDirection.Read, ParameterDirection.Write);
+			new InstructionDefinition("MODF", 29, ParameterDirection.Read, ParameterDirection.Read, ParameterDirection.Write);
 
 			new InstructionDefinition("SR", 40, ParameterDirection.Read, ParameterDirection.Read, ParameterDirection.Write);
 			new InstructionDefinition("SL", 41, ParameterDirection.Read, ParameterDirection.Read, ParameterDirection.Write);

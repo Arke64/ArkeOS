@@ -68,35 +68,8 @@ namespace ArkeOS.Hardware {
 		#region Math
 
 		private void ExecuteADD(Operand a, Operand b, Operand c) {
-
-			if (ulong.MaxValue - a.Value < b.Value)
-				this.Registers[Register.RC] = ulong.MaxValue;
-
 			unchecked {
-				c.Value = ulong.MaxValue & ((ulong.MaxValue & a.Value) + (ulong.MaxValue & b.Value));
-			}
-		}
-
-		private void ExecuteADDC(Operand a, Operand b, Operand c) {
-			var carry = this.Registers[Register.RC] > 0 ? 1UL : 0UL;
-
-			if (a.Value < ulong.MaxValue) {
-				a.Value += carry;
-			}
-			else if (b.Value < ulong.MaxValue) {
-				b.Value += carry;
-			}
-			else if (carry == 1) {
-				this.Registers[Register.RC] = ulong.MaxValue;
-
-				c.Value = ulong.MaxValue;
-			}
-
-			if (ulong.MaxValue - a.Value < b.Value)
-				this.Registers[Register.RC] = ulong.MaxValue;
-
-			unchecked {
-				c.Value = ulong.MaxValue & ((ulong.MaxValue & a.Value) + (ulong.MaxValue & b.Value));
+				c.Value = a.Value + b.Value;
 			}
 		}
 
@@ -108,34 +81,8 @@ namespace ArkeOS.Hardware {
 		}
 
 		private void ExecuteSUB(Operand a, Operand b, Operand c) {
-			if (a.Value > b.Value)
-				this.Registers[Register.RC] = ulong.MaxValue;
-
 			unchecked {
-				c.Value = ulong.MaxValue & ((ulong.MaxValue & b.Value) - (ulong.MaxValue & a.Value));
-			}
-		}
-
-		private void ExecuteSUBC(Operand a, Operand b, Operand c) {
-			var carry = this.Registers[Register.RC] > 0 ? 1UL : 0UL;
-
-			if (a.Value > 0) {
-				a.Value -= carry;
-			}
-			else if (b.Value > 0) {
-				b.Value -= carry;
-			}
-			else if (carry == 1) {
-				this.Registers[Register.RC] = ulong.MaxValue;
-
-				return;
-			}
-
-			if (a.Value > b.Value)
-				this.Registers[Register.RC] = ulong.MaxValue;
-
-			unchecked {
-				c.Value = ulong.MaxValue & ((ulong.MaxValue & b.Value) - (ulong.MaxValue & a.Value));
+				c.Value = b.Value - a.Value;
 			}
 		}
 
@@ -168,21 +115,8 @@ namespace ArkeOS.Hardware {
 		}
 
 		private void ExecuteMUL(Operand a, Operand b, Operand c) {
-			if (a.Value == 0) {
-				var t = a.Value;
-
-				a.Value = b.Value;
-				b.Value = t;
-			}
-
-			if (a.Value == 0)
-				return;
-
-			if (ulong.MaxValue / a.Value > b.Value)
-				this.Registers[Register.RC] = ulong.MaxValue;
-
 			unchecked {
-				c.Value = ulong.MaxValue & ((ulong.MaxValue & a.Value) * (ulong.MaxValue & b.Value));
+				c.Value = a.Value * b.Value;
 			}
 		}
 
