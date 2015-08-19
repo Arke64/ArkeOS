@@ -32,13 +32,11 @@ namespace ArkeOS.Assembler {
 
 						}
 						else if (parts[0].StartsWith("CONST")) {
-							var size = int.Parse(parts[0].Split(':')[1]);
-
 							if (parts[1].StartsWith("0")) {
-								Helpers.SizedWrite(writer, Helpers.ParseLiteral(parts[1]), size);
+								writer.Write(Helpers.ParseLiteral(parts[1]));
 							}
 							else {
-								Helpers.SizedWrite(writer, this.labels[parts[1].Substring(1, parts[1].Length - 2).Trim()], size);
+								writer.Write(this.labels[parts[1].Substring(1, parts[1].Length - 2).Trim()]);
 							}
 						}
 						else if (parts[0] == "STRING") {
@@ -70,7 +68,7 @@ namespace ArkeOS.Assembler {
 					this.labels.Add(parts[1], address);
 				}
 				else if (parts[0].StartsWith("CONST")) {
-					address += ulong.Parse(parts[0].Split(':')[1]);
+					address += 8;
 				}
 				else if (parts[0] == "STRING") {
 					var start = line.IndexOf("\"") + 1;
@@ -85,29 +83,15 @@ namespace ArkeOS.Assembler {
 		}
 
 		private Instruction ParseInstruction(string[] parts, bool resolveLabels) {
-			var size = InstructionSize.EightByte;
-
-			var index = parts[0].IndexOf(':');
-			if (index != -1) {
-				switch (parts[0][index + 1]) {
-					case '1': size = InstructionSize.OneByte; break;
-					case '2': size = InstructionSize.TwoByte; break;
-					case '4': size = InstructionSize.FourByte; break;
-					case '8': size = InstructionSize.EightByte; break;
-				}
-
-				parts[0] = parts[0].Substring(0, index);
-			}
-
 			var def = InstructionDefinition.Find(parts[0]);
 
 			if (def == null)
 				throw new InvalidInstructionException();
 
-			return new Instruction(def.Code, size, parts.Skip(1).Select(p => this.ParseParameter(size, p, resolveLabels)).ToList());
+			return new Instruction(def.Code, parts.Skip(1).Select(p => this.ParseParameter(p, resolveLabels)).ToList());
 		}
 
-		private Parameter ParseParameter(InstructionSize size, string value, bool resolveLabels) {
+		private Parameter ParseParameter(string value, bool resolveLabels) {
 			var isAddress = value[0] == '[';
 
 			if (isAddress)
@@ -117,18 +101,18 @@ namespace ArkeOS.Assembler {
 				value = value.Substring(1, value.Length - 2);
 
 				var parts = value.Split('+', '-', '*');
-				var calculatedBase = this.ParseParameter(size, parts[0], resolveLabels);
-				var calculatedIndex = this.ParseParameter(size, parts[1], resolveLabels);
-				var calculatedScale = (parts.Length > 2 && !string.IsNullOrWhiteSpace(parts[2])) ? this.ParseParameter(size, parts[2], resolveLabels) : null;
-				var calculatedOffset = (parts.Length > 3 && !string.IsNullOrWhiteSpace(parts[3])) ? this.ParseParameter(size, parts[3], resolveLabels) : null;
+				var calculatedBase = this.ParseParameter(parts[0], resolveLabels);
+				var calculatedIndex = this.ParseParameter(parts[1], resolveLabels);
+				var calculatedScale = (parts.Length > 2 && !string.IsNullOrWhiteSpace(parts[2])) ? this.ParseParameter(parts[2], resolveLabels) : null;
+				var calculatedOffset = (parts.Length > 3 && !string.IsNullOrWhiteSpace(parts[3])) ? this.ParseParameter(parts[3], resolveLabels) : null;
 
 				return Parameter.CreateCalculated(isAddress, calculatedBase, calculatedIndex, calculatedScale, calculatedOffset, value[parts[0].Length] == '+');
 			}
 			else if (value[0] == '{') {
-				return Parameter.CreateLiteral(isAddress, resolveLabels ? this.labels[value.Substring(1, value.Length - 2)] : 0, Helpers.SizeToBytes(isAddress ? InstructionSize.EightByte : size));
+				return Parameter.CreateLiteral(isAddress, resolveLabels ? this.labels[value.Substring(1, value.Length - 2)] : 0);
 			}
 			else if (value[0] == '0') {
-				return Parameter.CreateLiteral(isAddress, Helpers.ParseLiteral(value), Helpers.SizeToBytes(isAddress ? InstructionSize.EightByte : size));
+				return Parameter.CreateLiteral(isAddress, Helpers.ParseLiteral(value));
 			}
 			else if (value[0] == 'R') {
 				return Parameter.CreateRegister(isAddress, Helpers.ParseEnum<Register>(value));

@@ -33,11 +33,11 @@ namespace ArkeOS.Architecture {
 			};
 		}
 
-		public static Parameter CreateLiteral(bool isAddress, ulong literal, byte length) {
+		public static Parameter CreateLiteral(bool isAddress, ulong literal) {
 			return new Parameter() {
 				Type = isAddress ? ParameterType.LiteralAddress : ParameterType.Literal,
 				Literal = literal,
-				Length = length
+				Length = 8
 			};
 		}
 
@@ -54,7 +54,7 @@ namespace ArkeOS.Architecture {
 			};
 		}
 
-		public static Parameter CreateFromMemory(ParameterType type, InstructionSize size, byte[] memory, ulong address) {
+		public static Parameter CreateFromMemory(ParameterType type, byte[] memory, ulong address) {
 			var result = new Parameter();
 
 			result.Type = type;
@@ -64,20 +64,15 @@ namespace ArkeOS.Architecture {
 				case ParameterType.Register: result.Register = (Register)memory[address]; result.Length = 1; break;
 				case ParameterType.LiteralAddress: result.Literal = BitConverter.ToUInt64(memory, (int)address); result.Length = 8; break;
 				case ParameterType.StackLiteral: result.Length = 0; break;
-				case ParameterType.Literal:
-					result.Literal = result.ReadSized(size, memory, ref address);
-					result.Length = Helpers.SizeToBytes(size);
-
-					break;
-
+				case ParameterType.Literal: result.Literal = BitConverter.ToUInt64(memory, (int)address); result.Length = 8; break;
 				case ParameterType.CalculatedAddress:
 				case ParameterType.CalculatedLiteral:
 					var format = memory[address++];
 
-					result.CalculatedBase = result.ReadCalculatedParameter(memory, ref address, size, format, -1, 0x08);
-					result.CalculatedIndex = result.ReadCalculatedParameter(memory, ref address, size, format, 0x01, 0x10);
-					result.CalculatedScale = result.ReadCalculatedParameter(memory, ref address, size, format, 0x02, 0x20);
-					result.CalculatedOffset = result.ReadCalculatedParameter(memory, ref address, size, format, 0x04, 0x40);
+					result.CalculatedBase = result.ReadCalculatedParameter(memory, ref address, format, -1, 0x08);
+					result.CalculatedIndex = result.ReadCalculatedParameter(memory, ref address, format, 0x01, 0x10);
+					result.CalculatedScale = result.ReadCalculatedParameter(memory, ref address, format, 0x02, 0x20);
+					result.CalculatedOffset = result.ReadCalculatedParameter(memory, ref address, format, 0x04, 0x40);
 
 					result.CalculatedIndexSign = (format & 0x80) != 0;
 
@@ -94,7 +89,7 @@ namespace ArkeOS.Architecture {
 				case ParameterType.RegisterAddress: writer.Write((byte)this.Register); break;
 				case ParameterType.Register: writer.Write((byte)this.Register); break;
 				case ParameterType.LiteralAddress: writer.Write(this.Literal); break;
-				case ParameterType.Literal: Helpers.SizedWrite(writer, this.Literal, this.Length); break;
+				case ParameterType.Literal: writer.Write(this.Literal); break;
 				case ParameterType.StackLiteral: break;
 				case ParameterType.CalculatedLiteral:
 				case ParameterType.CalculatedAddress:
@@ -166,7 +161,7 @@ namespace ArkeOS.Architecture {
 			}
 		}
 
-		private Parameter ReadCalculatedParameter(byte[] memory, ref ulong address, InstructionSize size, byte format, int hasIndex, int typeIndex) {
+		private Parameter ReadCalculatedParameter(byte[] memory, ref ulong address, byte format, int hasIndex, int typeIndex) {
 			if (hasIndex != -1 && (format & hasIndex) == 0)
 				return null;
 
@@ -174,21 +169,8 @@ namespace ArkeOS.Architecture {
 				return Parameter.CreateRegister(false, (Register)memory[address++]);
 			}
 			else {
-				return Parameter.CreateLiteral(false, this.ReadSized(size, memory, ref address), Helpers.SizeToBytes(size));
+				return Parameter.CreateLiteral(false, BitConverter.ToUInt64(memory, (int)address));
 			}
-		}
-
-		private ulong ReadSized(InstructionSize size, byte[] memory, ref ulong address) {
-			var result = 0UL;
-
-			switch (size) {
-				case InstructionSize.OneByte: result = memory[address]; address += 1; break;
-				case InstructionSize.TwoByte: result = BitConverter.ToUInt16(memory, (int)address); address += 2; break;
-				case InstructionSize.FourByte: result = BitConverter.ToUInt32(memory, (int)address); address += 4; break;
-				case InstructionSize.EightByte: result = BitConverter.ToUInt64(memory, (int)address); address += 8; break;
-			}
-
-			return result;
 		}
 	}
 }

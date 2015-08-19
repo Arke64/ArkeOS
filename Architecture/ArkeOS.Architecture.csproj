@@ -43,7 +43,6 @@
     <Compile Include="Helpers.cs" />
     <Compile Include="Instruction.cs" />
     <Compile Include="InstructionDefinition.cs" />
-    <Compile Include="InstructionSize.cs" />
     <Compile Include="Interrupt.cs" />
     <Compile Include="Parameter.cs" />
     <Compile Include="ParameterType.cs" />

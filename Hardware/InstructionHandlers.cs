@@ -68,37 +68,35 @@ namespace ArkeOS.Hardware {
 		#region Math
 
 		private void ExecuteADD(Operand a, Operand b, Operand c) {
-			var max = Helpers.SizeToMask(this.CurrentInstruction.Size);
 
-			if (max - a.Value < b.Value)
+			if (ulong.MaxValue - a.Value < b.Value)
 				this.Registers[Register.RC] = ulong.MaxValue;
 
 			unchecked {
-				c.Value = max & ((max & a.Value) + (max & b.Value));
+				c.Value = ulong.MaxValue & ((ulong.MaxValue & a.Value) + (ulong.MaxValue & b.Value));
 			}
 		}
 
 		private void ExecuteADDC(Operand a, Operand b, Operand c) {
 			var carry = this.Registers[Register.RC] > 0 ? 1UL : 0UL;
-			var max = Helpers.SizeToMask(this.CurrentInstruction.Size);
 
-			if (a.Value < max) {
+			if (a.Value < ulong.MaxValue) {
 				a.Value += carry;
 			}
-			else if (b.Value < max) {
+			else if (b.Value < ulong.MaxValue) {
 				b.Value += carry;
 			}
 			else if (carry == 1) {
 				this.Registers[Register.RC] = ulong.MaxValue;
 
-				c.Value = max;
+				c.Value = ulong.MaxValue;
 			}
 
-			if (max - a.Value < b.Value)
+			if (ulong.MaxValue - a.Value < b.Value)
 				this.Registers[Register.RC] = ulong.MaxValue;
 
 			unchecked {
-				c.Value = max & ((max & a.Value) + (max & b.Value));
+				c.Value = ulong.MaxValue & ((ulong.MaxValue & a.Value) + (ulong.MaxValue & b.Value));
 			}
 		}
 
@@ -110,19 +108,16 @@ namespace ArkeOS.Hardware {
 		}
 
 		private void ExecuteSUB(Operand a, Operand b, Operand c) {
-			var max = Helpers.SizeToMask(this.CurrentInstruction.Size);
-
 			if (a.Value > b.Value)
 				this.Registers[Register.RC] = ulong.MaxValue;
 
 			unchecked {
-				c.Value = max & ((max & b.Value) - (max & a.Value));
+				c.Value = ulong.MaxValue & ((ulong.MaxValue & b.Value) - (ulong.MaxValue & a.Value));
 			}
 		}
 
 		private void ExecuteSUBC(Operand a, Operand b, Operand c) {
 			var carry = this.Registers[Register.RC] > 0 ? 1UL : 0UL;
-			var max = Helpers.SizeToMask(this.CurrentInstruction.Size);
 
 			if (a.Value > 0) {
 				a.Value -= carry;
@@ -140,7 +135,7 @@ namespace ArkeOS.Hardware {
 				this.Registers[Register.RC] = ulong.MaxValue;
 
 			unchecked {
-				c.Value = max & ((max & b.Value) - (max & a.Value));
+				c.Value = ulong.MaxValue & ((ulong.MaxValue & b.Value) - (ulong.MaxValue & a.Value));
 			}
 		}
 
@@ -173,8 +168,6 @@ namespace ArkeOS.Hardware {
 		}
 
 		private void ExecuteMUL(Operand a, Operand b, Operand c) {
-			var max = Helpers.SizeToMask(this.CurrentInstruction.Size);
-
 			if (a.Value == 0) {
 				var t = a.Value;
 
@@ -185,11 +178,11 @@ namespace ArkeOS.Hardware {
 			if (a.Value == 0)
 				return;
 
-			if (max / a.Value > b.Value)
+			if (ulong.MaxValue / a.Value > b.Value)
 				this.Registers[Register.RC] = ulong.MaxValue;
 
 			unchecked {
-				c.Value = max & ((max & a.Value) * (max & b.Value));
+				c.Value = ulong.MaxValue & ((ulong.MaxValue & a.Value) * (ulong.MaxValue & b.Value));
 			}
 		}
 
@@ -227,8 +220,8 @@ namespace ArkeOS.Hardware {
 
 		private void ExecuteSR(Operand a, Operand b, Operand c) => c.Value = b.Value >> (byte)a.Value;
 		private void ExecuteSL(Operand a, Operand b, Operand c) => c.Value = b.Value << (byte)a.Value;
-		private void ExecuteRR(Operand a, Operand b, Operand c) => c.Value = (b.Value >> (byte)a.Value) | (b.Value << (Helpers.SizeToBits(this.CurrentInstruction.Size) - (byte)a.Value));
-		private void ExecuteRL(Operand a, Operand b, Operand c) => c.Value = (b.Value << (byte)a.Value) | (b.Value >> (Helpers.SizeToBits(this.CurrentInstruction.Size) - (byte)a.Value));
+		private void ExecuteRR(Operand a, Operand b, Operand c) => c.Value = (b.Value >> (byte)a.Value) | (b.Value << (64 - (byte)a.Value));
+		private void ExecuteRL(Operand a, Operand b, Operand c) => c.Value = (b.Value << (byte)a.Value) | (b.Value >> (64 - (byte)a.Value));
 		private void ExecuteNAND(Operand a, Operand b, Operand c) => c.Value = ~(a.Value & b.Value);
 		private void ExecuteAND(Operand a, Operand b, Operand c) => c.Value = a.Value & b.Value;
 		private void ExecuteNOR(Operand a, Operand b, Operand c) => c.Value = ~(a.Value | b.Value);
