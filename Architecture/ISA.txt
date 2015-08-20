@@ -69,8 +69,7 @@ Basic
 07 MVZ A B C: Moves B into C if A is zero
 08 MVNZ A B C: Moves B into C if A is non-zero
 09 XCHG A B: Swap A and B
-10 IN A B: Read from device ID specified in A into B
-11 OUT A B: Write to device ID specified in A from B
+10 CAS A B C: If C and B are equal, set C to A, else set B to C.
 
 Math
 ----

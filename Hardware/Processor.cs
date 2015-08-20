@@ -152,24 +152,24 @@ namespace ArkeOS.Hardware {
 		}
 
 		private void LoadParameters(Operand a, Operand b, Operand c) {
-			if (this.CurrentInstruction.Definition.ParameterCount >= 3 && this.CurrentInstruction.Definition.Parameter3Direction == InstructionDefinition.ParameterDirection.Read)
+			if (this.CurrentInstruction.Definition.ParameterCount >= 3 && this.CurrentInstruction.Definition.Parameter3Direction.HasFlag(InstructionDefinition.ParameterDirection.Read))
 				c.Reset(this.GetValue(this.CurrentInstruction.Parameter3));
 
-			if (this.CurrentInstruction.Definition.ParameterCount >= 2 && this.CurrentInstruction.Definition.Parameter2Direction == InstructionDefinition.ParameterDirection.Read)
+			if (this.CurrentInstruction.Definition.ParameterCount >= 2 && this.CurrentInstruction.Definition.Parameter2Direction.HasFlag(InstructionDefinition.ParameterDirection.Read))
 				b.Reset(this.GetValue(this.CurrentInstruction.Parameter2));
 
-			if (this.CurrentInstruction.Definition.ParameterCount >= 1 && this.CurrentInstruction.Definition.Parameter1Direction == InstructionDefinition.ParameterDirection.Read)
+			if (this.CurrentInstruction.Definition.ParameterCount >= 1 && this.CurrentInstruction.Definition.Parameter1Direction.HasFlag(InstructionDefinition.ParameterDirection.Read))
 				a.Reset(this.GetValue(this.CurrentInstruction.Parameter1));
 		}
 
 		private void SaveParameters(Operand a, Operand b, Operand c) {
-			if (this.CurrentInstruction.Definition.ParameterCount >= 3 && this.CurrentInstruction.Definition.Parameter3Direction == InstructionDefinition.ParameterDirection.Write && c.Dirty)
+			if (this.CurrentInstruction.Definition.ParameterCount >= 3 && this.CurrentInstruction.Definition.Parameter3Direction.HasFlag(InstructionDefinition.ParameterDirection.Write) && c.Dirty)
 				this.SetValue(this.CurrentInstruction.Parameter3, c.Value);
 
-			if (this.CurrentInstruction.Definition.ParameterCount >= 2 && this.CurrentInstruction.Definition.Parameter2Direction == InstructionDefinition.ParameterDirection.Write && b.Dirty)
+			if (this.CurrentInstruction.Definition.ParameterCount >= 2 && this.CurrentInstruction.Definition.Parameter2Direction.HasFlag(InstructionDefinition.ParameterDirection.Write) && b.Dirty)
 				this.SetValue(this.CurrentInstruction.Parameter2, b.Value);
 
-			if (this.CurrentInstruction.Definition.ParameterCount >= 1 && this.CurrentInstruction.Definition.Parameter1Direction == InstructionDefinition.ParameterDirection.Write && a.Dirty)
+			if (this.CurrentInstruction.Definition.ParameterCount >= 1 && this.CurrentInstruction.Definition.Parameter1Direction.HasFlag(InstructionDefinition.ParameterDirection.Write) && a.Dirty)
 				this.SetValue(this.CurrentInstruction.Parameter1, a.Value);
 		}
 

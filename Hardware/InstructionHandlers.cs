@@ -55,12 +55,13 @@ namespace ArkeOS.Hardware {
 			b.Value = t;
 		}
 
-		private void ExecuteIN(Operand a, Operand b, Operand c) {
-
-		}
-
-		private void ExecuteOUT(Operand a, Operand b, Operand c) {
-
+		private void ExecuteCAS(Operand a, Operand b, Operand c) {
+			if (c.Value == b.Value) {
+				c.Value = a.Value;
+			}
+			else {
+				b.Value = c.Value;
+			}
 		}
 
 		#endregion

@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace ArkeOS.Architecture {
@@ -16,9 +17,10 @@ namespace ArkeOS.Architecture {
 
 		public static IReadOnlyList<InstructionDefinition> All => InstructionDefinition.instructions.Where(c => c != null).ToList();
 
+		[Flags]
 		public enum ParameterDirection {
-			Read,
-			Write,
+			Read = 1,
+			Write = 2,
 		}
 
 		static InstructionDefinition() {
@@ -35,8 +37,7 @@ namespace ArkeOS.Architecture {
 			new InstructionDefinition("MVZ", 7, ParameterDirection.Read, ParameterDirection.Read, ParameterDirection.Write);
 			new InstructionDefinition("MVNZ", 8, ParameterDirection.Read, ParameterDirection.Read, ParameterDirection.Write);
 			new InstructionDefinition("XCHG", 9, ParameterDirection.Write, ParameterDirection.Write);
-			new InstructionDefinition("IN", 10, ParameterDirection.Read, ParameterDirection.Write);
-			new InstructionDefinition("OUT", 11, ParameterDirection.Read, ParameterDirection.Read);
+			new InstructionDefinition("CAS", 10, ParameterDirection.Read, ParameterDirection.Write | ParameterDirection.Read, ParameterDirection.Write | ParameterDirection.Read);
 
 			new InstructionDefinition("ADD", 20, ParameterDirection.Read, ParameterDirection.Read, ParameterDirection.Write);
 			new InstructionDefinition("ADDF", 21, ParameterDirection.Read, ParameterDirection.Read, ParameterDirection.Write);
