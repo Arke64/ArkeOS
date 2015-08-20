@@ -37,7 +37,7 @@ namespace ArkeOS.Architecture {
 			}
 		}
 
-		public Instruction(IBus systemBus, ulong address) {
+		public Instruction(IDevice systemBus, ulong address) {
 			var instruction = systemBus[address++];
 			var parameter1Type = (ParameterType)((instruction >> 6) & 0x07);
 			var parameter2Type = (ParameterType)((instruction >> 3) & 0x07);
@@ -121,7 +121,7 @@ namespace ArkeOS.Architecture {
 			format |= (((ulong)operand.Parameter.Type << 1) + (operand.IsPositive ? 1UL : 0UL)) << (60 - 4 * parameter);
 		}
 
-		private Parameter CreateParameter(ParameterType type, ulong instruction, int parameter, IBus systemBus, ref ulong address) {
+		private Parameter CreateParameter(ParameterType type, ulong instruction, int parameter, IDevice systemBus, ref ulong address) {
 			switch (type) {
 				default: return null;
 				case ParameterType.RegisterAddress: return Parameter.CreateRegister(true, (Register)((instruction >> (40 - 8 * parameter)) & 0xFF));
@@ -143,7 +143,7 @@ namespace ArkeOS.Architecture {
 			}
 		}
 
-		private Parameter.Calculated CreateCalculatedOperand(ulong calculated, int parameter, IBus systemBus, ref ulong address) {
+		private Parameter.Calculated CreateCalculatedOperand(ulong calculated, int parameter, IDevice systemBus, ref ulong address) {
 			var format = calculated >> (60 - 4 * parameter);
 			var type = (ParameterType)((format & 0x0E) >> 1);
 

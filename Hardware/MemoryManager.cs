@@ -1,7 +1,7 @@
 ﻿using ArkeOS.Architecture;
 
 namespace ArkeOS.Hardware {
-	public class MemoryManager : IBus {
+	public class MemoryManager : IDevice {
 		private ulong[] memory;
 
 		public MemoryManager(ulong physicalSize) {

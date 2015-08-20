@@ -1,6 +1,6 @@
 ﻿namespace ArkeOS.Architecture {
-	public abstract class IBus {
-		ulong this[ulong address] {
+	public abstract class IDevice {
+		public ulong this[ulong address] {
 			get {
 				return this.ReadWord(address);
 			}
