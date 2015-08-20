@@ -11,7 +11,7 @@ using Windows.UI.Xaml.Controls;
 
 namespace ArkeOS.VirtualMachine {
 	public partial class MainPage : Page {
-		private MemoryController memoryController;
+		private SystemBusController memoryController;
 		private InterruptController interruptController;
 		private Processor processor;
 
@@ -27,7 +27,7 @@ namespace ArkeOS.VirtualMachine {
 		}
 
 		private async void StartButton_Click(object sender, RoutedEventArgs e) {
-			this.memoryController = new MemoryController(10 * 1024 * 1024);
+			this.memoryController = new SystemBusController(10 * 1024 * 1024);
 			this.interruptController = new InterruptController();
 			this.processor = new Processor(this.memoryController, this.interruptController);
 			this.processor.ExecutionPaused += async (ss, ee) => await this.Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () => this.BreakButton_Click(null, null));

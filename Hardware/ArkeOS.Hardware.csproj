@@ -42,7 +42,8 @@
     <Compile Include="AssemblyInfo.cs" />
     <Compile Include="InstructionHandlers.cs" />
     <Compile Include="InterruptController.cs" />
-    <Compile Include="MemoryController.cs" />
+    <Compile Include="MemoryManager.cs" />
+    <Compile Include="SystemBusController.cs" />
     <Compile Include="Operand.cs" />
     <Compile Include="Processor.cs" />
     <Compile Include="RegisterManager.cs" />

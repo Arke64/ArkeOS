@@ -37,8 +37,8 @@ namespace ArkeOS.Architecture {
 			}
 		}
 
-		public Instruction(ulong[] memory, ulong address) {
-			var instruction = memory[address++];
+		public Instruction(IBus systemBus, ulong address) {
+			var instruction = systemBus[address++];
 			var parameter1Type = (ParameterType)((instruction >> 6) & 0x07);
 			var parameter2Type = (ParameterType)((instruction >> 3) & 0x07);
 			var parameter3Type = (ParameterType)((instruction >> 0) & 0x07);
@@ -49,17 +49,17 @@ namespace ArkeOS.Architecture {
 			this.Definition = InstructionDefinition.Find(this.Code);
 
 			if (this.Definition.ParameterCount >= 1) {
-				this.Parameter1 = this.CreateParameter(parameter1Type, instruction, 0, memory, ref address);
+				this.Parameter1 = this.CreateParameter(parameter1Type, instruction, 0, systemBus, ref address);
 				this.Length += this.Parameter1.Length;
 			}
 
 			if (this.Definition.ParameterCount >= 2) {
-				this.Parameter2 = this.CreateParameter(parameter2Type, instruction, 1, memory, ref address);
+				this.Parameter2 = this.CreateParameter(parameter2Type, instruction, 1, systemBus, ref address);
 				this.Length += this.Parameter2.Length;
 			}
 
 			if (this.Definition.ParameterCount >= 3) {
-				this.Parameter3 = this.CreateParameter(parameter3Type, instruction, 2, memory, ref address);
+				this.Parameter3 = this.CreateParameter(parameter3Type, instruction, 2, systemBus, ref address);
 				this.Length += this.Parameter3.Length;
 			}
 		}
@@ -121,36 +121,36 @@ namespace ArkeOS.Architecture {
 			format |= (((ulong)operand.Parameter.Type << 1) + (operand.IsPositive ? 1UL : 0UL)) << (60 - 4 * parameter);
 		}
 
-		private Parameter CreateParameter(ParameterType type, ulong instruction, int parameter, ulong[] memory, ref ulong address) {
+		private Parameter CreateParameter(ParameterType type, ulong instruction, int parameter, IBus systemBus, ref ulong address) {
 			switch (type) {
 				default: return null;
 				case ParameterType.RegisterAddress: return Parameter.CreateRegister(true, (Register)((instruction >> (40 - 8 * parameter)) & 0xFF));
 				case ParameterType.Register: return Parameter.CreateRegister(false, (Register)((instruction >> (40 - 8 * parameter)) & 0xFF));
-				case ParameterType.LiteralAddress: return Parameter.CreateLiteral(true, memory[address++]);
-				case ParameterType.Literal: return Parameter.CreateLiteral(false, memory[address++]);
+				case ParameterType.LiteralAddress: return Parameter.CreateLiteral(true, systemBus[address++]);
+				case ParameterType.Literal: return Parameter.CreateLiteral(false, systemBus[address++]);
 				case ParameterType.StackAddress: return Parameter.CreateStack(true);
 				case ParameterType.Stack: return Parameter.CreateStack(false);
 				case ParameterType.CalculatedAddress:
 				case ParameterType.Calculated:
-					var calculated = memory[address++];
+					var calculated = systemBus[address++];
 
-					var @base = this.CreateCalculatedOperand(calculated, 0, memory, ref address);
-					var index = this.CreateCalculatedOperand(calculated, 1, memory, ref address);
-					var scale = this.CreateCalculatedOperand(calculated, 2, memory, ref address);
-					var offset = this.CreateCalculatedOperand(calculated, 3, memory, ref address);
+					var @base = this.CreateCalculatedOperand(calculated, 0, systemBus, ref address);
+					var index = this.CreateCalculatedOperand(calculated, 1, systemBus, ref address);
+					var scale = this.CreateCalculatedOperand(calculated, 2, systemBus, ref address);
+					var offset = this.CreateCalculatedOperand(calculated, 3, systemBus, ref address);
 
 					return Parameter.CreateCalculated(type == ParameterType.CalculatedAddress, @base, index, scale, offset);
 			}
 		}
 
-		private Parameter.Calculated CreateCalculatedOperand(ulong calculated, int parameter, ulong[] memory, ref ulong address) {
+		private Parameter.Calculated CreateCalculatedOperand(ulong calculated, int parameter, IBus systemBus, ref ulong address) {
 			var format = calculated >> (60 - 4 * parameter);
 			var type = (ParameterType)((format & 0x0E) >> 1);
 
 			if (type == ParameterType.Calculated || type == ParameterType.CalculatedAddress)
 				return null;
 
-			return new Parameter.Calculated(this.CreateParameter(type, calculated, parameter, memory, ref address), (format & 0x01) != 0);
+			return new Parameter.Calculated(this.CreateParameter(type, calculated, parameter, systemBus, ref address), (format & 0x01) != 0);
 		}
 	}
 }
