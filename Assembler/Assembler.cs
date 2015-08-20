@@ -80,8 +80,7 @@ namespace ArkeOS.Assembler {
 					address += (ulong)(end - start);
 				}
 				else if (!parts[0].StartsWith(@"//")) {
-					var inst = this.ParseInstruction(parts, false);
-					address += inst.Length;
+					address += this.ParseInstruction(parts, false).Length;
 				}
 			}
 		}
@@ -105,12 +104,12 @@ namespace ArkeOS.Assembler {
 				value = value.Substring(1, value.Length - 2);
 
 				var parts = value.Split('+', '-', '*');
-				var calculatedBase = this.ParseParameter(parts[0], resolveLabels);
-				var calculatedIndex = this.ParseParameter(parts[1], resolveLabels);
-				var calculatedScale = (parts.Length > 2 && !string.IsNullOrWhiteSpace(parts[2])) ? this.ParseParameter(parts[2], resolveLabels) : null;
-				var calculatedOffset = (parts.Length > 3 && !string.IsNullOrWhiteSpace(parts[3])) ? this.ParseParameter(parts[3], resolveLabels) : null;
+				var @base = this.ParseParameter(parts[0], resolveLabels);
+				var index = this.ParseParameter(parts[1], resolveLabels);
+				var scale = (parts.Length > 2 && !string.IsNullOrWhiteSpace(parts[2])) ? this.ParseParameter(parts[2], resolveLabels) : null;
+				var offset = (parts.Length > 3 && !string.IsNullOrWhiteSpace(parts[3])) ? this.ParseParameter(parts[3], resolveLabels) : null;
 
-				return Parameter.CreateCalculated(isAddress, calculatedBase, calculatedIndex, calculatedScale, calculatedOffset, value[parts[0].Length] == '+');
+				return Parameter.CreateCalculated(isAddress, new Parameter.Calculated(@base, true), new Parameter.Calculated(index, value[parts[0].Length] == '+'), scale != null ? new Parameter.Calculated(scale, true) : null, offset != null ? new Parameter.Calculated(offset, value[parts[2].Length] == '+') : null);
 			}
 			else if (value[0] == '{') {
 				return Parameter.CreateLiteral(isAddress, resolveLabels ? this.labels[value.Substring(1, value.Length - 2)] : 0);

@@ -1,17 +1,24 @@
-﻿using System.IO;
-
-namespace ArkeOS.Architecture {
+﻿namespace ArkeOS.Architecture {
 	public class Parameter {
+		public class Calculated {
+			public Parameter Parameter { get; private set; }
+			public bool IsPositive { get; private set; }
+
+			public Calculated(Parameter parameter, bool isPositive) {
+				this.Parameter = parameter;
+				this.IsPositive = isPositive;
+			}
+		}
+
 		public ParameterType Type { get; private set; }
 		public Register Register { get; private set; }
 		public ulong Literal { get; private set; }
 		public byte Length { get; private set; }
 
-		public Parameter CalculatedBase { get; private set; }
-		public Parameter CalculatedIndex { get; private set; }
-		public Parameter CalculatedScale { get; private set; }
-		public Parameter CalculatedOffset { get; private set; }
-		public bool CalculatedIndexSign { get; private set; }
+		public Calculated Base { get; private set; }
+		public Calculated Index { get; private set; }
+		public Calculated Scale { get; private set; }
+		public Calculated Offset { get; private set; }
 
 		private Parameter() {
 
@@ -19,7 +26,7 @@ namespace ArkeOS.Architecture {
 
 		public static Parameter CreateStack(bool isAddress) {
 			return new Parameter() {
-				Type = isAddress ? ParameterType.StackAddress : ParameterType.StackLiteral,
+				Type = isAddress ? ParameterType.StackAddress : ParameterType.Stack,
 				Length = 0
 			};
 		}
@@ -28,7 +35,7 @@ namespace ArkeOS.Architecture {
 			return new Parameter() {
 				Type = isAddress ? ParameterType.RegisterAddress : ParameterType.Register,
 				Register = register,
-				Length = 1
+				Length = 0
 			};
 		}
 
@@ -40,111 +47,41 @@ namespace ArkeOS.Architecture {
 			};
 		}
 
-		public static Parameter CreateCalculated(bool isAddress, Parameter calculatedBase, Parameter calculatedIndex, Parameter calculatedScale, Parameter calculatedOffset, bool calculatedIndexSign) {
+		public static Parameter CreateCalculated(bool isAddress, Calculated @base, Calculated index, Calculated scale, Calculated offset) {
 			return new Parameter() {
-				CalculatedBase = calculatedBase,
-				CalculatedIndex = calculatedIndex,
-				CalculatedScale = calculatedScale,
-				CalculatedOffset = calculatedOffset,
-				CalculatedIndexSign = calculatedIndexSign,
+				Base = @base,
+				Index = index,
+				Scale = scale,
+				Offset = offset,
 
-				Type = isAddress ? ParameterType.CalculatedAddress : ParameterType.CalculatedLiteral,
-				Length = (byte)(1 + calculatedBase.Length + calculatedIndex.Length + (calculatedScale?.Length ?? 0) + (calculatedOffset?.Length ?? 0))
+				Type = isAddress ? ParameterType.CalculatedAddress : ParameterType.Calculated,
+				Length = (byte)(1 + @base.Parameter.Length + index.Parameter.Length + (scale?.Parameter.Length ?? 0) + (offset?.Parameter.Length ?? 0))
 			};
-		}
-
-		public static Parameter CreateFromMemory(ParameterType type, ulong[] memory, ulong address) {
-			var result = new Parameter();
-
-			result.Type = type;
-
-			switch (type) {
-				case ParameterType.RegisterAddress: result.Register = (Register)memory[address]; result.Length = 1; break;
-				case ParameterType.Register: result.Register = (Register)memory[address]; result.Length = 1; break;
-				case ParameterType.LiteralAddress: result.Literal = memory[address]; result.Length = 1; break;
-				case ParameterType.StackLiteral: result.Length = 0; break;
-				case ParameterType.Literal: result.Literal = memory[address]; result.Length = 1; break;
-				case ParameterType.CalculatedAddress:
-				case ParameterType.CalculatedLiteral:
-					var format = (byte)memory[address++];
-
-					result.CalculatedBase = result.ReadCalculatedParameter(memory, ref address, format, -1, 0x08);
-					result.CalculatedIndex = result.ReadCalculatedParameter(memory, ref address, format, 0x01, 0x10);
-					result.CalculatedScale = result.ReadCalculatedParameter(memory, ref address, format, 0x02, 0x20);
-					result.CalculatedOffset = result.ReadCalculatedParameter(memory, ref address, format, 0x04, 0x40);
-
-					result.CalculatedIndexSign = (format & 0x80) != 0;
-
-					result.Length = (byte)(1 + result.CalculatedBase.Length + result.CalculatedIndex.Length + (result.CalculatedScale?.Length ?? 0) + (result.CalculatedOffset?.Length ?? 0));
-
-					break;
-			}
-
-			return result;
-		}
-
-		public void Encode(BinaryWriter writer) {
-			switch (this.Type) {
-				case ParameterType.RegisterAddress: writer.Write((ulong)this.Register); break;
-				case ParameterType.Register: writer.Write((ulong)this.Register); break;
-				case ParameterType.LiteralAddress: writer.Write(this.Literal); break;
-				case ParameterType.Literal: writer.Write(this.Literal); break;
-				case ParameterType.StackLiteral: break;
-				case ParameterType.CalculatedLiteral:
-				case ParameterType.CalculatedAddress:
-					byte format = 0;
-
-					format |= (byte)(this.CalculatedBase.Type == ParameterType.Literal ? 0x08 : 0x00);
-					format |= (byte)(this.CalculatedIndexSign ? 0x80 : 0x00);
-
-					if (this.CalculatedIndex != null) {
-						format |= 0x01;
-						format |= (byte)(this.CalculatedIndex.Type == ParameterType.Literal ? 0x10 : 0x00);
-					}
-
-					if (this.CalculatedScale != null) {
-						format |= 0x02;
-						format |= (byte)(this.CalculatedScale.Type == ParameterType.Literal ? 0x20 : 0x00);
-					}
-
-					if (this.CalculatedOffset != null) {
-						format |= 0x04;
-						format |= (byte)(this.CalculatedOffset.Type == ParameterType.Literal ? 0x40 : 0x00);
-					}
-
-					writer.Write((ulong)format);
-
-					this.CalculatedBase.Encode(writer);
-					this.CalculatedIndex.Encode(writer);
-					this.CalculatedScale?.Encode(writer);
-					this.CalculatedOffset?.Encode(writer);
-
-					break;
-			}
 		}
 
 		public override string ToString() {
 			switch (this.Type) {
+				default: return string.Empty;
 				case ParameterType.Literal: return this.ParameterToString();
 				case ParameterType.LiteralAddress: return $"[0x{this.ParameterToString()}]";
 				case ParameterType.Register: return this.ParameterToString();
 				case ParameterType.RegisterAddress: return $"[{this.ParameterToString()}]";
-				case ParameterType.StackLiteral: return "S";
-				default: return string.Empty;
-				case ParameterType.CalculatedLiteral:
+				case ParameterType.Stack: return "S";
+				case ParameterType.StackAddress: return "(S)";
+				case ParameterType.Calculated:
 				case ParameterType.CalculatedAddress:
 					var str = string.Empty;
 
-					str += this.CalculatedBase.ParameterToString();
+					str += this.Base.Parameter.ToString();
 
-					if (this.CalculatedIndex != null)
-						str += " + " + this.CalculatedIndex.ToString();
+					if (this.Index != null)
+						str += (this.Index.IsPositive ? " + " : " - ") + this.Index.Parameter.ToString();
 
-					if (this.CalculatedScale != null)
-						str += " * " + this.CalculatedScale.ToString();
+					if (this.Scale != null)
+						str += " * " + this.Scale.Parameter.ToString();
 
-					if (this.CalculatedOffset != null)
-						str += " + " + this.CalculatedOffset.ToString();
+					if (this.Offset != null)
+						str += (this.Offset.IsPositive ? " + " : " - ") + this.Offset.Parameter.ToString();
 
 					return this.Type == ParameterType.CalculatedAddress ? "[(" + str + ")]" : "(" + str + ")";
 			}
@@ -157,18 +94,6 @@ namespace ArkeOS.Architecture {
 				case ParameterType.Register: return this.Register.ToString();
 				case ParameterType.RegisterAddress: return this.Register.ToString();
 				default: return string.Empty;
-			}
-		}
-
-		private Parameter ReadCalculatedParameter(ulong[] memory, ref ulong address, byte format, int hasIndex, int typeIndex) {
-			if (hasIndex != -1 && (format & hasIndex) == 0)
-				return null;
-
-			if ((format & typeIndex) == 0) {
-				return Parameter.CreateRegister(false, (Register)memory[address++]);
-			}
-			else {
-				return Parameter.CreateLiteral(false, memory[address]);
 			}
 		}
 	}

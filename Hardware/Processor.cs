@@ -212,13 +212,13 @@ namespace ArkeOS.Hardware {
 				if (this.IsRegisterReadAllowed(parameter.Register))
 					value = this.memoryController.ReadWord(this.Registers[parameter.Register]);
 			}
-			else if (parameter.Type == ParameterType.CalculatedLiteral) {
+			else if (parameter.Type == ParameterType.Calculated) {
 				value = this.GetCalculatedLiteral(parameter);
 			}
 			else if (parameter.Type == ParameterType.CalculatedAddress) {
 				value = this.memoryController.ReadWord(this.GetCalculatedLiteral(parameter));
 			}
-			else if (parameter.Type == ParameterType.StackLiteral) {
+			else if (parameter.Type == ParameterType.Stack) {
 				value = this.Pop();
 			}
 			else if (parameter.Type == ParameterType.StackAddress) {
@@ -251,7 +251,7 @@ namespace ArkeOS.Hardware {
 			else if (parameter.Type == ParameterType.CalculatedAddress) {
 				this.memoryController.WriteWord(this.GetCalculatedLiteral(parameter), value);
 			}
-			else if (parameter.Type == ParameterType.StackLiteral) {
+			else if (parameter.Type == ParameterType.Stack) {
 				this.Push(value);
 			}
 			else if (parameter.Type == ParameterType.StackAddress) {
@@ -260,12 +260,12 @@ namespace ArkeOS.Hardware {
 		}
 
 		private ulong GetCalculatedLiteral(Parameter parameter) {
-			var address = this.GetValue(parameter.CalculatedBase);
+			var address = this.GetValue(parameter.Base.Parameter);
 
-			if (parameter.CalculatedIndex != null) {
-				var calc = this.GetValue(parameter.CalculatedIndex) * (parameter.CalculatedScale != null ? this.GetValue(parameter.CalculatedScale) : 1);
+			if (parameter.Index != null) {
+				var calc = this.GetValue(parameter.Index.Parameter) * (parameter.Scale != null ? this.GetValue(parameter.Scale.Parameter) : 1);
 
-				if (parameter.CalculatedIndexSign) {
+				if (parameter.Index.IsPositive) {
 					address += calc;
 				}
 				else {
@@ -273,8 +273,16 @@ namespace ArkeOS.Hardware {
 				}
 			}
 
-			if (parameter.CalculatedOffset != null)
-				address += this.GetValue(parameter.CalculatedOffset);
+			if (parameter.Offset != null) {
+				var calc = this.GetValue(parameter.Offset.Parameter);
+
+				if (parameter.Offset.IsPositive) {
+					address += calc;
+				}
+				else {
+					address -= calc;
+				}
+			}
 
 			return address;
 		}

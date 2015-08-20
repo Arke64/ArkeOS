@@ -33,14 +33,29 @@ IDT
 
 Instruction Format
 ------------------
-8b Code: The instruction code
-9b Parameters: 3 bits per parameter.
-    3b Type: 0 = register, 1 = register value as address to dereference, 2 = literal value, 3 = literal value as address to dereference, 4 = taken from stack, 5 = calculated value as address to dereference (base + index * scale + offset), 6 = same as 5, but not dereferenced, 7 = stack dereference.
-0b-280b Parameter data: Parameter values in order of appearance
+Each instruction is one word followed by three optional literal words (13 if using three calculated parameters).
+
+8b Code
+8b Reserved
+24b Registers (8b each)
+15b Reserved
+9b Parameter Types (3b each)
+    0 = calculated value (base + index * scale + offset), 
+    1 = calculated value as address to dereference, 
+    2 = register, 
+    3 = register value as address to dereference, 
+    4 = literal value, 
+    5 = literal value as address to dereference, 
+    6 = stack, 
+    7 = stack value as address to dereference,
+0b-768b Parameters: Calculated parameters and literals in order of appearance
 
 Calculated Parameter
 --------------------
-First byte is the format. Each field is one bit: has index (default 0), has scale (default 1), has offset (default 0), register/literal base (0 = register, 1 = literal), register/literal index, register/literal scale, register/literal offset, positive/negative index. Followed by the registers and literals base, index, scale, offset.
+16b Format (4b for each operand where first 3 are the same as parameter type above (except 6 is default and 7 is not defined) and the fourth is a sign bit)
+32b Register operands
+16b Reserved
+0b-256b Literal operands
 
 Basic
 -----

@@ -1,10 +1,10 @@
 ﻿ORIGIN 0x00
 MOV 0x500 RSP
 MOV {IDT} RIDT
-MOV (RIP + 0d7) S
+MOV (RIP + 0d5) S
 MOV {Add} RIP
 BRK
-MOV (RIP + 0d7) S
+MOV (RIP + 0d5) S
 MOV {AddressingTest} RIP
 BRK
 HLT
@@ -21,12 +21,11 @@ LABEL AddressingTest
 MOV 0d8 R0
 MOV 0d3 R1
 MOV 0d2 R2
-MOV 0d1 R3
 MOV 0xDEADBEEF [0d15]
 MOV 0xFACEBEEF R5
-MOV [(R0 + R1 * R2 + R3)] R4
-MOV R5 [(R0 + R1 * R2 + R3)]
-MOV [(R0 + R1 * R2 + R3)] R6
+MOV [(R0 + R1 * R2 + 0d1)] R4
+MOV R5 [(R0 + R1 * R2 + 0d1)]
+MOV [(R0 + R1 * R2 + 0d1)] R6
 MOV 0d1 S
 MOV 0d2 S
 ADD S S S
