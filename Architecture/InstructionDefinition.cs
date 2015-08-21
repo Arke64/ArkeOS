@@ -29,7 +29,7 @@ namespace ArkeOS.Architecture {
 
 			new InstructionDefinition("HLT", 0);
 			new InstructionDefinition("NOP", 1);
-			new InstructionDefinition("INT", 2, ParameterDirection.Read);
+			new InstructionDefinition("INT", 2, ParameterDirection.Read, ParameterDirection.Read);
 			new InstructionDefinition("EINT", 3);
 			new InstructionDefinition("INTE", 4);
 			new InstructionDefinition("INTD", 5);

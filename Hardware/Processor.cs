@@ -104,7 +104,7 @@ namespace ArkeOS.Hardware {
 
 		private void OnSystemTimerTick(object state) {
 			if (this.configurationManager.SystemTickInterval != 0)
-				this.interruptController.Enqueue(Interrupt.SystemTimer);
+				this.interruptController.Enqueue(Interrupt.SystemTimer, 0);
 		}
 
 		private void SetNextInstruction() {
@@ -147,7 +147,7 @@ namespace ArkeOS.Hardware {
 				}
 			}
 			else {
-				this.interruptController.Enqueue(Interrupt.InvalidInstruction);
+				this.interruptController.Enqueue(Interrupt.InvalidInstruction, this.CurrentInstruction.Code);
 			}
 
 			if (this.interruptsEnabled && !this.inIsr && this.interruptController.AnyPending)
@@ -173,16 +173,17 @@ namespace ArkeOS.Hardware {
 				this.SetValue(this.CurrentInstruction.Parameter1, a.Value);
 		}
 
-		private void EnterInterrupt(Interrupt id) {
-			var isr = this.configurationManager.InterruptVectors[(int)id];
+		private void EnterInterrupt(Tuple<Interrupt, ulong> interrupt) {
+			var isr = this.configurationManager.InterruptVectors[(int)interrupt.Item1];
 
 			if (isr == 0)
 				return;
 
 			this.WriteRegister(Register.RSIP, this.ReadRegister(Register.RIP));
 			this.WriteRegister(Register.RIP, isr);
+			this.WriteRegister(Register.RINT, interrupt.Item2);
 
-			this.inProtectedIsr = (byte)id <= 0x07;
+			this.inProtectedIsr = (byte)interrupt.Item1 <= 0x07;
 			this.inIsr = true;
 		}
 
@@ -292,7 +293,7 @@ namespace ArkeOS.Hardware {
 		public ulong ReadRegister(Register register) => this.registers[(int)register];
 		public void WriteRegister(Register register, ulong value) => this.registers[(int)register] = value;
 
-		private bool IsRegisterReadAllowed(Register register) => this.inProtectedIsr || this.configurationManager.ProtectionMode == 0 || register != Register.RSIP;
-		private bool IsRegisterWriteAllowed(Register register) => this.inProtectedIsr || this.configurationManager.ProtectionMode == 0 || (register != Register.RSIP && register != Register.RO && register != Register.RF);
+		private bool IsRegisterReadAllowed(Register register) => this.inProtectedIsr || this.configurationManager.ProtectionMode == 0 || (register != Register.RSIP && register != Register.RINT);
+		private bool IsRegisterWriteAllowed(Register register) => this.inProtectedIsr || this.configurationManager.ProtectionMode == 0 || (register != Register.RSIP && register != Register.RINT && register != Register.RO && register != Register.RF);
 	}
 }

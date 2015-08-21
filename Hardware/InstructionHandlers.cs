@@ -15,7 +15,7 @@ namespace ArkeOS.Hardware {
 		}
 
 		private void ExecuteINT(Operand a, Operand b, Operand c) {
-			this.interruptController.Enqueue((Interrupt)a.Value);
+			this.interruptController.Enqueue((Interrupt)a.Value, b.Value);
 		}
 
 		private void ExecuteEINT(Operand a, Operand b, Operand c) {
@@ -99,7 +99,7 @@ namespace ArkeOS.Hardware {
 				c.Value = b.Value / a.Value;
 			}
 			else {
-				this.interruptController.Enqueue(Interrupt.DivideByZero);
+				this.interruptController.Enqueue(Interrupt.DivideByZero, 0);
 			}
 		}
 
@@ -111,7 +111,7 @@ namespace ArkeOS.Hardware {
 				c.Value = BitConverter.ToUInt64(BitConverter.GetBytes(bb / aa), 0);
 			}
 			else {
-				this.interruptController.Enqueue(Interrupt.DivideByZero);
+				this.interruptController.Enqueue(Interrupt.DivideByZero, 0);
 			}
 		}
 
@@ -133,7 +133,7 @@ namespace ArkeOS.Hardware {
 				c.Value = b.Value % a.Value;
 			}
 			else {
-				this.interruptController.Enqueue(Interrupt.DivideByZero);
+				this.interruptController.Enqueue(Interrupt.DivideByZero, 0);
 			}
 		}
 
@@ -145,7 +145,7 @@ namespace ArkeOS.Hardware {
 				c.Value = BitConverter.ToUInt64(BitConverter.GetBytes(bb % aa), 0);
 			}
 			else {
-				this.interruptController.Enqueue(Interrupt.DivideByZero);
+				this.interruptController.Enqueue(Interrupt.DivideByZero, 0);
 			}
 		}
 

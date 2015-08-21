@@ -11,9 +11,9 @@ RINT: Data made available from an interrupt
 
 Configuration
 --------------
-2b: system tick interval
-2b: cached instructions
-1b: protection mode (0 = no protection, 1 = protected)
+8b: System tick interval
+8b: Protection mode
+1b: Allow instruction caching
 
 Interrupts
 ----------
@@ -35,7 +35,7 @@ Each instruction is one word followed by three optional literal words (13 if usi
 8b Reserved
 24b Registers (8b each)
 15b Reserved
-9b Parameter Types (3b each)
+9b Parameter types (3b each)
     0 = calculated value (base + index * scale + offset), 
     1 = calculated value as address to dereference, 
     2 = register, 
@@ -57,7 +57,7 @@ Basic
 -----
 00 HLT: Stops the processor
 01 NOP: No operation
-02 INT A: Raise the interrupt specified by A
+02 INT A B: Raise the interrupt specified by A passing B to RINT
 03 EINT: Return from the interrupt
 04 INTE: Enables interrupts
 05 INTD: Disables interrupts

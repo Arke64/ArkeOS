@@ -1,25 +1,26 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Threading;
 using ArkeOS.Architecture;
 
 namespace ArkeOS.Hardware {
 	public class InterruptController {
-		private Queue<Interrupt> pending;
+		private Queue<Tuple<Interrupt, ulong>> pending;
 		private ManualResetEvent evt;
 
 		public bool AnyPending => this.pending.Count > 0;
 
 		public InterruptController() {
-			this.pending = new Queue<Interrupt>();
+			this.pending = new Queue<Tuple<Interrupt, ulong>>();
 			this.evt = new ManualResetEvent(false);
 		}
 
-		public void Enqueue(Interrupt interrupt) {
-			this.pending.Enqueue(interrupt);
+		public void Enqueue(Interrupt interrupt, ulong data) {
+			this.pending.Enqueue(Tuple.Create(interrupt, data));
 			this.evt.Set();
 		}
 
-		public Interrupt Dequeue() {
+		public Tuple<Interrupt, ulong> Dequeue() {
 			return this.pending.Dequeue();
 		}
 
