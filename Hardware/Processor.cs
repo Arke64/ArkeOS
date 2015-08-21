@@ -15,6 +15,7 @@ namespace ArkeOS.Hardware {
 		private Action<Operand, Operand, Operand>[] instructionHandlers;
 		private Timer systemTimer;
 		private Instruction[] cachedInstructions;
+		private ulong[] registers;
 		private ulong cacheBaseAddress;
 		private bool supressRIPIncrement;
 		private bool interruptsEnabled;
@@ -27,7 +28,6 @@ namespace ArkeOS.Hardware {
 		private Operand operandC;
 
 		public Instruction CurrentInstruction { get; private set; }
-		public RegisterManager Registers { get; private set; }
 
 		public event EventHandler ExecutionPaused;
 
@@ -89,7 +89,9 @@ namespace ArkeOS.Hardware {
 		}
 
 		private void Reset() {
-			this.Registers = new RegisterManager();
+			this.registers = new ulong[0xFF];
+
+			this.WriteRegister(Register.RF, ulong.MaxValue);
 
 			this.configurationManager.Reset();
 
@@ -106,7 +108,7 @@ namespace ArkeOS.Hardware {
 		}
 
 		private void SetNextInstruction() {
-			var address = this.Registers[Register.RIP];
+			var address = this.ReadRegister(Register.RIP);
 
 			if (!this.configurationManager.InstructionCachingEnabled) {
 				this.CurrentInstruction = new Instruction(this.systemBusController, address);
@@ -138,7 +140,7 @@ namespace ArkeOS.Hardware {
 				this.SaveParameters(this.operandA, this.operandB, this.operandC);
 
 				if (!this.supressRIPIncrement) {
-					this.Registers[Register.RIP] += this.CurrentInstruction.Length;
+					this.WriteRegister(Register.RIP, this.ReadRegister(Register.RIP) + this.CurrentInstruction.Length);
 				}
 				else {
 					this.supressRIPIncrement = false;
@@ -177,8 +179,8 @@ namespace ArkeOS.Hardware {
 			if (isr == 0)
 				return;
 
-			this.Registers[Register.RSIP] = this.Registers[Register.RIP];
-			this.Registers[Register.RIP] = isr;
+			this.WriteRegister(Register.RSIP, this.ReadRegister(Register.RIP));
+			this.WriteRegister(Register.RIP, isr);
 
 			this.inProtectedIsr = (byte)id <= 0x07;
 			this.inIsr = true;
@@ -189,11 +191,11 @@ namespace ArkeOS.Hardware {
 
 			if (parameter.Type == ParameterType.Register) {
 				if (this.IsRegisterReadAllowed(parameter.Register))
-					value = this.Registers[parameter.Register];
+					value = this.ReadRegister(parameter.Register);
 			}
 			else if (parameter.Type == ParameterType.RegisterAddress) {
 				if (this.IsRegisterReadAllowed(parameter.Register))
-					value = this.systemBusController.ReadWord(this.Registers[parameter.Register]);
+					value = this.systemBusController.ReadWord(this.ReadRegister(parameter.Register));
 			}
 			else if (parameter.Type == ParameterType.Stack) {
 				value = this.Pop();
@@ -221,7 +223,7 @@ namespace ArkeOS.Hardware {
 		private void SetValue(Parameter parameter, ulong value) {
 			if (parameter.Type == ParameterType.Register) {
 				if (this.IsRegisterWriteAllowed(parameter.Register)) {
-					this.Registers[parameter.Register] = value;
+					this.WriteRegister(parameter.Register, value);
 
 					if (parameter.Register == Register.RIP)
 						this.supressRIPIncrement = true;
@@ -229,7 +231,7 @@ namespace ArkeOS.Hardware {
 			}
 			else if (parameter.Type == ParameterType.RegisterAddress) {
 				if (this.IsRegisterReadAllowed(parameter.Register))
-					this.systemBusController.WriteWord(this.Registers[parameter.Register], value);
+					this.systemBusController.WriteWord(this.ReadRegister(parameter.Register), value);
 			}
 			else if (parameter.Type == ParameterType.Stack) {
 				this.Push(value);
@@ -274,20 +276,23 @@ namespace ArkeOS.Hardware {
 		}
 
 		private void Push(ulong value) {
-			this.Registers[Register.RSP] -= 8;
+			this.WriteRegister(Register.RSP, this.ReadRegister(Register.RSP) - 8);
 
-			this.systemBusController.WriteWord(this.Registers[Register.RSP], value);
+			this.systemBusController.WriteWord(this.ReadRegister(Register.RSP), value);
 		}
 
 		private ulong Pop() {
-			var value = this.systemBusController.ReadWord(this.Registers[Register.RSP]);
+			var value = this.systemBusController.ReadWord(this.ReadRegister(Register.RSP));
 
-			this.Registers[Register.RSP] += 8;
+			this.WriteRegister(Register.RSP, this.ReadRegister(Register.RSP) + 8);
 
 			return value;
 		}
 
-		private bool IsRegisterReadAllowed(Register register) => this.inProtectedIsr || this.configurationManager.ProtectionMode == 0 || !this.Registers.IsReadProtected(register);
-		private bool IsRegisterWriteAllowed(Register register) => this.inProtectedIsr || this.configurationManager.ProtectionMode == 0 || !this.Registers.IsWriteProtected(register);
+		public ulong ReadRegister(Register register) => this.registers[(int)register];
+		public void WriteRegister(Register register, ulong value) => this.registers[(int)register] = value;
+
+		private bool IsRegisterReadAllowed(Register register) => this.inProtectedIsr || this.configurationManager.ProtectionMode == 0 || register != Register.RSIP;
+		private bool IsRegisterWriteAllowed(Register register) => this.inProtectedIsr || this.configurationManager.ProtectionMode == 0 || (register != Register.RSIP && register != Register.RO && register != Register.RF);
 	}
 }

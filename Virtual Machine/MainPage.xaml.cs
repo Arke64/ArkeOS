@@ -104,7 +104,7 @@ namespace ArkeOS.VirtualMachine {
 			foreach (var r in Enum.GetNames(typeof(Register))) {
 				var textbox = (TextBox)this.GetType().GetField(r + "TextBox", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(this);
 
-				this.processor.Registers[(Register)Enum.Parse(typeof(Register), r)] = Convert.ToUInt64(textbox.Text.Substring(2), 16);
+				this.processor.WriteRegister((Register)Enum.Parse(typeof(Register), r), Convert.ToUInt64(textbox.Text.Substring(2), 16));
 			}
 		}
 
@@ -112,7 +112,7 @@ namespace ArkeOS.VirtualMachine {
 			foreach (var r in Enum.GetNames(typeof(Register))) {
 				var textbox = (TextBox)this.GetType().GetField(r + "TextBox", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(this);
 
-				textbox.Text = "0x" + this.processor.Registers[(Register)Enum.Parse(typeof(Register), r)].ToString("X8");
+				textbox.Text = "0x" + this.processor.ReadRegister((Register)Enum.Parse(typeof(Register), r)).ToString("X8");
 			}
 
 			this.CurrentInstructionLabel.Text = this.processor.CurrentInstruction.ToString();

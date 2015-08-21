@@ -19,7 +19,7 @@ namespace ArkeOS.Hardware {
 		}
 
 		private void ExecuteEINT(Operand a, Operand b, Operand c) {
-			this.Registers[Register.RIP] = this.Registers[Register.RSIP];
+			this.WriteRegister(Register.RIP, this.ReadRegister(Register.RSIP));
 
 			this.inIsr = false;
 			this.inProtectedIsr = false;

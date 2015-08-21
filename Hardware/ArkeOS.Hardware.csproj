@@ -47,7 +47,6 @@
     <Compile Include="SystemBusController.cs" />
     <Compile Include="Operand.cs" />
     <Compile Include="Processor.cs" />
-    <Compile Include="RegisterManager.cs" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Properties\" />
