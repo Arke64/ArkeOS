@@ -6,8 +6,8 @@ namespace ArkeOS.Hardware {
 	public class RegisterManager {
 		private ulong[] registers;
 
-		public bool IsReadProtected(Register register) => register == Register.RSIP || register == Register.RIDT || register == Register.RMDT || register == Register.RTDT || register == Register.RCFG;
-		public bool IsWriteProtected(Register register) => register == Register.RSIP || register == Register.RIDT || register == Register.RMDT || register == Register.RTDT || register == Register.RCFG || register == Register.RO || register == Register.RF;
+		public bool IsReadProtected(Register register) => register == Register.RSIP;
+		public bool IsWriteProtected(Register register) => register == Register.RSIP || register == Register.RO || register == Register.RF;
 
 		public RegisterManager() {
 			var values = Enum.GetValues(typeof(Register)).Cast<Register>();

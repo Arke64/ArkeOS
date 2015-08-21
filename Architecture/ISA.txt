@@ -7,20 +7,16 @@ RF: 0xFF.. register
 RSP: Address of the current stack position
 RIP: Address of the current instruction
 RSIP: Address of the instruction executing when an interrupt fires
-RCFG: Physical address of the processor configuration table
-RIDT: Physical address of the interrupt descriptor table
-RMDT: Physical address of the memory descriptor table
-RTDT: Physical address of the task descriptor table
 RINT: Data made available from an interrupt
 
-CFG
----
+Configuration
+--------------
 2b: system tick interval
 2b: cached instructions
 1b: protection mode (0 = no protection, 1 = protected)
 
-IDT
----
+Interrupts
+----------
 0x00: Invalid instruction
 0x01: Divide by zero
 0x02: System call

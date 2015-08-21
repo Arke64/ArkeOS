@@ -3,15 +3,21 @@
 namespace ArkeOS.Hardware {
 	public class SystemBusController : IDevice {
 		private IDevice[] devices;
-		private int nextDevice;
+		private uint nextDevice;
 
 		public SystemBusController() {
 			this.devices = new IDevice[0xFFF];
-			this.nextDevice = 0;
+			this.nextDevice = 256;
 		}
 
-		public void AddDevice(IDevice device) {
-			this.devices[this.nextDevice++] = device;
+		public void AddDevice(uint deviceId, IDevice device) {
+			this.devices[deviceId] = device;
+		}
+
+		public uint AddDevice(IDevice device) {
+			this.devices[this.nextDevice] = device;
+
+			return this.nextDevice++;
 		}
 
 		public void CopyFrom(ulong[] source, ulong destination, ulong length) {

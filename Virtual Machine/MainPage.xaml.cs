@@ -11,8 +11,7 @@ using Windows.UI.Xaml.Controls;
 
 namespace ArkeOS.VirtualMachine {
 	public partial class MainPage : Page {
-		private SystemBusController systemBus;
-		private InterruptController interruptController;
+		private SystemBusController systemBusController;
 		private MemoryManager memoryManager;
 		private Processor processor;
 
@@ -28,13 +27,12 @@ namespace ArkeOS.VirtualMachine {
 		}
 
 		private async void StartButton_Click(object sender, RoutedEventArgs e) {
-			this.interruptController = new InterruptController();
 			this.memoryManager = new MemoryManager(10 * 1024 * 1024);
-			this.systemBus = new SystemBusController();
+			this.systemBusController = new SystemBusController();
 
-			this.systemBus.AddDevice(this.memoryManager);
+			this.systemBusController.AddDevice(0, this.memoryManager);
 
-			this.processor = new Processor(this.systemBus, this.interruptController);
+			this.processor = new Processor(this.systemBusController);
 			this.processor.ExecutionPaused += async (ss, ee) => await this.Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () => this.BreakButton_Click(null, null));
 
 			var picker = new FileOpenPicker();
@@ -72,8 +70,8 @@ namespace ArkeOS.VirtualMachine {
 			this.Clear();
 
 			this.processor = null;
-			this.systemBus = null;
-			this.interruptController = null;
+			this.memoryManager = null;
+			this.systemBusController = null;
 		}
 
 		private void BreakButton_Click(object sender, RoutedEventArgs e) {
