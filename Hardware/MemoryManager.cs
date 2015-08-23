@@ -1,19 +1,22 @@
 ﻿using ArkeOS.Architecture;
 
 namespace ArkeOS.Hardware {
-	public class MemoryManager : IDevice {
-		private ulong[] memory;
+    public class MemoryManager : BusDevice {
+        private ulong[] memory;
 
-		public MemoryManager(ulong physicalSize) {
-			this.memory = new ulong[physicalSize];
-		}
+        public override ulong VendorId => 1;
+        public override ulong ProductId => 0;
 
-		public override ulong ReadWord(ulong address) {
-			return this.memory[address];
-		}
+        public MemoryManager(ulong physicalSize) {
+            this.memory = new ulong[physicalSize];
+        }
 
-		public override void WriteWord(ulong address, ulong data) {
-			this.memory[address] = data;
-		}
-	}
+        public override ulong ReadWord(ulong address) {
+            return this.memory[address];
+        }
+
+        public override void WriteWord(ulong address, ulong data) {
+            this.memory[address] = data;
+        }
+    }
 }

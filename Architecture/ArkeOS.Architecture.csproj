@@ -41,7 +41,7 @@
   <ItemGroup>
     <Compile Include="AssemblyInfo.cs" />
     <Compile Include="Helpers.cs" />
-    <Compile Include="IDevice.cs" />
+    <Compile Include="BusDevice.cs" />
     <Compile Include="Instruction.cs" />
     <Compile Include="InstructionDefinition.cs" />
     <Compile Include="Interrupt.cs" />

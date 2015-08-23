@@ -2,51 +2,61 @@
 using ArkeOS.Architecture;
 
 namespace ArkeOS.Hardware {
-	public class ConfigurationManager : IDevice {
-		private ulong configuration;
-		private ulong[] interruptVectors;
+    public class ConfigurationManager : BusDevice {
+        private ulong[] interruptVectors;
 
-		public byte SystemTickInterval { get; private set; }
-		public byte ProtectionMode { get; private set; }
-		public bool InstructionCachingEnabled { get; private set; }
+        public byte ProtectionMode { get; private set; }
+        public byte SystemTickInterval { get; private set; }
+        public bool InstructionCachingEnabled { get; private set; }
 
-		public IReadOnlyList<ulong> InterruptVectors => this.interruptVectors;
+        public IReadOnlyList<ulong> InterruptVectors => this.interruptVectors;
 
-		public ConfigurationManager() {
-			this.Reset();
-		}
+        public override ulong VendorId => 1;
+        public override ulong ProductId => 1;
 
-		public override ulong ReadWord(ulong address) {
-			if (address == 0) {
-				return this.configuration;
-			}
-			else if (address >= 0x10 && address < 0xFF + 0x10) {
-				return this.interruptVectors[(int)address - 0x10];
-			}
-			else {
-				return 0;
-			}
-		}
+        public ConfigurationManager() {
+            this.Reset();
+        }
 
-		public override void WriteWord(ulong address, ulong data) {
-			if (address == 0) {
-				this.configuration = data;
+        public override ulong ReadWord(ulong address) {
+            if (address == 0) {
+                return this.ProtectionMode;
+            }
+            else if (address == 1) {
+                return this.SystemTickInterval;
+            }
+            else if (address == 2) {
+                return this.InstructionCachingEnabled ? 1UL : 0UL;
+            }
+            else if (address >= 0x10 && address < 0xFF + 0x10) {
+                return this.interruptVectors[(int)address - 0x10];
+            }
+            else {
+                return 0;
+            }
+        }
 
-				this.SystemTickInterval = (byte)((data & 0xFF00000000000000UL) >> 56);
-				this.ProtectionMode = (byte)((data & 0x00FF000000000000UL) >> 48);
-				this.InstructionCachingEnabled = (data & 0x800000000000UL) != 0;
-			}
-			else if (address >= 0x10 && address < 0xFF + 0x10) {
-				this.interruptVectors[(int)address - 0x10] = data;
-			}
-		}
+        public override void WriteWord(ulong address, ulong data) {
+            if (address == 0) {
+                this.ProtectionMode = (byte)data;
+            }
+            else if (address == 0) {
+                this.SystemTickInterval = (byte)data;
+            }
+            else if (address == 0) {
+                this.InstructionCachingEnabled = data != 0;
+            }
+            else if (address >= 0x10 && address < 0xFF + 0x10) {
+                this.interruptVectors[(int)address - 0x10] = data;
+            }
+        }
 
-		public void Reset() {
-			this.SystemTickInterval = 50;
-			this.InstructionCachingEnabled = true;
-			this.ProtectionMode = 0;
+        public void Reset() {
+            this.SystemTickInterval = 50;
+            this.InstructionCachingEnabled = true;
+            this.ProtectionMode = 0;
 
-			this.interruptVectors = new ulong[0xFF];
-		}
-	}
+            this.interruptVectors = new ulong[0xFF];
+        }
+    }
 }
