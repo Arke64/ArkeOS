@@ -9,6 +9,7 @@ namespace ArkeOS.Hardware {
 
         public override ulong VendorId => 1;
         public override ulong ProductId => 4;
+        public override ulong DeviceType => 5;
 
         public DiskDrive(ulong physicalSize, Stream stream) {
             this.stream = stream;
@@ -33,20 +34,15 @@ namespace ArkeOS.Hardware {
 
         public override ulong[] Read(ulong source, ulong length) {
             var buffer = new byte[length * 8];
-            var result = new ulong[length];
 
             this.stream.Seek((long)source * 8, SeekOrigin.Begin);
             this.stream.Read(buffer, 0, buffer.Length);
 
-            Buffer.BlockCopy(buffer, 0, result, 0, buffer.Length);
-
-            return result;
+            return Helpers.ConvertArray(buffer);
         }
 
         public override void Write(ulong destination, ulong[] data) {
-            var buffer = new byte[data.Length * 8];
-
-            Buffer.BlockCopy(data, 0, buffer, 0, buffer.Length);
+            var buffer = Helpers.ConvertArray(data);
 
             this.stream.Seek((long)destination * 8, SeekOrigin.Begin);
             this.stream.Read(buffer, 0, buffer.Length);

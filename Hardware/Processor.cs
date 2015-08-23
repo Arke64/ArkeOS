@@ -50,14 +50,6 @@ namespace ArkeOS.Hardware {
                 this.instructionHandlers[i.Code] = (Action<Operand, Operand, Operand>)this.GetType().GetMethod("Execute" + i.Mnemonic, BindingFlags.NonPublic | BindingFlags.Instance).CreateDelegate(typeof(Action<Operand, Operand, Operand>), this);
         }
 
-        public void LoadStartupImage(byte[] image) {
-            var newImage = new ulong[image.Length / 8];
-
-            Buffer.BlockCopy(image, 0, newImage, 0, image.Length);
-
-            this.systemBusController.CopyFrom(newImage, 0, (ulong)newImage.Length);
-        }
-
         public void Start() {
             this.broken = true;
 
@@ -93,6 +85,7 @@ namespace ArkeOS.Hardware {
             this.registers = new ulong[0xFF];
 
             this.WriteRegister(Register.RF, ulong.MaxValue);
+            this.WriteRegister(Register.RIP, 2UL << 52);
 
             this.configurationManager.Reset();
             this.systemBusController.EnumerateBus();

@@ -12,6 +12,7 @@ namespace ArkeOS.Hardware {
 
         public override ulong VendorId => 1;
         public override ulong ProductId => 2;
+        public override ulong DeviceType => 3;
 
         public SystemBusController() {
             this.devices = new BusDevice[0xFFF];
@@ -47,6 +48,7 @@ namespace ArkeOS.Hardware {
 
                 count++;
 
+                this.WriteWord(address++, device.DeviceType);
                 this.WriteWord(address++, device.VendorId);
                 this.WriteWord(address++, device.ProductId);
             }
@@ -64,9 +66,12 @@ namespace ArkeOS.Hardware {
             address = this.GetAddress(address);
 
             if (address == BusDevice.MaxAddress) {
-                return this.devices[id].VendorId;
+                return this.devices[id].DeviceType;
             }
             else if (address == BusDevice.MaxAddress - 1) {
+                return this.devices[id].VendorId;
+            }
+            else if (address == BusDevice.MaxAddress - 2) {
                 return this.devices[id].ProductId;
             }
             else {
@@ -78,7 +83,7 @@ namespace ArkeOS.Hardware {
             var id = this.GetDeviceId(address);
             address = this.GetAddress(address);
 
-            if (address != BusDevice.MaxAddress && address != BusDevice.MaxAddress - 1)
+            if (address < BusDevice.MaxAddress - 2)
                 this.devices[id].WriteWord(address, data);
         }
 
@@ -87,6 +92,7 @@ namespace ArkeOS.Hardware {
 
             public override ulong VendorId => 1;
             public override ulong ProductId => 2;
+            public override ulong DeviceType => 3;
 
             public SystemBusDevice() {
                 this.memory = new ulong[0xFFF * 2 + 1];

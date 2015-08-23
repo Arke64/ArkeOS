@@ -1,4 +1,4 @@
-﻿ORIGIN 0x00
+﻿OFFSET 0x00
 MOV 0x500 RSP
 MOV (RIP + 0d5) S
 MOV {SetupInterrupts} RIP

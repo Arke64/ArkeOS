@@ -8,6 +8,7 @@
 
         public abstract ulong VendorId { get; }
         public abstract ulong ProductId { get; }
+        public abstract ulong DeviceType { get; }
 
         public ulong this[ulong address] {
             get {

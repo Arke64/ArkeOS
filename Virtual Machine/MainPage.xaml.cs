@@ -5,7 +5,6 @@ using System.Runtime.InteropServices.WindowsRuntime;
 using ArkeOS.Architecture;
 using ArkeOS.Hardware;
 using Windows.Storage;
-using Windows.Storage.Pickers;
 using Windows.UI.Core;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
@@ -17,8 +16,8 @@ namespace ArkeOS.VirtualMachine {
         private DiskDrive diskDrive;
         private Processor processor;
         private Keyboard keyboard;
+        private BootManager bootManager;
 
-        private StorageFile disk;
         private Stream stream;
 
         public MainPage() {
@@ -33,33 +32,24 @@ namespace ArkeOS.VirtualMachine {
         }
 
         private async void StartButton_Click(object sender, RoutedEventArgs e) {
-            this.disk = await ApplicationData.Current.LocalFolder.CreateFileAsync("Disk 0.bin", CreationCollisionOption.OpenIfExists);
-            this.stream = (await this.disk.OpenAsync(FileAccessMode.ReadWrite)).AsStream();
+            this.stream = (await (await ApplicationData.Current.LocalFolder.CreateFileAsync("Disk 0.bin", CreationCollisionOption.OpenIfExists)).OpenAsync(FileAccessMode.ReadWrite)).AsStream();
 
             this.memoryManager = new MemoryManager(1 * 1024 * 1024);
             this.systemBusController = new SystemBusController();
             this.diskDrive = new DiskDrive(10 * 1024 * 1024, this.stream);
             this.keyboard = new Keyboard();
+            this.bootManager = new BootManager(Helpers.ConvertArray((await FileIO.ReadBufferAsync(await ApplicationData.Current.LocalFolder.GetFileAsync("Boot.bin"))).ToArray()));
 
             this.InputTextBox.KeyDown += (ss, ee) => this.keyboard.TriggerKeyDown((ulong)ee.Key);
             this.InputTextBox.KeyUp += (ss, ee) => this.keyboard.TriggerKeyUp((ulong)ee.Key);
 
             this.systemBusController.AddDevice(0, this.memoryManager);
+            this.systemBusController.AddDevice(2, this.bootManager);
             this.systemBusController.AddDevice(4, this.diskDrive);
             this.systemBusController.AddDevice(5, this.keyboard);
 
             this.processor = new Processor(this.systemBusController);
             this.processor.ExecutionPaused += async (ss, ee) => await this.Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () => this.BreakButton_Click(null, null));
-
-            var picker = new FileOpenPicker();
-            picker.ViewMode = PickerViewMode.List;
-            picker.SuggestedStartLocation = PickerLocationId.ComputerFolder;
-            picker.FileTypeFilter.Add(".bin");
-
-            var file = await picker.PickSingleFileAsync();
-            var buffer = await FileIO.ReadBufferAsync(file);
-
-            this.processor.LoadStartupImage(buffer.ToArray());
 
             this.processor.Start();
 
@@ -94,7 +84,6 @@ namespace ArkeOS.VirtualMachine {
             this.stream.Flush();
             this.stream.Dispose();
             this.stream = null;
-            this.disk = null;
         }
 
         private void BreakButton_Click(object sender, RoutedEventArgs e) {
