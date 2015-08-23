@@ -50,6 +50,11 @@ namespace ArkeOS.Hardware {
                 this.WriteWord(destination + i, source[i]);
         }
 
+        public virtual void Copy(ulong source, ulong destination, ulong length) {
+            for (var i = 0UL; i < length; i++)
+                this.WriteWord(destination + i, this.ReadWord(source + i));
+        }
+
         public override ulong ReadWord(ulong address) {
             var id = this.GetDeviceId(address);
             address = this.GetAddress(address);
