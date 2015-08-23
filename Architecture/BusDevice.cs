@@ -4,6 +4,7 @@
         protected static ulong MaxId => 0xFFFUL;
 
         public BusDevice SystemBus { get; set; }
+        public ulong Id { get; set; }
 
         public abstract ulong VendorId { get; }
         public abstract ulong ProductId { get; }
@@ -15,6 +16,10 @@
             set {
                 this.WriteWord(address, value);
             }
+        }
+
+        public virtual void RaiseInterrupt(ulong id, ulong data) {
+
         }
 
         public void Copy(ulong source, ulong destination, ulong length) {

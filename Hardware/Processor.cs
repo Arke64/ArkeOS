@@ -36,6 +36,7 @@ namespace ArkeOS.Hardware {
             this.interruptController = new InterruptController();
 
             this.systemBusController = systemBusController;
+            this.systemBusController.InterruptController = interruptController;
             this.systemBusController.AddDevice(1, this.configurationManager);
 
             this.operandA = new Operand();

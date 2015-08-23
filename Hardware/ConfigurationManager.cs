@@ -28,8 +28,8 @@ namespace ArkeOS.Hardware {
             else if (address == 2) {
                 return this.InstructionCachingEnabled ? 1UL : 0UL;
             }
-            else if (address >= 0x10 && address < 0xFF + 0x10) {
-                return this.interruptVectors[(int)address - 0x10];
+            else if (address >= 0x10000 && address < 0x11010) {
+                return this.interruptVectors[(int)address - 0x10000];
             }
             else {
                 return 0;
@@ -46,8 +46,8 @@ namespace ArkeOS.Hardware {
             else if (address == 0) {
                 this.InstructionCachingEnabled = data != 0;
             }
-            else if (address >= 0x10 && address < 0xFF + 0x10) {
-                this.interruptVectors[(int)address - 0x10] = data;
+            else if (address >= 0x10000 && address < 0x11010) {
+                this.interruptVectors[(int)address - 0x10000] = data;
             }
         }
 
@@ -56,7 +56,7 @@ namespace ArkeOS.Hardware {
             this.InstructionCachingEnabled = true;
             this.ProtectionMode = 0;
 
-            this.interruptVectors = new ulong[0xFF];
+            this.interruptVectors = new ulong[0x11010];
         }
     }
 }

@@ -8,6 +8,8 @@ namespace ArkeOS.Hardware {
         private ulong GetDeviceId(ulong address) => (address & 0xFFF0000000000000UL) >> 52;
         private ulong GetAddress(ulong address) => address & 0x000FFFFFFFFFFFFFUL;
 
+        public InterruptController InterruptController { get; set; }
+
         public override ulong VendorId => 1;
         public override ulong ProductId => 2;
 
@@ -18,8 +20,14 @@ namespace ArkeOS.Hardware {
             this.AddDevice(2, new SystemBusDevice());
         }
 
+        public override void RaiseInterrupt(ulong id, ulong data) {
+            this.InterruptController.Enqueue((Interrupt)id, data);
+            base.RaiseInterrupt(id, data);
+        }
+
         public void AddDevice(uint deviceId, BusDevice device) {
             device.SystemBus = this;
+            device.Id = deviceId;
 
             this.devices[deviceId] = device;
         }

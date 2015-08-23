@@ -23,9 +23,8 @@ Interrupts
 0x03: Protection violation
 0x04: Page not present
 0x05: System timer
-0x06: Device waiting
-0x07-0x0F: Reserved
-0x10-0xFF: User defined
+0x06-0x0F: Reserved
+0x10-0xFFF: Devices
 
 Instruction Format
 ------------------
