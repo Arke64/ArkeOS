@@ -6,7 +6,7 @@ namespace ArkeOS.Hardware {
 
         public override ulong VendorId => 1;
         public override ulong ProductId => 3;
-        public override ulong DeviceType => 4;
+        public override ulong DeviceType => 3;
 
         public BootManager(ulong[] image) {
             this.buffer = image;

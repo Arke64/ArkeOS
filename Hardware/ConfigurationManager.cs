@@ -13,7 +13,7 @@ namespace ArkeOS.Hardware {
 
         public override ulong VendorId => 1;
         public override ulong ProductId => 1;
-        public override ulong DeviceType => 2;
+        public override ulong DeviceType => 1;
 
         public ConfigurationManager() {
             this.Reset();

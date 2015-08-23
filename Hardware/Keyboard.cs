@@ -4,7 +4,7 @@ namespace ArkeOS.Hardware {
     public class Keyboard : BusDevice {
         public override ulong VendorId => 1;
         public override ulong ProductId => 5;
-        public override ulong DeviceType => 6;
+        public override ulong DeviceType => 5;
 
         public override ulong ReadWord(ulong address) {
             return 0;

@@ -9,7 +9,7 @@ namespace ArkeOS.Hardware {
 
         public override ulong VendorId => 1;
         public override ulong ProductId => 4;
-        public override ulong DeviceType => 5;
+        public override ulong DeviceType => 4;
 
         public DiskDrive(ulong physicalSize, Stream stream) {
             this.stream = stream;

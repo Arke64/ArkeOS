@@ -12,7 +12,7 @@ namespace ArkeOS.Hardware {
 
         public override ulong VendorId => 1;
         public override ulong ProductId => 2;
-        public override ulong DeviceType => 3;
+        public override ulong DeviceType => 2;
 
         public SystemBusController() {
             this.devices = new BusDevice[0xFFF];
@@ -51,9 +51,10 @@ namespace ArkeOS.Hardware {
                 this.WriteWord(address++, device.DeviceType);
                 this.WriteWord(address++, device.VendorId);
                 this.WriteWord(address++, device.ProductId);
+                this.WriteWord(address++, device.Id);
             }
 
-            this.WriteWord(address - count * 2 - 1UL, count);
+            this.WriteWord(address - count * 4 - 1UL, count);
         }
 
         public void CopyFrom(ulong[] source, ulong destination, ulong length) {
@@ -74,6 +75,9 @@ namespace ArkeOS.Hardware {
             else if (address == BusDevice.MaxAddress - 2) {
                 return this.devices[id].ProductId;
             }
+            else if (address == BusDevice.MaxAddress - 3) {
+                return this.devices[id].Id;
+            }
             else {
                 return this.devices[id].ReadWord(address);
             }
@@ -83,7 +87,7 @@ namespace ArkeOS.Hardware {
             var id = this.GetDeviceId(address);
             address = this.GetAddress(address);
 
-            if (address < BusDevice.MaxAddress - 2)
+            if (address < BusDevice.MaxAddress - 3)
                 this.devices[id].WriteWord(address, data);
         }
 
@@ -92,10 +96,10 @@ namespace ArkeOS.Hardware {
 
             public override ulong VendorId => 1;
             public override ulong ProductId => 2;
-            public override ulong DeviceType => 3;
+            public override ulong DeviceType => 2;
 
             public SystemBusDevice() {
-                this.memory = new ulong[0xFFF * 2 + 1];
+                this.memory = new ulong[0xFFF * 4 + 1];
             }
 
             public override ulong ReadWord(ulong address) => this.memory[address];

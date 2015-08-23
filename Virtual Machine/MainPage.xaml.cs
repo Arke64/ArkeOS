@@ -44,7 +44,7 @@ namespace ArkeOS.VirtualMachine {
             this.InputTextBox.KeyUp += (ss, ee) => this.keyboard.TriggerKeyUp((ulong)ee.Key);
 
             this.systemBusController.AddDevice(0, this.memoryManager);
-            this.systemBusController.AddDevice(2, this.bootManager);
+            this.systemBusController.AddDevice(3, this.bootManager);
             this.systemBusController.AddDevice(4, this.diskDrive);
             this.systemBusController.AddDevice(5, this.keyboard);
 

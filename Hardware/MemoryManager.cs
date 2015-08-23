@@ -6,7 +6,7 @@ namespace ArkeOS.Hardware {
 
         public override ulong VendorId => 1;
         public override ulong ProductId => 0;
-        public override ulong DeviceType => 1;
+        public override ulong DeviceType => 0;
 
         public MemoryManager(ulong physicalSize) {
             this.memory = new ulong[physicalSize];

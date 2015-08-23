@@ -85,7 +85,7 @@ namespace ArkeOS.Hardware {
             this.registers = new ulong[0xFF];
 
             this.WriteRegister(Register.RF, ulong.MaxValue);
-            this.WriteRegister(Register.RIP, 2UL << 52);
+            this.WriteRegister(Register.RIP, 3UL << 52);
 
             this.configurationManager.Reset();
             this.systemBusController.EnumerateBus();
