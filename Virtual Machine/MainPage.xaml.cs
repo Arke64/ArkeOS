@@ -16,6 +16,7 @@ namespace ArkeOS.VirtualMachine {
         private MemoryManager memoryManager;
         private DiskDrive diskDrive;
         private Processor processor;
+        private Keyboard keyboard;
 
         private StorageFile disk;
         private Stream stream;
@@ -38,9 +39,14 @@ namespace ArkeOS.VirtualMachine {
             this.memoryManager = new MemoryManager(1 * 1024 * 1024);
             this.systemBusController = new SystemBusController();
             this.diskDrive = new DiskDrive(10 * 1024 * 1024, this.stream);
+            this.keyboard = new Keyboard();
+
+            this.InputTextBox.KeyDown += (ss, ee) => this.keyboard.TriggerKeyDown((ulong)ee.Key);
+            this.InputTextBox.KeyUp += (ss, ee) => this.keyboard.TriggerKeyUp((ulong)ee.Key);
 
             this.systemBusController.AddDevice(0, this.memoryManager);
             this.systemBusController.AddDevice(4, this.diskDrive);
+            this.systemBusController.AddDevice(5, this.keyboard);
 
             this.processor = new Processor(this.systemBusController);
             this.processor.ExecutionPaused += async (ss, ee) => await this.Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () => this.BreakButton_Click(null, null));
@@ -83,6 +89,7 @@ namespace ArkeOS.VirtualMachine {
             this.memoryManager = null;
             this.systemBusController = null;
             this.diskDrive = null;
+            this.keyboard = null;
 
             this.stream.Flush();
             this.stream.Dispose();

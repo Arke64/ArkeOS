@@ -34,24 +34,8 @@
             </Grid.ColumnDefinitions>
 
             <StackPanel Grid.Column="0" Grid.Row="0">
-                <TextBlock>RZ</TextBlock>
-                <TextBox Name="RZTextBox" />
-            </StackPanel>
-            <StackPanel Grid.Column="1" Grid.Row="0">
-                <TextBlock>RS</TextBlock>
-                <TextBox Name="RSTextBox" />
-            </StackPanel>
-            <StackPanel Grid.Column="2" Grid.Row="0">
-                <TextBlock>RC</TextBlock>
-                <TextBox Name="RCTextBox" />
-            </StackPanel>
-            <StackPanel Grid.Column="3" Grid.Row="0">
-                <TextBlock>RO</TextBlock>
-                <TextBox Name="ROTextBox" />
-            </StackPanel>
-            <StackPanel Grid.Column="4" Grid.Row="0">
-                <TextBlock>RF</TextBlock>
-                <TextBox Name="RFTextBox" />
+                <TextBlock>Input</TextBlock>
+                <TextBox Name="InputTextBox" />
             </StackPanel>
 
             <StackPanel Grid.Column="0" Grid.Row="1">
@@ -67,24 +51,16 @@
                 <TextBox Name="RSIPTextBox" />
             </StackPanel>
             <StackPanel Grid.Column="3" Grid.Row="1">
-                <TextBlock>RCFG</TextBlock>
-                <TextBox Name="RCFGTextBox" />
-            </StackPanel>
-            <StackPanel Grid.Column="4" Grid.Row="1">
-                <TextBlock>RIDT</TextBlock>
-                <TextBox Name="RIDTTextBox" />
-            </StackPanel>
-            <StackPanel Grid.Column="5" Grid.Row="1">
-                <TextBlock>RMDT</TextBlock>
-                <TextBox Name="RMDTTextBox" />
-            </StackPanel>
-            <StackPanel Grid.Column="6" Grid.Row="1">
-                <TextBlock>RTDT</TextBlock>
-                <TextBox Name="RTDTTextBox" />
-            </StackPanel>
-            <StackPanel Grid.Column="7" Grid.Row="1">
                 <TextBlock>RINT</TextBlock>
                 <TextBox Name="RINTTextBox" />
+            </StackPanel>
+            <StackPanel Grid.Column="4" Grid.Row="1">
+                <TextBlock>RO</TextBlock>
+                <TextBox Name="ROTextBox" />
+            </StackPanel>
+            <StackPanel Grid.Column="5" Grid.Row="1">
+                <TextBlock>RF</TextBlock>
+                <TextBox Name="RFTextBox" />
             </StackPanel>
 
             <StackPanel Grid.Column="0" Grid.Row="2">

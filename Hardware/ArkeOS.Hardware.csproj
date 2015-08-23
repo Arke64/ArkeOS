@@ -44,6 +44,7 @@
     <Compile Include="InstructionHandlers.cs" />
     <Compile Include="InterruptController.cs" />
     <Compile Include="ConfigurationManager.cs" />
+    <Compile Include="Keyboard.cs" />
     <Compile Include="MemoryManager.cs" />
     <Compile Include="SystemBusController.cs" />
     <Compile Include="Operand.cs" />

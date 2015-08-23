@@ -22,7 +22,6 @@ namespace ArkeOS.Hardware {
 
         public override void RaiseInterrupt(ulong id, ulong data) {
             this.InterruptController.Enqueue((Interrupt)id, data);
-            base.RaiseInterrupt(id, data);
         }
 
         public void AddDevice(uint deviceId, BusDevice device) {
