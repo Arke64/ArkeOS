@@ -1,4 +1,5 @@
 ﻿using System;
+using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices.WindowsRuntime;
 using ArkeOS.Architecture;
@@ -13,7 +14,11 @@ namespace ArkeOS.VirtualMachine {
     public partial class MainPage : Page {
         private SystemBusController systemBusController;
         private MemoryManager memoryManager;
+        private DiskDrive diskDrive;
         private Processor processor;
+
+        private StorageFile disk;
+        private Stream stream;
 
         public MainPage() {
             this.InitializeComponent();
@@ -27,10 +32,15 @@ namespace ArkeOS.VirtualMachine {
         }
 
         private async void StartButton_Click(object sender, RoutedEventArgs e) {
-            this.memoryManager = new MemoryManager(10 * 1024 * 1024);
+            this.disk = await ApplicationData.Current.LocalFolder.CreateFileAsync("Disk 0.bin", CreationCollisionOption.OpenIfExists);
+            this.stream = (await this.disk.OpenAsync(FileAccessMode.ReadWrite)).AsStream();
+
+            this.memoryManager = new MemoryManager(1 * 1024 * 1024);
             this.systemBusController = new SystemBusController();
+            this.diskDrive = new DiskDrive(10 * 1024 * 1024, this.stream);
 
             this.systemBusController.AddDevice(0, this.memoryManager);
+            this.systemBusController.AddDevice(4, this.diskDrive);
 
             this.processor = new Processor(this.systemBusController);
             this.processor.ExecutionPaused += async (ss, ee) => await this.Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () => this.BreakButton_Click(null, null));
@@ -72,6 +82,12 @@ namespace ArkeOS.VirtualMachine {
             this.processor = null;
             this.memoryManager = null;
             this.systemBusController = null;
+            this.diskDrive = null;
+
+            this.stream.Flush();
+            this.stream.Dispose();
+            this.stream = null;
+            this.disk = null;
         }
 
         private void BreakButton_Click(object sender, RoutedEventArgs e) {

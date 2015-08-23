@@ -15,15 +15,17 @@ namespace ArkeOS.Hardware {
             this.devices = new BusDevice[0xFFF];
             this.nextDevice = 256;
 
-            this.AddDevice(2, new SystemBus());
+            this.AddDevice(2, new SystemBusDevice());
         }
 
         public void AddDevice(uint deviceId, BusDevice device) {
+            device.SystemBus = this;
+
             this.devices[deviceId] = device;
         }
 
         public uint AddDevice(BusDevice device) {
-            this.devices[this.nextDevice] = device;
+            this.AddDevice(this.nextDevice, device);
 
             return this.nextDevice++;
         }
@@ -50,11 +52,6 @@ namespace ArkeOS.Hardware {
                 this.WriteWord(destination + i, source[i]);
         }
 
-        public virtual void Copy(ulong source, ulong destination, ulong length) {
-            for (var i = 0UL; i < length; i++)
-                this.WriteWord(destination + i, this.ReadWord(source + i));
-        }
-
         public override ulong ReadWord(ulong address) {
             var id = this.GetDeviceId(address);
             address = this.GetAddress(address);
@@ -78,13 +75,13 @@ namespace ArkeOS.Hardware {
                 this.devices[id].WriteWord(address, data);
         }
 
-        private class SystemBus : BusDevice {
+        private class SystemBusDevice : BusDevice {
             private ulong[] memory;
 
             public override ulong VendorId => 1;
             public override ulong ProductId => 2;
 
-            public SystemBus() {
+            public SystemBusDevice() {
                 this.memory = new ulong[0xFFF * 2 + 1];
             }
 

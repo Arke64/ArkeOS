@@ -40,6 +40,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AssemblyInfo.cs" />
+    <Compile Include="DiskDrive.cs" />
     <Compile Include="InstructionHandlers.cs" />
     <Compile Include="InterruptController.cs" />
     <Compile Include="ConfigurationManager.cs" />
