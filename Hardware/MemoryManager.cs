@@ -1,7 +1,7 @@
 ﻿using ArkeOS.Architecture;
 
 namespace ArkeOS.Hardware {
-    public class MemoryManager : BusDevice {
+    public class MemoryManager : SystemBusDevice {
         private ulong[] memory;
 
         public override ulong VendorId => 1;

@@ -3,17 +3,21 @@
 namespace ArkeOS.Architecture {
     public static class Helpers {
         public static ulong ParseLiteral(string value) {
-            if (value.IndexOf("0x") == 0) {
-                return Convert.ToUInt64(value.Substring(2), 16);
+            var prefix = value.Substring(0, 2);
+
+            value = value.Substring(2);
+
+            if (prefix == "0x") {
+                return Convert.ToUInt64(value, 16);
             }
-            else if (value.IndexOf("0d") == 0) {
-                return Convert.ToUInt64(value.Substring(2), 10);
+            else if (prefix == "0d") {
+                return Convert.ToUInt64(value, 10);
             }
-            else if (value.IndexOf("0o") == 0) {
-                return Convert.ToUInt64(value.Substring(2), 8);
+            else if (prefix == "0o") {
+                return Convert.ToUInt64(value, 8);
             }
-            else if (value.IndexOf("0b") == 0) {
-                return Convert.ToUInt64(value.Substring(2), 2);
+            else if (prefix == "0b") {
+                return Convert.ToUInt64(value, 2);
             }
             else {
                 return 0;

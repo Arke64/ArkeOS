@@ -1,12 +1,8 @@
 ﻿namespace ArkeOS.Architecture {
-	public enum ParameterType {
-		Calculated,
-		CalculatedAddress,
-		Register,
-		RegisterAddress,
-		Literal,
-		LiteralAddress,
-		Stack,
-		StackAddress,
-	}
+    public enum ParameterType {
+        Calculated,
+        Register,
+        Literal,
+        Stack,
+    }
 }

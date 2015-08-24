@@ -2,7 +2,7 @@
 using ArkeOS.Architecture;
 
 namespace ArkeOS.Hardware {
-    public class ConfigurationManager : BusDevice {
+    public class ConfigurationManager : SystemBusDevice {
         private ulong[] interruptVectors;
 
         public byte ProtectionMode { get; private set; }

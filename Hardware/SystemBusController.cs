@@ -1,41 +1,40 @@
 ﻿using ArkeOS.Architecture;
 
 namespace ArkeOS.Hardware {
-    public class SystemBusController : BusDevice {
-        private BusDevice[] devices;
-        private uint nextDevice;
+    public class SystemBusController : IWordStream {
+        private SystemBusDevice[] devices;
+        private uint nextDeviceId;
+
+        private static ulong MaxAddress => 0x000FFFFFFFFFFFFFUL;
+        private static ulong MaxId => 0xFFFUL;
 
         private ulong GetDeviceId(ulong address) => (address & 0xFFF0000000000000UL) >> 52;
         private ulong GetAddress(ulong address) => address & 0x000FFFFFFFFFFFFFUL;
 
         public InterruptController InterruptController { get; set; }
 
-        public override ulong VendorId => 1;
-        public override ulong ProductId => 2;
-        public override ulong DeviceType => 2;
-
         public SystemBusController() {
-            this.devices = new BusDevice[0xFFF];
-            this.nextDevice = 256;
+            this.devices = new SystemBusDevice[0xFFF];
+            this.nextDeviceId = 256;
 
-            this.AddDevice(2, new SystemBusDevice());
+            this.AddDevice(2, new SystemBusControllerDevice());
         }
 
-        public override void RaiseInterrupt(ulong id, ulong data) {
+        public void RaiseInterrupt(ulong id, ulong data) {
             this.InterruptController.Enqueue((Interrupt)id, data);
         }
 
-        public void AddDevice(uint deviceId, BusDevice device) {
+        public void AddDevice(uint deviceId, SystemBusDevice device) {
             device.SystemBus = this;
             device.Id = deviceId;
 
             this.devices[deviceId] = device;
         }
 
-        public uint AddDevice(BusDevice device) {
-            this.AddDevice(this.nextDevice, device);
+        public uint AddDevice(SystemBusDevice device) {
+            this.AddDevice(this.nextDeviceId, device);
 
-            return this.nextDevice++;
+            return this.nextDeviceId++;
         }
 
         public void EnumerateBus() {
@@ -62,20 +61,20 @@ namespace ArkeOS.Hardware {
                 this.WriteWord(destination + i, source[i]);
         }
 
-        public override ulong ReadWord(ulong address) {
+        public ulong ReadWord(ulong address) {
             var id = this.GetDeviceId(address);
             address = this.GetAddress(address);
 
-            if (address == BusDevice.MaxAddress) {
+            if (address == SystemBusController.MaxAddress) {
                 return this.devices[id].DeviceType;
             }
-            else if (address == BusDevice.MaxAddress - 1) {
+            else if (address == SystemBusController.MaxAddress - 1) {
                 return this.devices[id].VendorId;
             }
-            else if (address == BusDevice.MaxAddress - 2) {
+            else if (address == SystemBusController.MaxAddress - 2) {
                 return this.devices[id].ProductId;
             }
-            else if (address == BusDevice.MaxAddress - 3) {
+            else if (address == SystemBusController.MaxAddress - 3) {
                 return this.devices[id].Id;
             }
             else {
@@ -83,22 +82,22 @@ namespace ArkeOS.Hardware {
             }
         }
 
-        public override void WriteWord(ulong address, ulong data) {
+        public void WriteWord(ulong address, ulong data) {
             var id = this.GetDeviceId(address);
             address = this.GetAddress(address);
 
-            if (address < BusDevice.MaxAddress - 3)
+            if (address < SystemBusController.MaxAddress - 3)
                 this.devices[id].WriteWord(address, data);
         }
 
-        private class SystemBusDevice : BusDevice {
+        private class SystemBusControllerDevice : SystemBusDevice {
             private ulong[] memory;
 
             public override ulong VendorId => 1;
             public override ulong ProductId => 2;
             public override ulong DeviceType => 2;
 
-            public SystemBusDevice() {
+            public SystemBusControllerDevice() {
                 this.memory = new ulong[0xFFF * 4 + 1];
             }
 

@@ -1,9 +1,6 @@
-﻿namespace ArkeOS.Architecture {
-    public abstract class BusDevice {
-        protected static ulong MaxAddress => 0x000FFFFFFFFFFFFFUL;
-        protected static ulong MaxId => 0xFFFUL;
-
-        public BusDevice SystemBus { get; set; }
+﻿namespace ArkeOS.Hardware {
+    public abstract class SystemBusDevice {
+        public SystemBusController SystemBus { get; set; }
         public ulong Id { get; set; }
 
         public abstract ulong VendorId { get; }
@@ -17,10 +14,6 @@
             set {
                 this.WriteWord(address, value);
             }
-        }
-
-        public virtual void RaiseInterrupt(ulong id, ulong data) {
-
         }
 
         public void Copy(ulong source, ulong destination, ulong length) {

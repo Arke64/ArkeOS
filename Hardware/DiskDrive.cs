@@ -3,7 +3,7 @@ using System.IO;
 using ArkeOS.Architecture;
 
 namespace ArkeOS.Hardware {
-    public class DiskDrive : BusDevice {
+    public class DiskDrive : SystemBusDevice {
         private Stream stream;
         private byte[] buffer;
 

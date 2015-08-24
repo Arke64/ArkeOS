@@ -36,18 +36,18 @@ Each instruction is one word followed by three optional literal words (13 if usi
 15b Reserved
 9b Parameter types (3b each)
     0 = calculated value (base + index * scale + offset), 
-    1 = calculated value as address to dereference, 
-    2 = register, 
-    3 = register value as address to dereference, 
-    4 = literal value, 
-    5 = literal value as address to dereference, 
-    6 = stack, 
+    1 = register, 
+    2 = literal value, 
+    3 = stack, 
+    4 = calculated value as address to dereference, 
+    5 = register value as address to dereference, 
+    6 = literal value as address to dereference, 
     7 = stack value as address to dereference,
 0b-768b Parameters: Calculated parameters and literals in order of appearance
 
 Calculated Parameter
 --------------------
-16b Format (4b for each operand where first 3 are the same as parameter type above (except 6 is default and 7 is not defined) and the fourth is a sign bit)
+16b Format (4b for each operand where first 3 are the same as parameter type above (except 0 is default and 4 is not defined) and the fourth is a sign bit)
 32b Register operands
 16b Reserved
 0b-256b Literal operands

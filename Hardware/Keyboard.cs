@@ -1,7 +1,7 @@
 ﻿using ArkeOS.Architecture;
 
 namespace ArkeOS.Hardware {
-    public class Keyboard : BusDevice {
+    public class Keyboard : SystemBusDevice {
         public override ulong VendorId => 1;
         public override ulong ProductId => 5;
         public override ulong DeviceType => 5;

@@ -189,57 +189,50 @@ namespace ArkeOS.Hardware {
                 if (this.IsRegisterReadAllowed(parameter.Register))
                     value = this.ReadRegister(parameter.Register);
             }
-            else if (parameter.Type == ParameterType.RegisterAddress) {
-                if (this.IsRegisterReadAllowed(parameter.Register))
-                    value = this.systemBusController.ReadWord(this.ReadRegister(parameter.Register));
-            }
             else if (parameter.Type == ParameterType.Stack) {
                 value = this.Pop();
-            }
-            else if (parameter.Type == ParameterType.StackAddress) {
-                value = this.systemBusController.ReadWord(this.Pop());
             }
             else if (parameter.Type == ParameterType.Literal) {
                 value = parameter.Literal;
             }
-            else if (parameter.Type == ParameterType.LiteralAddress) {
-                value = this.systemBusController.ReadWord(parameter.Literal);
-            }
-
             else if (parameter.Type == ParameterType.Calculated) {
                 value = this.GetCalculatedLiteral(parameter);
             }
-            else if (parameter.Type == ParameterType.CalculatedAddress) {
-                value = this.systemBusController.ReadWord(this.GetCalculatedLiteral(parameter));
-            }
+
+            if (parameter.IsIndirect)
+                value = this.systemBusController.ReadWord(value);
 
             return value;
         }
 
         private void SetValue(Parameter parameter, ulong value) {
-            if (parameter.Type == ParameterType.Register) {
-                if (this.IsRegisterWriteAllowed(parameter.Register)) {
-                    this.WriteRegister(parameter.Register, value);
+            if (!parameter.IsIndirect) {
+                if (parameter.Type == ParameterType.Register) {
+                    if (this.IsRegisterWriteAllowed(parameter.Register)) {
+                        this.WriteRegister(parameter.Register, value);
 
-                    if (parameter.Register == Register.RIP)
-                        this.supressRIPIncrement = true;
+                        if (parameter.Register == Register.RIP)
+                            this.supressRIPIncrement = true;
+                    }
+                }
+                else if (parameter.Type == ParameterType.Stack) {
+                    this.Push(value);
                 }
             }
-            else if (parameter.Type == ParameterType.RegisterAddress) {
-                if (this.IsRegisterReadAllowed(parameter.Register))
-                    this.systemBusController.WriteWord(this.ReadRegister(parameter.Register), value);
-            }
-            else if (parameter.Type == ParameterType.Stack) {
-                this.Push(value);
-            }
-            else if (parameter.Type == ParameterType.StackAddress) {
-                this.systemBusController.WriteWord(this.Pop(), value);
-            }
-            else if (parameter.Type == ParameterType.LiteralAddress) {
-                this.systemBusController.WriteWord(parameter.Literal, value);
-            }
-            else if (parameter.Type == ParameterType.CalculatedAddress) {
-                this.systemBusController.WriteWord(this.GetCalculatedLiteral(parameter), value);
+            else {
+                if (parameter.Type == ParameterType.Register) {
+                    if (this.IsRegisterReadAllowed(parameter.Register))
+                        this.systemBusController.WriteWord(this.ReadRegister(parameter.Register), value);
+                }
+                else if (parameter.Type == ParameterType.Stack) {
+                    this.systemBusController.WriteWord(this.Pop(), value);
+                }
+                else if (parameter.Type == ParameterType.Literal) {
+                    this.systemBusController.WriteWord(parameter.Literal, value);
+                }
+                else if (parameter.Type == ParameterType.Calculated) {
+                    this.systemBusController.WriteWord(this.GetCalculatedLiteral(parameter), value);
+                }
             }
         }
 
