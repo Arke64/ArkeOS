@@ -1,25 +1,19 @@
-﻿using System.Collections.Generic;
-using ArkeOS.Architecture;
+﻿using ArkeOS.Architecture;
 
 namespace ArkeOS.Hardware {
-    public class ProcessorConfigurationManager : SystemBusDevice {
+    public class ProcessorController : SystemBusDevice {
         private ulong[] interruptVectors;
 
         public byte ProtectionMode { get; private set; }
         public byte SystemTickInterval { get; private set; }
         public bool InstructionCachingEnabled { get; private set; }
 
-        public IReadOnlyList<ulong> InterruptVectors => this.interruptVectors;
-
-        public ProcessorConfigurationManager() : base(1, 1, DeviceType.ProcessorConfiguration) {
+        public ProcessorController() : base(1, 1, DeviceType.ProcessorController) {
             this.Reset();
         }
 
         public override ulong ReadWord(ulong address) {
-            if (address >= 0x100 && address < 0x200) {
-                return this.interruptVectors[(int)address - 0x100];
-            }
-            else if (address == 0) {
+            if (address == 0) {
                 return this.ProtectionMode;
             }
             else if (address == 1) {
@@ -34,10 +28,7 @@ namespace ArkeOS.Hardware {
         }
 
         public override void WriteWord(ulong address, ulong data) {
-            if (address >= 0x100 && address < 0x200) {
-                this.interruptVectors[(int)address - 0x100] = data;
-            }
-            else if (address == 0) {
+            if (address == 0) {
                 this.ProtectionMode = (byte)data;
             }
             else if (address == 0) {

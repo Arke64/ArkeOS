@@ -2,7 +2,7 @@
 
 namespace ArkeOS.Hardware {
     public class Keyboard : SystemBusDevice {
-        public Keyboard() : base(1, 5, DeviceType.Keyboard) {
+        public Keyboard() : base(1, 6, DeviceType.Keyboard) {
 
         }
 

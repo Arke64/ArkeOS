@@ -14,9 +14,10 @@ namespace ArkeOS.Hardware {
         public InterruptController InterruptController { get; set; }
 
         public static ulong RandomAccessMemoryDeviceId => (ulong)DeviceType.RandomAccessMemory;
-        public static ulong ProcessorConfigurationDeviceId => (ulong)DeviceType.ProcessorConfiguration;
+        public static ulong ProcessorControllerDeviceId => (ulong)DeviceType.ProcessorController;
         public static ulong SystemBusControllerDeviceId => (ulong)DeviceType.SystemBusController;
         public static ulong BootManagerDeviceId => (ulong)DeviceType.BootManager;
+        public static ulong InterruptControllerDeviceId => (ulong)DeviceType.InterruptController;
 
         public SystemBusController() {
             this.devices = new SystemBusDevice[SystemBusController.MaxId];

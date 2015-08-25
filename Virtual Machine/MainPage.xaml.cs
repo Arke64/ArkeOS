@@ -43,10 +43,10 @@ namespace ArkeOS.VirtualMachine {
             this.InputTextBox.KeyDown += (ss, ee) => this.keyboard.TriggerKeyDown((ulong)ee.Key);
             this.InputTextBox.KeyUp += (ss, ee) => this.keyboard.TriggerKeyUp((ulong)ee.Key);
 
-            this.systemBusController.AddDevice(0, this.memoryManager);
-            this.systemBusController.AddDevice(3, this.bootManager);
-            this.systemBusController.AddDevice(4, this.diskDrive);
-            this.systemBusController.AddDevice(5, this.keyboard);
+            this.systemBusController.AddDevice(SystemBusController.RandomAccessMemoryDeviceId, this.memoryManager);
+            this.systemBusController.AddDevice(SystemBusController.BootManagerDeviceId, this.bootManager);
+            this.systemBusController.AddDevice(this.diskDrive);
+            this.systemBusController.AddDevice(this.keyboard);
 
             this.processor = new Processor(this.systemBusController);
             this.processor.ExecutionPaused += async (ss, ee) => await this.Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () => this.BreakButton_Click(null, null));

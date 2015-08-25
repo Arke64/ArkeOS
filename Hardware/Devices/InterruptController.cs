@@ -3,7 +3,7 @@ using System.Threading;
 using ArkeOS.Architecture;
 
 namespace ArkeOS.Hardware {
-    public class InterruptController {
+    public class InterruptController : SystemBusDevice {
         public struct Entry {
             public Interrupt Id { get; set; }
             public ulong Data1 { get; set; }
@@ -12,12 +12,15 @@ namespace ArkeOS.Hardware {
 
         private Queue<Entry> pending;
         private ManualResetEvent evt;
+        private ulong[] vectors;
 
         public int PendingCount => this.pending.Count;
+        public IReadOnlyList<ulong> Vectors => this.vectors;
 
-        public InterruptController() {
+        public InterruptController() : base(1, 4, DeviceType.InterruptController) {
             this.pending = new Queue<Entry>();
             this.evt = new ManualResetEvent(false);
+            this.vectors = new ulong[0xFF];
         }
 
         public void Enqueue(Interrupt interrupt, ulong data1, ulong data2) {
@@ -34,6 +37,14 @@ namespace ArkeOS.Hardware {
                 this.evt.Reset();
                 this.evt.WaitOne(timeout);
             }
+        }
+
+        public override ulong ReadWord(ulong address) {
+            return this.vectors[address];
+        }
+
+        public override void WriteWord(ulong address, ulong data) {
+            this.vectors[address] = data;
         }
     }
 }

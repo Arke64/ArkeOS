@@ -44,8 +44,8 @@
     <Compile Include="SystemBusDevice.cs" />
     <Compile Include="Devices\DiskDrive.cs" />
     <Compile Include="InstructionHandlers.cs" />
-    <Compile Include="InterruptController.cs" />
-    <Compile Include="Devices\ProcessorConfigurationManager.cs" />
+    <Compile Include="Devices\InterruptController.cs" />
+    <Compile Include="Devices\ProcessorController.cs" />
     <Compile Include="Devices\Keyboard.cs" />
     <Compile Include="Devices\MemoryManager.cs" />
     <Compile Include="SystemBusController.cs" />

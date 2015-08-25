@@ -7,7 +7,7 @@ namespace ArkeOS.Hardware {
         private Stream stream;
         private byte[] buffer;
 
-        public DiskDrive(ulong physicalSize, Stream stream) : base(1, 4, DeviceType.DiskDrive) {
+        public DiskDrive(ulong physicalSize, Stream stream) : base(1, 5, DeviceType.DiskDrive) {
             this.stream = stream;
             this.stream.SetLength((long)physicalSize * 8);
 

@@ -9,7 +9,7 @@ namespace ArkeOS.Hardware {
     public partial class Processor {
         private static int MaxCachedInstuctions => 1024;
 
-        private ProcessorConfigurationManager configurationManager;
+        private ProcessorController processorController;
         private SystemBusController systemBusController;
         private InterruptController interruptController;
         private Action<Operand, Operand, Operand>[] instructionHandlers;
@@ -32,12 +32,13 @@ namespace ArkeOS.Hardware {
         public event EventHandler ExecutionPaused;
 
         public Processor(SystemBusController systemBusController) {
-            this.configurationManager = new ProcessorConfigurationManager();
+            this.processorController = new ProcessorController();
             this.interruptController = new InterruptController();
 
             this.systemBusController = systemBusController;
             this.systemBusController.InterruptController = interruptController;
-            this.systemBusController.AddDevice(1, this.configurationManager);
+            this.systemBusController.AddDevice(SystemBusController.ProcessorControllerDeviceId, this.processorController);
+            this.systemBusController.AddDevice(SystemBusController.InterruptControllerDeviceId, this.interruptController);
 
             this.operandA = new Operand();
             this.operandB = new Operand();
@@ -69,7 +70,7 @@ namespace ArkeOS.Hardware {
 
         public void Continue() {
             this.broken = false;
-            this.systemTimer.Change(this.configurationManager.SystemTickInterval, this.configurationManager.SystemTickInterval);
+            this.systemTimer.Change(this.processorController.SystemTickInterval, this.processorController.SystemTickInterval);
 
             new Task(() => {
                 while (!this.broken)
@@ -87,7 +88,7 @@ namespace ArkeOS.Hardware {
             this.WriteRegister(Register.RF, ulong.MaxValue);
             this.WriteRegister(Register.RIP, 3UL << 52);
 
-            this.configurationManager.Reset();
+            this.processorController.Reset();
             this.systemBusController.EnumerateBus();
 
             this.cacheBaseAddress = ulong.MaxValue;
@@ -98,14 +99,14 @@ namespace ArkeOS.Hardware {
         }
 
         private void OnSystemTimerTick(object state) {
-            if (this.configurationManager.SystemTickInterval != 0)
+            if (this.processorController.SystemTickInterval != 0)
                 this.interruptController.Enqueue(Interrupt.SystemTimer, 0, 0);
         }
 
         private void SetNextInstruction() {
             var address = this.ReadRegister(Register.RIP);
 
-            if (!this.configurationManager.InstructionCachingEnabled) {
+            if (!this.processorController.InstructionCachingEnabled) {
                 this.CurrentInstruction = new Instruction(this.systemBusController, address);
 
                 return;
@@ -169,7 +170,7 @@ namespace ArkeOS.Hardware {
         }
 
         private void EnterInterrupt(InterruptController.Entry interrupt) {
-            var isr = this.configurationManager.InterruptVectors[(int)interrupt.Id];
+            var isr = this.interruptController.Vectors[(int)interrupt.Id];
 
             if (isr == 0)
                 return;
@@ -282,7 +283,7 @@ namespace ArkeOS.Hardware {
         public ulong ReadRegister(Register register) => this.registers[(int)register];
         public void WriteRegister(Register register, ulong value) => this.registers[(int)register] = value;
 
-        private bool IsRegisterReadAllowed(Register register) => this.inProtectedIsr || this.configurationManager.ProtectionMode == 0 || (register != Register.RSIP && register != Register.RINT1 && register != Register.RINT2);
-        private bool IsRegisterWriteAllowed(Register register) => this.inProtectedIsr || this.configurationManager.ProtectionMode == 0 || (register != Register.RSIP && register != Register.RINT1 && register != Register.RINT2 && register != Register.RO && register != Register.RF);
+        private bool IsRegisterReadAllowed(Register register) => this.inProtectedIsr || this.processorController.ProtectionMode == 0 || (register != Register.RSIP && register != Register.RINT1 && register != Register.RINT2);
+        private bool IsRegisterWriteAllowed(Register register) => this.inProtectedIsr || this.processorController.ProtectionMode == 0 || (register != Register.RSIP && register != Register.RINT1 && register != Register.RINT2 && register != Register.RO && register != Register.RF);
     }
 }

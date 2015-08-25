@@ -4,7 +4,7 @@ namespace ArkeOS.Hardware {
     public class BootManager : SystemBusDevice {
         private ulong[] buffer;
 
-        public BootManager(ulong[] image) : base(1, 1, DeviceType.BootManager) {
+        public BootManager(ulong[] image) : base(1, 3, DeviceType.BootManager) {
             this.buffer = image;
         }
 
