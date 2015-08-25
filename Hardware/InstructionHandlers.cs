@@ -6,7 +6,7 @@ namespace ArkeOS.Hardware {
         #region Basic
 
         private void ExecuteHLT(Operand a, Operand b, Operand c) {
-            this.interruptController.Wait(50);
+            this.InterruptController.Wait(50);
             this.supressRIPIncrement = true;
         }
 
@@ -15,14 +15,24 @@ namespace ArkeOS.Hardware {
         }
 
         private void ExecuteINT(Operand a, Operand b, Operand c) {
-            this.interruptController.Enqueue((Interrupt)a.Value, b.Value, c.Value);
+            this.InterruptController.Enqueue((Interrupt)a.Value, b.Value, c.Value);
         }
 
         private void ExecuteEINT(Operand a, Operand b, Operand c) {
             this.WriteRegister(Register.RIP, this.ReadRegister(Register.RSIP));
+            this.WriteRegister(Register.RI0, 0);
+            this.WriteRegister(Register.RI1, 0);
+            this.WriteRegister(Register.RI2, 0);
+            this.WriteRegister(Register.RI3, 0);
+            this.WriteRegister(Register.RI4, 0);
+            this.WriteRegister(Register.RI5, 0);
+            this.WriteRegister(Register.RI6, 0);
+            this.WriteRegister(Register.RI7, 0);
+            this.WriteRegister(Register.RINT1, 0);
+            this.WriteRegister(Register.RINT2, 0);
+            this.WriteRegister(Register.RSIP, 0);
 
             this.inIsr = false;
-            this.inProtectedIsr = false;
             this.supressRIPIncrement = true;
         }
 
@@ -99,7 +109,7 @@ namespace ArkeOS.Hardware {
                 c.Value = b.Value / a.Value;
             }
             else {
-                this.interruptController.Enqueue(Interrupt.DivideByZero, 0, 0);
+                this.InterruptController.Enqueue(Interrupt.DivideByZero, 0, 0);
             }
         }
 
@@ -111,7 +121,7 @@ namespace ArkeOS.Hardware {
                 c.Value = (ulong)BitConverter.DoubleToInt64Bits(bb / aa);
             }
             else {
-                this.interruptController.Enqueue(Interrupt.DivideByZero, 0, 0);
+                this.InterruptController.Enqueue(Interrupt.DivideByZero, 0, 0);
             }
         }
 
@@ -133,7 +143,7 @@ namespace ArkeOS.Hardware {
                 c.Value = b.Value % a.Value;
             }
             else {
-                this.interruptController.Enqueue(Interrupt.DivideByZero, 0, 0);
+                this.InterruptController.Enqueue(Interrupt.DivideByZero, 0, 0);
             }
         }
 
@@ -145,7 +155,7 @@ namespace ArkeOS.Hardware {
                 c.Value = (ulong)BitConverter.DoubleToInt64Bits(bb % aa);
             }
             else {
-                this.interruptController.Enqueue(Interrupt.DivideByZero, 0, 0);
+                this.InterruptController.Enqueue(Interrupt.DivideByZero, 0, 0);
             }
         }
 
@@ -182,7 +192,7 @@ namespace ArkeOS.Hardware {
         private void ExecuteBRK(Operand a, Operand b, Operand c) {
             this.Break();
 
-            this.ExecutionPaused?.Invoke(this, EventArgs.Empty);
+            this.ExecutionBroken?.Invoke(this, EventArgs.Empty);
         }
 
         #endregion

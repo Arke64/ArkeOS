@@ -41,16 +41,16 @@
   <ItemGroup>
     <Compile Include="AssemblyInfo.cs" />
     <Compile Include="Devices\BootManager.cs" />
+    <Compile Include="SystemManager.cs" />
     <Compile Include="SystemBusDevice.cs" />
     <Compile Include="Devices\DiskDrive.cs" />
     <Compile Include="InstructionHandlers.cs" />
     <Compile Include="Devices\InterruptController.cs" />
-    <Compile Include="Devices\ProcessorController.cs" />
     <Compile Include="Devices\Keyboard.cs" />
-    <Compile Include="Devices\MemoryManager.cs" />
+    <Compile Include="Devices\RandomAccessMemoryController.cs" />
     <Compile Include="SystemBusController.cs" />
     <Compile Include="Operand.cs" />
-    <Compile Include="Processor.cs" />
+    <Compile Include="Devices\Processor.cs" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Properties\" />

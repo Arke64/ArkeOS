@@ -6,15 +6,19 @@ namespace ArkeOS.Hardware {
     public class DiskDrive : SystemBusDevice {
         private Stream stream;
         private byte[] buffer;
+        private ulong length;
 
-        public DiskDrive(ulong physicalSize, Stream stream) : base(1, 5, DeviceType.DiskDrive) {
+        public DiskDrive(Stream stream) : base(1, 5, DeviceType.DiskDrive) {
             this.stream = stream;
-            this.stream.SetLength((long)physicalSize * 8);
+            this.length = (ulong)stream.Length * 8UL;
 
             this.buffer = new byte[8];
         }
 
         public override ulong ReadWord(ulong address) {
+            if (address >= this.length)
+                return 0;
+
             this.stream.Seek((long)address * 8, SeekOrigin.Begin);
             this.stream.Read(this.buffer, 0, 8);
 
@@ -22,6 +26,9 @@ namespace ArkeOS.Hardware {
         }
 
         public override void WriteWord(ulong address, ulong data) {
+            if (address >= this.length)
+                return;
+
             var buffer = BitConverter.GetBytes(data);
 
             this.stream.Seek((long)address * 8, SeekOrigin.Begin);
@@ -31,17 +38,30 @@ namespace ArkeOS.Hardware {
         public override ulong[] Read(ulong source, ulong length) {
             var buffer = new byte[length * 8];
 
-            this.stream.Seek((long)source * 8, SeekOrigin.Begin);
-            this.stream.Read(buffer, 0, buffer.Length);
+            if (source < this.length) {
+                this.stream.Seek((long)source * 8, SeekOrigin.Begin);
+                this.stream.Read(buffer, 0, buffer.Length);
+            }
 
             return Helpers.ConvertArray(buffer);
         }
 
         public override void Write(ulong destination, ulong[] data) {
+            if (destination >= this.length)
+                return;
+
             var buffer = Helpers.ConvertArray(data);
 
             this.stream.Seek((long)destination * 8, SeekOrigin.Begin);
             this.stream.Read(buffer, 0, buffer.Length);
+        }
+
+        public override void Reset() {
+
+        }
+
+        public override void Stop() {
+            this.stream.Flush();
         }
     }
 }

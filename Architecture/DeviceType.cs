@@ -1,10 +1,10 @@
 ﻿namespace ArkeOS.Architecture {
     public enum DeviceType {
         RandomAccessMemory,
-        ProcessorController,
         SystemBusController,
-        BootManager,
+        Processor,
         InterruptController,
+        BootManager,
         DiskDrive,
         Keyboard
     }

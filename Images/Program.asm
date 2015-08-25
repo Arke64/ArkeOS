@@ -1,13 +1,13 @@
 ﻿OFFSET 0x00
 CONST 0x000000444556494E
 MOV 0x500 RSP
-MOV (RIP + 0d5) S
-MOV {SetupInterrupts} RIP
-MOV (RIP + 0d5) S
-MOV {Add} RIP
+MOV (RIP + 0d6) S
+MOV ({SetupInterrupts} + RBASE) RIP
+MOV (RIP + 0d6) S
+MOV ({Add} + RBASE) RIP
 BRK
-MOV (RIP + 0d5) S
-MOV {AddressingTest} RIP
+MOV (RIP + 0d6) S
+MOV ({AddressingTest} + RBASE) RIP
 BRK
 HLT
 
@@ -16,7 +16,7 @@ MOV 0d10 R0
 LABEL AddStart
 ADD R0 R1 R1
 SUB 0d1 R0 R0
-MVNZ R0 {AddStart} RIP
+MVNZ R0 ({AddStart} + RBASE) RIP
 MOV S RIP
 
 LABEL AddressingTest
@@ -35,8 +35,8 @@ MOV S R7
 MOV S RIP
 
 LABEL SetupInterrupts
-MOV {SystemTimer} [0x40000000000003]
-MOV {DeviceWaiting} [0x40000000000004]
+MOV ({SystemTimer} + RBASE) [0x30000000000003]
+MOV ({DeviceWaiting} + RBASE) [0x30000000000004]
 MOV S RIP
 
 LABEL SystemTimer

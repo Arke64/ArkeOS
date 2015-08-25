@@ -6,22 +6,21 @@ using System.Threading.Tasks;
 using ArkeOS.Architecture;
 
 namespace ArkeOS.Hardware {
-    public partial class Processor {
+    public partial class Processor : SystemBusDevice {
         private static int MaxCachedInstuctions => 1024;
 
-        private ProcessorController processorController;
-        private SystemBusController systemBusController;
-        private InterruptController interruptController;
         private Action<Operand, Operand, Operand>[] instructionHandlers;
-        private Timer systemTimer;
         private Instruction[] cachedInstructions;
+        private Timer systemTimer;
         private ulong[] registers;
         private ulong cacheBaseAddress;
         private bool supressRIPIncrement;
         private bool interruptsEnabled;
-        private bool inProtectedIsr;
         private bool inIsr;
-        private bool broken;
+        private byte protectionMode;
+        private byte systemTickInterval;
+        private bool instructionCacheEnabled;
+        private bool running;
 
         private Operand operandA;
         private Operand operandB;
@@ -29,17 +28,11 @@ namespace ArkeOS.Hardware {
 
         public Instruction CurrentInstruction { get; private set; }
 
-        public event EventHandler ExecutionPaused;
+        public InterruptController InterruptController { get; set; }
 
-        public Processor(SystemBusController systemBusController) {
-            this.processorController = new ProcessorController();
-            this.interruptController = new InterruptController();
+        public event EventHandler ExecutionBroken;
 
-            this.systemBusController = systemBusController;
-            this.systemBusController.InterruptController = interruptController;
-            this.systemBusController.AddDevice(SystemBusController.ProcessorControllerDeviceId, this.processorController);
-            this.systemBusController.AddDevice(SystemBusController.InterruptControllerDeviceId, this.interruptController);
-
+        public Processor() : base(1, 2, DeviceType.Processor) {
             this.operandA = new Operand();
             this.operandB = new Operand();
             this.operandC = new Operand();
@@ -51,29 +44,39 @@ namespace ArkeOS.Hardware {
                 this.instructionHandlers[i.Code] = (Action<Operand, Operand, Operand>)this.GetType().GetMethod("Execute" + i.Mnemonic, BindingFlags.NonPublic | BindingFlags.Instance).CreateDelegate(typeof(Action<Operand, Operand, Operand>), this);
         }
 
-        public void Start() {
-            this.broken = true;
+        public override void Reset() {
+            this.cacheBaseAddress = ulong.MaxValue;
+            this.supressRIPIncrement = false;
+            this.interruptsEnabled = true;
+            this.inIsr = false;
+            this.running = false;
+            this.systemTickInterval = 50;
+            this.instructionCacheEnabled = true;
+            this.protectionMode = 0;
 
-            this.Reset();
+            this.registers = new ulong[0xFF];
+
+            this.WriteRegister(Register.RF, ulong.MaxValue);
+            this.WriteRegister(Register.RIP, (ulong)DeviceType.BootManager << 52);
 
             this.SetNextInstruction();
         }
 
-        public void Stop() {
+        public override void Stop() {
             this.Break();
         }
 
         public void Break() {
-            this.broken = true;
+            this.running = false;
             this.systemTimer.Change(Timeout.Infinite, Timeout.Infinite);
         }
 
         public void Continue() {
-            this.broken = false;
-            this.systemTimer.Change(this.processorController.SystemTickInterval, this.processorController.SystemTickInterval);
+            this.running = true;
+            this.systemTimer.Change(this.systemTickInterval, this.systemTickInterval);
 
             new Task(() => {
-                while (!this.broken)
+                while (this.running)
                     this.Tick();
             }, TaskCreationOptions.LongRunning).Start();
         }
@@ -82,32 +85,16 @@ namespace ArkeOS.Hardware {
             this.Tick();
         }
 
-        private void Reset() {
-            this.registers = new ulong[0xFF];
-
-            this.WriteRegister(Register.RF, ulong.MaxValue);
-            this.WriteRegister(Register.RIP, 3UL << 52);
-
-            this.processorController.Reset();
-            this.systemBusController.EnumerateBus();
-
-            this.cacheBaseAddress = ulong.MaxValue;
-            this.supressRIPIncrement = false;
-            this.interruptsEnabled = true;
-            this.inProtectedIsr = false;
-            this.inIsr = false;
-        }
-
         private void OnSystemTimerTick(object state) {
-            if (this.processorController.SystemTickInterval != 0)
-                this.interruptController.Enqueue(Interrupt.SystemTimer, 0, 0);
+            if (this.systemTickInterval != 0)
+                this.InterruptController.Enqueue(Interrupt.SystemTimer, 0, 0);
         }
 
         private void SetNextInstruction() {
             var address = this.ReadRegister(Register.RIP);
 
-            if (!this.processorController.InstructionCachingEnabled) {
-                this.CurrentInstruction = new Instruction(this.systemBusController, address);
+            if (!this.instructionCacheEnabled) {
+                this.CurrentInstruction = new Instruction(this.BusController, address);
 
                 return;
             }
@@ -123,11 +110,13 @@ namespace ArkeOS.Hardware {
                 this.CurrentInstruction = this.cachedInstructions[offset];
             }
             else {
-                this.CurrentInstruction = this.cachedInstructions[offset] = new Instruction(this.systemBusController, address);
+                this.CurrentInstruction = this.cachedInstructions[offset] = new Instruction(this.BusController, address);
             }
         }
 
         private void Tick() {
+            this.SetNextInstruction();
+
             if (this.instructionHandlers.Length >= this.CurrentInstruction.Code && this.instructionHandlers[this.CurrentInstruction.Code] != null) {
                 this.LoadParameters(this.operandA, this.operandB, this.operandC);
 
@@ -143,13 +132,11 @@ namespace ArkeOS.Hardware {
                 }
             }
             else {
-                this.interruptController.Enqueue(Interrupt.InvalidInstruction, this.CurrentInstruction.Code, 0);
+                this.InterruptController.Enqueue(Interrupt.InvalidInstruction, this.CurrentInstruction.Code, 0);
             }
 
-            if (this.interruptsEnabled && !this.inIsr && this.interruptController.PendingCount != 0)
-                this.EnterInterrupt(this.interruptController.Dequeue());
-
-            this.SetNextInstruction();
+            if (this.interruptsEnabled && !this.inIsr && this.InterruptController.PendingCount != 0)
+                this.EnterInterrupt(this.InterruptController.Dequeue());
         }
 
         private void LoadParameters(Operand a, Operand b, Operand c) {
@@ -170,7 +157,7 @@ namespace ArkeOS.Hardware {
         }
 
         private void EnterInterrupt(InterruptController.Entry interrupt) {
-            var isr = this.interruptController.Vectors[(int)interrupt.Id];
+            var isr = this.InterruptController.GetVector(interrupt);
 
             if (isr == 0)
                 return;
@@ -180,16 +167,14 @@ namespace ArkeOS.Hardware {
             this.WriteRegister(Register.RINT1, interrupt.Data1);
             this.WriteRegister(Register.RINT2, interrupt.Data2);
 
-            this.inProtectedIsr = (byte)interrupt.Id < 0x10;
             this.inIsr = true;
         }
 
         private ulong GetValue(Parameter parameter) {
-            var value = 0UL;
+            var value = ulong.MaxValue;
 
             if (parameter.Type == ParameterType.Register) {
-                if (this.IsRegisterReadAllowed(parameter.Register))
-                    value = this.ReadRegister(parameter.Register);
+                value = this.ReadRegister(parameter.Register);
             }
             else if (parameter.Type == ParameterType.Stack) {
                 value = this.Pop();
@@ -202,7 +187,7 @@ namespace ArkeOS.Hardware {
             }
 
             if (parameter.IsIndirect)
-                value = this.systemBusController.ReadWord(value);
+                value = this.BusController.ReadWord(value);
 
             return value;
         }
@@ -210,7 +195,7 @@ namespace ArkeOS.Hardware {
         private void SetValue(Parameter parameter, ulong value) {
             if (!parameter.IsIndirect) {
                 if (parameter.Type == ParameterType.Register) {
-                    if (this.IsRegisterWriteAllowed(parameter.Register)) {
+                    if (parameter.Register != Register.RO && parameter.Register != Register.RF) {
                         this.WriteRegister(parameter.Register, value);
 
                         if (parameter.Register == Register.RIP)
@@ -222,19 +207,22 @@ namespace ArkeOS.Hardware {
                 }
             }
             else {
+                var address = ulong.MaxValue;
+
                 if (parameter.Type == ParameterType.Register) {
-                    if (this.IsRegisterReadAllowed(parameter.Register))
-                        this.systemBusController.WriteWord(this.ReadRegister(parameter.Register), value);
+                    address = this.ReadRegister(parameter.Register);
                 }
                 else if (parameter.Type == ParameterType.Stack) {
-                    this.systemBusController.WriteWord(this.Pop(), value);
+                    address = this.Pop();
                 }
                 else if (parameter.Type == ParameterType.Literal) {
-                    this.systemBusController.WriteWord(parameter.Literal, value);
+                    address = parameter.Literal;
                 }
                 else if (parameter.Type == ParameterType.Calculated) {
-                    this.systemBusController.WriteWord(this.GetCalculatedLiteral(parameter), value);
+                    address = this.GetCalculatedLiteral(parameter);
                 }
+
+                this.BusController.WriteWord(address, value);
             }
         }
 
@@ -266,14 +254,14 @@ namespace ArkeOS.Hardware {
             return address;
         }
 
-        private void Push(ulong value) {
+        public void Push(ulong value) {
             this.WriteRegister(Register.RSP, this.ReadRegister(Register.RSP) - 8);
 
-            this.systemBusController.WriteWord(this.ReadRegister(Register.RSP), value);
+            this.BusController.WriteWord(this.ReadRegister(Register.RSP), value);
         }
 
-        private ulong Pop() {
-            var value = this.systemBusController.ReadWord(this.ReadRegister(Register.RSP));
+        public ulong Pop() {
+            var value = this.BusController.ReadWord(this.ReadRegister(Register.RSP));
 
             this.WriteRegister(Register.RSP, this.ReadRegister(Register.RSP) + 8);
 
@@ -283,7 +271,31 @@ namespace ArkeOS.Hardware {
         public ulong ReadRegister(Register register) => this.registers[(int)register];
         public void WriteRegister(Register register, ulong value) => this.registers[(int)register] = value;
 
-        private bool IsRegisterReadAllowed(Register register) => this.inProtectedIsr || this.processorController.ProtectionMode == 0 || (register != Register.RSIP && register != Register.RINT1 && register != Register.RINT2);
-        private bool IsRegisterWriteAllowed(Register register) => this.inProtectedIsr || this.processorController.ProtectionMode == 0 || (register != Register.RSIP && register != Register.RINT1 && register != Register.RINT2 && register != Register.RO && register != Register.RF);
+        public override ulong ReadWord(ulong address) {
+            if (address == 0) {
+                return this.protectionMode;
+            }
+            else if (address == 1) {
+                return this.systemTickInterval;
+            }
+            else if (address == 2) {
+                return this.instructionCacheEnabled ? 1UL : 0UL;
+            }
+            else {
+                return 0;
+            }
+        }
+
+        public override void WriteWord(ulong address, ulong data) {
+            if (address == 0) {
+                this.protectionMode = (byte)data;
+            }
+            else if (address == 0) {
+                this.systemTickInterval = (byte)data;
+            }
+            else if (address == 0) {
+                this.instructionCacheEnabled = data != 0;
+            }
+        }
     }
 }

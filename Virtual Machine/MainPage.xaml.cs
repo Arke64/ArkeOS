@@ -11,14 +11,7 @@ using Windows.UI.Xaml.Controls;
 
 namespace ArkeOS.VirtualMachine {
     public partial class MainPage : Page {
-        private SystemBusController systemBusController;
-        private MemoryManager memoryManager;
-        private DiskDrive diskDrive;
-        private Processor processor;
-        private Keyboard keyboard;
-        private BootManager bootManager;
-
-        private Stream stream;
+        private SystemManager system;
 
         public MainPage() {
             this.InitializeComponent();
@@ -32,26 +25,35 @@ namespace ArkeOS.VirtualMachine {
         }
 
         private async void StartButton_Click(object sender, RoutedEventArgs e) {
-            this.stream = (await (await ApplicationData.Current.LocalFolder.CreateFileAsync("Disk 0.bin", CreationCollisionOption.OpenIfExists)).OpenAsync(FileAccessMode.ReadWrite)).AsStream();
+            this.system = new SystemManager();
+            this.system.PhysicalMemorySize = 1 * 1024 * 1024;
+            this.system.BootImage = Helpers.ConvertArray((await FileIO.ReadBufferAsync(await ApplicationData.Current.LocalFolder.GetFileAsync("Boot.bin"))).ToArray());
 
-            this.memoryManager = new MemoryManager(1 * 1024 * 1024);
-            this.systemBusController = new SystemBusController();
-            this.diskDrive = new DiskDrive(10 * 1024 * 1024, this.stream);
-            this.keyboard = new Keyboard();
-            this.bootManager = new BootManager(Helpers.ConvertArray((await FileIO.ReadBufferAsync(await ApplicationData.Current.LocalFolder.GetFileAsync("Boot.bin"))).ToArray()));
 
-            this.InputTextBox.KeyDown += (ss, ee) => this.keyboard.TriggerKeyDown((ulong)ee.Key);
-            this.InputTextBox.KeyUp += (ss, ee) => this.keyboard.TriggerKeyUp((ulong)ee.Key);
+            var stream = (await (await ApplicationData.Current.LocalFolder.CreateFileAsync("Disk 0.bin", CreationCollisionOption.OpenIfExists)).OpenAsync(FileAccessMode.ReadWrite)).AsStream();
+            stream.SetLength(8 * 1024 * 1024);
 
-            this.systemBusController.AddDevice(SystemBusController.RandomAccessMemoryDeviceId, this.memoryManager);
-            this.systemBusController.AddDevice(SystemBusController.BootManagerDeviceId, this.bootManager);
-            this.systemBusController.AddDevice(this.diskDrive);
-            this.systemBusController.AddDevice(this.keyboard);
+            this.system.AddPeripheral(new DiskDrive(stream));
 
-            this.processor = new Processor(this.systemBusController);
-            this.processor.ExecutionPaused += async (ss, ee) => await this.Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () => this.BreakButton_Click(null, null));
 
-            this.processor.Start();
+            var keyboard = new Keyboard();
+
+            this.InputTextBox.KeyDown += (ss, ee) => keyboard.TriggerKeyDown((ulong)ee.Key);
+            this.InputTextBox.KeyUp += (ss, ee) => keyboard.TriggerKeyUp((ulong)ee.Key);
+
+            this.system.AddPeripheral(keyboard);
+
+
+            this.system.Processor.ExecutionBroken += async (ss, ee) => await this.Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () => {
+                this.BreakButton.IsEnabled = false;
+                this.ContinueButton.IsEnabled = true;
+                this.StepButton.IsEnabled = true;
+                this.ApplyButton.IsEnabled = true;
+
+                this.Refresh();
+            });
+
+            this.system.Reset();
 
             this.Refresh();
 
@@ -64,7 +66,8 @@ namespace ArkeOS.VirtualMachine {
         }
 
         private void StopButton_Click(object sender, RoutedEventArgs e) {
-            this.processor.Stop();
+            this.system.Stop();
+            this.system = null;
 
             this.StartButton.IsEnabled = true;
             this.StopButton.IsEnabled = false;
@@ -74,20 +77,10 @@ namespace ArkeOS.VirtualMachine {
             this.ApplyButton.IsEnabled = false;
 
             this.Clear();
-
-            this.processor = null;
-            this.memoryManager = null;
-            this.systemBusController = null;
-            this.diskDrive = null;
-            this.keyboard = null;
-
-            this.stream.Flush();
-            this.stream.Dispose();
-            this.stream = null;
         }
 
         private void BreakButton_Click(object sender, RoutedEventArgs e) {
-            this.processor.Break();
+            this.system.Processor.Break();
 
             this.BreakButton.IsEnabled = false;
             this.ContinueButton.IsEnabled = true;
@@ -98,7 +91,7 @@ namespace ArkeOS.VirtualMachine {
         }
 
         private void ContinueButton_Click(object sender, RoutedEventArgs e) {
-            this.processor.Continue();
+            this.system.Processor.Continue();
 
             this.BreakButton.IsEnabled = true;
             this.ContinueButton.IsEnabled = false;
@@ -107,7 +100,7 @@ namespace ArkeOS.VirtualMachine {
         }
 
         private void StepButton_Click(object sender, RoutedEventArgs e) {
-            this.processor.Step();
+            this.system.Processor.Step();
 
             this.Refresh();
         }
@@ -116,7 +109,7 @@ namespace ArkeOS.VirtualMachine {
             foreach (var r in Enum.GetNames(typeof(Register))) {
                 var textbox = (TextBox)this.GetType().GetField(r + "TextBox", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(this);
 
-                this.processor.WriteRegister((Register)Enum.Parse(typeof(Register), r), Convert.ToUInt64(textbox.Text.Substring(2), 16));
+                this.system.Processor.WriteRegister((Register)Enum.Parse(typeof(Register), r), Convert.ToUInt64(textbox.Text.Substring(2), 16));
             }
         }
 
@@ -124,10 +117,10 @@ namespace ArkeOS.VirtualMachine {
             foreach (var r in Enum.GetNames(typeof(Register))) {
                 var textbox = (TextBox)this.GetType().GetField(r + "TextBox", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(this);
 
-                textbox.Text = "0x" + this.processor.ReadRegister((Register)Enum.Parse(typeof(Register), r)).ToString("X8");
+                textbox.Text = "0x" + this.system.Processor.ReadRegister((Register)Enum.Parse(typeof(Register), r)).ToString("X8");
             }
 
-            this.CurrentInstructionLabel.Text = this.processor.CurrentInstruction.ToString();
+            this.CurrentInstructionLabel.Text = this.system.Processor.CurrentInstruction.ToString();
         }
 
         private void Clear() {

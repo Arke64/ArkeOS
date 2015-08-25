@@ -15,12 +15,9 @@ namespace ArkeOS.Hardware {
         private ulong[] vectors;
 
         public int PendingCount => this.pending.Count;
-        public IReadOnlyList<ulong> Vectors => this.vectors;
 
-        public InterruptController() : base(1, 4, DeviceType.InterruptController) {
-            this.pending = new Queue<Entry>();
-            this.evt = new ManualResetEvent(false);
-            this.vectors = new ulong[0xFF];
+        public InterruptController() : base(1, 3, DeviceType.InterruptController) {
+
         }
 
         public void Enqueue(Interrupt interrupt, ulong data1, ulong data2) {
@@ -30,6 +27,10 @@ namespace ArkeOS.Hardware {
 
         public Entry Dequeue() {
             return this.pending.Dequeue();
+        }
+
+        public ulong GetVector(Entry entry) {
+            return this.vectors[(int)entry.Id];
         }
 
         public void Wait(int timeout) {
@@ -45,6 +46,16 @@ namespace ArkeOS.Hardware {
 
         public override void WriteWord(ulong address, ulong data) {
             this.vectors[address] = data;
+        }
+
+        public override void Reset() {
+            this.pending = new Queue<Entry>();
+            this.evt = new ManualResetEvent(false);
+            this.vectors = new ulong[0xFF];
+        }
+
+        public override void Stop() {
+            this.evt.Set();
         }
     }
 }

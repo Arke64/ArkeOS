@@ -14,6 +14,14 @@ namespace ArkeOS.Hardware {
 
         }
 
+        public override void Reset() {
+
+        }
+
+        public override void Stop() {
+
+        }
+
         public void TriggerKeyUp(ulong key) => this.BusController.RaiseInterrupt(this, key | (1UL << 63));
         public void TriggerKeyDown(ulong key) => this.BusController.RaiseInterrupt(this, key);
     }

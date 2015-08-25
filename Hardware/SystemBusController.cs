@@ -5,23 +5,23 @@ namespace ArkeOS.Hardware {
         private SystemBusDevice[] devices;
         private ulong nextDeviceId;
 
-        public static ulong MaxAddress => 0x000FFFFFFFFFFFFFUL;
-        public static ulong MaxId => 0xFFFUL;
-
         private ulong GetDeviceId(ulong address) => (address & 0xFFF0000000000000UL) >> 52;
         private ulong GetAddress(ulong address) => address & 0x000FFFFFFFFFFFFFUL;
 
         public InterruptController InterruptController { get; set; }
 
+        public static ulong MaxAddress => 0x000FFFFFFFFFFFFFUL;
+        public static ulong MaxId => 0xFFFUL;
+
         public static ulong RandomAccessMemoryDeviceId => (ulong)DeviceType.RandomAccessMemory;
-        public static ulong ProcessorControllerDeviceId => (ulong)DeviceType.ProcessorController;
+        public static ulong ProcessorDeviceId => (ulong)DeviceType.Processor;
         public static ulong SystemBusControllerDeviceId => (ulong)DeviceType.SystemBusController;
         public static ulong BootManagerDeviceId => (ulong)DeviceType.BootManager;
         public static ulong InterruptControllerDeviceId => (ulong)DeviceType.InterruptController;
 
         public SystemBusController() {
             this.devices = new SystemBusDevice[SystemBusController.MaxId];
-            this.nextDeviceId = 16;
+            this.nextDeviceId = 128;
 
             this.AddDevice(SystemBusController.SystemBusControllerDeviceId, new SystemBusControllerDevice());
         }
@@ -43,9 +43,12 @@ namespace ArkeOS.Hardware {
             return this.nextDeviceId++;
         }
 
-        public void EnumerateBus() {
-            var address = (2UL << 52) + 1;
+        public void Reset() {
+            var address = ((ulong)DeviceType.SystemBusController << 52) + 1;
             var count = 0UL;
+
+            foreach (var d in this.devices)
+                d?.Reset();
 
             foreach (var device in this.devices) {
                 if (device == null)
@@ -62,9 +65,9 @@ namespace ArkeOS.Hardware {
             this.WriteWord(address - count * 4 - 1UL, count);
         }
 
-        public void CopyFrom(ulong[] source, ulong destination, ulong length) {
-            for (var i = 0UL; i < length; i++)
-                this.WriteWord(destination + i, source[i]);
+        public void Stop() {
+            foreach (var d in this.devices)
+                d?.Stop();
         }
 
         public ulong ReadWord(ulong address) {
@@ -103,12 +106,20 @@ namespace ArkeOS.Hardware {
         private class SystemBusControllerDevice : SystemBusDevice {
             private ulong[] memory;
 
-            public SystemBusControllerDevice() : base(1, 2, DeviceType.SystemBusController) {
-                this.memory = new ulong[SystemBusController.MaxId * 4 + 1];
+            public SystemBusControllerDevice() : base(1, 1, DeviceType.SystemBusController) {
+
             }
 
             public override ulong ReadWord(ulong address) => this.memory[address];
             public override void WriteWord(ulong address, ulong data) => this.memory[address] = data;
+
+            public override void Reset() {
+                this.memory = new ulong[SystemBusController.MaxId * 4 + 1];
+            }
+
+            public override void Stop() {
+
+            }
         }
     }
 }

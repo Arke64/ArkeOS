@@ -2,17 +2,25 @@
 
 namespace ArkeOS.Hardware {
     public class BootManager : SystemBusDevice {
-        private ulong[] buffer;
+        public ulong[] BootImage { get; set; }
 
-        public BootManager(ulong[] image) : base(1, 3, DeviceType.BootManager) {
-            this.buffer = image;
+        public BootManager() : base(1, 4, DeviceType.BootManager) {
+
         }
 
         public override ulong ReadWord(ulong address) {
-            return this.buffer[address];
+            return this.BootImage[address];
         }
 
         public override void WriteWord(ulong address, ulong data) {
+
+        }
+
+        public override void Reset() {
+
+        }
+
+        public override void Stop() {
 
         }
     }
