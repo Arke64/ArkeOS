@@ -4,11 +4,7 @@ namespace ArkeOS.Hardware {
     public class MemoryManager : SystemBusDevice {
         private ulong[] memory;
 
-        public override ulong VendorId => 1;
-        public override ulong ProductId => 0;
-        public override ulong DeviceType => 0;
-
-        public MemoryManager(ulong physicalSize) {
+        public MemoryManager(ulong physicalSize) : base(1, 0, DeviceType.RandomAccessMemory) {
             this.memory = new ulong[physicalSize];
         }
 

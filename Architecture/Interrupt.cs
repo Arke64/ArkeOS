@@ -1,10 +1,9 @@
 ﻿namespace ArkeOS.Architecture {
     public enum Interrupt : ulong {
-        InvalidInstruction = 0x1000,
+        InvalidInstruction,
         DivideByZero,
         SystemCall,
-        ProtectionViolation,
-        PageNotPresent,
-        SystemTimer
+        SystemTimer,
+        DeviceWaiting,
     }
 }

@@ -1,19 +1,18 @@
-﻿namespace ArkeOS.Hardware {
+﻿using ArkeOS.Architecture;
+
+namespace ArkeOS.Hardware {
     public abstract class SystemBusDevice {
-        public SystemBusController SystemBus { get; set; }
+        public SystemBusController BusController { get; set; }
         public ulong Id { get; set; }
 
-        public abstract ulong VendorId { get; }
-        public abstract ulong ProductId { get; }
-        public abstract ulong DeviceType { get; }
+        public ulong VendorId { get; }
+        public ulong ProductId { get; }
+        public DeviceType Type { get; }
 
-        public ulong this[ulong address] {
-            get {
-                return this.ReadWord(address);
-            }
-            set {
-                this.WriteWord(address, value);
-            }
+        protected SystemBusDevice(ulong vendorId, ulong productId, DeviceType type) {
+            this.VendorId = vendorId;
+            this.ProductId = productId;
+            this.Type = type;
         }
 
         public void Copy(ulong source, ulong destination, ulong length) {

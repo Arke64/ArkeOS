@@ -4,11 +4,7 @@ namespace ArkeOS.Hardware {
     public class BootManager : SystemBusDevice {
         private ulong[] buffer;
 
-        public override ulong VendorId => 1;
-        public override ulong ProductId => 3;
-        public override ulong DeviceType => 3;
-
-        public BootManager(ulong[] image) {
+        public BootManager(ulong[] image) : base(1, 1, DeviceType.BootManager) {
             this.buffer = image;
         }
 

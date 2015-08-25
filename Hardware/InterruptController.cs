@@ -1,34 +1,39 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Threading;
 using ArkeOS.Architecture;
 
 namespace ArkeOS.Hardware {
-	public class InterruptController {
-		private Queue<Tuple<Interrupt, ulong>> pending;
-		private ManualResetEvent evt;
+    public class InterruptController {
+        public struct Entry {
+            public Interrupt Id { get; set; }
+            public ulong Data1 { get; set; }
+            public ulong Data2 { get; set; }
+        }
 
-		public bool AnyPending => this.pending.Count > 0;
+        private Queue<Entry> pending;
+        private ManualResetEvent evt;
 
-		public InterruptController() {
-			this.pending = new Queue<Tuple<Interrupt, ulong>>();
-			this.evt = new ManualResetEvent(false);
-		}
+        public int PendingCount => this.pending.Count;
 
-		public void Enqueue(Interrupt interrupt, ulong data) {
-			this.pending.Enqueue(Tuple.Create(interrupt, data));
-			this.evt.Set();
-		}
+        public InterruptController() {
+            this.pending = new Queue<Entry>();
+            this.evt = new ManualResetEvent(false);
+        }
 
-		public Tuple<Interrupt, ulong> Dequeue() {
-			return this.pending.Dequeue();
-		}
+        public void Enqueue(Interrupt interrupt, ulong data1, ulong data2) {
+            this.pending.Enqueue(new Entry() { Id = interrupt, Data1 = data1, Data2 = data2 });
+            this.evt.Set();
+        }
 
-		public void Wait(int timeout) {
-			if (!this.AnyPending) {
-				this.evt.Reset();
-				this.evt.WaitOne(timeout);
-			}
-		}
-	}
+        public Entry Dequeue() {
+            return this.pending.Dequeue();
+        }
+
+        public void Wait(int timeout) {
+            if (this.PendingCount == 0) {
+                this.evt.Reset();
+                this.evt.WaitOne(timeout);
+            }
+        }
+    }
 }

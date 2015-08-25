@@ -9,7 +9,7 @@ namespace ArkeOS.Hardware {
     public partial class Processor {
         private static int MaxCachedInstuctions => 1024;
 
-        private ConfigurationManager configurationManager;
+        private ProcessorConfigurationManager configurationManager;
         private SystemBusController systemBusController;
         private InterruptController interruptController;
         private Action<Operand, Operand, Operand>[] instructionHandlers;
@@ -32,7 +32,7 @@ namespace ArkeOS.Hardware {
         public event EventHandler ExecutionPaused;
 
         public Processor(SystemBusController systemBusController) {
-            this.configurationManager = new ConfigurationManager();
+            this.configurationManager = new ProcessorConfigurationManager();
             this.interruptController = new InterruptController();
 
             this.systemBusController = systemBusController;
@@ -99,7 +99,7 @@ namespace ArkeOS.Hardware {
 
         private void OnSystemTimerTick(object state) {
             if (this.configurationManager.SystemTickInterval != 0)
-                this.interruptController.Enqueue(Interrupt.SystemTimer, 0);
+                this.interruptController.Enqueue(Interrupt.SystemTimer, 0, 0);
         }
 
         private void SetNextInstruction() {
@@ -142,10 +142,10 @@ namespace ArkeOS.Hardware {
                 }
             }
             else {
-                this.interruptController.Enqueue(Interrupt.InvalidInstruction, this.CurrentInstruction.Code);
+                this.interruptController.Enqueue(Interrupt.InvalidInstruction, this.CurrentInstruction.Code, 0);
             }
 
-            if (this.interruptsEnabled && !this.inIsr && this.interruptController.AnyPending)
+            if (this.interruptsEnabled && !this.inIsr && this.interruptController.PendingCount != 0)
                 this.EnterInterrupt(this.interruptController.Dequeue());
 
             this.SetNextInstruction();
@@ -168,17 +168,18 @@ namespace ArkeOS.Hardware {
                 this.SetValue(this.CurrentInstruction.Parameter1, a.Value);
         }
 
-        private void EnterInterrupt(Tuple<Interrupt, ulong> interrupt) {
-            var isr = this.configurationManager.InterruptVectors[(int)interrupt.Item1];
+        private void EnterInterrupt(InterruptController.Entry interrupt) {
+            var isr = this.configurationManager.InterruptVectors[(int)interrupt.Id];
 
             if (isr == 0)
                 return;
 
             this.WriteRegister(Register.RSIP, this.ReadRegister(Register.RIP));
             this.WriteRegister(Register.RIP, isr);
-            this.WriteRegister(Register.RINT, interrupt.Item2);
+            this.WriteRegister(Register.RINT1, interrupt.Data1);
+            this.WriteRegister(Register.RINT2, interrupt.Data2);
 
-            this.inProtectedIsr = (byte)interrupt.Item1 <= 0x07;
+            this.inProtectedIsr = (byte)interrupt.Id < 0x10;
             this.inIsr = true;
         }
 
@@ -281,7 +282,7 @@ namespace ArkeOS.Hardware {
         public ulong ReadRegister(Register register) => this.registers[(int)register];
         public void WriteRegister(Register register, ulong value) => this.registers[(int)register] = value;
 
-        private bool IsRegisterReadAllowed(Register register) => this.inProtectedIsr || this.configurationManager.ProtectionMode == 0 || (register != Register.RSIP && register != Register.RINT);
-        private bool IsRegisterWriteAllowed(Register register) => this.inProtectedIsr || this.configurationManager.ProtectionMode == 0 || (register != Register.RSIP && register != Register.RINT && register != Register.RO && register != Register.RF);
+        private bool IsRegisterReadAllowed(Register register) => this.inProtectedIsr || this.configurationManager.ProtectionMode == 0 || (register != Register.RSIP && register != Register.RINT1 && register != Register.RINT2);
+        private bool IsRegisterWriteAllowed(Register register) => this.inProtectedIsr || this.configurationManager.ProtectionMode == 0 || (register != Register.RSIP && register != Register.RINT1 && register != Register.RINT2 && register != Register.RO && register != Register.RF);
     }
 }

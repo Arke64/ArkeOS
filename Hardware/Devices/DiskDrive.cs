@@ -7,11 +7,7 @@ namespace ArkeOS.Hardware {
         private Stream stream;
         private byte[] buffer;
 
-        public override ulong VendorId => 1;
-        public override ulong ProductId => 4;
-        public override ulong DeviceType => 4;
-
-        public DiskDrive(ulong physicalSize, Stream stream) {
+        public DiskDrive(ulong physicalSize, Stream stream) : base(1, 4, DeviceType.DiskDrive) {
             this.stream = stream;
             this.stream.SetLength((long)physicalSize * 8);
 

@@ -2,7 +2,7 @@
 using ArkeOS.Architecture;
 
 namespace ArkeOS.Hardware {
-    public class ConfigurationManager : SystemBusDevice {
+    public class ProcessorConfigurationManager : SystemBusDevice {
         private ulong[] interruptVectors;
 
         public byte ProtectionMode { get; private set; }
@@ -11,16 +11,15 @@ namespace ArkeOS.Hardware {
 
         public IReadOnlyList<ulong> InterruptVectors => this.interruptVectors;
 
-        public override ulong VendorId => 1;
-        public override ulong ProductId => 1;
-        public override ulong DeviceType => 1;
-
-        public ConfigurationManager() {
+        public ProcessorConfigurationManager() : base(1, 1, DeviceType.ProcessorConfiguration) {
             this.Reset();
         }
 
         public override ulong ReadWord(ulong address) {
-            if (address == 0) {
+            if (address >= 0x100 && address < 0x200) {
+                return this.interruptVectors[(int)address - 0x100];
+            }
+            else if (address == 0) {
                 return this.ProtectionMode;
             }
             else if (address == 1) {
@@ -29,16 +28,16 @@ namespace ArkeOS.Hardware {
             else if (address == 2) {
                 return this.InstructionCachingEnabled ? 1UL : 0UL;
             }
-            else if (address >= 0x10000 && address < 0x11010) {
-                return this.interruptVectors[(int)address - 0x10000];
-            }
             else {
                 return 0;
             }
         }
 
         public override void WriteWord(ulong address, ulong data) {
-            if (address == 0) {
+            if (address >= 0x100 && address < 0x200) {
+                this.interruptVectors[(int)address - 0x100] = data;
+            }
+            else if (address == 0) {
                 this.ProtectionMode = (byte)data;
             }
             else if (address == 0) {
@@ -47,9 +46,6 @@ namespace ArkeOS.Hardware {
             else if (address == 0) {
                 this.InstructionCachingEnabled = data != 0;
             }
-            else if (address >= 0x10000 && address < 0x11010) {
-                this.interruptVectors[(int)address - 0x10000] = data;
-            }
         }
 
         public void Reset() {
@@ -57,7 +53,7 @@ namespace ArkeOS.Hardware {
             this.InstructionCachingEnabled = true;
             this.ProtectionMode = 0;
 
-            this.interruptVectors = new ulong[0x11010];
+            this.interruptVectors = new ulong[0xFF];
         }
     }
 }

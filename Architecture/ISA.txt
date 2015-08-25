@@ -7,24 +7,25 @@ RF: 0xFF.. register
 RSP: Address of the current stack position
 RIP: Address of the current instruction
 RSIP: Address of the instruction executing when an interrupt fires
-RINT: Data made available from an interrupt
+RINT1: Data made available from an interrupt
+RINT2: Data made available from an interrupt
 
 Configuration
 --------------
-8b: System tick interval
-8b: Protection mode
-1b: Allow instruction caching
+0x00: Protection mode
+0x01: System tick interval
+0x02: Allow instruction caching
+0x100-0x1FF: Interrupt vectors
 
 Interrupts
 ----------
 0x00: Invalid instruction
 0x01: Divide by zero
 0x02: System call
-0x03: Protection violation
-0x04: Page not present
-0x05: System timer
+0x04: System timer
+0x05: Device waiting
 0x06-0x0F: Reserved
-0x10-0xFFF: Devices
+0x10-0xFF: Undefined
 
 Instruction Format
 ------------------
@@ -56,7 +57,7 @@ Basic
 -----
 00 HLT: Stops the processor
 01 NOP: No operation
-02 INT A B: Raise the interrupt specified by A passing B to RINT
+02 INT A B: Raise the interrupt specified by A passing B to RINT1 and C to RINT2
 03 EINT: Return from the interrupt
 04 INTE: Enables interrupts
 05 INTD: Disables interrupts
