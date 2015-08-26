@@ -8,12 +8,14 @@ using ArkeOS.Architecture;
 namespace ArkeOS.Assembler {
     public class Assembler {
         private Dictionary<string, ulong> labels;
+        private Dictionary<string, ulong> defines;
         private string inputFile;
         private ulong baseAddress;
         private ulong currentOffset;
 
         public Assembler(string inputFile, ulong baseAddress) {
             this.labels = new Dictionary<string, ulong>();
+            this.defines = new Dictionary<string, ulong>();
             this.baseAddress = baseAddress;
             this.inputFile = inputFile;
         }
@@ -24,6 +26,7 @@ namespace ArkeOS.Assembler {
             using (var stream = new MemoryStream()) {
                 using (var writer = new BinaryWriter(stream)) {
 
+                    this.DiscoverDefines(lines);
                     this.DiscoverLabelAddresses(lines);
 
                     foreach (var line in lines) {
@@ -38,6 +41,9 @@ namespace ArkeOS.Assembler {
                             stream.Seek((long)Helpers.ParseLiteral(parts[1]) * 8, SeekOrigin.Begin);
                         }
                         else if (parts[0] == "LABEL") {
+
+                        }
+                        else if (parts[0] == "DEFINE") {
 
                         }
                         else if (parts[0] == "CONST") {
@@ -77,6 +83,9 @@ namespace ArkeOS.Assembler {
                 else if (parts[0] == "LABEL") {
                     this.labels.Add(parts[1], address);
                 }
+                else if (parts[0] == "DEFINE") {
+
+                }
                 else if (parts[0] == "CONST") {
                     address += 1;
                 }
@@ -89,6 +98,15 @@ namespace ArkeOS.Assembler {
                 else {
                     address += this.ParseInstruction(parts, false).Length;
                 }
+            }
+        }
+
+        private void DiscoverDefines(IEnumerable<string> lines) {
+            foreach (var line in lines) {
+                var parts = line.Split(' ');
+
+                if (parts[0] == "DEFINE")
+                    this.defines.Add(parts[1], Helpers.ParseLiteral(parts[2]));
             }
         }
 
@@ -153,7 +171,7 @@ namespace ArkeOS.Assembler {
                     return Parameter.CreateLiteral(isIndirect, this.baseAddress);
                 }
                 else {
-                    return null;
+                    return Parameter.CreateLiteral(isIndirect, this.defines[value]);
                 }
             }
             else if (value[0] == '$') {
