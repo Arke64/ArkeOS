@@ -9,6 +9,7 @@ namespace ArkeOS.Assembler {
     public class Assembler {
         private Dictionary<string, ulong> labels;
         private Dictionary<string, ulong> defines;
+        private Dictionary<string, ulong> variables;
         private string inputFile;
         private ulong baseAddress;
         private ulong currentOffset;
@@ -16,6 +17,7 @@ namespace ArkeOS.Assembler {
         public Assembler(string inputFile, ulong baseAddress) {
             this.labels = new Dictionary<string, ulong>();
             this.defines = new Dictionary<string, ulong>();
+            this.variables = new Dictionary<string, ulong>();
             this.baseAddress = baseAddress;
             this.inputFile = inputFile;
         }
@@ -26,8 +28,7 @@ namespace ArkeOS.Assembler {
             using (var stream = new MemoryStream()) {
                 using (var writer = new BinaryWriter(stream)) {
 
-                    this.DiscoverDefines(lines);
-                    this.DiscoverLabelAddresses(lines);
+                    this.DiscoverAddresses(lines);
 
                     foreach (var line in lines) {
                         var parts = line.Split(' ');
@@ -45,6 +46,9 @@ namespace ArkeOS.Assembler {
                         }
                         else if (parts[0] == "DEFINE") {
 
+                        }
+                        else if (parts[0] == "VAR") {
+                            writer.Write(this.ParseParameter(parts[2], true).Literal);
                         }
                         else if (parts[0] == "CONST") {
                             writer.Write(this.ParseParameter(parts[1], true).Literal);
@@ -68,7 +72,7 @@ namespace ArkeOS.Assembler {
             }
         }
 
-        private void DiscoverLabelAddresses(IEnumerable<string> lines) {
+        private void DiscoverAddresses(IEnumerable<string> lines) {
             var address = this.baseAddress;
 
             foreach (var line in lines) {
@@ -84,7 +88,12 @@ namespace ArkeOS.Assembler {
                     this.labels.Add(parts[1], address);
                 }
                 else if (parts[0] == "DEFINE") {
+                    this.defines.Add(parts[1], Helpers.ParseLiteral(parts[2]));
+                }
+                else if (parts[0] == "VAR") {
+                    this.variables.Add(parts[1], address);
 
+                    address += 1;
                 }
                 else if (parts[0] == "CONST") {
                     address += 1;
@@ -101,16 +110,7 @@ namespace ArkeOS.Assembler {
             }
         }
 
-        private void DiscoverDefines(IEnumerable<string> lines) {
-            foreach (var line in lines) {
-                var parts = line.Split(' ');
-
-                if (parts[0] == "DEFINE")
-                    this.defines.Add(parts[1], Helpers.ParseLiteral(parts[2]));
-            }
-        }
-
-        private Instruction ParseInstruction(string[] parts, bool resolveLabels) {
+        private Instruction ParseInstruction(string[] parts, bool resolveNames) {
             Parameter conditional = null;
             bool conditionalZero = false;
 
@@ -118,7 +118,7 @@ namespace ArkeOS.Assembler {
             if (conditionalParts.Length != 1) {
                 parts[0] = conditionalParts[0];
                 conditionalZero = conditionalParts[1] == "Z";
-                conditional = this.ParseParameter(conditionalParts[2], resolveLabels);
+                conditional = this.ParseParameter(conditionalParts[2], resolveNames);
             }
 
             var def = InstructionDefinition.Find(parts[0]);
@@ -126,10 +126,10 @@ namespace ArkeOS.Assembler {
             if (def == null)
                 throw new InvalidInstructionException();
 
-            return new Instruction(def.Code, parts.Skip(1).Select(p => this.ParseParameter(p, resolveLabels)).ToList(), conditional, conditionalZero);
+            return new Instruction(def.Code, parts.Skip(1).Select(p => this.ParseParameter(p, resolveNames)).ToList(), conditional, conditionalZero);
         }
 
-        private Parameter ParseParameter(string value, bool resolveLabels) {
+        private Parameter ParseParameter(string value, bool resolveNames) {
             var isIndirect = value[0] == '[';
 
             if (isIndirect)
@@ -139,15 +139,15 @@ namespace ArkeOS.Assembler {
                 value = value.Substring(1, value.Length - 2);
 
                 var parts = value.Split('+', '-', '*');
-                var @base = new Parameter.Calculated(this.ParseParameter(parts[0], resolveLabels), true);
-                var index = parts.Length > 1 ? new Parameter.Calculated(this.ParseParameter(parts[1], resolveLabels), value[parts[0].Length] == '+') : null;
-                var scale = parts.Length > 2 ? new Parameter.Calculated(this.ParseParameter(parts[2], resolveLabels), true) : null;
-                var offset = parts.Length > 3 ? new Parameter.Calculated(this.ParseParameter(parts[3], resolveLabels), value[parts[2].Length] == '+') : null;
+                var @base = new Parameter.Calculated(this.ParseParameter(parts[0], resolveNames), true);
+                var index = parts.Length > 1 ? new Parameter.Calculated(this.ParseParameter(parts[1], resolveNames), value[parts[0].Length] == '+') : null;
+                var scale = parts.Length > 2 ? new Parameter.Calculated(this.ParseParameter(parts[2], resolveNames), true) : null;
+                var offset = parts.Length > 3 ? new Parameter.Calculated(this.ParseParameter(parts[3], resolveNames), value[parts[2].Length] == '+') : null;
 
                 return this.ReduceCalculated(Parameter.CreateCalculated(isIndirect, @base, index, scale, offset));
             }
             else if (value[0] == '{') {
-                return Parameter.CreateLiteral(isIndirect, resolveLabels ? this.labels[value.Substring(1, value.Length - 2)] : 0);
+                return Parameter.CreateLiteral(isIndirect, resolveNames ? this.labels[value.Substring(1, value.Length - 2)] : 0);
             }
             else if (value[0] == '0') {
                 return Parameter.CreateLiteral(isIndirect, Helpers.ParseLiteral(value));
@@ -161,6 +161,9 @@ namespace ArkeOS.Assembler {
             else if (value[0] == '#') {
                 value = value.Substring(1);
 
+                if (!resolveNames)
+                    return Parameter.CreateLiteral(isIndirect, 0);
+
                 if (value == "ADDRESS") {
                     return Parameter.CreateLiteral(isIndirect, this.currentOffset + this.baseAddress);
                 }
@@ -170,8 +173,14 @@ namespace ArkeOS.Assembler {
                 else if (value == "BASE") {
                     return Parameter.CreateLiteral(isIndirect, this.baseAddress);
                 }
-                else {
+                else if (this.defines.ContainsKey(value)) {
                     return Parameter.CreateLiteral(isIndirect, this.defines[value]);
+                }
+                else if (this.variables.ContainsKey(value)) {
+                    return Parameter.CreateLiteral(isIndirect, this.variables[value]);
+                }
+                else {
+                    return null;
                 }
             }
             else if (value[0] == '$') {
@@ -181,7 +190,7 @@ namespace ArkeOS.Assembler {
                 var command = value.Substring(0, value.IndexOf('('));
                 var parameter = value.Substring(command.Length + 1, value.IndexOf(')') - command.Length - 1);
 
-                if (resolveLabels) {
+                if (resolveNames) {
                     if (command == "DISTANCETO") {
                         var label = this.labels[parameter];
 
