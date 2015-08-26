@@ -180,7 +180,7 @@ namespace ArkeOS.Assembler {
                     return Parameter.CreateAddress(isIndirect, this.variables[value]);
                 }
                 else {
-                    return null;
+                    throw new VariableNotFoundException();
                 }
             }
             else if (value[0] == '$') {
@@ -197,14 +197,14 @@ namespace ArkeOS.Assembler {
                         literal = label > this.currentOffset ? label - this.currentOffset : this.currentOffset - label;
                     }
                     else {
-                        return null;
+                        throw new FunctionNotFoundException();
                     }
                 }
 
                 return Parameter.CreateAddress(isIndirect, literal);
             }
             else {
-                return null;
+                throw new InvalidParameterException();
             }
         }
 
