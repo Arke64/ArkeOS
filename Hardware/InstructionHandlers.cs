@@ -190,6 +190,11 @@ namespace ArkeOS.Hardware {
         }
 
         private void ExecuteBRK(Operand a, Operand b, Operand c) {
+            this.supressRIPIncrement = true;
+
+            this.WriteRegister(Register.RIP, this.ReadRegister(Register.RIP) + this.CurrentInstruction.Length);
+            this.SetNextInstruction();
+
             this.Break();
 
             this.ExecutionBroken?.Invoke(this, EventArgs.Empty);
