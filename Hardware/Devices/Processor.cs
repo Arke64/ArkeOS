@@ -116,22 +116,32 @@ namespace ArkeOS.Hardware {
         }
 
         private void Tick() {
-            if (this.instructionHandlers.Length >= this.CurrentInstruction.Code && this.instructionHandlers[this.CurrentInstruction.Code] != null) {
-                this.LoadParameters(this.operandA, this.operandB, this.operandC);
+            var execute = true;
 
-                this.instructionHandlers[this.CurrentInstruction.Code](this.operandA, this.operandB, this.operandC);
+            if (this.CurrentInstruction.ConditionalParameter != null) {
+                var value = this.GetValue(this.CurrentInstruction.ConditionalParameter);
 
-                this.SaveParameters(this.operandA, this.operandB, this.operandC);
+                execute = (this.CurrentInstruction.ConditionalZero && value == 0) || (!this.CurrentInstruction.ConditionalZero && value != 0);
+            }
 
-                if (!this.supressRIPIncrement) {
-                    this.WriteRegister(Register.RIP, this.ReadRegister(Register.RIP) + this.CurrentInstruction.Length);
+            if (execute) {
+                if (this.instructionHandlers.Length >= this.CurrentInstruction.Code && this.instructionHandlers[this.CurrentInstruction.Code] != null) {
+                    this.LoadParameters(this.operandA, this.operandB, this.operandC);
+
+                    this.instructionHandlers[this.CurrentInstruction.Code](this.operandA, this.operandB, this.operandC);
+
+                    this.SaveParameters(this.operandA, this.operandB, this.operandC);
                 }
                 else {
-                    this.supressRIPIncrement = false;
+                    this.InterruptController.Enqueue(Interrupt.InvalidInstruction, this.CurrentInstruction.Code, 0);
                 }
             }
+
+            if (!this.supressRIPIncrement) {
+                this.WriteRegister(Register.RIP, this.ReadRegister(Register.RIP) + this.CurrentInstruction.Length);
+            }
             else {
-                this.InterruptController.Enqueue(Interrupt.InvalidInstruction, this.CurrentInstruction.Code, 0);
+                this.supressRIPIncrement = false;
             }
 
             if (this.interruptsEnabled && !this.inIsr && this.InterruptController.PendingCount != 0)

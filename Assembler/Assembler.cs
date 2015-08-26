@@ -93,12 +93,22 @@ namespace ArkeOS.Assembler {
         }
 
         private Instruction ParseInstruction(string[] parts, bool resolveLabels) {
+            Parameter conditional = null;
+            bool conditionalZero = false;
+
+            var conditionalParts = parts[0].Split(':');
+            if (conditionalParts.Length != 1) {
+                parts[0] = conditionalParts[0];
+                conditionalZero = conditionalParts[1] == "Z";
+                conditional = this.ParseParameter(conditionalParts[2], resolveLabels);
+            }
+
             var def = InstructionDefinition.Find(parts[0]);
 
             if (def == null)
                 throw new InvalidInstructionException();
 
-            return new Instruction(def.Code, parts.Skip(1).Select(p => this.ParseParameter(p, resolveLabels)).ToList());
+            return new Instruction(def.Code, parts.Skip(1).Select(p => this.ParseParameter(p, resolveLabels)).ToList(), conditional, conditionalZero);
         }
 
         private Parameter ParseParameter(string value, bool resolveLabels) {
@@ -154,7 +164,6 @@ namespace ArkeOS.Assembler {
                 var parameter = value.Substring(command.Length + 1, value.IndexOf(')') - command.Length - 1);
 
                 if (resolveLabels) {
-
                     if (command == "DISTANCETO") {
                         var label = this.labels[parameter];
 

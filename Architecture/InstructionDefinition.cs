@@ -36,12 +36,6 @@ namespace ArkeOS.Architecture {
             new InstructionDefinition("XCHG", 6, ParameterDirection.Write, ParameterDirection.Write);
             new InstructionDefinition("CAS", 7, ParameterDirection.Read, ParameterDirection.Write | ParameterDirection.Read, ParameterDirection.Write | ParameterDirection.Read);
             new InstructionDefinition("MOV", 8, ParameterDirection.Read, ParameterDirection.Write);
-            new InstructionDefinition("MVZ", 9, ParameterDirection.Read, ParameterDirection.Read, ParameterDirection.Write);
-            new InstructionDefinition("MVNZ", 10, ParameterDirection.Read, ParameterDirection.Read, ParameterDirection.Write);
-            new InstructionDefinition("ADZ", 11, ParameterDirection.Read, ParameterDirection.Read, ParameterDirection.Write | ParameterDirection.Read);
-            new InstructionDefinition("ADNZ", 12, ParameterDirection.Read, ParameterDirection.Read, ParameterDirection.Write | ParameterDirection.Read);
-            new InstructionDefinition("SBZ", 13, ParameterDirection.Read, ParameterDirection.Read, ParameterDirection.Write | ParameterDirection.Read);
-            new InstructionDefinition("SBNZ", 14, ParameterDirection.Read, ParameterDirection.Read, ParameterDirection.Write | ParameterDirection.Read);
 
             new InstructionDefinition("ADD", 20, ParameterDirection.Read, ParameterDirection.Read, ParameterDirection.Write);
             new InstructionDefinition("ADDF", 21, ParameterDirection.Read, ParameterDirection.Read, ParameterDirection.Write);

@@ -64,44 +64,6 @@ namespace ArkeOS.Hardware {
             b.Value = a.Value;
         }
 
-        private void ExecuteMVZ(Operand a, Operand b, Operand c) {
-            if (a.Value == 0)
-                c.Value = b.Value;
-        }
-
-        private void ExecuteMVNZ(Operand a, Operand b, Operand c) {
-            if (a.Value != 0)
-                c.Value = b.Value;
-        }
-
-        private void ExecuteADZ(Operand a, Operand b, Operand c) {
-            unchecked {
-                if (a.Value == 0)
-                    c.Value += b.Value;
-            }
-        }
-
-        private void ExecuteADNZ(Operand a, Operand b, Operand c) {
-            unchecked {
-                if (a.Value != 0)
-                    c.Value += b.Value;
-            }
-        }
-
-        private void ExecuteSBZ(Operand a, Operand b, Operand c) {
-            unchecked {
-                if (a.Value == 0)
-                    c.Value -= b.Value;
-            }
-        }
-
-        private void ExecuteSBNZ(Operand a, Operand b, Operand c) {
-            unchecked {
-                if (a.Value != 0)
-                    c.Value -= b.Value;
-            }
-        }
-
         #endregion
 
         #region Math

@@ -7,17 +7,29 @@ namespace ArkeOS.Architecture {
         public byte Length { get; }
         public InstructionDefinition Definition { get; }
 
+        public Parameter ConditionalParameter { get; }
+        public bool ConditionalZero { get; }
+
         public Parameter Parameter1 { get; }
         public Parameter Parameter2 { get; }
         public Parameter Parameter3 { get; }
 
         public override string ToString() {
-            return this.Definition.Mnemonic + " " + this.Parameter1?.ToString() + " " + this.Parameter2?.ToString() + " " + this.Parameter3?.ToString();
+            var str = this.Definition.Mnemonic;
+
+            if (this.ConditionalParameter != null) {
+                str += this.ConditionalZero ? ":Z:" : ":NZ:";
+                str += this.ConditionalParameter.ToString();
+            }
+
+            return str + " " + this.Parameter1?.ToString() + " " + this.Parameter2?.ToString() + " " + this.Parameter3?.ToString();
         }
 
-        public Instruction(byte code, IList<Parameter> parameters) {
+        public Instruction(byte code, IList<Parameter> parameters, Parameter conditionalParameter, bool conditionalZero) {
             this.Code = code;
-            this.Length = 1;
+            this.Length = (byte)(1 + (this.ConditionalParameter?.Length ?? 0));
+            this.ConditionalParameter = conditionalParameter;
+            this.ConditionalZero = conditionalZero;
             this.Definition = InstructionDefinition.Find(this.Code);
 
             if (this.Definition.ParameterCount >= 1) {
@@ -43,6 +55,11 @@ namespace ArkeOS.Architecture {
             this.Length = 1;
             this.Definition = InstructionDefinition.Find(this.Code);
 
+            if ((instruction & 0x200000) != 0) {
+                this.ConditionalParameter = this.DecodeParameter((ParameterType)((instruction >> 17) & 0x03), (instruction & 0x80000) != 0, instruction << 31, 0, stream, ref address);
+                this.ConditionalZero = (instruction & 0x100000) != 0;
+            }
+
             if (this.Definition.ParameterCount >= 1) {
                 this.Parameter1 = this.DecodeParameter((ParameterType)((instruction >> 6) & 0x03), (instruction & 0x100) != 0, instruction, 0, stream, ref address);
                 this.Length += this.Parameter1.Length;
@@ -61,6 +78,14 @@ namespace ArkeOS.Architecture {
 
         public void Encode(BinaryWriter writer) {
             var value = (ulong)this.Code << 56;
+
+            if (this.ConditionalParameter != null) {
+                value |= 0x200000;
+                value |= this.ConditionalZero ? 0x100000UL : 0;
+                value |= (ulong)this.ConditionalParameter.Type << 17;
+                value |= this.ConditionalParameter.IsIndirect ? 0x80000UL : 0;
+                value |= (this.ConditionalParameter.Type == ParameterType.Register ? (ulong)this.ConditionalParameter.Register : 0) << 9;
+            }
 
             if (this.Parameter1 != null) {
                 value |= (ulong)this.Parameter1.Type << 6;
@@ -82,6 +107,7 @@ namespace ArkeOS.Architecture {
 
             writer.Write(value);
 
+            this.EncodeParameter(writer, this.ConditionalParameter);
             this.EncodeParameter(writer, this.Parameter1);
             this.EncodeParameter(writer, this.Parameter2);
             this.EncodeParameter(writer, this.Parameter3);

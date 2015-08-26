@@ -34,7 +34,13 @@ Each instruction is one word followed by three optional literal words (13 if usi
 8b Code
 8b Reserved
 24b Registers (8b each)
-15b Reserved
+2b Reserved
+13b Conditional
+    1b enabled
+    1b zero/non-zero
+    1b is indirect
+    2b type (0 = undefined, 1 = register, 2 = literal, 3 = stack)
+    8b register
 9b Parameter types (3b each)
     0 = calculated value (base + index * scale + offset), 
     1 = register, 
@@ -64,12 +70,6 @@ Basic
 06 XCHG A B: Swap A and B
 07 CAS A B C: If C and B are equal, set C to A, else set B to C
 08 MOV A B: Move A into B
-09 MVZ A B C: Moves B into C if A is zero
-10 MVNZ A B C: Moves B into C if A is non-zero
-11 ADZ A B C: Adds B to C if A is zero
-12 ADNZ A B C: Adds B to C if A is non-zero
-13 SBZ A B C: Subtracts B from C if A is zero
-14 SBNZ A B C: Subtracts B from C if A is non-zero
 
 Math
 ----
