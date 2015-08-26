@@ -146,6 +146,27 @@ namespace ArkeOS.Assembler {
                     return null;
                 }
             }
+            else if (value[0] == '$') {
+                value = value.Substring(1);
+
+                var literal = 0UL;
+                var command = value.Substring(0, value.IndexOf('('));
+                var parameter = value.Substring(command.Length + 1, value.IndexOf(')') - command.Length - 1);
+
+                if (resolveLabels) {
+
+                    if (command == "DISTANCETO") {
+                        var label = this.labels[parameter];
+
+                        literal = label > this.currentOffset ? label - this.currentOffset : this.currentOffset - label;
+                    }
+                    else {
+                        return null;
+                    }
+                }
+
+                return Parameter.CreateLiteral(isIndirect, literal);
+            }
             else {
                 return null;
             }
