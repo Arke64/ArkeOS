@@ -3,12 +3,12 @@ CONST 0x000000444556494E
 BRK
 MOV 0x500 RSP
 MOV (RIP + 0d5) S
-ADD $DISTANCETO(SetupInterrupts) RIP RIP
+ADD $DistanceTo(SetupInterrupts) RIP RIP
 MOV (RIP + 0d5) S
-ADD $DISTANCETO(Add) RIP RIP
+ADD $DistanceTo(Add) RIP RIP
 BRK
 MOV (RIP + 0d5) S
-ADD $DISTANCETO(AddressingTest) RIP RIP
+ADD $DistanceTo(AddressingTest) RIP RIP
 BRK
 HLT
 
@@ -17,7 +17,7 @@ MOV 0d10 R0
 LABEL AddStart
 ADD R0 R1 R1
 SUB 0d1 R0 R0
-SUB:NZ:R0 $DISTANCETO(AddStart) RIP RIP
+SUB:NZ:R0 $DistanceTo(AddStart) RIP RIP
 MOV R1 [(#Count + RBASE)]
 MOV S RIP
 

@@ -2,7 +2,7 @@
     public enum ParameterType {
         Calculated,
         Register,
-        Literal,
+        Address,
         Stack,
     }
 }

@@ -48,10 +48,10 @@ namespace ArkeOS.Assembler {
 
                         }
                         else if (parts[0] == "VAR") {
-                            writer.Write(this.ParseParameter(parts[2], true).Literal);
+                            writer.Write(this.ParseParameter(parts[2], true).Address);
                         }
                         else if (parts[0] == "CONST") {
-                            writer.Write(this.ParseParameter(parts[1], true).Literal);
+                            writer.Write(this.ParseParameter(parts[1], true).Address);
                         }
                         else if (parts[0] == "STRING") {
                             var start = line.IndexOf("\"") + 1;
@@ -147,10 +147,10 @@ namespace ArkeOS.Assembler {
                 return this.ReduceCalculated(Parameter.CreateCalculated(isIndirect, @base, index, scale, offset));
             }
             else if (value[0] == '{') {
-                return Parameter.CreateLiteral(isIndirect, resolveNames ? this.labels[value.Substring(1, value.Length - 2)] : 0);
+                return Parameter.CreateAddress(isIndirect, resolveNames ? this.labels[value.Substring(1, value.Length - 2)] : 0);
             }
             else if (value[0] == '0') {
-                return Parameter.CreateLiteral(isIndirect, Helpers.ParseLiteral(value));
+                return Parameter.CreateAddress(isIndirect, Helpers.ParseLiteral(value));
             }
             else if (value[0] == 'R') {
                 return Parameter.CreateRegister(isIndirect, Helpers.ParseEnum<Register>(value));
@@ -162,22 +162,22 @@ namespace ArkeOS.Assembler {
                 value = value.Substring(1);
 
                 if (!resolveNames)
-                    return Parameter.CreateLiteral(isIndirect, 0);
+                    return Parameter.CreateAddress(isIndirect, 0);
 
-                if (value == "ADDRESS") {
-                    return Parameter.CreateLiteral(isIndirect, this.currentOffset + this.baseAddress);
+                if (value == "Address") {
+                    return Parameter.CreateAddress(isIndirect, this.currentOffset + this.baseAddress);
                 }
-                else if (value == "OFFSET") {
-                    return Parameter.CreateLiteral(isIndirect, this.currentOffset);
+                else if (value == "Offset") {
+                    return Parameter.CreateAddress(isIndirect, this.currentOffset);
                 }
-                else if (value == "BASE") {
-                    return Parameter.CreateLiteral(isIndirect, this.baseAddress);
+                else if (value == "Base") {
+                    return Parameter.CreateAddress(isIndirect, this.baseAddress);
                 }
                 else if (this.defines.ContainsKey(value)) {
-                    return Parameter.CreateLiteral(isIndirect, this.defines[value]);
+                    return Parameter.CreateAddress(isIndirect, this.defines[value]);
                 }
                 else if (this.variables.ContainsKey(value)) {
-                    return Parameter.CreateLiteral(isIndirect, this.variables[value]);
+                    return Parameter.CreateAddress(isIndirect, this.variables[value]);
                 }
                 else {
                     return null;
@@ -191,7 +191,7 @@ namespace ArkeOS.Assembler {
                 var parameter = value.Substring(command.Length + 1, value.IndexOf(')') - command.Length - 1);
 
                 if (resolveNames) {
-                    if (command == "DISTANCETO") {
+                    if (command == "DistanceTo") {
                         var label = this.labels[parameter];
 
                         literal = label > this.currentOffset ? label - this.currentOffset : this.currentOffset - label;
@@ -201,7 +201,7 @@ namespace ArkeOS.Assembler {
                     }
                 }
 
-                return Parameter.CreateLiteral(isIndirect, literal);
+                return Parameter.CreateAddress(isIndirect, literal);
             }
             else {
                 return null;
@@ -209,18 +209,18 @@ namespace ArkeOS.Assembler {
         }
 
         private Parameter ReduceCalculated(Parameter calculated) {
-            Func<Parameter.Calculated, bool> valid = c => c == null || (c.Parameter.Type == ParameterType.Literal && c.Parameter.IsIndirect == false);
+            Func<Parameter.Calculated, bool> valid = c => c == null || (c.Parameter.Type == ParameterType.Address && c.Parameter.IsIndirect == false);
 
             if (!valid(calculated.Base) || !valid(calculated.Index) || !valid(calculated.Scale) || !valid(calculated.Offset))
                 return calculated;
 
-            var value = calculated.Base.Parameter.Literal;
+            var value = calculated.Base.Parameter.Address;
 
             if (calculated.Index != null) {
-                var calc = calculated.Index.Parameter.Literal;
+                var calc = calculated.Index.Parameter.Address;
 
                 if (calculated.Scale != null)
-                    calc *= calculated.Scale.Parameter.Literal;
+                    calc *= calculated.Scale.Parameter.Address;
 
                 if (calculated.Index.IsPositive) {
                     value += calc;
@@ -231,7 +231,7 @@ namespace ArkeOS.Assembler {
             }
 
             if (calculated.Offset != null) {
-                var calc = calculated.Offset.Parameter.Literal;
+                var calc = calculated.Offset.Parameter.Address;
 
                 if (calculated.Offset.IsPositive) {
                     value += calc;
@@ -241,7 +241,7 @@ namespace ArkeOS.Assembler {
                 }
             }
 
-            return Parameter.CreateLiteral(calculated.IsIndirect, value);
+            return Parameter.CreateAddress(calculated.IsIndirect, value);
         }
     }
 }

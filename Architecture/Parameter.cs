@@ -12,7 +12,7 @@
 
         public ParameterType Type { get; private set; }
         public Register Register { get; private set; }
-        public ulong Literal { get; private set; }
+        public ulong Address { get; private set; }
         public byte Length { get; private set; }
         public bool IsIndirect { get; private set; }
 
@@ -42,11 +42,11 @@
             };
         }
 
-        public static Parameter CreateLiteral(bool isIndirect, ulong literal) {
+        public static Parameter CreateAddress(bool isIndirect, ulong address) {
             return new Parameter() {
                 IsIndirect = isIndirect,
-                Type = ParameterType.Literal,
-                Literal = literal,
+                Type = ParameterType.Address,
+                Address = address,
                 Length = 1
             };
         }
@@ -69,7 +69,7 @@
 
             switch (this.Type) {
                 default: return string.Empty;
-                case ParameterType.Literal: str = "0x" + this.Literal.ToString("X8"); break;
+                case ParameterType.Address: str = "0x" + this.Address.ToString("X8"); break;
                 case ParameterType.Register: str = this.Register.ToString(); break;
                 case ParameterType.Stack: str = "S"; break;
                 case ParameterType.Calculated:

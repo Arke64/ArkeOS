@@ -118,8 +118,8 @@ namespace ArkeOS.Architecture {
                 return;
 
             switch (parameter.Type) {
-                case ParameterType.Literal:
-                    writer.Write(parameter.Literal);
+                case ParameterType.Address:
+                    writer.Write(parameter.Address);
 
                     break;
 
@@ -154,7 +154,7 @@ namespace ArkeOS.Architecture {
             switch (type) {
                 default: return null;
                 case ParameterType.Register: return Parameter.CreateRegister(isIndirect, (Register)((instruction >> (40 - 8 * parameter)) & 0xFF));
-                case ParameterType.Literal: return Parameter.CreateLiteral(isIndirect, stream.ReadWord(address++));
+                case ParameterType.Address: return Parameter.CreateAddress(isIndirect, stream.ReadWord(address++));
                 case ParameterType.Stack: return Parameter.CreateStack(isIndirect);
                 case ParameterType.Calculated:
                     var format = stream.ReadWord(address++);

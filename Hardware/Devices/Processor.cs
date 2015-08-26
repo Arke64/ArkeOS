@@ -190,11 +190,11 @@ namespace ArkeOS.Hardware {
             else if (parameter.Type == ParameterType.Stack) {
                 value = this.Pop();
             }
-            else if (parameter.Type == ParameterType.Literal) {
-                value = parameter.Literal;
+            else if (parameter.Type == ParameterType.Address) {
+                value = parameter.Address;
             }
             else if (parameter.Type == ParameterType.Calculated) {
-                value = this.GetCalculatedLiteral(parameter);
+                value = this.GetCalculatedValue(parameter);
             }
 
             if (parameter.IsIndirect)
@@ -226,18 +226,18 @@ namespace ArkeOS.Hardware {
                 else if (parameter.Type == ParameterType.Stack) {
                     address = this.Pop();
                 }
-                else if (parameter.Type == ParameterType.Literal) {
-                    address = parameter.Literal;
+                else if (parameter.Type == ParameterType.Address) {
+                    address = parameter.Address;
                 }
                 else if (parameter.Type == ParameterType.Calculated) {
-                    address = this.GetCalculatedLiteral(parameter);
+                    address = this.GetCalculatedValue(parameter);
                 }
 
                 this.BusController.WriteWord(address, value);
             }
         }
 
-        private ulong GetCalculatedLiteral(Parameter parameter) {
+        private ulong GetCalculatedValue(Parameter parameter) {
             var address = this.GetValue(parameter.Base.Parameter);
 
             if (parameter.Index != null) {
