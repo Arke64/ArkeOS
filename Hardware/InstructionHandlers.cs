@@ -44,6 +44,22 @@ namespace ArkeOS.Hardware {
             this.interruptsEnabled = false;
         }
 
+        private void ExecuteXCHG(Operand a, Operand b, Operand c) {
+            var t = a.Value;
+
+            a.Value = b.Value;
+            b.Value = t;
+        }
+
+        private void ExecuteCAS(Operand a, Operand b, Operand c) {
+            if (c.Value == b.Value) {
+                c.Value = a.Value;
+            }
+            else {
+                b.Value = c.Value;
+            }
+        }
+
         private void ExecuteMOV(Operand a, Operand b, Operand c) {
             b.Value = a.Value;
         }
@@ -58,19 +74,31 @@ namespace ArkeOS.Hardware {
                 c.Value = b.Value;
         }
 
-        private void ExecuteXCHG(Operand a, Operand b, Operand c) {
-            var t = a.Value;
-
-            a.Value = b.Value;
-            b.Value = t;
+        private void ExecuteADZ(Operand a, Operand b, Operand c) {
+            unchecked {
+                if (a.Value == 0)
+                    c.Value += b.Value;
+            }
         }
 
-        private void ExecuteCAS(Operand a, Operand b, Operand c) {
-            if (c.Value == b.Value) {
-                c.Value = a.Value;
+        private void ExecuteADNZ(Operand a, Operand b, Operand c) {
+            unchecked {
+                if (a.Value != 0)
+                    c.Value += b.Value;
             }
-            else {
-                b.Value = c.Value;
+        }
+
+        private void ExecuteSBZ(Operand a, Operand b, Operand c) {
+            unchecked {
+                if (a.Value == 0)
+                    c.Value -= b.Value;
+            }
+        }
+
+        private void ExecuteSBNZ(Operand a, Operand b, Operand c) {
+            unchecked {
+                if (a.Value != 0)
+                    c.Value -= b.Value;
             }
         }
 

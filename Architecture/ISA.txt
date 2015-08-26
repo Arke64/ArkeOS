@@ -61,11 +61,15 @@ Basic
 03 EINT: Return from the interrupt
 04 INTE: Enables interrupts
 05 INTD: Disables interrupts
-06 MOV A B: Move A into B
-07 MVZ A B C: Moves B into C if A is zero
-08 MVNZ A B C: Moves B into C if A is non-zero
-09 XCHG A B: Swap A and B
-10 CAS A B C: If C and B are equal, set C to A, else set B to C.
+06 XCHG A B: Swap A and B
+07 CAS A B C: If C and B are equal, set C to A, else set B to C
+08 MOV A B: Move A into B
+09 MVZ A B C: Moves B into C if A is zero
+10 MVNZ A B C: Moves B into C if A is non-zero
+11 ADZ A B C: Adds B to C if A is zero
+12 ADNZ A B C: Adds B to C if A is non-zero
+13 SBZ A B C: Subtracts B from C if A is zero
+14 SBNZ A B C: Subtracts B from C if A is non-zero
 
 Math
 ----
