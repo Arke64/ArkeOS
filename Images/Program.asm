@@ -1,13 +1,13 @@
 ﻿OFFSET 0x00
 CONST 0x000000444556494E
 MOV 0x500 RSP
-MOV (RIP + 0d6) S
-MOV ({SetupInterrupts} + RBASE) RIP
-MOV (RIP + 0d6) S
-MOV ({Add} + RBASE) RIP
+MOV (RIP + 0d5) S
+ADD ({SetupInterrupts} - #OFFSET) RIP RIP
+MOV (RIP + 0d5) S
+ADD ({Add} - #OFFSET) RIP RIP
 BRK
-MOV (RIP + 0d6) S
-MOV ({AddressingTest} + RBASE) RIP
+MOV (RIP + 0d5) S
+ADD ({AddressingTest} - #OFFSET) RIP RIP
 BRK
 HLT
 

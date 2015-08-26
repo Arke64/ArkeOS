@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -9,6 +10,7 @@ namespace ArkeOS.Assembler {
         private Dictionary<string, ulong> labels;
         private string inputFile;
         private ulong baseAddress;
+        private ulong currentOffset;
 
         public Assembler(string inputFile, ulong baseAddress) {
             this.labels = new Dictionary<string, ulong>();
@@ -27,7 +29,12 @@ namespace ArkeOS.Assembler {
                     foreach (var line in lines) {
                         var parts = line.Split(' ');
 
-                        if (parts[0] == "OFFSET") {
+                        this.currentOffset = (ulong)stream.Position / 8;
+
+                        if (parts[0] == "BASE") {
+                            this.baseAddress = Helpers.ParseLiteral(parts[1]);
+                        }
+                        else if (parts[0] == "OFFSET") {
                             stream.Seek((long)Helpers.ParseLiteral(parts[1]) * 8, SeekOrigin.Begin);
                         }
                         else if (parts[0] == "LABEL") {
@@ -61,7 +68,10 @@ namespace ArkeOS.Assembler {
             foreach (var line in lines) {
                 var parts = line.Split(' ');
 
-                if (parts[0] == "OFFSET") {
+                if (parts[0] == "BASE") {
+                    this.baseAddress = Helpers.ParseLiteral(parts[1]);
+                }
+                else if (parts[0] == "OFFSET") {
                     address = Helpers.ParseLiteral(parts[1]) + this.baseAddress;
                 }
                 else if (parts[0] == "LABEL") {
@@ -106,7 +116,7 @@ namespace ArkeOS.Assembler {
                 var scale = parts.Length > 2 ? new Parameter.Calculated(this.ParseParameter(parts[2], resolveLabels), true) : null;
                 var offset = parts.Length > 3 ? new Parameter.Calculated(this.ParseParameter(parts[3], resolveLabels), value[parts[2].Length] == '+') : null;
 
-                return Parameter.CreateCalculated(isIndirect, @base, index, scale, offset);
+                return this.ReduceCalculated(Parameter.CreateCalculated(isIndirect, @base, index, scale, offset));
             }
             else if (value[0] == '{') {
                 return Parameter.CreateLiteral(isIndirect, resolveLabels ? this.labels[value.Substring(1, value.Length - 2)] : 0);
@@ -120,9 +130,61 @@ namespace ArkeOS.Assembler {
             else if (value == "S") {
                 return Parameter.CreateStack(isIndirect);
             }
+            else if (value[0] == '#') {
+                value = value.Substring(1);
+
+                if (value == "ADDRESS") {
+                    return Parameter.CreateLiteral(isIndirect, this.currentOffset + this.baseAddress);
+                }
+                else if (value == "OFFSET") {
+                    return Parameter.CreateLiteral(isIndirect, this.currentOffset);
+                }
+                else if (value == "BASE") {
+                    return Parameter.CreateLiteral(isIndirect, this.baseAddress);
+                }
+                else {
+                    return null;
+                }
+            }
             else {
                 return null;
             }
+        }
+
+        private Parameter ReduceCalculated(Parameter calculated) {
+            Func<Parameter.Calculated, bool> valid = c => c == null || (c.Parameter.Type == ParameterType.Literal && c.Parameter.IsIndirect == false);
+
+            if (!valid(calculated.Base) || !valid(calculated.Index) || !valid(calculated.Scale) || !valid(calculated.Offset))
+                return calculated;
+
+            var value = calculated.Base.Parameter.Literal;
+
+            if (calculated.Index != null) {
+                var calc = calculated.Index.Parameter.Literal;
+
+                if (calculated.Scale != null)
+                    calc *= calculated.Scale.Parameter.Literal;
+
+                if (calculated.Index.IsPositive) {
+                    value += calc;
+                }
+                else {
+                    value -= calc;
+                }
+            }
+
+            if (calculated.Offset != null) {
+                var calc = calculated.Offset.Parameter.Literal;
+
+                if (calculated.Offset.IsPositive) {
+                    value += calc;
+                }
+                else {
+                    value -= calc;
+                }
+            }
+
+            return Parameter.CreateLiteral(calculated.IsIndirect, value);
         }
     }
 }

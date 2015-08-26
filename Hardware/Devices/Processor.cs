@@ -58,6 +58,7 @@ namespace ArkeOS.Hardware {
 
             this.WriteRegister(Register.RF, ulong.MaxValue);
             this.WriteRegister(Register.RIP, (ulong)DeviceType.BootManager << 52);
+            this.WriteRegister(Register.RBASE, (ulong)DeviceType.BootManager << 52);
 
             this.SetNextInstruction();
         }
@@ -115,8 +116,6 @@ namespace ArkeOS.Hardware {
         }
 
         private void Tick() {
-            this.SetNextInstruction();
-
             if (this.instructionHandlers.Length >= this.CurrentInstruction.Code && this.instructionHandlers[this.CurrentInstruction.Code] != null) {
                 this.LoadParameters(this.operandA, this.operandB, this.operandC);
 
@@ -137,6 +136,8 @@ namespace ArkeOS.Hardware {
 
             if (this.interruptsEnabled && !this.inIsr && this.InterruptController.PendingCount != 0)
                 this.EnterInterrupt(this.InterruptController.Dequeue());
+
+            this.SetNextInstruction();
         }
 
         private void LoadParameters(Operand a, Operand b, Operand c) {
