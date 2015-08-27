@@ -48,7 +48,7 @@ namespace ArkeOS.Hardware {
             this.vectors[address] = data;
         }
 
-        public override void Reset() {
+        public override void Start() {
             this.pending = new Queue<Entry>();
             this.evt = new ManualResetEvent(false);
             this.vectors = new ulong[0xFF];

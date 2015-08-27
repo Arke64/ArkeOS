@@ -56,12 +56,13 @@ namespace ArkeOS.Hardware {
             this.stream.Read(buffer, 0, buffer.Length);
         }
 
-        public override void Reset() {
+        public override void Start() {
 
         }
 
         public override void Stop() {
             this.stream.Flush();
+            this.stream.Dispose();
         }
     }
 }

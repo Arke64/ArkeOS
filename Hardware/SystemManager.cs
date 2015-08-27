@@ -36,12 +36,12 @@ namespace ArkeOS.Hardware {
             this.SystemBusController.AddDevice(device);
         }
 
-        public void Reset() {
+        public void Start() {
             this.Processor.InterruptController = this.InterruptController;
             this.BootManager.BootImage = this.BootImage;
             this.RandomAccessMemoryController.Size = this.PhysicalMemorySize;
 
-            this.SystemBusController.Reset();
+            this.SystemBusController.Start();
         }
 
         public void Stop() {

@@ -43,12 +43,12 @@ namespace ArkeOS.Hardware {
             return this.nextDeviceId++;
         }
 
-        public void Reset() {
+        public void Start() {
             var address = ((ulong)DeviceType.SystemBusController << 52) + 1;
             var count = 0UL;
 
             foreach (var d in this.devices)
-                d?.Reset();
+                d?.Start();
 
             foreach (var device in this.devices) {
                 if (device == null)
@@ -113,7 +113,7 @@ namespace ArkeOS.Hardware {
             public override ulong ReadWord(ulong address) => this.memory[address];
             public override void WriteWord(ulong address, ulong data) => this.memory[address] = data;
 
-            public override void Reset() {
+            public override void Start() {
                 this.memory = new ulong[SystemBusController.MaxId * 4 + 1];
             }
 

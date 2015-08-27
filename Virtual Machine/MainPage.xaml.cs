@@ -53,7 +53,7 @@ namespace ArkeOS.VirtualMachine {
                 this.Refresh();
             });
 
-            this.system.Reset();
+            this.system.Start();
 
             this.Refresh();
 

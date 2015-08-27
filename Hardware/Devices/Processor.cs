@@ -44,7 +44,7 @@ namespace ArkeOS.Hardware {
                 this.instructionHandlers[i.Code] = (Action<Operand, Operand, Operand>)this.GetType().GetMethod("Execute" + i.Mnemonic, BindingFlags.NonPublic | BindingFlags.Instance).CreateDelegate(typeof(Action<Operand, Operand, Operand>), this);
         }
 
-        public override void Reset() {
+        public override void Start() {
             this.cacheBaseAddress = ulong.MaxValue;
             this.supressRIPIncrement = false;
             this.interruptsEnabled = true;

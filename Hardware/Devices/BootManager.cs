@@ -16,7 +16,7 @@ namespace ArkeOS.Hardware {
 
         }
 
-        public override void Reset() {
+        public override void Start() {
 
         }
 

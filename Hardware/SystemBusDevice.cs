@@ -35,7 +35,7 @@ namespace ArkeOS.Hardware {
 
         public abstract ulong ReadWord(ulong address);
         public abstract void WriteWord(ulong address, ulong data);
-        public abstract void Reset();
+        public abstract void Start();
         public abstract void Stop();
     }
 }

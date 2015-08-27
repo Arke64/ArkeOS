@@ -18,7 +18,7 @@ namespace ArkeOS.Hardware {
             this.memory[address] = data;
         }
 
-        public override void Reset() {
+        public override void Start() {
             this.memory = new ulong[this.Size];
         }
 
