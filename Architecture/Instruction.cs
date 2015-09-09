@@ -15,14 +15,14 @@ namespace ArkeOS.Architecture {
         public Parameter Parameter3 { get; }
 
         public override string ToString() {
-            var str = this.Definition.Mnemonic;
+            var str = string.Empty;
 
             if (this.ConditionalParameter != null) {
-                str += this.ConditionalZero ? ":Z:" : ":NZ:";
+                str += this.ConditionalZero ? "IFZ " : "IFNZ ";
                 str += this.ConditionalParameter.ToString();
             }
 
-            return str + " " + this.Parameter1?.ToString() + " " + this.Parameter2?.ToString() + " " + this.Parameter3?.ToString();
+            return str + " " + this.Definition.Mnemonic + " " + this.Parameter1?.ToString() + " " + this.Parameter2?.ToString() + " " + this.Parameter3?.ToString();
         }
 
         public Instruction(byte code, IList<Parameter> parameters, Parameter conditionalParameter, bool conditionalZero) {

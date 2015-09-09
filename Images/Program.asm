@@ -19,7 +19,7 @@ MOV 0d10 R0
 LABEL AddStart
 ADD R0 R1 R1
 SUB 0d1 R0 R0
-MOV:NZ:R0 $AddStart RIP
+IFNZ R0 MOV $AddStart RIP
 MOV R1 [$Count]
 MOV S RIP
 

@@ -5,10 +5,10 @@ MOV (0x10000000000001 - $BusEntryLength) R0
 LABEL LoopStart
 ADD $BusEntryLength R0 R0
 EQ 0d5 [R0] R1
-MOV:Z:R1 $LoopStart RIP
+IFZ R1 MOV $LoopStart RIP
 MOV [(R0 + 0d3)] R0
 SL 0d52 R0 R0
 EQ 0x000000444556494E [R0] R1
-MOV:Z:R1 $LoopStart RIP
+IFZ R1 MOV $LoopStart RIP
 MOV 0d0 R1
 MOV (R0 + 0d1) RIP
