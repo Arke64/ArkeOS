@@ -1,8 +1,8 @@
 ﻿namespace ArkeOS.Architecture {
     public class Parameter {
         public class Calculated {
-            public Parameter Parameter { get; private set; }
-            public bool IsPositive { get; private set; }
+            public Parameter Parameter { get; set; }
+            public bool IsPositive { get; set; }
 
             public Calculated(Parameter parameter, bool isPositive) {
                 this.Parameter = parameter;
@@ -10,26 +10,34 @@
             }
         }
 
-        public ParameterType Type { get; private set; }
-        public Register Register { get; private set; }
-        public ulong Address { get; private set; }
-        public byte Length { get; private set; }
-        public bool IsIndirect { get; private set; }
+        public ParameterType Type { get; set; }
+        public Register Register { get; set; }
+        public ulong Address { get; set; }
+        public bool IsIndirect { get; set; }
 
-        public Calculated Base { get; private set; }
-        public Calculated Index { get; private set; }
-        public Calculated Scale { get; private set; }
-        public Calculated Offset { get; private set; }
+        public Calculated Base { get; set; }
+        public Calculated Index { get; set; }
+        public Calculated Scale { get; set; }
+        public Calculated Offset { get; set; }
 
-        private Parameter() {
-
+        public byte Length {
+            get {
+                if (this.Type == ParameterType.Calculated) {
+                    return (byte)(1 + this.Base.Parameter.Length + (this.Index?.Parameter.Length ?? 0) + (this.Scale?.Parameter.Length ?? 0) + (this.Offset?.Parameter.Length ?? 0));
+                }
+                else if (this.Type == ParameterType.Address) {
+                    return 1;
+                }
+                else {
+                    return 0;
+                }
+            }
         }
 
         public static Parameter CreateStack(bool isIndirect) {
             return new Parameter() {
                 IsIndirect = isIndirect,
                 Type = ParameterType.Stack,
-                Length = 0
             };
         }
 
@@ -38,7 +46,6 @@
                 IsIndirect = isIndirect,
                 Type = ParameterType.Register,
                 Register = register,
-                Length = 0
             };
         }
 
@@ -47,7 +54,6 @@
                 IsIndirect = isIndirect,
                 Type = ParameterType.Address,
                 Address = address,
-                Length = 1
             };
         }
 
@@ -60,7 +66,6 @@
 
                 IsIndirect = isIndirect,
                 Type = ParameterType.Calculated,
-                Length = (byte)(1 + @base.Parameter.Length + (index?.Parameter.Length ?? 0) + (scale?.Parameter.Length ?? 0) + (offset?.Parameter.Length ?? 0))
             };
         }
 

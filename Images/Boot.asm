@@ -1,9 +1,9 @@
 ﻿BASE 0x40000000000000
 OFFSET 0x00
 DEFINE BusEntryLength 0d4
-MOV (0x10000000000001 - $BusEntryLength) R0
+MOV (0x10000000000001 - #BusEntryLength) R0
 LABEL LoopStart
-ADD $BusEntryLength R0 R0
+ADD #BusEntryLength R0 R0
 EQ 0d5 [R0] R1
 MOV:Z:R1 {LoopStart} RIP
 MOV [(R0 + 0d3)] RBASE

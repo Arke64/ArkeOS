@@ -29,34 +29,30 @@ Interrupts
 
 Instruction Format
 ------------------
-Each instruction is one word followed by three optional literal words (13 if using three calculated parameters).
+Each instruction is one word followed by four optional address and conditional words (13 if using three calculated parameters).
 
 8b Code
-8b Reserved
-24b Registers (8b each)
-2b Reserved
-13b Conditional
+24b Parameters (8b each)
+    1b is indirect
+    2b type (0 = calculated, 1 = register, 2 = literal, 3 = stack)
+    5b register
+10b Conditional
     1b enabled
     1b zero/non-zero
     1b is indirect
     2b type (0 = undefined, 1 = register, 2 = literal, 3 = stack)
-    8b register
-9b Parameter types (3b each)
-    0 = calculated value (base + index * scale + offset), 
-    1 = register, 
-    2 = literal value, 
-    3 = stack, 
-    4 = calculated value as address to dereference, 
-    5 = register value as address to dereference, 
-    6 = literal value as address to dereference, 
-    7 = stack value as address to dereference,
-0b-768b Parameters: Calculated parameters and literals in order of appearance
+    5b register
+22b Reserved
+0b-1088b Parameters: Conditional literal and parameters in order of appearance
 
 Calculated Parameter
 --------------------
-16b Format (4b for each operand where first 3 are the same as parameter type above (except 0 is default and 4 is not defined) and the fourth is a sign bit)
-32b Register operands
-16b Reserved
+36b Parameters (9b each)
+    1b sign
+    1b is indirect
+    2b type (0 = default, 1 = register, 2 = literal, 3 = stack)
+    5b register
+28b Reserved
 0b-256b Literal operands
 
 Basic
