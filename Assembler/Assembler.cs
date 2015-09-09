@@ -154,9 +154,6 @@ namespace ArkeOS.Assembler {
 
                 return this.ReduceCalculated(Parameter.CreateCalculated(isIndirect, false, @base, index, scale, offset));
             }
-            else if (value[0] == '{') {
-                return Parameter.CreateAddress(isIndirect, this.positionIndependent, resolveNames ? unchecked(this.labels[value.Substring(1, value.Length - 2)] - (this.positionIndependent ? this.currentOffset : 0)) : 0);
-            }
             else if (value[0] == '0') {
                 return Parameter.CreateAddress(isIndirect, false, Helpers.ParseLiteral(value));
             }
@@ -166,7 +163,7 @@ namespace ArkeOS.Assembler {
             else if (value == "S") {
                 return Parameter.CreateStack(isIndirect, false);
             }
-            else if (value[0] == '#') {
+            else if (value[0] == '$') {
                 value = value.Substring(1);
 
                 if (!resolveNames)
@@ -187,29 +184,12 @@ namespace ArkeOS.Assembler {
                 else if (this.variables.ContainsKey(value)) {
                     return Parameter.CreateAddress(isIndirect, this.positionIndependent, unchecked(this.variables[value] - (this.positionIndependent ? this.currentOffset : 0)));
                 }
+                else if (this.labels.ContainsKey(value)) {
+                    return Parameter.CreateAddress(isIndirect, this.positionIndependent, unchecked(this.labels[value] - (this.positionIndependent ? this.currentOffset : 0)));
+                }
                 else {
                     throw new VariableNotFoundException();
                 }
-            }
-            else if (value[0] == '$') {
-                value = value.Substring(1);
-
-                var literal = 0UL;
-                var command = value.Substring(0, value.IndexOf('('));
-                var parameter = value.Substring(command.Length + 1, value.IndexOf(')') - command.Length - 1);
-
-                if (resolveNames) {
-                    if (command == "DistanceTo") {
-                        var label = this.labels[parameter];
-
-                        literal = label > this.currentOffset ? label - this.currentOffset : this.currentOffset - label;
-                    }
-                    else {
-                        throw new FunctionNotFoundException();
-                    }
-                }
-
-                return Parameter.CreateAddress(isIndirect, false, literal);
             }
             else {
                 throw new InvalidParameterException();

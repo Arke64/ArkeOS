@@ -4,13 +4,13 @@ CONST 0x000000444556494E
 BRK
 MOV 0x500 RSP
 MOV (RIP + 0d5) S
-MOV {SetupInterrupts} RIP
+MOV $SetupInterrupts RIP
 BRK
 MOV (RIP + 0d5) S
-MOV {Add} RIP
+MOV $Add RIP
 BRK
 MOV (RIP + 0d5) S
-MOV {AddressingTest} RIP
+MOV $AddressingTest RIP
 BRK
 HLT
 
@@ -19,8 +19,8 @@ MOV 0d10 R0
 LABEL AddStart
 ADD R0 R1 R1
 SUB 0d1 R0 R0
-MOV:NZ:R0 {AddStart} RIP
-MOV R1 [#Count]
+MOV:NZ:R0 $AddStart RIP
+MOV R1 [$Count]
 MOV S RIP
 
 LABEL AddressingTest
@@ -39,8 +39,8 @@ MOV S R7
 MOV S RIP
 
 LABEL SetupInterrupts
-MOV {SystemTimer} [0x30000000000003]
-MOV {DeviceWaiting} [0x30000000000004]
+MOV $SystemTimer [0x30000000000003]
+MOV $DeviceWaiting [0x30000000000004]
 MOV S RIP
 
 LABEL SystemTimer
@@ -52,5 +52,5 @@ ADD 0d1 R15 R15
 MOV RINT2 [(0x50000000000000 + R15)]
 EINT
 
-OFFSET 0x400
+OFFSET 0x500
 VAR Count 0d00
