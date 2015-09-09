@@ -18,7 +18,6 @@
         R15,
         RIP,
         RSP,
-        RBASE,
         RO,
         RF,
         RI0,

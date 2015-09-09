@@ -58,7 +58,6 @@ namespace ArkeOS.Hardware {
 
             this.WriteRegister(Register.RF, ulong.MaxValue);
             this.WriteRegister(Register.RIP, (ulong)DeviceType.BootManager << 52);
-            this.WriteRegister(Register.RBASE, (ulong)DeviceType.BootManager << 52);
 
             this.SetNextInstruction();
         }
@@ -197,6 +196,9 @@ namespace ArkeOS.Hardware {
                 value = this.GetCalculatedValue(parameter);
             }
 
+            if (parameter.IsRIPRelative)
+                value += this.ReadRegister(Register.RIP);
+
             if (parameter.IsIndirect)
                 value = this.BusController.ReadWord(value);
 
@@ -232,6 +234,9 @@ namespace ArkeOS.Hardware {
                 else if (parameter.Type == ParameterType.Calculated) {
                     address = this.GetCalculatedValue(parameter);
                 }
+
+                if (parameter.IsRIPRelative)
+                    address += this.ReadRegister(Register.RIP);
 
                 this.BusController.WriteWord(address, value);
             }

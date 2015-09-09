@@ -13,6 +13,7 @@ namespace ArkeOS.Assembler {
         private string inputFile;
         private ulong baseAddress;
         private ulong currentOffset;
+        private bool positionIndependent;
 
         public Assembler(string inputFile, ulong baseAddress) {
             this.labels = new Dictionary<string, ulong>();
@@ -20,6 +21,7 @@ namespace ArkeOS.Assembler {
             this.variables = new Dictionary<string, ulong>();
             this.baseAddress = baseAddress;
             this.inputFile = inputFile;
+            this.positionIndependent = false;
         }
 
         public byte[] Assemble() {
@@ -37,6 +39,9 @@ namespace ArkeOS.Assembler {
 
                         if (parts[0] == "BASE") {
                             this.baseAddress = Helpers.ParseLiteral(parts[1]);
+                        }
+                        else if (parts[0] == "PIC") {
+                            this.positionIndependent = true;
                         }
                         else if (parts[0] == "OFFSET") {
                             stream.Seek((long)Helpers.ParseLiteral(parts[1]) * 8, SeekOrigin.Begin);
@@ -80,6 +85,9 @@ namespace ArkeOS.Assembler {
 
                 if (parts[0] == "BASE") {
                     this.baseAddress = Helpers.ParseLiteral(parts[1]);
+                }
+                else if (parts[0] == "PIC") {
+                    this.positionIndependent = true;
                 }
                 else if (parts[0] == "OFFSET") {
                     address = Helpers.ParseLiteral(parts[1]) + this.baseAddress;
@@ -144,40 +152,40 @@ namespace ArkeOS.Assembler {
                 var scale = parts.Length > 2 ? new Parameter.Calculated(this.ParseParameter(parts[2], resolveNames), true) : null;
                 var offset = parts.Length > 3 ? new Parameter.Calculated(this.ParseParameter(parts[3], resolveNames), value[parts[2].Length] == '+') : null;
 
-                return this.ReduceCalculated(Parameter.CreateCalculated(isIndirect, @base, index, scale, offset));
+                return this.ReduceCalculated(Parameter.CreateCalculated(isIndirect, false, @base, index, scale, offset));
             }
             else if (value[0] == '{') {
-                return Parameter.CreateAddress(isIndirect, resolveNames ? this.labels[value.Substring(1, value.Length - 2)] : 0);
+                return Parameter.CreateAddress(isIndirect, this.positionIndependent, resolveNames ? unchecked(this.labels[value.Substring(1, value.Length - 2)] - (this.positionIndependent ? this.currentOffset : 0)) : 0);
             }
             else if (value[0] == '0') {
-                return Parameter.CreateAddress(isIndirect, Helpers.ParseLiteral(value));
+                return Parameter.CreateAddress(isIndirect, false, Helpers.ParseLiteral(value));
             }
             else if (value[0] == 'R') {
-                return Parameter.CreateRegister(isIndirect, Helpers.ParseEnum<Register>(value));
+                return Parameter.CreateRegister(isIndirect, false, Helpers.ParseEnum<Register>(value));
             }
             else if (value == "S") {
-                return Parameter.CreateStack(isIndirect);
+                return Parameter.CreateStack(isIndirect, false);
             }
             else if (value[0] == '#') {
                 value = value.Substring(1);
 
                 if (!resolveNames)
-                    return Parameter.CreateAddress(isIndirect, 0);
+                    return Parameter.CreateAddress(isIndirect, false, 0);
 
                 if (value == "Address") {
-                    return Parameter.CreateAddress(isIndirect, this.currentOffset + this.baseAddress);
+                    return Parameter.CreateAddress(isIndirect, false, this.currentOffset + this.baseAddress);
                 }
                 else if (value == "Offset") {
-                    return Parameter.CreateAddress(isIndirect, this.currentOffset);
+                    return Parameter.CreateAddress(isIndirect, false, this.currentOffset);
                 }
                 else if (value == "Base") {
-                    return Parameter.CreateAddress(isIndirect, this.baseAddress);
+                    return Parameter.CreateAddress(isIndirect, false, this.baseAddress);
                 }
                 else if (this.defines.ContainsKey(value)) {
-                    return Parameter.CreateAddress(isIndirect, this.defines[value]);
+                    return Parameter.CreateAddress(isIndirect, false, this.defines[value]);
                 }
                 else if (this.variables.ContainsKey(value)) {
-                    return Parameter.CreateAddress(isIndirect, this.variables[value]);
+                    return Parameter.CreateAddress(isIndirect, this.positionIndependent, unchecked(this.variables[value] - (this.positionIndependent ? this.currentOffset : 0)));
                 }
                 else {
                     throw new VariableNotFoundException();
@@ -201,7 +209,7 @@ namespace ArkeOS.Assembler {
                     }
                 }
 
-                return Parameter.CreateAddress(isIndirect, literal);
+                return Parameter.CreateAddress(isIndirect, false, literal);
             }
             else {
                 throw new InvalidParameterException();
@@ -241,7 +249,7 @@ namespace ArkeOS.Assembler {
                 }
             }
 
-            return Parameter.CreateAddress(calculated.IsIndirect, value);
+            return Parameter.CreateAddress(calculated.IsIndirect, calculated.IsRIPRelative, value);
         }
     }
 }

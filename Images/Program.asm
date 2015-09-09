@@ -1,14 +1,16 @@
-﻿OFFSET 0x00
+﻿PIC
+OFFSET 0x00
 CONST 0x000000444556494E
 BRK
 MOV 0x500 RSP
 MOV (RIP + 0d5) S
-ADD $DistanceTo(SetupInterrupts) RIP RIP
-MOV (RIP + 0d5) S
-ADD $DistanceTo(Add) RIP RIP
+MOV {SetupInterrupts} RIP
 BRK
 MOV (RIP + 0d5) S
-ADD $DistanceTo(AddressingTest) RIP RIP
+MOV {Add} RIP
+BRK
+MOV (RIP + 0d5) S
+MOV {AddressingTest} RIP
 BRK
 HLT
 
@@ -17,8 +19,8 @@ MOV 0d10 R0
 LABEL AddStart
 ADD R0 R1 R1
 SUB 0d1 R0 R0
-SUB:NZ:R0 $DistanceTo(AddStart) RIP RIP
-MOV R1 [(#Count + RBASE)]
+MOV:NZ:R0 {AddStart} RIP
+MOV R1 [#Count]
 MOV S RIP
 
 LABEL AddressingTest
@@ -37,8 +39,8 @@ MOV S R7
 MOV S RIP
 
 LABEL SetupInterrupts
-MOV ({SystemTimer} + RBASE) [0x30000000000003]
-MOV ({DeviceWaiting} + RBASE) [0x30000000000004]
+MOV {SystemTimer} [0x30000000000003]
+MOV {DeviceWaiting} [0x30000000000004]
 MOV S RIP
 
 LABEL SystemTimer

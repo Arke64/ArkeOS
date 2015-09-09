@@ -65,6 +65,7 @@ namespace ArkeOS.Architecture {
                 this.ConditionalZero = bits.ReadU1();
 
                 this.ConditionalParameter = new Parameter();
+                this.ConditionalParameter.IsRIPRelative = bits.ReadU1();
                 this.ConditionalParameter.IsIndirect = bits.ReadU1();
                 this.ConditionalParameter.Type = (ParameterType)bits.ReadU8(2);
                 this.ConditionalParameter.Register = (Register)bits.ReadU8(5);
@@ -84,6 +85,7 @@ namespace ArkeOS.Architecture {
             if (this.Definition.ParameterCount >= parameterNumber) {
                 var para = new Parameter();
 
+                para.IsRIPRelative = bits.ReadU1();
                 para.IsIndirect = bits.ReadU1();
                 para.Type = (ParameterType)bits.ReadU8(2);
                 para.Register = (Register)bits.ReadU8(5);
@@ -123,6 +125,7 @@ namespace ArkeOS.Architecture {
             var para = new Parameter();
             var sign = bits.ReadU1();
 
+            para.IsRIPRelative = bits.ReadU1();
             para.IsIndirect = bits.ReadU1();
             para.Type = (ParameterType)bits.ReadU8(2);
             para.Register = (Register)bits.ReadU8(5);
@@ -153,6 +156,7 @@ namespace ArkeOS.Architecture {
             if (this.ConditionalParameter != null) {
                 bits.Write(true);
                 bits.Write(this.ConditionalZero);
+                bits.Write(this.ConditionalParameter.IsRIPRelative);
                 bits.Write(this.ConditionalParameter.IsIndirect);
                 bits.Write((byte)this.ConditionalParameter.Type, 2);
                 bits.Write((byte)this.ConditionalParameter.Register, 5);
@@ -165,6 +169,7 @@ namespace ArkeOS.Architecture {
 
         private void EncodeParameter(BinaryWriter writer, BitStream bits, Parameter parameter) {
             if (parameter != null) {
+                bits.Write(parameter.IsRIPRelative);
                 bits.Write(parameter.IsIndirect);
                 bits.Write((byte)parameter.Type, 2);
                 bits.Write((byte)parameter.Register, 5);
@@ -200,6 +205,7 @@ namespace ArkeOS.Architecture {
         private void EncodeCalculatedOperand(BinaryWriter writer, BitStream bits, Parameter.Calculated parameter) {
             if (parameter != null) {
                 bits.Write(parameter.IsPositive);
+                bits.Write(parameter.Parameter.IsRIPRelative);
                 bits.Write(parameter.Parameter.IsIndirect);
                 bits.Write((byte)parameter.Parameter.Type, 2);
                 bits.Write((byte)parameter.Parameter.Register, 5);

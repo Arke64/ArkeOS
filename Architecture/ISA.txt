@@ -32,27 +32,30 @@ Instruction Format
 Each instruction is one word followed by four optional address and conditional words (13 if using three calculated parameters).
 
 8b Code
-24b Parameters (8b each)
+27b Parameters (9b each)
+    1b is RIP relative (before indirection)
     1b is indirect
     2b type (0 = calculated, 1 = register, 2 = literal, 3 = stack)
     5b register
-10b Conditional
+11b Conditional
     1b enabled
     1b zero/non-zero
+    1b is RIP relative (before indirection)
     1b is indirect
     2b type (0 = undefined, 1 = register, 2 = literal, 3 = stack)
     5b register
-22b Reserved
+18b Reserved
 0b-1088b Parameters: Conditional literal and parameters in order of appearance
 
 Calculated Parameter
 --------------------
-36b Parameters (9b each)
+40b Parameters (10b each)
     1b sign
+    1b is RIP relative (before indirection)
     1b is indirect
     2b type (0 = default, 1 = register, 2 = literal, 3 = stack)
     5b register
-28b Reserved
+24b Reserved
 0b-256b Literal operands
 
 Basic

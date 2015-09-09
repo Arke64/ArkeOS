@@ -14,6 +14,7 @@
         public Register Register { get; set; }
         public ulong Address { get; set; }
         public bool IsIndirect { get; set; }
+        public bool IsRIPRelative { get; set; }
 
         public Calculated Base { get; set; }
         public Calculated Index { get; set; }
@@ -34,30 +35,33 @@
             }
         }
 
-        public static Parameter CreateStack(bool isIndirect) {
+        public static Parameter CreateStack(bool isIndirect, bool isRIPRelative) {
             return new Parameter() {
                 IsIndirect = isIndirect,
+                IsRIPRelative = isRIPRelative,
                 Type = ParameterType.Stack,
             };
         }
 
-        public static Parameter CreateRegister(bool isIndirect, Register register) {
+        public static Parameter CreateRegister(bool isIndirect, bool isRIPRelative, Register register) {
             return new Parameter() {
                 IsIndirect = isIndirect,
+                IsRIPRelative = isRIPRelative,
                 Type = ParameterType.Register,
                 Register = register,
             };
         }
 
-        public static Parameter CreateAddress(bool isIndirect, ulong address) {
+        public static Parameter CreateAddress(bool isIndirect, bool isRIPRelative, ulong address) {
             return new Parameter() {
                 IsIndirect = isIndirect,
+                IsRIPRelative = isRIPRelative,
                 Type = ParameterType.Address,
                 Address = address,
             };
         }
 
-        public static Parameter CreateCalculated(bool isIndirect, Calculated @base, Calculated index, Calculated scale, Calculated offset) {
+        public static Parameter CreateCalculated(bool isIndirect, bool isRIPRelative, Calculated @base, Calculated index, Calculated scale, Calculated offset) {
             return new Parameter() {
                 Base = @base,
                 Index = index,
@@ -65,6 +69,7 @@
                 Offset = offset,
 
                 IsIndirect = isIndirect,
+                IsRIPRelative = isRIPRelative,
                 Type = ParameterType.Calculated,
             };
         }
