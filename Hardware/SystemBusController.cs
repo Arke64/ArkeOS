@@ -1,4 +1,5 @@
-﻿using ArkeOS.Architecture;
+﻿using System;
+using ArkeOS.Architecture;
 
 namespace ArkeOS.Hardware {
     public class SystemBusController : IWordStream {
@@ -47,9 +48,6 @@ namespace ArkeOS.Hardware {
             var address = ((ulong)DeviceType.SystemBusController << 52) + 1;
             var count = 0UL;
 
-            foreach (var d in this.devices)
-                d?.Start();
-
             foreach (var device in this.devices) {
                 if (device == null)
                     continue;
@@ -63,6 +61,9 @@ namespace ArkeOS.Hardware {
             }
 
             this.WriteWord(address - count * 4 - 1UL, count);
+
+            foreach (var d in this.devices)
+                d?.Start();
         }
 
         public void Stop() {
@@ -107,18 +108,18 @@ namespace ArkeOS.Hardware {
             private ulong[] memory;
 
             public SystemBusControllerDevice() : base(1, 1, DeviceType.SystemBusController) {
-
+                this.memory = new ulong[SystemBusController.MaxId * 4 + 1];
             }
 
             public override ulong ReadWord(ulong address) => this.memory[address];
             public override void WriteWord(ulong address, ulong data) => this.memory[address] = data;
 
             public override void Start() {
-                this.memory = new ulong[SystemBusController.MaxId * 4 + 1];
+
             }
 
             public override void Stop() {
-
+                Array.Clear(this.memory, 0, this.memory.Length);
             }
         }
     }

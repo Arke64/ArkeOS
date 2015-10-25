@@ -47,7 +47,7 @@ namespace ArkeOS.Hardware {
         public override void Start() {
             this.cacheBaseAddress = ulong.MaxValue;
             this.supressRIPIncrement = false;
-            this.interruptsEnabled = true;
+            this.interruptsEnabled = false;
             this.inIsr = false;
             this.running = false;
             this.systemTickInterval = 50;
