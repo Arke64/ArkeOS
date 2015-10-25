@@ -8,7 +8,7 @@ namespace ArkeOS.Hardware {
         private byte[] buffer;
         private ulong length;
 
-        public DiskDrive(Stream stream) : base(1, 5, DeviceType.DiskDrive) {
+        public DiskDrive(Stream stream) : base(Ids.ArkeIndustries.VendorId, Ids.ArkeIndustries.Products.HDD100, DeviceType.DiskDrive) {
             this.stream = stream;
             this.length = (ulong)stream.Length * 8UL;
 

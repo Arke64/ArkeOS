@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using ArkeOS.Architecture;
 
 namespace ArkeOS.Hardware {
@@ -14,17 +15,11 @@ namespace ArkeOS.Hardware {
         public static ulong MaxAddress => 0x000FFFFFFFFFFFFFUL;
         public static ulong MaxId => 0xFFFUL;
 
-        public static ulong RandomAccessMemoryDeviceId => (ulong)DeviceType.RandomAccessMemory;
-        public static ulong ProcessorDeviceId => (ulong)DeviceType.Processor;
-        public static ulong SystemBusControllerDeviceId => (ulong)DeviceType.SystemBusController;
-        public static ulong BootManagerDeviceId => (ulong)DeviceType.BootManager;
-        public static ulong InterruptControllerDeviceId => (ulong)DeviceType.InterruptController;
-
         public SystemBusController() {
             this.devices = new SystemBusDevice[SystemBusController.MaxId];
             this.nextDeviceId = 128;
 
-            this.AddDevice(SystemBusController.SystemBusControllerDeviceId, new SystemBusControllerDevice());
+            this.AddDevice(Architecture.Ids.Devices.SystemBusController, new SystemBusControllerDevice());
         }
 
         public void RaiseInterrupt(SystemBusDevice device, ulong data2) {
@@ -45,7 +40,7 @@ namespace ArkeOS.Hardware {
         }
 
         public void Start() {
-            var address = ((ulong)DeviceType.SystemBusController << 52) + 1;
+            var address = (Ids.Devices.SystemBusController << 52) + 1;
             var count = 0UL;
 
             foreach (var device in this.devices) {
@@ -62,7 +57,10 @@ namespace ArkeOS.Hardware {
 
             this.WriteWord(address - count * 4 - 1UL, count);
 
-            foreach (var d in this.devices)
+            foreach (var d in this.devices.Where(d => d?.Type != DeviceType.Processor))
+                d?.Start();
+
+            foreach (var d in this.devices.Where(d => d?.Type == DeviceType.Processor))
                 d?.Start();
         }
 
@@ -107,7 +105,7 @@ namespace ArkeOS.Hardware {
         private class SystemBusControllerDevice : SystemBusDevice {
             private ulong[] memory;
 
-            public SystemBusControllerDevice() : base(1, 1, DeviceType.SystemBusController) {
+            public SystemBusControllerDevice() : base(Ids.ArkeIndustries.VendorId, Ids.ArkeIndustries.Products.AB100, DeviceType.SystemBusController) {
                 this.memory = new ulong[SystemBusController.MaxId * 4 + 1];
             }
 

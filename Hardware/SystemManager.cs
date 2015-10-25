@@ -24,10 +24,10 @@ namespace ArkeOS.Hardware {
             this.RandomAccessMemoryController = new RandomAccessMemoryController();
 
             this.SystemBusController = new SystemBusController();
-            this.SystemBusController.AddDevice(SystemBusController.ProcessorDeviceId, this.Processor);
-            this.SystemBusController.AddDevice(SystemBusController.BootManagerDeviceId, this.BootManager);
-            this.SystemBusController.AddDevice(SystemBusController.InterruptControllerDeviceId, this.InterruptController);
-            this.SystemBusController.AddDevice(SystemBusController.RandomAccessMemoryDeviceId, this.RandomAccessMemoryController);
+            this.SystemBusController.AddDevice(Architecture.Ids.Devices.Processor0, this.Processor);
+            this.SystemBusController.AddDevice(Architecture.Ids.Devices.BootManager, this.BootManager);
+            this.SystemBusController.AddDevice(Architecture.Ids.Devices.InterruptController, this.InterruptController);
+            this.SystemBusController.AddDevice(Architecture.Ids.Devices.RandomAccessMemoryController0, this.RandomAccessMemoryController);
         }
 
         public void AddPeripheral(SystemBusDevice device) {

@@ -43,6 +43,7 @@
     <Compile Include="BitStream.cs" />
     <Compile Include="DeviceType.cs" />
     <Compile Include="Helpers.cs" />
+    <Compile Include="Ids.cs" />
     <Compile Include="IWordStream.cs" />
     <Compile Include="Instruction.cs" />
     <Compile Include="InstructionDefinition.cs" />
