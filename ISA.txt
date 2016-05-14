@@ -50,7 +50,7 @@ Each instruction is one word followed by four optional address and conditional w
 Calculated Parameter
 --------------------
 40b Parameters (10b each)
-    1b sign
+    1b is positive
     1b is RIP relative (before indirection)
     1b is indirect
     2b type (0 = default, 1 = register, 2 = literal, 3 = stack)

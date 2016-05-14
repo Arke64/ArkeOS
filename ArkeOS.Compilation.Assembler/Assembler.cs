@@ -148,10 +148,10 @@ namespace ArkeOS.Tools.Assembler {
                 value = value.Substring(1, value.Length - 2);
 
                 var parts = value.Split('+', '-', '*');
-                var @base = new Parameter.Calculated(this.ParseParameter(parts[0], resolveNames), true);
-                var index = parts.Length > 1 ? new Parameter.Calculated(this.ParseParameter(parts[1], resolveNames), value[parts[0].Length] == '+') : null;
-                var scale = parts.Length > 2 ? new Parameter.Calculated(this.ParseParameter(parts[2], resolveNames), true) : null;
-                var offset = parts.Length > 3 ? new Parameter.Calculated(this.ParseParameter(parts[3], resolveNames), value[parts[2].Length] == '+') : null;
+                var @base = new Parameter.Calculated(true, this.ParseParameter(parts[0], resolveNames));
+                var index = parts.Length > 1 ? new Parameter.Calculated(value[parts[0].Length] == '+', this.ParseParameter(parts[1], resolveNames)) : null;
+                var scale = parts.Length > 2 ? new Parameter.Calculated(true, this.ParseParameter(parts[2], resolveNames)) : null;
+                var offset = parts.Length > 3 ? new Parameter.Calculated(value[parts[2].Length] == '+', this.ParseParameter(parts[3], resolveNames)) : null;
 
                 return this.ReduceCalculated(Parameter.CreateCalculated(isIndirect, false, @base, index, scale, offset));
             }

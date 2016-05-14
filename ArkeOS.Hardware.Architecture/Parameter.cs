@@ -1,12 +1,12 @@
 ﻿namespace ArkeOS.Hardware.Architecture {
     public class Parameter {
         public class Calculated {
-            public Parameter Parameter { get; set; }
             public bool IsPositive { get; set; }
+            public Parameter Parameter { get; set; }
 
-            public Calculated(Parameter parameter, bool isPositive) {
-                this.Parameter = parameter;
+            public Calculated(bool isPositive, Parameter parameter) {
                 this.IsPositive = isPositive;
+                this.Parameter = parameter;
             }
         }
 
@@ -86,13 +86,13 @@
                     str = this.Base.Parameter.ToString();
 
                     if (this.Index != null)
-                        str += (this.Index.IsPositive ? " + " : " - ") + this.Index.Parameter.ToString();
+                        str += (this.Index.IsPositive ? " + " : " + -") + this.Index.Parameter.ToString();
 
                     if (this.Scale != null)
                         str += " * " + this.Scale.Parameter.ToString();
 
                     if (this.Offset != null)
-                        str += (this.Offset.IsPositive ? " + " : " - ") + this.Offset.Parameter.ToString();
+                        str += (this.Offset.IsPositive ? " + " : " + -") + this.Offset.Parameter.ToString();
 
                     str = "(" + str + ")";
 
