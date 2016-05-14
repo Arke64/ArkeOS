@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.IO;
+using ArkeOS.Utilities;
 
 namespace ArkeOS.Hardware.Architecture {
     public class Instruction {

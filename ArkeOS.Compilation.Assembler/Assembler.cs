@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using ArkeOS.Hardware.Architecture;
+using ArkeOS.Utilities;
 
 namespace ArkeOS.Tools.Assembler {
     public class Assembler {

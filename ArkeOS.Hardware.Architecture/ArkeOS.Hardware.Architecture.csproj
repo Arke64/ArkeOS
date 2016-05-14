@@ -42,9 +42,7 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="BitStream.cs" />
     <Compile Include="DeviceType.cs" />
-    <Compile Include="Helpers.cs" />
     <Compile Include="Ids.cs" />
-    <Compile Include="IWordStream.cs" />
     <Compile Include="Instruction.cs" />
     <Compile Include="InstructionDefinition.cs" />
     <Compile Include="Interrupt.cs" />
@@ -52,7 +50,12 @@
     <Compile Include="ParameterType.cs" />
     <Compile Include="Register.cs" />
   </ItemGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <ProjectReference Include="..\ArkeOS.Utilities\ArkeOS.Utilities.csproj">
+      <Project>{2e225ced-2308-4336-84a4-4d053581bbd0}</Project>
+      <Name>ArkeOS.Utilities</Name>
+    </ProjectReference>
+  </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\Portable\$(TargetFrameworkVersion)\Microsoft.Portable.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

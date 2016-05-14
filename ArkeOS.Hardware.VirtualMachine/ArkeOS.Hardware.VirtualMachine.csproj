@@ -139,6 +139,10 @@
       <Project>{f983d92b-e6a3-490f-9177-d578da2efb80}</Project>
       <Name>ArkeOS.Hardware.Architecture</Name>
     </ProjectReference>
+    <ProjectReference Include="..\ArkeOS.Utilities\ArkeOS.Utilities.csproj">
+      <Project>{2E225CED-2308-4336-84A4-4D053581BBD0}</Project>
+      <Name>ArkeOS.Utilities</Name>
+    </ProjectReference>
   </ItemGroup>
   <PropertyGroup Condition=" '$(VisualStudioVersion)' == '' or '$(VisualStudioVersion)' &lt; '15.0' ">
     <VisualStudioVersion>15.0</VisualStudioVersion>

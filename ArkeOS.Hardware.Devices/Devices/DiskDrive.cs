@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO;
 using ArkeOS.Hardware.Architecture;
+using ArkeOS.Utilities;
 
 namespace ArkeOS.Hardware.Devices {
     public class DiskDrive : SystemBusDevice {

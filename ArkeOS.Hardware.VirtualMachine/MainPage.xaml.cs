@@ -4,6 +4,7 @@ using System.Reflection;
 using System.Runtime.InteropServices.WindowsRuntime;
 using ArkeOS.Hardware.Architecture;
 using ArkeOS.Hardware.Devices;
+using ArkeOS.Utilities;
 using Windows.Storage;
 using Windows.UI.Core;
 using Windows.UI.Xaml;

@@ -34,6 +34,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Images", "Images", "{0608B5
 		Images\TimedLoop.bin = Images\TimedLoop.bin
 	EndProjectSection
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ArkeOS.Utilities", "ArkeOS.Utilities\ArkeOS.Utilities.csproj", "{2E225CED-2308-4336-84A4-4D053581BBD0}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -162,6 +164,22 @@ Global
 		{F983D92B-E6A3-490F-9177-D578DA2EFB80}.Release|x64.Build.0 = Release|Any CPU
 		{F983D92B-E6A3-490F-9177-D578DA2EFB80}.Release|x86.ActiveCfg = Release|Any CPU
 		{F983D92B-E6A3-490F-9177-D578DA2EFB80}.Release|x86.Build.0 = Release|Any CPU
+		{2E225CED-2308-4336-84A4-4D053581BBD0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2E225CED-2308-4336-84A4-4D053581BBD0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2E225CED-2308-4336-84A4-4D053581BBD0}.Debug|ARM.ActiveCfg = Debug|Any CPU
+		{2E225CED-2308-4336-84A4-4D053581BBD0}.Debug|ARM.Build.0 = Debug|Any CPU
+		{2E225CED-2308-4336-84A4-4D053581BBD0}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{2E225CED-2308-4336-84A4-4D053581BBD0}.Debug|x64.Build.0 = Debug|Any CPU
+		{2E225CED-2308-4336-84A4-4D053581BBD0}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{2E225CED-2308-4336-84A4-4D053581BBD0}.Debug|x86.Build.0 = Debug|Any CPU
+		{2E225CED-2308-4336-84A4-4D053581BBD0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2E225CED-2308-4336-84A4-4D053581BBD0}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2E225CED-2308-4336-84A4-4D053581BBD0}.Release|ARM.ActiveCfg = Release|Any CPU
+		{2E225CED-2308-4336-84A4-4D053581BBD0}.Release|ARM.Build.0 = Release|Any CPU
+		{2E225CED-2308-4336-84A4-4D053581BBD0}.Release|x64.ActiveCfg = Release|Any CPU
+		{2E225CED-2308-4336-84A4-4D053581BBD0}.Release|x64.Build.0 = Release|Any CPU
+		{2E225CED-2308-4336-84A4-4D053581BBD0}.Release|x86.ActiveCfg = Release|Any CPU
+		{2E225CED-2308-4336-84A4-4D053581BBD0}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

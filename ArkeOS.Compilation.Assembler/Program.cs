@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO;
 using ArkeOS.Hardware.Architecture;
+using ArkeOS.Utilities;
 
 namespace ArkeOS.Tools.Assembler {
     public static class Program {

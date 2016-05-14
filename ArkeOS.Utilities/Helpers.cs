@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace ArkeOS.Hardware.Architecture {
+namespace ArkeOS.Utilities {
     public static class Helpers {
         public static ulong ParseLiteral(string value) {
             var prefix = value.Substring(0, 2);
