@@ -1,4 +1,4 @@
-﻿namespace ArkeOS.Hardware.Architecture {
+﻿namespace ArkeOS.Utilities {
     public class BitStream {
         public int Position { get; private set; }
         public ulong Word { get; private set; }
