@@ -1,15 +1,28 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.23107.0
+# Visual Studio 15
+VisualStudioVersion = 15.0.25123.0
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ArkeOS.Assembler", "Assembler\ArkeOS.Assembler.csproj", "{E9776C8D-E3AD-4BCA-AA37-0C4883463480}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ArkeOS.Tools.Assembler", "ArkeOS.Compilation.Assembler\ArkeOS.Tools.Assembler.csproj", "{E9776C8D-E3AD-4BCA-AA37-0C4883463480}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ArkeOS.Linker", "Linker\ArkeOS.Linker.csproj", "{53262617-800D-4DDE-8D6F-15AFAC2BED99}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ArkeOS.Tools.Linker", "ArkeOS.Compilation.Linker\ArkeOS.Tools.Linker.csproj", "{53262617-800D-4DDE-8D6F-15AFAC2BED99}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ArkeOS.Compiler", "Compiler\ArkeOS.Compiler.csproj", "{86B8F678-D2A9-4DAD-9F80-7D3925E630EF}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ArkeOS.Tools.Compiler", "ArkeOS.Compilation.Compiler\ArkeOS.Tools.Compiler.csproj", "{86B8F678-D2A9-4DAD-9F80-7D3925E630EF}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{A8A09D5A-380E-4C15-8DDD-1837F84F41C6}"
+	ProjectSection(SolutionItems) = preProject
+		ISA.txt = ISA.txt
+	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ArkeOS.Hardware.VirtualMachine", "ArkeOS.Hardware.VirtualMachine\ArkeOS.Hardware.VirtualMachine.csproj", "{7719A18A-EEF0-4D7E-9241-9CC1426EDACC}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ArkeOS.OS.Executable", "ArkeOS.OS.Executable\ArkeOS.OS.Executable.csproj", "{2531BE7F-42D5-485A-8695-EBF598937EF2}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ArkeOS.Hardware.Devices", "ArkeOS.Hardware.Devices\ArkeOS.Hardware.Devices.csproj", "{36396D22-3CCD-4283-A0C4-2D865DA2D863}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ArkeOS.Hardware.Architecture", "ArkeOS.Hardware.Architecture\ArkeOS.Hardware.Architecture.csproj", "{F983D92B-E6A3-490F-9177-D578DA2EFB80}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Images", "Images", "{0608B53C-37C0-4F65-8900-4DC59D208C3A}"
 	ProjectSection(SolutionItems) = preProject
 		Images\Boot.asm = Images\Boot.asm
 		Images\Boot.bin = Images\Boot.bin
@@ -20,14 +33,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		Images\TimedNop.asm = Images\TimedNop.asm
 		Images\TimedNop.bin = Images\TimedNop.bin
 	EndProjectSection
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ArkeOS.VirtualMachine", "Virtual Machine\ArkeOS.VirtualMachine.csproj", "{7719A18A-EEF0-4D7E-9241-9CC1426EDACC}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ArkeOS.Executable", "Executable\ArkeOS.Executable.csproj", "{2531BE7F-42D5-485A-8695-EBF598937EF2}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ArkeOS.Hardware", "Hardware\ArkeOS.Hardware.csproj", "{36396D22-3CCD-4283-A0C4-2D865DA2D863}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ArkeOS.Architecture", "Architecture\ArkeOS.Architecture.csproj", "{F983D92B-E6A3-490F-9177-D578DA2EFB80}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -89,8 +94,7 @@ Global
 		{86B8F678-D2A9-4DAD-9F80-7D3925E630EF}.Release|x64.Build.0 = Release|Any CPU
 		{86B8F678-D2A9-4DAD-9F80-7D3925E630EF}.Release|x86.ActiveCfg = Release|Any CPU
 		{86B8F678-D2A9-4DAD-9F80-7D3925E630EF}.Release|x86.Build.0 = Release|Any CPU
-		{7719A18A-EEF0-4D7E-9241-9CC1426EDACC}.Debug|Any CPU.ActiveCfg = Debug|x64
-		{7719A18A-EEF0-4D7E-9241-9CC1426EDACC}.Debug|Any CPU.Build.0 = Debug|x64
+		{7719A18A-EEF0-4D7E-9241-9CC1426EDACC}.Debug|Any CPU.ActiveCfg = Debug|x86
 		{7719A18A-EEF0-4D7E-9241-9CC1426EDACC}.Debug|ARM.ActiveCfg = Debug|ARM
 		{7719A18A-EEF0-4D7E-9241-9CC1426EDACC}.Debug|ARM.Build.0 = Debug|ARM
 		{7719A18A-EEF0-4D7E-9241-9CC1426EDACC}.Debug|ARM.Deploy.0 = Debug|ARM
@@ -100,9 +104,7 @@ Global
 		{7719A18A-EEF0-4D7E-9241-9CC1426EDACC}.Debug|x86.ActiveCfg = Debug|x86
 		{7719A18A-EEF0-4D7E-9241-9CC1426EDACC}.Debug|x86.Build.0 = Debug|x86
 		{7719A18A-EEF0-4D7E-9241-9CC1426EDACC}.Debug|x86.Deploy.0 = Debug|x86
-		{7719A18A-EEF0-4D7E-9241-9CC1426EDACC}.Release|Any CPU.ActiveCfg = Release|x64
-		{7719A18A-EEF0-4D7E-9241-9CC1426EDACC}.Release|Any CPU.Build.0 = Release|x64
-		{7719A18A-EEF0-4D7E-9241-9CC1426EDACC}.Release|Any CPU.Deploy.0 = Release|x64
+		{7719A18A-EEF0-4D7E-9241-9CC1426EDACC}.Release|Any CPU.ActiveCfg = Release|x86
 		{7719A18A-EEF0-4D7E-9241-9CC1426EDACC}.Release|ARM.ActiveCfg = Release|ARM
 		{7719A18A-EEF0-4D7E-9241-9CC1426EDACC}.Release|ARM.Build.0 = Release|ARM
 		{7719A18A-EEF0-4D7E-9241-9CC1426EDACC}.Release|ARM.Deploy.0 = Release|ARM
@@ -163,5 +165,8 @@ Global
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{0608B53C-37C0-4F65-8900-4DC59D208C3A} = {A8A09D5A-380E-4C15-8DDD-1837F84F41C6}
 	EndGlobalSection
 EndGlobal

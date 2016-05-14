@@ -1,0 +1,109 @@
+Registers
+---------
+R0-R15: General purpose use
+RI0-RI7: General purpose use for interrupts only
+RO: 0x00.. register
+RF: 0xFF.. register
+RSP: Address of the current stack position
+RIP: Address of the current instruction
+RSIP: Address of the instruction executing when an interrupt fires
+RINT1: Data made available from an interrupt
+RINT2: Data made available from an interrupt
+
+Configuration
+--------------
+0x00: Protection mode
+0x01: System tick interval
+0x02: Allow instruction caching
+0x100-0x1FF: Interrupt vectors
+
+Interrupts
+----------
+0x00: Invalid instruction
+0x01: Divide by zero
+0x02: System call
+0x04: System timer
+0x05: Device waiting
+0x06-0x0F: Reserved
+0x10-0xFF: Undefined
+
+Instruction Format
+------------------
+Each instruction is one word followed by four optional address and conditional words (13 if using three calculated parameters).
+
+8b Code
+27b Parameters (9b each)
+    1b is RIP relative (before indirection)
+    1b is indirect
+    2b type (0 = calculated, 1 = register, 2 = literal, 3 = stack)
+    5b register
+11b Conditional
+    1b enabled
+    1b zero/non-zero
+    1b is RIP relative (before indirection)
+    1b is indirect
+    2b type (0 = undefined, 1 = register, 2 = literal, 3 = stack)
+    5b register
+18b Reserved
+0b-1088b Parameters: Parameter and conditional literals in order of appearance
+
+Calculated Parameter
+--------------------
+40b Parameters (10b each)
+    1b sign
+    1b is RIP relative (before indirection)
+    1b is indirect
+    2b type (0 = default, 1 = register, 2 = literal, 3 = stack)
+    5b register
+24b Reserved
+0b-256b Literal operands
+
+Basic
+-----
+00 HLT: Stops the processor
+01 NOP: No operation
+02 INT A B C: Raise the interrupt specified by A passing B to RINT1 and C to RINT2
+03 EINT: Return from the interrupt
+04 INTE: Enables interrupts
+05 INTD: Disables interrupts
+06 XCHG A B: Swap A and B
+07 CAS A B C: If C and B are equal, set C to A, else set B to C
+08 MOV A B: Move A into B
+
+Math
+----
+20 ADD A B C: Add A to B and store in C
+21 ADDF A B C: Add the IEEE 754 value in A to B and store in C
+22 SUB A B C: Subtract A from B and store in C
+23 SUBF A B C: Subtract the IEEE 754 value in A from B and store in C
+24 DIV A B C: Divide B by A and store in C
+25 DIVF A B C: Divide B by the IEEE 754 value in A and store in C
+26 MUL A B C: Multiply B by A and store in C
+27 MULF A B C: Multiply B by the IEEE 754 value in A and store in C
+28 MOD A B C: Take the remainder of dividing B by A and store in C
+29 MODF A B C: Take the remainder of dividing B by the IEEE 754 value in A and store in C
+
+Logic
+-----
+40 SR A B C: Shift B right by A and store in C
+41 SL A B C: Shift B left by A and store in C
+42 RR A B C: Rotate B right by A and store in C
+43 RL A B C: Rotate B left by A and store in C
+44 NAND A B C: Store the NAND of A and B in C
+45 AND A B C: Store the AND of A and B in C
+46 NOR A B C: Store the NOR of A and B in C
+47 OR A B C: Store the OR of A and B in C
+48 NXOR A B C: Store the NXOR of A and B in C
+49 XOR A B C: Store the XOR of A and B in C
+50 NOT A B: Store the NOT of A in B
+51 GT A B C: Store in C if B is greater than A
+52 GTE A B C: Store in C if B is greater than or equal to A
+53 LT A B C: Store in C if B is less than A
+54 LTE A B C: Store in C if B is less than or equal to A
+55 EQ A B C: Store in C if B is equal to A
+56 NEQ A B C: Store in C if B is not equal to A
+
+Debug
+-----
+60 DBG A: Debug use
+61 PAU: Pause execution
