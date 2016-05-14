@@ -26,12 +26,12 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Images", "Images", "{0608B5
 	ProjectSection(SolutionItems) = preProject
 		Images\Boot.asm = Images\Boot.asm
 		Images\Boot.bin = Images\Boot.bin
+		Images\Copy Loop.bat = Images\Copy Loop.bat
+		Images\Copy Program.bat = Images\Copy Program.bat
 		Images\Program.asm = Images\Program.asm
 		Images\Program.bin = Images\Program.bin
 		Images\TimedLoop.asm = Images\TimedLoop.asm
 		Images\TimedLoop.bin = Images\TimedLoop.bin
-		Images\TimedNop.asm = Images\TimedNop.asm
-		Images\TimedNop.bin = Images\TimedNop.bin
 	EndProjectSection
 EndProject
 Global
