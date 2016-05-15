@@ -79,14 +79,14 @@
 
             switch (this.Type) {
                 default: return string.Empty;
-                case ParameterType.Address: str = "0x" + this.Address.ToString("X8"); break;
+                case ParameterType.Address: str = "0x" + this.Address.ToString("X"); break;
                 case ParameterType.Register: str = this.Register.ToString(); break;
                 case ParameterType.Stack: str = "S"; break;
                 case ParameterType.Calculated:
                     str = this.Base.Parameter.ToString();
 
                     if (this.Index != null)
-                        str += (this.Index.IsPositive ? " + " : " - ") + this.Index.Parameter.ToString();
+                        str += (((this.Index.IsPositive && this.Scale.IsPositive) || (!this.Index.IsPositive && !this.Scale.IsPositive)) ? " + " : " - ") + this.Index.Parameter.ToString();
 
                     if (this.Scale != null)
                         str += " * " + this.Scale.Parameter.ToString();

@@ -61,13 +61,17 @@
             <StackPanel Grid.Column="5" Grid.Row="1">
                 <TextBlock>RO</TextBlock>
                 <TextBox Name="ROTextBox" />
-            </StackPanel>
-            <StackPanel Grid.Column="6" Grid.Row="1">
-                <TextBlock>RF</TextBlock>
-                <TextBox Name="RFTextBox" />
-            </StackPanel>
+			</StackPanel>
+			<StackPanel Grid.Column="6" Grid.Row="1">
+				<TextBlock>RF</TextBlock>
+				<TextBox Name="RFTextBox" />
+			</StackPanel>
+			<StackPanel Grid.Column="7" Grid.Row="1">
+				<TextBlock>RONE</TextBlock>
+				<TextBox Name="RONETextBox" />
+			</StackPanel>
 
-            <StackPanel Grid.Column="0" Grid.Row="2">
+			<StackPanel Grid.Column="0" Grid.Row="2">
                 <TextBlock>RI0</TextBlock>
                 <TextBox Name="RI0TextBox" />
             </StackPanel>
