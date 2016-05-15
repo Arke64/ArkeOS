@@ -43,7 +43,7 @@ namespace ArkeOS.Hardware.Devices.ArkeIndustries {
 			Array.Clear(this.registers, 0, this.registers.Length);
 
 			this.instructionCacheBaseAddress = this.StartAddress;
-			this.instructionCacheSize = 1024;
+			this.instructionCacheSize = 4096;
 			this.instructionCache = new Instruction[this.instructionCacheSize];
 			this.supressRIPIncrement = false;
 			this.interruptsEnabled = false;
