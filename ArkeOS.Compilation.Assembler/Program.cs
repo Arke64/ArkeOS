@@ -1,37 +1,24 @@
 ﻿using System;
 using System.IO;
-using ArkeOS.Hardware.Architecture;
+using System.Linq;
 using ArkeOS.Utilities;
 
 namespace ArkeOS.Tools.Assembler {
-    public static class Program {
-        public static void Main(string[] args) {
-            Console.Write("Base: ");
+	public static class Program {
+		public static void Main(string[] args) {
+			var input = args[0];
 
-            var baseAddressStr = Console.ReadLine();
-            var baseAddress = 0UL;
+			if (!File.Exists(input)) {
+				Console.WriteLine("The specified file cannot be found.");
 
-            if (!string.IsNullOrWhiteSpace(baseAddressStr))
-                baseAddress = Helpers.ParseLiteral(baseAddressStr);
+				return;
+			}
 
-            Console.Write("Input file: ");
+			var configs = args.Skip(1).ToList();
+			var config = configs.Select(c => c.Split('=')).ToDictionary(c => c[0].Substring(1), c => c?[1]);
+			var assembler = new Assembler();
 
-            var input = Console.ReadLine();
-
-            if (!input.EndsWith(".asm"))
-                input += ".asm";
-
-            if (!input.Contains("\\"))
-                input = @"D:\Code\ArkeOS\Images\" + input;
-
-            var output = Path.ChangeExtension(input, "bin");
-
-            if (File.Exists(input)) {
-                File.WriteAllBytes(output, new Assembler(input, baseAddress).Assemble());
-            }
-            else {
-                Console.WriteLine("The specified file cannot be found.");
-            }
-        }
-    }
+			File.WriteAllBytes(Path.ChangeExtension(input, "bin"), assembler.Assemble(File.ReadAllLines(input)));
+		}
+	}
 }
