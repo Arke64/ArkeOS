@@ -51,7 +51,7 @@ namespace ArkeOS.Hardware.VirtualMachine {
             this.InputTextBox.KeyUp += (ss, ee) => keyboard.TriggerKeyUp((ulong)ee.Key);
             this.system.AddDevice(keyboard);
 
-			this.processor.ExecutionBroken += async (ss, ee) => await this.Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () => {
+			this.processor.BreakHandler = async () => await this.Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () => {
                 this.BreakButton.IsEnabled = false;
                 this.ContinueButton.IsEnabled = true;
                 this.StepButton.IsEnabled = true;
@@ -73,7 +73,9 @@ namespace ArkeOS.Hardware.VirtualMachine {
         }
 
         private void StopButton_Click(object sender, RoutedEventArgs e) {
-            this.system.Stop();
+			this.Refresh();
+
+			this.system.Stop();
             this.system = null;
 
             this.StartButton.IsEnabled = true;
@@ -82,8 +84,6 @@ namespace ArkeOS.Hardware.VirtualMachine {
             this.ContinueButton.IsEnabled = false;
             this.StepButton.IsEnabled = false;
             this.ApplyButton.IsEnabled = false;
-
-            this.Clear();
         }
 
         private void BreakButton_Click(object sender, RoutedEventArgs e) {
@@ -128,16 +128,6 @@ namespace ArkeOS.Hardware.VirtualMachine {
             }
 
             this.CurrentInstructionLabel.Text = this.processor.CurrentInstruction.ToString();
-        }
-
-        private void Clear() {
-            foreach (var r in Enum.GetNames(typeof(Register))) {
-                var textbox = (TextBox)this.GetType().GetField(r + "TextBox", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(this);
-
-                textbox.Text = "0x" + 0.ToString("X8");
-            }
-
-            this.CurrentInstructionLabel.Text = string.Empty;
         }
     }
 }

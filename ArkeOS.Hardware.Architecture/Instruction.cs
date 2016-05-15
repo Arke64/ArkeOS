@@ -5,6 +5,8 @@ using ArkeOS.Utilities.Extensions;
 
 namespace ArkeOS.Hardware.Architecture {
 	public class Instruction {
+		private static Parameter.Calculated DefaultCalculatedOperand { get; } = new Parameter.Calculated(true, Parameter.CreateRegister(false, false, Register.RO));
+
 		public byte Code { get; }
 		public byte Length { get; private set; }
 		public InstructionDefinition Definition { get; }
@@ -145,28 +147,23 @@ namespace ArkeOS.Hardware.Architecture {
 
 			writer.Write(0UL);
 
-			this.EncodeCalculatedOperand(writer, bits, parameter.Base);
-			this.EncodeCalculatedOperand(writer, bits, parameter.Index);
-			this.EncodeCalculatedOperand(writer, bits, parameter.Scale);
-			this.EncodeCalculatedOperand(writer, bits, parameter.Offset);
+			this.EncodeCalculatedOperand(writer, bits, parameter.Base ?? Instruction.DefaultCalculatedOperand);
+			this.EncodeCalculatedOperand(writer, bits, parameter.Index ?? Instruction.DefaultCalculatedOperand);
+			this.EncodeCalculatedOperand(writer, bits, parameter.Scale ?? Instruction.DefaultCalculatedOperand);
+			this.EncodeCalculatedOperand(writer, bits, parameter.Offset ?? Instruction.DefaultCalculatedOperand);
 
 			writer.WriteAt(bits.Word, origPosition);
 		}
 
 		private void EncodeCalculatedOperand(BinaryWriter writer, BitStream bits, Parameter.Calculated parameter) {
-			if (parameter != null) {
-				bits.Write(parameter.IsPositive);
-				bits.Write(parameter.Parameter.IsRIPRelative);
-				bits.Write(parameter.Parameter.IsIndirect);
-				bits.Write((byte)parameter.Parameter.Type, 2);
-				bits.Write((byte)parameter.Parameter.Register, 5);
+			bits.Write(parameter.IsPositive);
+			bits.Write(parameter.Parameter.IsRIPRelative);
+			bits.Write(parameter.Parameter.IsIndirect);
+			bits.Write((byte)parameter.Parameter.Type, 2);
+			bits.Write((byte)parameter.Parameter.Register, 5);
 
-				if (parameter.Parameter.Type == ParameterType.Address)
-					writer.Write(parameter.Parameter.Address);
-			}
-			else {
-				bits.Advance(10);
-			}
+			if (parameter.Parameter.Type == ParameterType.Address)
+				writer.Write(parameter.Parameter.Address);
 		}
 	}
 }

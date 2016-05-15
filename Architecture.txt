@@ -5,6 +5,7 @@ R0-R15: General purpose use
 RI0-RI7: General purpose use for interrupts only
 RO: 0x00.. register
 RF: 0xFF.. register
+RONE: 0x1 register
 RSP: Address of the current stack position
 RIP: Address of the current instruction
 RSIP: Address of the instruction executing when an interrupt fires
@@ -14,27 +15,28 @@ RINT2: Data made available from an interrupt
 =============
 Configuration
 =============
-0x00: Protection mode
-0x01: System tick interval
-0x02: Allow instruction caching
-0x100-0x1FF: Interrupt vectors
+0x00: System tick interval
+0x01: Instruction cache size
 
 ==========
 Interrupts
 ==========
-0x00: Invalid instruction
-0x01: Divide by zero
+0x00: Invalid instruction (Code, Address)
+0x01: Divide by zero (Address)
 0x02: System call
 0x04: System timer
-0x05: Device waiting
-0x06-0x0F: Reserved
-0x10-0xFF: Undefined
+0x05: Device waiting (Device, Data)
+0x06: CPY complete (Source, Destination)
+0x07-0xFF: Reserved
+0x100-0xFFF: Undefined
 
 ==================
 Instruction Format
 ==================
-Each instruction is one word followed by four optional address and conditional words (13 if using three calculated parameters).
+Each instruction begins with one word. Calculated and literal values are embedded recursively as they appear. There is no limit on how far calculated parameters can recurse.
 
+Base
+----
 8b Code
 27b Parameters (9b each)
     1b is RIP relative (before indirection)
@@ -42,25 +44,23 @@ Each instruction is one word followed by four optional address and conditional w
     2b type (0 = calculated, 1 = register, 2 = literal, 3 = stack)
     5b register
 11b Conditional
-    1b enabled
-    1b zero/non-zero
+    1b is enabled
+    1b is zero
     1b is RIP relative (before indirection)
     1b is indirect
-    2b type (0 = undefined, 1 = register, 2 = literal, 3 = stack)
+    2b type (0 = calculated, 1 = register, 2 = literal, 3 = stack)
     5b register
 18b Reserved
-0b-1088b Parameters: Parameter and conditional literals in order of appearance
 
 Calculated Parameter
 --------------------
-40b Parameters (10b each)
+40b Parameters (10b each, format of [base + index * scale + offset])
     1b is positive
     1b is RIP relative (before indirection)
     1b is indirect
-    2b type (0 = default, 1 = register, 2 = literal, 3 = stack)
+    2b type (0 = calculated, 1 = register, 2 = literal, 3 = stack)
     5b register
 24b Reserved
-0b-256b Literal operands
 
 ============
 Instructions
@@ -77,6 +77,7 @@ Basic
 06 XCHG A B: Swap A and B
 07 CAS A B C: If C and B are equal, set C to A, else set B to C
 08 MOV A B: Move A into B
+09 CPY A B C: Copy C bytes from A into B
 
 Math
 ----

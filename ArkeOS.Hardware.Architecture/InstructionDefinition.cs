@@ -30,6 +30,7 @@ namespace ArkeOS.Hardware.Architecture {
 			InstructionDefinition.Add("XCHG", 6, ParameterDirection.Write, ParameterDirection.Write);
 			InstructionDefinition.Add("CAS", 7, ParameterDirection.Read, ParameterDirection.Write | ParameterDirection.Read, ParameterDirection.Write | ParameterDirection.Read);
 			InstructionDefinition.Add("MOV", 8, ParameterDirection.Read, ParameterDirection.Write);
+			InstructionDefinition.Add("CPY", 9, ParameterDirection.Read, ParameterDirection.Read, ParameterDirection.Read);
 
 			InstructionDefinition.Add("ADD", 20, ParameterDirection.Read, ParameterDirection.Read, ParameterDirection.Write);
 			InstructionDefinition.Add("ADDF", 21, ParameterDirection.Read, ParameterDirection.Read, ParameterDirection.Write);

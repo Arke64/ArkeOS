@@ -23,15 +23,14 @@ namespace ArkeOS.Hardware.Devices.ArkeIndustries {
 		public Instruction CurrentInstruction { get; private set; }
 
 		public Action<Operand, Operand, Operand> DebugHandler { get; set; }
-
-		public event EventHandler ExecutionBroken;
+		public Action BreakHandler { get; set; }
 
 		public Processor() : base(ProductIds.Vendor, ProductIds.PROC100, DeviceType.Processor) {
 			this.operandA = new Operand();
 			this.operandB = new Operand();
 			this.operandC = new Operand();
 
-			this.registers = new ulong[0xFF];
+			this.registers = new ulong[32];
 			this.systemTickTimer = new Timer(this.OnSystemTimerTick, null, Timeout.Infinite, Timeout.Infinite);
 		}
 
@@ -54,6 +53,7 @@ namespace ArkeOS.Hardware.Devices.ArkeIndustries {
 			this.instructionCache = new Instruction[this.instructionCacheSize];
 
 			this.WriteRegister(Register.RF, ulong.MaxValue);
+			this.WriteRegister(Register.RONE, 1);
 			this.WriteRegister(Register.RIP, startAddress);
 
 			this.SetNextInstruction();
@@ -82,7 +82,7 @@ namespace ArkeOS.Hardware.Devices.ArkeIndustries {
 			this.Tick();
 		}
 
-		private void OnSystemTimerTick(object state) => this.InterruptController.Enqueue(Interrupt.SystemTimer, 0, 0);
+		private void OnSystemTimerTick(object state) => this.RaiseInterrupt(Interrupt.SystemTimer, 0, 0);
 
 		private void SetNextInstruction() {
 			var address = this.ReadRegister(Register.RIP);
@@ -127,7 +127,7 @@ namespace ArkeOS.Hardware.Devices.ArkeIndustries {
 					this.SaveParameters(this.operandA, this.operandB, this.operandC);
 				}
 				else {
-					this.InterruptController.Enqueue(Interrupt.InvalidInstruction, this.CurrentInstruction.Code, 0);
+					this.RaiseInterrupt(Interrupt.InvalidInstruction, this.CurrentInstruction.Code, this.ReadRegister(Register.RIP));
 				}
 			}
 
@@ -339,6 +339,7 @@ namespace ArkeOS.Hardware.Devices.ArkeIndustries {
 				case 6: this.ExecuteXCHG(a, b, c); break;
 				case 7: this.ExecuteCAS(a, b, c); break;
 				case 8: this.ExecuteMOV(a, b, c); break;
+				case 9: this.ExecuteCPY(a, b, c); break;
 
 				case 20: this.ExecuteADD(a, b, c); break;
 				case 21: this.ExecuteADDF(a, b, c); break;
@@ -386,7 +387,7 @@ namespace ArkeOS.Hardware.Devices.ArkeIndustries {
 		}
 
 		private void ExecuteINT(Operand a, Operand b, Operand c) {
-			this.InterruptController.Enqueue((Interrupt)a.Value, b.Value, c.Value);
+			this.RaiseInterrupt((Interrupt)a.Value, b.Value, c.Value);
 		}
 
 		private void ExecuteEINT(Operand a, Operand b, Operand c) {
@@ -435,6 +436,11 @@ namespace ArkeOS.Hardware.Devices.ArkeIndustries {
 			b.Value = a.Value;
 		}
 
+		private void ExecuteCPY(Operand a, Operand b, Operand c) {
+			this.BusController.Copy(a.Value, b.Value, c.Value);
+			this.RaiseInterrupt(Interrupt.CPYComplete, a.Value, b.Value);
+		}
+
 		#endregion
 
 		#region Math
@@ -470,7 +476,7 @@ namespace ArkeOS.Hardware.Devices.ArkeIndustries {
 				c.Value = b.Value / a.Value;
 			}
 			else {
-				this.InterruptController.Enqueue(Interrupt.DivideByZero, 0, 0);
+				this.RaiseInterrupt(Interrupt.DivideByZero, this.ReadRegister(Register.RIP), 0);
 			}
 		}
 
@@ -482,7 +488,7 @@ namespace ArkeOS.Hardware.Devices.ArkeIndustries {
 				c.Value = (ulong)BitConverter.DoubleToInt64Bits(bb / aa);
 			}
 			else {
-				this.InterruptController.Enqueue(Interrupt.DivideByZero, 0, 0);
+				this.RaiseInterrupt(Interrupt.DivideByZero, this.ReadRegister(Register.RIP), 0);
 			}
 		}
 
@@ -504,7 +510,7 @@ namespace ArkeOS.Hardware.Devices.ArkeIndustries {
 				c.Value = b.Value % a.Value;
 			}
 			else {
-				this.InterruptController.Enqueue(Interrupt.DivideByZero, 0, 0);
+				this.RaiseInterrupt(Interrupt.DivideByZero, this.ReadRegister(Register.RIP), 0);
 			}
 		}
 
@@ -516,7 +522,7 @@ namespace ArkeOS.Hardware.Devices.ArkeIndustries {
 				c.Value = (ulong)BitConverter.DoubleToInt64Bits(bb % aa);
 			}
 			else {
-				this.InterruptController.Enqueue(Interrupt.DivideByZero, 0, 0);
+				this.RaiseInterrupt(Interrupt.DivideByZero, this.ReadRegister(Register.RIP), 0);
 			}
 		}
 
@@ -558,7 +564,7 @@ namespace ArkeOS.Hardware.Devices.ArkeIndustries {
 
 			this.Break();
 
-			this.ExecutionBroken?.Invoke(this, EventArgs.Empty);
+			this.BreakHandler?.Invoke();
 		}
 
 		#endregion

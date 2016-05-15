@@ -14,7 +14,7 @@ namespace ArkeOS.Hardware.Devices.ArkeIndustries {
         public InterruptController() : base(ProductIds.Vendor, ProductIds.IC100, DeviceType.InterruptController) {
 			this.pending = new Queue<InterruptRecord>();
 			this.evt = new ManualResetEvent(false);
-			this.vectors = new ulong[0xFF];
+			this.vectors = new ulong[0x1000];
 		}
 
 		public override ulong ReadWord(ulong address) => this.vectors[address];
