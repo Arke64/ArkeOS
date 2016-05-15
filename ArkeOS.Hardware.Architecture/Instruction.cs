@@ -158,13 +158,8 @@ namespace ArkeOS.Hardware.Architecture {
 
 		private void EncodeCalculatedOperand(BinaryWriter writer, BitStream bits, Parameter.Calculated parameter) {
 			bits.Write(parameter.IsPositive);
-			bits.Write(parameter.Parameter.IsRIPRelative);
-			bits.Write(parameter.Parameter.IsIndirect);
-			bits.Write((byte)parameter.Parameter.Type, 2);
-			bits.Write((byte)parameter.Parameter.Register, 5);
 
-			if (parameter.Parameter.Type == ParameterType.Address)
-				writer.Write(parameter.Parameter.Address);
+			this.EncodeParameter(writer, bits, parameter.Parameter);
 		}
 	}
 }

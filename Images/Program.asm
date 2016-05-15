@@ -3,6 +3,7 @@ BRK
 MOV 0x500 RSP
 MOV (RIP + 0d5) S
 MOV $SetupInterrupts RIP
+INTE
 BRK
 MOV (RIP + 0d5) S
 MOV $Add RIP

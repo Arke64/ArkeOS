@@ -177,7 +177,7 @@ namespace ArkeOS.Tools.Assembler {
                 value = value.Substring(1, value.Length - 2);
 
                 var parts = value.Split('+', '*');
-                var @base = new Parameter.Calculated(parts[0][0] != '-', this.ParseParameter(parts[0].TrimStart('-'), resolveNames));
+				var @base = new Parameter.Calculated(parts[0][0] != '-', this.ParseParameter(parts[0].TrimStart('-'), resolveNames));
                 var index = parts.Length > 1 ? new Parameter.Calculated(parts[1][0] != '-', this.ParseParameter(parts[1].TrimStart('-'), resolveNames)) : null;
                 var scale = parts.Length > 2 ? new Parameter.Calculated(parts[2][0] != '-', this.ParseParameter(parts[2].TrimStart('-'), resolveNames)) : null;
                 var offset = parts.Length > 3 ? new Parameter.Calculated(parts[3][0] != '-', this.ParseParameter(parts[3].TrimStart('-'), resolveNames)) : null;

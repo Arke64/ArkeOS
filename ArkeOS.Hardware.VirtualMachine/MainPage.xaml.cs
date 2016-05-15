@@ -37,10 +37,10 @@ namespace ArkeOS.Hardware.VirtualMachine {
 			this.system.Processor = this.processor;
 			this.system.InterruptController = interruptController;
 
-			this.system.AddDevice(interruptController);
 			this.system.AddDevice(ram);
 			this.system.AddDevice(bootManager);
 			this.system.AddDevice(this.processor);
+			this.system.AddDevice(interruptController);
 
             var stream = (await (await ApplicationData.Current.LocalFolder.CreateFileAsync("Disk 0.bin", CreationCollisionOption.OpenIfExists)).OpenAsync(FileAccessMode.ReadWrite)).AsStream();
             stream.SetLength(8 * 1024 * 1024);
