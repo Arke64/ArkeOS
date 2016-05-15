@@ -51,6 +51,8 @@ namespace ArkeOS.Hardware.VirtualMachine {
             this.InputTextBox.KeyUp += (ss, ee) => keyboard.TriggerKeyUp((ulong)ee.Key);
             this.system.AddDevice(keyboard);
 
+			this.processor.DebugHandler = (a, b, c) => a.Value = (ulong)DateTime.UtcNow.Ticks;
+
 			this.processor.BreakHandler = async () => await this.Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () => {
                 this.BreakButton.IsEnabled = false;
                 this.ContinueButton.IsEnabled = true;
