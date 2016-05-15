@@ -163,9 +163,9 @@ namespace ArkeOS.Hardware.Devices.ArkeIndustries {
 		}
 
 		private void SaveParameters(Operand a, Operand b, Operand c) {
-			if (c.Dirty && this.CurrentInstruction.Definition.ParameterCount >= 3 && (this.CurrentInstruction.Definition.Parameter3Direction & ParameterDirection.Write) != 0) this.SetValue(this.CurrentInstruction.Parameter3, c.Value);
-			if (b.Dirty && this.CurrentInstruction.Definition.ParameterCount >= 2 && (this.CurrentInstruction.Definition.Parameter2Direction & ParameterDirection.Write) != 0) this.SetValue(this.CurrentInstruction.Parameter2, b.Value);
-			if (a.Dirty && this.CurrentInstruction.Definition.ParameterCount >= 1 && (this.CurrentInstruction.Definition.Parameter1Direction & ParameterDirection.Write) != 0) this.SetValue(this.CurrentInstruction.Parameter1, a.Value);
+			if (c.Dirty) this.SetValue(this.CurrentInstruction.Parameter3, c.Value);
+			if (b.Dirty) this.SetValue(this.CurrentInstruction.Parameter2, b.Value);
+			if (a.Dirty) this.SetValue(this.CurrentInstruction.Parameter1, a.Value);
 		}
 
 		private void EnterInterrupt(InterruptRecord interrupt) {
@@ -208,7 +208,7 @@ namespace ArkeOS.Hardware.Devices.ArkeIndustries {
 		private void SetValue(Parameter parameter, ulong value) {
 			if (!parameter.IsIndirect) {
 				if (parameter.Type == ParameterType.Register) {
-					if (parameter.Register != Register.RZERO && parameter.Register != Register.RMAX) {
+					if (parameter.Register != Register.RZERO && parameter.Register != Register.RONE && parameter.Register != Register.RMAX) {
 						this.WriteRegister(parameter.Register, value);
 
 						if (parameter.Register == Register.RIP)
@@ -271,17 +271,15 @@ namespace ArkeOS.Hardware.Devices.ArkeIndustries {
 		}
 
 		public void Push(ulong value) {
-			this.WriteRegister(Register.RSP, this.ReadRegister(Register.RSP) - 1);
-
 			this.BusController.WriteWord(this.ReadRegister(Register.RSP), value);
+
+			this.WriteRegister(Register.RSP, this.ReadRegister(Register.RSP) - 1);
 		}
 
 		public ulong Pop() {
-			var value = this.BusController.ReadWord(this.ReadRegister(Register.RSP));
-
 			this.WriteRegister(Register.RSP, this.ReadRegister(Register.RSP) + 1);
 
-			return value;
+			return this.BusController.ReadWord(this.ReadRegister(Register.RSP));
 		}
 
 		public ulong ReadRegister(Register register) => this.registers[(int)register];
