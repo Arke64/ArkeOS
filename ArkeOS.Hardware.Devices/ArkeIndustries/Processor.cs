@@ -50,7 +50,7 @@ namespace ArkeOS.Hardware.Devices.ArkeIndustries {
 			this.inIsr = false;
 			this.systemTickInterval = 50;
 
-			this.WriteRegister(Register.RF, ulong.MaxValue);
+			this.WriteRegister(Register.RMAX, ulong.MaxValue);
 			this.WriteRegister(Register.RONE, 1);
 			this.WriteRegister(Register.RIP, this.StartAddress);
 
@@ -59,7 +59,6 @@ namespace ArkeOS.Hardware.Devices.ArkeIndustries {
 
 		public void Break() {
 			this.running = false;
-			this.runner.Wait();
 			this.systemTickTimer.Change(Timeout.Infinite, Timeout.Infinite);
 		}
 
@@ -209,7 +208,7 @@ namespace ArkeOS.Hardware.Devices.ArkeIndustries {
 		private void SetValue(Parameter parameter, ulong value) {
 			if (!parameter.IsIndirect) {
 				if (parameter.Type == ParameterType.Register) {
-					if (parameter.Register != Register.RO && parameter.Register != Register.RF) {
+					if (parameter.Register != Register.RZERO && parameter.Register != Register.RMAX) {
 						this.WriteRegister(parameter.Register, value);
 
 						if (parameter.Register == Register.RIP)

@@ -43,5 +43,9 @@ MOV 0d0 R3
 MOV (R0 + $BootDeviceEntryPointOffset) RIP
 
 LABEL NoBootDevice
+MOV 0d0 R0
+MOV 0d0 R1
+MOV 0d0 R2
+MOV 0d0 R3
 HLT
 MOV $NoBootDevice RIP

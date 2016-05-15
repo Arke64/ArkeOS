@@ -30,7 +30,7 @@ namespace ArkeOS.Hardware.Devices.ArkeIndustries {
         }
 
         public void WaitForInterrupt(int timeout) {
-            while (this.PendingCount == 0) {
+            if (this.PendingCount == 0) {
                 this.evt.Reset();
                 this.evt.WaitOne(timeout);
             }

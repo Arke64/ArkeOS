@@ -99,7 +99,7 @@
                     break;
             }
 
-            str = this.IsRIPRelative ? "(" + str + " + RIP)" : str;
+            str = this.IsRIPRelative ? "{" + str + "}" : str;
 
             return this.IsIndirect ? "[" + str + "]" : str;
         }

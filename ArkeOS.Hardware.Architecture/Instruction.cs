@@ -5,7 +5,8 @@ using ArkeOS.Utilities.Extensions;
 
 namespace ArkeOS.Hardware.Architecture {
 	public class Instruction {
-		private static Parameter.Calculated DefaultCalculatedOperand { get; } = new Parameter.Calculated(true, Parameter.CreateRegister(false, false, Register.RO));
+		private static Parameter.Calculated RZEROCalculatedOperand { get; } = new Parameter.Calculated(true, Parameter.CreateRegister(false, false, Register.RZERO));
+		private static Parameter.Calculated RONECalculatedOperand { get; } = new Parameter.Calculated(true, Parameter.CreateRegister(false, false, Register.RONE));
 
 		public byte Code { get; }
 		public byte Length { get; private set; }
@@ -147,10 +148,10 @@ namespace ArkeOS.Hardware.Architecture {
 
 			writer.Write(0UL);
 
-			this.EncodeCalculatedOperand(writer, bits, parameter.Base ?? Instruction.DefaultCalculatedOperand);
-			this.EncodeCalculatedOperand(writer, bits, parameter.Index ?? Instruction.DefaultCalculatedOperand);
-			this.EncodeCalculatedOperand(writer, bits, parameter.Scale ?? Instruction.DefaultCalculatedOperand);
-			this.EncodeCalculatedOperand(writer, bits, parameter.Offset ?? Instruction.DefaultCalculatedOperand);
+			this.EncodeCalculatedOperand(writer, bits, parameter.Base);
+			this.EncodeCalculatedOperand(writer, bits, parameter.Index ?? Instruction.RZEROCalculatedOperand);
+			this.EncodeCalculatedOperand(writer, bits, parameter.Scale ?? Instruction.RONECalculatedOperand);
+			this.EncodeCalculatedOperand(writer, bits, parameter.Offset ?? Instruction.RZEROCalculatedOperand);
 
 			writer.WriteAt(bits.Word, origPosition);
 		}

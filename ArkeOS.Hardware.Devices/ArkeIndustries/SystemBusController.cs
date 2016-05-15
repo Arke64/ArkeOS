@@ -59,7 +59,7 @@ namespace ArkeOS.Hardware.Devices.ArkeIndustries {
 				return;
 
 			if (disposing) {
-				foreach (var d in this.devices)
+				foreach (var d in this.Devices)
 					d.Dispose();
 
 				this.devices = null;

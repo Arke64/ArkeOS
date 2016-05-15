@@ -34,13 +34,13 @@ namespace ArkeOS.Hardware.VirtualMachine {
 			this.processor = new Processor();
             this.system = new SystemBusController();
 
+			this.system.Processor = this.processor;
+			this.system.InterruptController = interruptController;
+
 			this.system.AddDevice(interruptController);
 			this.system.AddDevice(ram);
 			this.system.AddDevice(bootManager);
 			this.system.AddDevice(this.processor);
-
-			this.system.Processor = this.processor;
-			this.system.InterruptController = interruptController;
 
             var stream = (await (await ApplicationData.Current.LocalFolder.CreateFileAsync("Disk 0.bin", CreationCollisionOption.OpenIfExists)).OpenAsync(FileAccessMode.ReadWrite)).AsStream();
             stream.SetLength(8 * 1024 * 1024);
@@ -125,7 +125,7 @@ namespace ArkeOS.Hardware.VirtualMachine {
             foreach (var r in Enum.GetNames(typeof(Register))) {
                 var textbox = (TextBox)this.GetType().GetField(r + "TextBox", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(this);
 
-                textbox.Text = "0x" + this.processor.ReadRegister((Register)Enum.Parse(typeof(Register), r)).ToString("X8");
+                textbox.Text = "0x" + this.processor.ReadRegister((Register)Enum.Parse(typeof(Register), r)).ToString("X");
             }
 
             this.CurrentInstructionLabel.Text = this.processor.CurrentInstruction.ToString();
