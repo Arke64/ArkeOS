@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace ArkeOS.Hardware.Architecture {
@@ -62,7 +63,7 @@ namespace ArkeOS.Hardware.Architecture {
 			InstructionDefinition.Add("DBG", 60, ParameterDirection.Write);
 			InstructionDefinition.Add("BRK", 61);
 		}
-
+		
 		private static void Add(string mnemonic, byte code) => InstructionDefinition.Add(new InstructionDefinition(mnemonic, code));
 		private static void Add(string mnemonic, byte code, ParameterDirection parameter1Direction) => InstructionDefinition.Add(new InstructionDefinition(mnemonic, code, parameter1Direction));
 		private static void Add(string mnemonic, byte code, ParameterDirection parameter1Direction, ParameterDirection parameter2Direction) => InstructionDefinition.Add(new InstructionDefinition(mnemonic, code, parameter1Direction, parameter2Direction));
@@ -90,8 +91,7 @@ namespace ArkeOS.Hardware.Architecture {
 			return InstructionDefinition.mnemonics[mnemonic];
 		}
 
-		public static InstructionDefinition Find(byte code) {
-			return InstructionDefinition.instructions[code];
-		}
+		public static InstructionDefinition Find(byte code) => InstructionDefinition.instructions[code];
+		public static bool IsCodeValid(byte code) => InstructionDefinition.instructions[code] != null;
 	}
 }

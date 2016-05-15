@@ -5,18 +5,15 @@ using ArkeOS.Hardware.Architecture;
 
 namespace ArkeOS.Hardware.Devices.ArkeIndustries {
 	public class Processor : SystemBusDevice, IProcessor {
-		private const int MaxCachedInstuctions = 1024;
-
-		private Instruction[] cachedInstructions;
-		private Timer systemTimer;
 		private ulong[] registers;
-		private ulong cacheBaseAddress;
+		private Instruction[] instructionCache;
+		private ulong instructionCacheBaseAddress;
+		private ulong instructionCacheSize;
+		private Timer systemTickTimer;
+		private byte systemTickInterval;
 		private bool supressRIPIncrement;
 		private bool interruptsEnabled;
 		private bool inIsr;
-		private byte protectionMode;
-		private byte systemTickInterval;
-		private bool instructionCacheEnabled;
 		private bool running;
 
 		private Operand operandA;
@@ -34,7 +31,8 @@ namespace ArkeOS.Hardware.Devices.ArkeIndustries {
 			this.operandB = new Operand();
 			this.operandC = new Operand();
 
-			this.systemTimer = new Timer(this.OnSystemTimerTick, null, Timeout.Infinite, Timeout.Infinite);
+			this.registers = new ulong[0xFF];
+			this.systemTickTimer = new Timer(this.OnSystemTimerTick, null, Timeout.Infinite, Timeout.Infinite);
 		}
 
 		public override void Start() {
@@ -42,19 +40,21 @@ namespace ArkeOS.Hardware.Devices.ArkeIndustries {
 		}
 
 		public void Start(ulong bootManagerId) {
-			this.cacheBaseAddress = ulong.MaxValue;
+			var startAddress = bootManagerId << this.BusController.AddressBits;
+
+			Array.Clear(this.registers, 0, this.registers.Length);
+
+			this.instructionCacheBaseAddress = startAddress;
 			this.supressRIPIncrement = false;
 			this.interruptsEnabled = false;
 			this.inIsr = false;
 			this.running = false;
 			this.systemTickInterval = 50;
-			this.instructionCacheEnabled = true;
-			this.protectionMode = 0;
-
-			this.registers = new ulong[0xFF];
+			this.instructionCacheSize = 1024;
+			this.instructionCache = new Instruction[this.instructionCacheSize];
 
 			this.WriteRegister(Register.RF, ulong.MaxValue);
-			this.WriteRegister(Register.RIP, bootManagerId << 52);
+			this.WriteRegister(Register.RIP, startAddress);
 
 			this.SetNextInstruction();
 		}
@@ -65,12 +65,12 @@ namespace ArkeOS.Hardware.Devices.ArkeIndustries {
 
 		public void Break() {
 			this.running = false;
-			this.systemTimer.Change(Timeout.Infinite, Timeout.Infinite);
+			this.systemTickTimer.Change(Timeout.Infinite, Timeout.Infinite);
 		}
 
 		public void Continue() {
 			this.running = true;
-			this.systemTimer.Change(this.systemTickInterval, this.systemTickInterval);
+			this.systemTickTimer.Change(this.systemTickInterval, this.systemTickInterval);
 
 			new Task(() => {
 				while (this.running)
@@ -82,32 +82,30 @@ namespace ArkeOS.Hardware.Devices.ArkeIndustries {
 			this.Tick();
 		}
 
-		private void OnSystemTimerTick(object state) {
-			if (this.systemTickInterval != 0)
-				this.InterruptController.Enqueue(Interrupt.SystemTimer, 0, 0);
-		}
+		private void OnSystemTimerTick(object state) => this.InterruptController.Enqueue(Interrupt.SystemTimer, 0, 0);
 
 		private void SetNextInstruction() {
 			var address = this.ReadRegister(Register.RIP);
 
-			if (!this.instructionCacheEnabled) {
+			if (this.instructionCacheSize == 0) {
 				this.CurrentInstruction = new Instruction(this.BusController, address);
 
 				return;
 			}
 
-			if (address < this.cacheBaseAddress || address >= this.cacheBaseAddress + (ulong)Processor.MaxCachedInstuctions) {
-				this.cacheBaseAddress = address;
-				this.cachedInstructions = new Instruction[Processor.MaxCachedInstuctions];
+			if (address < this.instructionCacheBaseAddress || address >= this.instructionCacheBaseAddress + this.instructionCacheSize) {
+				this.instructionCacheBaseAddress = address;
+
+				Array.Clear(this.instructionCache, 0, (int)this.instructionCacheSize);
 			}
 
-			var offset = address - this.cacheBaseAddress;
+			var offset = address - this.instructionCacheBaseAddress;
 
-			if (this.cachedInstructions[offset] != null) {
-				this.CurrentInstruction = this.cachedInstructions[offset];
+			if (this.instructionCache[offset] != null) {
+				this.CurrentInstruction = this.instructionCache[offset];
 			}
 			else {
-				this.CurrentInstruction = this.cachedInstructions[offset] = new Instruction(this.BusController, address);
+				this.CurrentInstruction = this.instructionCache[offset] = new Instruction(this.BusController, address);
 			}
 		}
 
@@ -121,7 +119,7 @@ namespace ArkeOS.Hardware.Devices.ArkeIndustries {
 			}
 
 			if (execute) {
-				if (InstructionDefinition.Find(this.CurrentInstruction.Code) != null) { 
+				if (InstructionDefinition.IsCodeValid(this.CurrentInstruction.Code)) { 
 					this.LoadParameters(this.operandA, this.operandB, this.operandC);
 
 					this.Execute(this.CurrentInstruction.Code, this.operandA, this.operandB, this.operandC);
@@ -153,14 +151,9 @@ namespace ArkeOS.Hardware.Devices.ArkeIndustries {
 		}
 
 		private void SaveParameters(Operand a, Operand b, Operand c) {
-			if (c.Dirty && this.CurrentInstruction.Definition.ParameterCount >= 3 && (this.CurrentInstruction.Definition.Parameter3Direction & ParameterDirection.Write) != 0)
-				this.SetValue(this.CurrentInstruction.Parameter3, c.Value);
-
-			if (b.Dirty && this.CurrentInstruction.Definition.ParameterCount >= 2 && (this.CurrentInstruction.Definition.Parameter2Direction & ParameterDirection.Write) != 0)
-				this.SetValue(this.CurrentInstruction.Parameter2, b.Value);
-
-			if (a.Dirty && this.CurrentInstruction.Definition.ParameterCount >= 1 && (this.CurrentInstruction.Definition.Parameter1Direction & ParameterDirection.Write) != 0)
-				this.SetValue(this.CurrentInstruction.Parameter1, a.Value);
+			if (c.Dirty && this.CurrentInstruction.Definition.ParameterCount >= 3 && (this.CurrentInstruction.Definition.Parameter3Direction & ParameterDirection.Write) != 0) this.SetValue(this.CurrentInstruction.Parameter3, c.Value);
+			if (b.Dirty && this.CurrentInstruction.Definition.ParameterCount >= 2 && (this.CurrentInstruction.Definition.Parameter2Direction & ParameterDirection.Write) != 0) this.SetValue(this.CurrentInstruction.Parameter2, b.Value);
+			if (a.Dirty && this.CurrentInstruction.Definition.ParameterCount >= 1 && (this.CurrentInstruction.Definition.Parameter1Direction & ParameterDirection.Write) != 0) this.SetValue(this.CurrentInstruction.Parameter1, a.Value);
 		}
 
 		private void EnterInterrupt(InterruptRecord interrupt) {
@@ -241,24 +234,24 @@ namespace ArkeOS.Hardware.Devices.ArkeIndustries {
 			var address = this.GetValue(parameter.Base.Parameter);
 
 			if (parameter.Index != null) {
-				var calc = this.GetValue(parameter.Index.Parameter) * (parameter.Scale != null ? this.GetValue(parameter.Scale.Parameter) : 1);
+				var index = this.GetValue(parameter.Index.Parameter) * (parameter.Scale != null ? this.GetValue(parameter.Scale.Parameter) : 1);
 
-				if (parameter.Index.IsPositive) {
-					address += calc;
+				if ((parameter.Index.IsPositive && parameter.Scale.IsPositive) || (!parameter.Index.IsPositive && !parameter.Scale.IsPositive)) {
+					address += index;
 				}
 				else {
-					address -= calc;
+					address -= index;
 				}
 			}
 
 			if (parameter.Offset != null) {
-				var calc = this.GetValue(parameter.Offset.Parameter);
+				var offset = this.GetValue(parameter.Offset.Parameter);
 
 				if (parameter.Offset.IsPositive) {
-					address += calc;
+					address += offset;
 				}
 				else {
-					address -= calc;
+					address -= offset;
 				}
 			}
 
@@ -284,13 +277,10 @@ namespace ArkeOS.Hardware.Devices.ArkeIndustries {
 
 		public override ulong ReadWord(ulong address) {
 			if (address == 0) {
-				return this.protectionMode;
-			}
-			else if (address == 1) {
 				return this.systemTickInterval;
 			}
-			else if (address == 2) {
-				return this.instructionCacheEnabled ? 1UL : 0UL;
+			else if (address == 1) {
+				return this.instructionCacheSize;
 			}
 			else {
 				return 0;
@@ -299,14 +289,14 @@ namespace ArkeOS.Hardware.Devices.ArkeIndustries {
 
 		public override void WriteWord(ulong address, ulong data) {
 			if (address == 0) {
-				this.protectionMode = (byte)data;
+				this.systemTickInterval = (byte)data;
+				this.systemTickTimer.Change(this.systemTickInterval, this.systemTickInterval);
 			}
 			else if (address == 1) {
-				this.systemTickInterval = (byte)data;
-				this.systemTimer.Change(this.systemTickInterval, this.systemTickInterval);
-			}
-			else if (address == 2) {
-				this.instructionCacheEnabled = data != 0;
+				this.instructionCacheSize = data;
+
+				if (data > 0)
+					this.instructionCache = new Instruction[data];
 			}
 		}
 
