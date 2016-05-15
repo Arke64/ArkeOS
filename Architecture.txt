@@ -91,6 +91,8 @@ Math
 27 MULF A B C: Multiply B by the IEEE 754 value in A and store in C
 28 MOD A B C: Take the remainder of dividing B by A and store in C
 29 MODF A B C: Take the remainder of dividing B by the IEEE 754 value in A and store in C
+30 ITOF A B: Convert the integer in A to an IEEE 754 value and store it in B
+31 FTOI A B: Convert the IEEE 754 value in A to an integer and store it in B
 
 Logic
 -----

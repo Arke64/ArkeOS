@@ -42,6 +42,8 @@ namespace ArkeOS.Hardware.Architecture {
 			InstructionDefinition.Add("MULF", 27, ParameterDirection.Read, ParameterDirection.Read, ParameterDirection.Write);
 			InstructionDefinition.Add("MOD", 28, ParameterDirection.Read, ParameterDirection.Read, ParameterDirection.Write);
 			InstructionDefinition.Add("MODF", 29, ParameterDirection.Read, ParameterDirection.Read, ParameterDirection.Write);
+			InstructionDefinition.Add("ITOF", 30, ParameterDirection.Read, ParameterDirection.Write);
+			InstructionDefinition.Add("FTOI", 31, ParameterDirection.Read, ParameterDirection.Write);
 
 			InstructionDefinition.Add("SR", 40, ParameterDirection.Read, ParameterDirection.Read, ParameterDirection.Write);
 			InstructionDefinition.Add("SL", 41, ParameterDirection.Read, ParameterDirection.Read, ParameterDirection.Write);

@@ -131,7 +131,7 @@ namespace ArkeOS.Hardware.Devices.ArkeIndustries {
 			}
 
 			if (execute) {
-				if (InstructionDefinition.IsCodeValid(this.CurrentInstruction.Code)) { 
+				if (InstructionDefinition.IsCodeValid(this.CurrentInstruction.Code)) {
 					this.LoadParameters(this.operandA, this.operandB, this.operandC);
 
 					this.Execute(this.CurrentInstruction.Code, this.operandA, this.operandB, this.operandC);
@@ -363,6 +363,8 @@ namespace ArkeOS.Hardware.Devices.ArkeIndustries {
 				case 27: this.ExecuteMULF(a, b, c); break;
 				case 28: this.ExecuteMOD(a, b, c); break;
 				case 29: this.ExecuteMODF(a, b, c); break;
+				case 30: this.ExecuteITOF(a, b, c); break;
+				case 31: this.ExecuteFTOI(a, b, c); break;
 
 				case 40: this.ExecuteSR(a, b, c); break;
 				case 41: this.ExecuteSL(a, b, c); break;
@@ -536,6 +538,14 @@ namespace ArkeOS.Hardware.Devices.ArkeIndustries {
 			else {
 				this.RaiseInterrupt(Interrupt.DivideByZero, this.ReadRegister(Register.RIP), 0);
 			}
+		}
+
+		private void ExecuteITOF(Operand a, Operand b, Operand c) {
+			b.Value = (ulong)BitConverter.DoubleToInt64Bits(a.Value);
+		}
+
+		private void ExecuteFTOI(Operand a, Operand b, Operand c) {
+			b.Value = (ulong)BitConverter.Int64BitsToDouble((long)a.Value);
 		}
 
 		#endregion
