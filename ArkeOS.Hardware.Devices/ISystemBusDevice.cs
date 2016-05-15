@@ -4,6 +4,7 @@ namespace ArkeOS.Hardware.Devices {
 	public interface ISystemBusDevice {
 		ISystemBusController BusController { get; set; }
 		IInterruptController InterruptController { get; set; }
+
 		ulong Id { get; set; }
 		ulong VendorId { get; }
 		ulong ProductId { get; }

@@ -15,5 +15,9 @@ namespace ArkeOS.Hardware.Devices {
 		void Start();
 		void Stop();
 		ulong AddDevice(ISystemBusDevice device);
+
+		void Copy(ulong source, ulong destination, ulong length);
+		ulong[] Read(ulong source, ulong length);
+		void Write(ulong destination, ulong[] data);
 	}
 }

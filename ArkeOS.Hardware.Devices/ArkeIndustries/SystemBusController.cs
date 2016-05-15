@@ -8,13 +8,13 @@ namespace ArkeOS.Hardware.Devices.ArkeIndustries {
 		private ISystemBusDevice[] devices;
 		private ulong nextDeviceId;
 
-		private ulong GetDeviceId(ulong address) => (address & 0xFFF0000000000000UL) >> 52;
-		private ulong GetAddress(ulong address) => address & 0x000FFFFFFFFFFFFFUL;
+		private static ulong GetDeviceId(ulong address) => (address & 0xFFF0000000000000UL) >> 52;
+		private static ulong GetAddress(ulong address) => address & 0x000FFFFFFFFFFFFFUL;
 
 		public IProcessor Processor { get; set; }
 		public IInterruptController InterruptController { get; set; }
 
-		public IReadOnlyList<ISystemBusDevice> Devices => this.devices;
+		public IReadOnlyList<ISystemBusDevice> Devices => this.devices.Where(d => d != null).ToList();
 
 		public int AddressBits => 52;
 		public ulong MaxAddress => 0x000FFFFFFFFFFFFFUL;
@@ -26,15 +26,14 @@ namespace ArkeOS.Hardware.Devices.ArkeIndustries {
 		}
 
 		public void Start() {
-			var devices = this.devices.Where(d => d != null);
-			var count = (ulong)devices.Count();
+			var count = (ulong)this.Devices.Count();
 			var memory = new ulong[count * 4 + 1];
 			var index = 0;
 			var bootId = 0UL;
 
 			memory[index++] = count;
 
-			foreach (var device in devices) {
+			foreach (var device in this.Devices) {
 				memory[index++] = device.Id;
 				memory[index++] = (ulong)device.Type;
 				memory[index++] = device.VendorId;
@@ -48,13 +47,14 @@ namespace ArkeOS.Hardware.Devices.ArkeIndustries {
 
 			this.Processor.Start(bootId);
 
-			foreach (var d in devices)
+			foreach (var d in this.Devices)
 				if (d != this.Processor)
 					d.Start();
 		}
 
 		public void Stop() {
-
+			foreach (var d in this.Devices)
+				d.Stop();
 		}
 
 		public ulong AddDevice(ISystemBusDevice device) {
@@ -69,8 +69,22 @@ namespace ArkeOS.Hardware.Devices.ArkeIndustries {
 			return this.nextDeviceId++;
 		}
 
-		public ulong ReadWord(ulong address) => this.devices[this.GetDeviceId(address)].ReadWord(this.GetAddress(address));
-		public void WriteWord(ulong address, ulong data) => this.devices[this.GetDeviceId(address)].WriteWord(this.GetAddress(address), data);
+		public ulong[] Read(ulong source, ulong length) => this.devices[SystemBusController.GetDeviceId(source)].Read(SystemBusController.GetAddress(source), length);
+		public void Write(ulong destination, ulong[] data) => this.devices[SystemBusController.GetDeviceId(destination)].Write(SystemBusController.GetAddress(destination), data);
+		public ulong ReadWord(ulong address) => this.devices[SystemBusController.GetDeviceId(address)].ReadWord(SystemBusController.GetAddress(address));
+		public void WriteWord(ulong address, ulong data) => this.devices[SystemBusController.GetDeviceId(address)].WriteWord(SystemBusController.GetAddress(address), data);
+
+		public void Copy(ulong source, ulong destination, ulong length) {
+			var sourceDevice = this.devices[SystemBusController.GetDeviceId(source)];
+			var destinationDevice = this.devices[SystemBusController.GetDeviceId(destination)];
+
+			if (sourceDevice.Id == destinationDevice.Id) {
+				sourceDevice.Copy(SystemBusController.GetAddress(source), SystemBusController.GetAddress(destination), length);
+			}
+			else {
+				destinationDevice.Write(SystemBusController.GetAddress(destination), sourceDevice.Read(SystemBusController.GetAddress(source), length));
+			}
+		}
 
 		private class SystemBusControllerDevice : SystemBusDevice {
 			private ulong[] memory;

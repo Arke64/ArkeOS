@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Threading;
 using ArkeOS.Hardware.Architecture;
 
@@ -10,7 +11,11 @@ namespace ArkeOS.Hardware.Devices.ArkeIndustries {
 
         public int PendingCount => this.pending.Count;
 
-        public InterruptController() : base(ProductIds.Vendor, ProductIds.IC100, DeviceType.InterruptController) { }
+        public InterruptController() : base(ProductIds.Vendor, ProductIds.IC100, DeviceType.InterruptController) {
+			this.pending = new Queue<InterruptRecord>();
+			this.evt = new ManualResetEvent(false);
+			this.vectors = new ulong[0xFF];
+		}
 
 		public override ulong ReadWord(ulong address) => this.vectors[address];
 		public override void WriteWord(ulong address, ulong data) => this.vectors[address] = data;
@@ -30,13 +35,13 @@ namespace ArkeOS.Hardware.Devices.ArkeIndustries {
         }
 
         public override void Start() {
-            this.pending = new Queue<InterruptRecord>();
-            this.evt = new ManualResetEvent(false);
-            this.vectors = new ulong[0xFF];
         }
 
         public override void Stop() {
             this.evt.Set();
+			this.pending.Clear();
+
+			Array.Clear(this.vectors, 0, this.vectors.Length);
         }
     }
 }
