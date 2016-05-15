@@ -1,7 +1,8 @@
-﻿using ArkeOS.Hardware.Architecture;
+﻿using System;
+using ArkeOS.Hardware.Architecture;
 
 namespace ArkeOS.Hardware.Devices {
-	public interface ISystemBusDevice {
+	public interface ISystemBusDevice : IDisposable {
 		ISystemBusController BusController { get; set; }
 		IInterruptController InterruptController { get; set; }
 
@@ -10,8 +11,7 @@ namespace ArkeOS.Hardware.Devices {
 		ulong ProductId { get; }
 		DeviceType Type { get; }
 
-		void Start();
-		void Stop();
+		void Reset();
 
 		void RaiseInterrupt(ulong data);
 

@@ -15,13 +15,15 @@ namespace ArkeOS.Hardware.Devices.ArkeIndustries {
 		private bool interruptsEnabled;
 		private bool inIsr;
 		private bool running;
+		private bool disposed;
 
 		private Operand operandA;
 		private Operand operandB;
 		private Operand operandC;
+		private Task runner;
 
 		public Instruction CurrentInstruction { get; private set; }
-
+		public ulong StartAddress { get; set; }
 		public Action<Operand, Operand, Operand> DebugHandler { get; set; }
 		public Action BreakHandler { get; set; }
 
@@ -29,42 +31,35 @@ namespace ArkeOS.Hardware.Devices.ArkeIndustries {
 			this.operandA = new Operand();
 			this.operandB = new Operand();
 			this.operandC = new Operand();
-
 			this.registers = new ulong[32];
 			this.systemTickTimer = new Timer(this.OnSystemTimerTick, null, Timeout.Infinite, Timeout.Infinite);
+			this.disposed = false;
 		}
 
-		public override void Start() {
-			throw new InvalidOperationException();
-		}
-
-		public void Start(ulong bootManagerId) {
-			var startAddress = bootManagerId << this.BusController.AddressBits;
+		public override void Reset() {
+			if (this.running)
+				this.Break();
 
 			Array.Clear(this.registers, 0, this.registers.Length);
 
-			this.instructionCacheBaseAddress = startAddress;
+			this.instructionCacheBaseAddress = this.StartAddress;
+			this.instructionCacheSize = 1024;
+			this.instructionCache = new Instruction[this.instructionCacheSize];
 			this.supressRIPIncrement = false;
 			this.interruptsEnabled = false;
 			this.inIsr = false;
-			this.running = false;
 			this.systemTickInterval = 50;
-			this.instructionCacheSize = 1024;
-			this.instructionCache = new Instruction[this.instructionCacheSize];
 
 			this.WriteRegister(Register.RF, ulong.MaxValue);
 			this.WriteRegister(Register.RONE, 1);
-			this.WriteRegister(Register.RIP, startAddress);
+			this.WriteRegister(Register.RIP, this.StartAddress);
 
 			this.SetNextInstruction();
 		}
 
-		public override void Stop() {
-			this.Break();
-		}
-
 		public void Break() {
 			this.running = false;
+			this.runner.Wait();
 			this.systemTickTimer.Change(Timeout.Infinite, Timeout.Infinite);
 		}
 
@@ -72,14 +67,32 @@ namespace ArkeOS.Hardware.Devices.ArkeIndustries {
 			this.running = true;
 			this.systemTickTimer.Change(this.systemTickInterval, this.systemTickInterval);
 
-			new Task(() => {
+			this.runner = new Task(() => {
 				while (this.running)
 					this.Tick();
-			}, TaskCreationOptions.LongRunning).Start();
+			}, TaskCreationOptions.LongRunning);
+			this.runner.Start();
 		}
 
 		public void Step() {
 			this.Tick();
+		}
+
+		protected override void Dispose(bool disposing) {
+			if (this.disposed)
+				return;
+
+			if (disposing) {
+				this.Break();
+
+				this.systemTickTimer.Dispose();
+				this.instructionCache = null;
+				this.registers = null;
+			}
+
+			this.disposed = true;
+
+			base.Dispose(disposing);
 		}
 
 		private void OnSystemTimerTick(object state) => this.RaiseInterrupt(Interrupt.SystemTimer, 0, 0);

@@ -60,7 +60,7 @@ namespace ArkeOS.Hardware.VirtualMachine {
                 this.Refresh();
             });
 
-            this.system.Start();
+            this.system.Reset();
 
             this.Refresh();
 
@@ -75,8 +75,9 @@ namespace ArkeOS.Hardware.VirtualMachine {
         private void StopButton_Click(object sender, RoutedEventArgs e) {
 			this.Refresh();
 
-			this.system.Stop();
+			this.system.Dispose();
             this.system = null;
+			this.processor = null;
 
             this.StartButton.IsEnabled = true;
             this.StopButton.IsEnabled = false;

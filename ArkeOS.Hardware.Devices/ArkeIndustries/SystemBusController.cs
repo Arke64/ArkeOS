@@ -7,6 +7,7 @@ namespace ArkeOS.Hardware.Devices.ArkeIndustries {
 	public class SystemBusController : ISystemBusController {
 		private ISystemBusDevice[] devices;
 		private ulong nextDeviceId;
+		private bool disposed;
 
 		private static ulong GetDeviceId(ulong address) => (address & 0xFFF0000000000000UL) >> 52;
 		private static ulong GetAddress(ulong address) => address & 0x000FFFFFFFFFFFFFUL;
@@ -22,10 +23,12 @@ namespace ArkeOS.Hardware.Devices.ArkeIndustries {
 
 		public SystemBusController() {
 			this.devices = new ISystemBusDevice[this.MaxId + 1];
+			this.devices[this.MaxId] = new SystemBusControllerDevice();
 			this.nextDeviceId = 0;
+			this.disposed = false;
 		}
 
-		public void Start() {
+		public void Reset() {
 			var count = (ulong)this.Devices.Count();
 			var memory = new ulong[count * 4 + 1];
 			var index = 0;
@@ -43,18 +46,32 @@ namespace ArkeOS.Hardware.Devices.ArkeIndustries {
 					bootId = device.Id;
 			}
 
-			this.devices[this.MaxId] = new SystemBusControllerDevice(memory);
+			((SystemBusControllerDevice)this.devices[this.MaxId]).SetDeviceMap(memory);
 
-			this.Processor.Start(bootId);
+			this.Processor.StartAddress = bootId << this.AddressBits;
 
 			foreach (var d in this.Devices)
-				if (d != this.Processor)
-					d.Start();
+				d.Reset();
 		}
 
-		public void Stop() {
-			foreach (var d in this.Devices)
-				d.Stop();
+		protected virtual void Dispose(bool disposing) {
+			if (this.disposed)
+				return;
+
+			if (disposing) {
+				foreach (var d in this.devices)
+					d.Dispose();
+
+				this.devices = null;
+			}
+
+			this.disposed = true;
+		}
+
+		public void Dispose() {
+			this.Dispose(true);
+
+			GC.SuppressFinalize(this);
 		}
 
 		public ulong AddDevice(ISystemBusDevice device) {
@@ -67,6 +84,16 @@ namespace ArkeOS.Hardware.Devices.ArkeIndustries {
 			this.devices[this.nextDeviceId] = device;
 
 			return this.nextDeviceId++;
+		}
+
+		public void RemoveDevice(ISystemBusDevice device) {
+			for (var i = 0UL; i < this.MaxId; i++) {
+				if (this.devices[i] == device) {
+					this.devices[i] = null;
+
+					device.Dispose();
+				}
+			}
 		}
 
 		public ulong[] Read(ulong source, ulong length) => this.devices[SystemBusController.GetDeviceId(source)].Read(SystemBusController.GetAddress(source), length);
@@ -89,14 +116,16 @@ namespace ArkeOS.Hardware.Devices.ArkeIndustries {
 		private class SystemBusControllerDevice : SystemBusDevice {
 			private ulong[] memory;
 
-			public SystemBusControllerDevice(ulong[] memory) : base(ProductIds.Vendor, ProductIds.BC100, DeviceType.SystemBusController) {
-				this.memory = memory;
-			}
+			public SystemBusControllerDevice() : base(ProductIds.Vendor, ProductIds.BC100, DeviceType.SystemBusController) { }
+
+			public void SetDeviceMap(ulong[] memory) => this.memory = memory;
 
 			public override ulong ReadWord(ulong address) => this.memory[address];
 
-			public override void Stop() {
-				Array.Clear(this.memory, 0, this.memory.Length);
+			protected override void Dispose(bool disposing) {
+				this.memory = null;
+
+				base.Dispose(disposing);
 			}
 		}
 	}

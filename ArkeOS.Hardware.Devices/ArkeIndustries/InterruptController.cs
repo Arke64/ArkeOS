@@ -8,6 +8,7 @@ namespace ArkeOS.Hardware.Devices.ArkeIndustries {
         private Queue<InterruptRecord> pending;
         private ManualResetEvent evt;
         private ulong[] vectors;
+		private bool disposed;
 
         public int PendingCount => this.pending.Count;
 
@@ -15,6 +16,7 @@ namespace ArkeOS.Hardware.Devices.ArkeIndustries {
 			this.pending = new Queue<InterruptRecord>();
 			this.evt = new ManualResetEvent(false);
 			this.vectors = new ulong[0x1000];
+			this.disposed = false;
 		}
 
 		public override ulong ReadWord(ulong address) => this.vectors[address];
@@ -34,14 +36,26 @@ namespace ArkeOS.Hardware.Devices.ArkeIndustries {
             }
         }
 
-        public override void Start() {
-        }
-
-        public override void Stop() {
+        public override void Reset() {
             this.evt.Set();
 			this.pending.Clear();
 
 			Array.Clear(this.vectors, 0, this.vectors.Length);
         }
-    }
+
+		protected override void Dispose(bool disposing) {
+			if (this.disposed)
+				return;
+
+			if (disposing) {
+				this.Reset();
+
+				this.evt.Dispose();
+			}
+
+			this.disposed = true;
+
+			base.Dispose(disposing);
+		}
+	}
 }

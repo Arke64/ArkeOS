@@ -1,5 +1,5 @@
 ﻿namespace ArkeOS.Hardware.Devices {
 	public interface IProcessor {
-		void Start(ulong bootManagerDeviceId);
+		ulong StartAddress { get; set; }
 	}
 }
