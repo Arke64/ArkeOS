@@ -1,27 +1,13 @@
 ﻿using ArkeOS.Hardware.Architecture;
 
-namespace ArkeOS.Hardware.Devices {
+namespace ArkeOS.Hardware.Devices.ArkeIndustries {
     public class BootManager : SystemBusDevice {
-        public ulong[] BootImage { get; set; }
+		private ulong[] image;
 
-        public BootManager() : base(VendorIds.ArkeIndustries, ArkeIndustries.ProductIds.B100, DeviceType.BootManager) {
+        public BootManager(ulong[] bootImage) : base(ProductIds.Vendor, ProductIds.MB100, DeviceType.BootManager) {
+			this.image = bootImage;
+		}
 
-        }
-
-        public override ulong ReadWord(ulong address) {
-            return this.BootImage[address];
-        }
-
-        public override void WriteWord(ulong address, ulong data) {
-
-        }
-
-        public override void Start() {
-
-        }
-
-        public override void Stop() {
-
-        }
+        public override ulong ReadWord(ulong address) => this.image[address];
     }
 }

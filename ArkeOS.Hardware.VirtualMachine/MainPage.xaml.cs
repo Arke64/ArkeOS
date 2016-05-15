@@ -3,7 +3,7 @@ using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices.WindowsRuntime;
 using ArkeOS.Hardware.Architecture;
-using ArkeOS.Hardware.Devices;
+using ArkeOS.Hardware.Devices.ArkeIndustries;
 using ArkeOS.Utilities;
 using Windows.Storage;
 using Windows.UI.Core;
@@ -12,9 +12,10 @@ using Windows.UI.Xaml.Controls;
 
 namespace ArkeOS.Hardware.VirtualMachine {
     public partial class MainPage : Page {
-        private SystemManager system;
+        private SystemBusController system;
+		private Processor processor;
 
-        public MainPage() {
+		public MainPage() {
             this.InitializeComponent();
 
             this.StartButton.IsEnabled = true;
@@ -26,26 +27,31 @@ namespace ArkeOS.Hardware.VirtualMachine {
         }
 
         private async void StartButton_Click(object sender, RoutedEventArgs e) {
-            this.system = new SystemManager();
-            this.system.PhysicalMemorySize = 1 * 1024 * 1024;
-            this.system.BootImage = Helpers.ConvertArray((await FileIO.ReadBufferAsync(await ApplicationData.Current.LocalFolder.GetFileAsync("Boot.bin"))).ToArray());
+			var interruptController = new InterruptController();
+			var ram = new RandomAccessMemoryController(1 * 1024 * 1024);
+			var bootManager = new BootManager(Helpers.ConvertArray((await FileIO.ReadBufferAsync(await ApplicationData.Current.LocalFolder.GetFileAsync("Boot.bin"))).ToArray()));
 
+			this.processor = new Processor();
+            this.system = new SystemBusController();
+
+			this.system.AddDevice(interruptController);
+			this.system.AddDevice(ram);
+			this.system.AddDevice(bootManager);
+			this.system.AddDevice(this.processor);
+
+			this.system.Processor = this.processor;
+			this.system.InterruptController = interruptController;
 
             var stream = (await (await ApplicationData.Current.LocalFolder.CreateFileAsync("Disk 0.bin", CreationCollisionOption.OpenIfExists)).OpenAsync(FileAccessMode.ReadWrite)).AsStream();
             stream.SetLength(8 * 1024 * 1024);
-
-            this.system.AddPeripheral(new DiskDrive(stream));
-
+            this.system.AddDevice(new DiskDrive(stream));
 
             var keyboard = new Keyboard();
-
             this.InputTextBox.KeyDown += (ss, ee) => keyboard.TriggerKeyDown((ulong)ee.Key);
             this.InputTextBox.KeyUp += (ss, ee) => keyboard.TriggerKeyUp((ulong)ee.Key);
+            this.system.AddDevice(keyboard);
 
-            this.system.AddPeripheral(keyboard);
-
-
-            this.system.Processor.ExecutionBroken += async (ss, ee) => await this.Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () => {
+			this.processor.ExecutionBroken += async (ss, ee) => await this.Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () => {
                 this.BreakButton.IsEnabled = false;
                 this.ContinueButton.IsEnabled = true;
                 this.StepButton.IsEnabled = true;
@@ -81,7 +87,7 @@ namespace ArkeOS.Hardware.VirtualMachine {
         }
 
         private void BreakButton_Click(object sender, RoutedEventArgs e) {
-            this.system.Processor.Break();
+            this.processor.Break();
 
             this.BreakButton.IsEnabled = false;
             this.ContinueButton.IsEnabled = true;
@@ -92,7 +98,7 @@ namespace ArkeOS.Hardware.VirtualMachine {
         }
 
         private void ContinueButton_Click(object sender, RoutedEventArgs e) {
-            this.system.Processor.Continue();
+            this.processor.Continue();
 
             this.BreakButton.IsEnabled = true;
             this.ContinueButton.IsEnabled = false;
@@ -101,7 +107,7 @@ namespace ArkeOS.Hardware.VirtualMachine {
         }
 
         private void StepButton_Click(object sender, RoutedEventArgs e) {
-            this.system.Processor.Step();
+            this.processor.Step();
 
             this.Refresh();
         }
@@ -110,7 +116,7 @@ namespace ArkeOS.Hardware.VirtualMachine {
             foreach (var r in Enum.GetNames(typeof(Register))) {
                 var textbox = (TextBox)this.GetType().GetField(r + "TextBox", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(this);
 
-                this.system.Processor.WriteRegister((Register)Enum.Parse(typeof(Register), r), Convert.ToUInt64(textbox.Text.Substring(2), 16));
+                this.processor.WriteRegister((Register)Enum.Parse(typeof(Register), r), Convert.ToUInt64(textbox.Text.Substring(2), 16));
             }
         }
 
@@ -118,10 +124,10 @@ namespace ArkeOS.Hardware.VirtualMachine {
             foreach (var r in Enum.GetNames(typeof(Register))) {
                 var textbox = (TextBox)this.GetType().GetField(r + "TextBox", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(this);
 
-                textbox.Text = "0x" + this.system.Processor.ReadRegister((Register)Enum.Parse(typeof(Register), r)).ToString("X8");
+                textbox.Text = "0x" + this.processor.ReadRegister((Register)Enum.Parse(typeof(Register), r)).ToString("X8");
             }
 
-            this.CurrentInstructionLabel.Text = this.system.Processor.CurrentInstruction.ToString();
+            this.CurrentInstructionLabel.Text = this.processor.CurrentInstruction.ToString();
         }
 
         private void Clear() {

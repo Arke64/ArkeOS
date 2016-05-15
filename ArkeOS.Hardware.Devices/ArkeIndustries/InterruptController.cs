@@ -2,54 +2,35 @@
 using System.Threading;
 using ArkeOS.Hardware.Architecture;
 
-namespace ArkeOS.Hardware.Devices {
-    public class InterruptController : SystemBusDevice {
-        public struct Entry {
-            public Interrupt Id { get; set; }
-            public ulong Data1 { get; set; }
-            public ulong Data2 { get; set; }
-        }
-
-        private Queue<Entry> pending;
+namespace ArkeOS.Hardware.Devices.ArkeIndustries {
+    public class InterruptController : SystemBusDevice, IInterruptController {
+        private Queue<InterruptRecord> pending;
         private ManualResetEvent evt;
         private ulong[] vectors;
 
         public int PendingCount => this.pending.Count;
 
-        public InterruptController() : base(VendorIds.ArkeIndustries, ArkeIndustries.ProductIds.IC100, DeviceType.InterruptController) {
+        public InterruptController() : base(ProductIds.Vendor, ProductIds.IC100, DeviceType.InterruptController) { }
 
-        }
+		public override ulong ReadWord(ulong address) => this.vectors[address];
+		public override void WriteWord(ulong address, ulong data) => this.vectors[address] = data;
 
-        public void Enqueue(Interrupt interrupt, ulong data1, ulong data2) {
-            this.pending.Enqueue(new Entry() { Id = interrupt, Data1 = data1, Data2 = data2 });
+		public InterruptRecord Dequeue() => this.pending.Dequeue();
+
+		public void Enqueue(Interrupt type, ulong data1, ulong data2) {
+            this.pending.Enqueue(new InterruptRecord() { Type = type, Data1 = data1, Data2 = data2, Handler = this.vectors[(int)type] });
             this.evt.Set();
         }
 
-        public Entry Dequeue() {
-            return this.pending.Dequeue();
-        }
-
-        public ulong GetVector(Entry entry) {
-            return this.vectors[(int)entry.Id];
-        }
-
-        public void Wait(int timeout) {
-            if (this.PendingCount == 0) {
+        public void WaitForInterrupt(int timeout) {
+            while (this.PendingCount == 0) {
                 this.evt.Reset();
                 this.evt.WaitOne(timeout);
             }
         }
 
-        public override ulong ReadWord(ulong address) {
-            return this.vectors[address];
-        }
-
-        public override void WriteWord(ulong address, ulong data) {
-            this.vectors[address] = data;
-        }
-
         public override void Start() {
-            this.pending = new Queue<Entry>();
+            this.pending = new Queue<InterruptRecord>();
             this.evt = new ManualResetEvent(false);
             this.vectors = new ulong[0xFF];
         }

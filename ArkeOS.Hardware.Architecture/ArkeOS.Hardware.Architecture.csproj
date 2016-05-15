@@ -39,6 +39,8 @@
     <!-- A reference to the entire .NET Framework is automatically included -->
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="InterruptRecord.cs" />
+    <Compile Include="ParameterDirection.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="DeviceType.cs" />
     <Compile Include="Instruction.cs" />

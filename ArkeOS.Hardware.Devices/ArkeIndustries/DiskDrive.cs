@@ -3,15 +3,15 @@ using System.IO;
 using ArkeOS.Hardware.Architecture;
 using ArkeOS.Utilities;
 
-namespace ArkeOS.Hardware.Devices {
+namespace ArkeOS.Hardware.Devices.ArkeIndustries {
     public class DiskDrive : SystemBusDevice {
         private Stream stream;
         private byte[] buffer;
         private ulong length;
 
-        public DiskDrive(Stream stream) : base(VendorIds.ArkeIndustries, ArkeIndustries.ProductIds.HDD100, DeviceType.DiskDrive) {
+        public DiskDrive(Stream stream) : base(ProductIds.Vendor, ProductIds.HDD100, DeviceType.DiskDrive) {
             this.stream = stream;
-            this.length = (ulong)stream.Length * 8UL;
+            this.length = (ulong)stream.Length / 8UL;
 
             this.buffer = new byte[8];
         }
@@ -39,7 +39,7 @@ namespace ArkeOS.Hardware.Devices {
         public override ulong[] Read(ulong source, ulong length) {
             var buffer = new byte[length * 8];
 
-            if (source < this.length) {
+            if (source + length < this.length) {
                 this.stream.Seek((long)source * 8, SeekOrigin.Begin);
                 this.stream.Read(buffer, 0, buffer.Length);
             }
@@ -48,17 +48,13 @@ namespace ArkeOS.Hardware.Devices {
         }
 
         public override void Write(ulong destination, ulong[] data) {
-            if (destination >= this.length)
+            if (destination + (ulong)data.Length >= this.length)
                 return;
 
             var buffer = Helpers.ConvertArray(data);
 
             this.stream.Seek((long)destination * 8, SeekOrigin.Begin);
-            this.stream.Read(buffer, 0, buffer.Length);
-        }
-
-        public override void Start() {
-
+            this.stream.Write(buffer, 0, buffer.Length);
         }
 
         public override void Stop() {

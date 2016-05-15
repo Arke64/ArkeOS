@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 
 namespace ArkeOS.Hardware.Architecture {
@@ -16,12 +15,6 @@ namespace ArkeOS.Hardware.Architecture {
 		public ParameterDirection Parameter3Direction { get; }
 
 		public static IReadOnlyList<InstructionDefinition> All => InstructionDefinition.instructions.Where(c => c != null).ToList();
-
-		[Flags]
-		public enum ParameterDirection {
-			Read = 1,
-			Write = 2,
-		}
 
 		static InstructionDefinition() {
 			InstructionDefinition.mnemonics = new Dictionary<string, InstructionDefinition>();

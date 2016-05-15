@@ -197,7 +197,7 @@ namespace ArkeOS.Tools.Assembler {
                     return Parameter.CreateAddress(isIndirect, true, unchecked(this.variables[value] - this.currentOffset));
                 }
                 else if (this.labels.ContainsKey(value)) {
-                    return Parameter.CreateAddress(isIndirect, true, unchecked(this.labels[value] - this.currentOffset)));
+                    return Parameter.CreateAddress(isIndirect, true, unchecked(this.labels[value] - this.currentOffset));
                 }
 
                 throw new VariableNotFoundException();
