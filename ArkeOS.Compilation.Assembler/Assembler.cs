@@ -23,7 +23,7 @@ namespace ArkeOS.Tools.Assembler {
 			this.currentOffset = 0;
 		}
 
-		private static string Sanitize(string input) => Regex.Replace(input, @"\s+", " ").Replace("[ ", "[").Replace("] ", "]").Replace("( ", ")").Replace(") ", ")").Replace(" [", "[").Replace(" ]", "]").Replace(" (", ")").Replace(" )", ")").Replace("+ ", "+").Replace(" +", "+").Replace("- ", "-").Replace(" -", "-").Replace("* ", "*").Replace(" *", "*");
+		private static string Sanitize(string input) => Regex.Replace(input, @"\s+", " ").Replace("+ ", "+").Replace(" +", "+").Replace("- ", "-").Replace(" -", "-").Replace("* ", "*").Replace(" *", "*");
 		
 		public byte[] Assemble(string[] inputLines) {
 			var lines = inputLines.Where(l => !string.IsNullOrWhiteSpace(l) && !l.StartsWith(@"//")).Select(l => Assembler.Sanitize(l));
@@ -151,7 +151,7 @@ namespace ArkeOS.Tools.Assembler {
         private Instruction ParseInstruction(string[] parts, bool resolveNames) {
             var conditional = default(Parameter);
             var conditionalZero = false;
-            var skip = 1;
+            var skip = 0;
 
             if (parts[0] == "IFZ" || parts[0] == "IFNZ") {
                 conditionalZero = parts[0] == "IFZ";
@@ -159,7 +159,7 @@ namespace ArkeOS.Tools.Assembler {
                 skip += 2;
             }
 
-            var def = InstructionDefinition.Find(parts[skip]);
+            var def = InstructionDefinition.Find(parts[skip++]);
 
             if (def == null)
                 throw new InvalidInstructionException();
