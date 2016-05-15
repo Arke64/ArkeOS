@@ -12,14 +12,16 @@ namespace ArkeOS.Tools.Assembler {
         private Dictionary<string, ulong> labels;
         private Dictionary<string, ulong> defines;
         private Dictionary<string, ulong> variables;
+        private Dictionary<string, ulong> strings;
         private ulong currentOffset;
 
 		public Assembler() {
             this.labels = new Dictionary<string, ulong>();
             this.defines = new Dictionary<string, ulong>();
             this.variables = new Dictionary<string, ulong>();
+            this.strings = new Dictionary<string, ulong>();
 			this.currentOffset = 0;
-        }
+		}
 
 		private static string Sanitize(string input) => Regex.Replace(input, @"\s+", " ").Replace("[ ", "[").Replace("] ", "]").Replace("( ", ")").Replace(") ", ")").Replace(" [", "[").Replace(" ]", "]").Replace(" (", ")").Replace(" )", ")").Replace("+ ", "+").Replace(" +", "+").Replace("- ", "-").Replace(" -", "-").Replace("* ", "*").Replace(" *", "*");
 		
@@ -39,7 +41,13 @@ namespace ArkeOS.Tools.Assembler {
                         if (parts[0] == "OFFSET") {
                             stream.Seek((long)this.ParseParameter(parts[1], true).Address * 8, SeekOrigin.Begin);
                         }
-                        else if (parts[0] == "VAR") {
+						else if (parts[0] == "LABEL") {
+
+						}
+						else if (parts[0] == "DEFINE") {
+
+						}
+						else if (parts[0] == "VAR") {
                             writer.Write(this.ParseParameter(parts[2], true).Address);
                         }
                         else if (parts[0] == "CONST") {
@@ -113,8 +121,11 @@ namespace ArkeOS.Tools.Assembler {
                 }
                 else if (parts[0] == "LABEL") {
                     this.labels.Add(parts[1], this.currentOffset);
-                }
-                else if (parts[0] == "VAR") {
+				}
+				else if (parts[0] == "DEFINE") {
+
+				}
+				else if (parts[0] == "VAR") {
                     this.variables.Add(parts[1], this.currentOffset);
 
 					this.currentOffset += 1;
@@ -122,10 +133,12 @@ namespace ArkeOS.Tools.Assembler {
                 else if (parts[0] == "CONST") {
 					this.currentOffset += 1;
                 }
-                else if (parts[0] == "STRING") {
+                else if (parts[0] == "STR") {
                     var start = line.IndexOf("\"") + 1;
                     var end = line.LastIndexOf("\"");
 					var len = end - start;
+
+					this.strings.Add(parts[1], this.currentOffset);
 
 					this.currentOffset += (ulong)(len + len % 8);
                 }
@@ -195,8 +208,11 @@ namespace ArkeOS.Tools.Assembler {
 
 				if (this.variables.ContainsKey(value)) {
                     return Parameter.CreateAddress(isIndirect, true, unchecked(this.variables[value] - this.currentOffset));
-                }
-                else if (this.labels.ContainsKey(value)) {
+				}
+				else if (this.strings.ContainsKey(value)) {
+					return Parameter.CreateAddress(isIndirect, true, unchecked(this.strings[value] - this.currentOffset));
+				}
+				else if (this.labels.ContainsKey(value)) {
                     return Parameter.CreateAddress(isIndirect, true, unchecked(this.labels[value] - this.currentOffset));
                 }
 
