@@ -153,13 +153,13 @@ namespace ArkeOS.Hardware.Devices.ArkeIndustries {
 		}
 
 		private void SaveParameters(Operand a, Operand b, Operand c) {
-			if (this.CurrentInstruction.Definition.ParameterCount >= 3 && (this.CurrentInstruction.Definition.Parameter3Direction & ParameterDirection.Write) != 0 && c.Dirty)
+			if (c.Dirty && this.CurrentInstruction.Definition.ParameterCount >= 3 && (this.CurrentInstruction.Definition.Parameter3Direction & ParameterDirection.Write) != 0)
 				this.SetValue(this.CurrentInstruction.Parameter3, c.Value);
 
-			if (this.CurrentInstruction.Definition.ParameterCount >= 2 && (this.CurrentInstruction.Definition.Parameter2Direction & ParameterDirection.Write) != 0 && b.Dirty)
+			if (b.Dirty && this.CurrentInstruction.Definition.ParameterCount >= 2 && (this.CurrentInstruction.Definition.Parameter2Direction & ParameterDirection.Write) != 0)
 				this.SetValue(this.CurrentInstruction.Parameter2, b.Value);
 
-			if (this.CurrentInstruction.Definition.ParameterCount >= 1 && (this.CurrentInstruction.Definition.Parameter1Direction & ParameterDirection.Write) != 0 && a.Dirty)
+			if (a.Dirty && this.CurrentInstruction.Definition.ParameterCount >= 1 && (this.CurrentInstruction.Definition.Parameter1Direction & ParameterDirection.Write) != 0)
 				this.SetValue(this.CurrentInstruction.Parameter1, a.Value);
 		}
 
@@ -266,7 +266,7 @@ namespace ArkeOS.Hardware.Devices.ArkeIndustries {
 		}
 
 		public void Push(ulong value) {
-			this.WriteRegister(Register.RSP, this.ReadRegister(Register.RSP) - 8);
+			this.WriteRegister(Register.RSP, this.ReadRegister(Register.RSP) - 1);
 
 			this.BusController.WriteWord(this.ReadRegister(Register.RSP), value);
 		}
@@ -274,7 +274,7 @@ namespace ArkeOS.Hardware.Devices.ArkeIndustries {
 		public ulong Pop() {
 			var value = this.BusController.ReadWord(this.ReadRegister(Register.RSP));
 
-			this.WriteRegister(Register.RSP, this.ReadRegister(Register.RSP) + 8);
+			this.WriteRegister(Register.RSP, this.ReadRegister(Register.RSP) + 1);
 
 			return value;
 		}

@@ -21,7 +21,7 @@ namespace ArkeOS.Hardware.Devices.ArkeIndustries {
 		public ulong MaxId => 0xFFFUL;
 
 		public SystemBusController() {
-			this.devices = new ISystemBusDevice[this.MaxId];
+			this.devices = new ISystemBusDevice[this.MaxId + 1];
 			this.nextDeviceId = 0;
 		}
 
