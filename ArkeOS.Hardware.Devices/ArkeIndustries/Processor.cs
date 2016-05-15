@@ -32,7 +32,7 @@ namespace ArkeOS.Hardware.Devices {
 
         public event EventHandler ExecutionBroken;
 
-        public Processor() : base(Ids.ArkeIndustries.VendorId, Ids.ArkeIndustries.Products.PROC100, DeviceType.Processor) {
+        public Processor() : base(VendorIds.ArkeIndustries, ArkeIndustries.ProductIds.PROC100, DeviceType.Processor) {
             this.operandA = new Operand();
             this.operandB = new Operand();
             this.operandC = new Operand();
@@ -57,7 +57,7 @@ namespace ArkeOS.Hardware.Devices {
             this.registers = new ulong[0xFF];
 
             this.WriteRegister(Register.RF, ulong.MaxValue);
-            this.WriteRegister(Register.RIP, Ids.Devices.BootManager << 52);
+            this.WriteRegister(Register.RIP, this.BusController.FindBootManagerId() << 52);
 
             this.SetNextInstruction();
         }

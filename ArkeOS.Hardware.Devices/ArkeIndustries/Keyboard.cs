@@ -2,7 +2,7 @@
 
 namespace ArkeOS.Hardware.Devices {
     public class Keyboard : SystemBusDevice {
-        public Keyboard() : base(Ids.ArkeIndustries.VendorId, Ids.ArkeIndustries.Products.KB100, DeviceType.Keyboard) {
+        public Keyboard() : base(VendorIds.ArkeIndustries, ArkeIndustries.ProductIds.KB100, DeviceType.Keyboard) {
 
         }
 

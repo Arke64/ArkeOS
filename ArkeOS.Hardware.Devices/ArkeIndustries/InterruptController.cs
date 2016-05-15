@@ -16,7 +16,7 @@ namespace ArkeOS.Hardware.Devices {
 
         public int PendingCount => this.pending.Count;
 
-        public InterruptController() : base(Ids.ArkeIndustries.VendorId, Ids.ArkeIndustries.Products.IC100, DeviceType.InterruptController) {
+        public InterruptController() : base(VendorIds.ArkeIndustries, ArkeIndustries.ProductIds.IC100, DeviceType.InterruptController) {
 
         }
 

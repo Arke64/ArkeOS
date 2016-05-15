@@ -15,33 +15,32 @@ namespace ArkeOS.Hardware.Devices {
 
         public static ulong MaxAddress => 0x000FFFFFFFFFFFFFUL;
         public static ulong MaxId => 0xFFFUL;
+		public static ulong DeviceId => SystemBusController.MaxId;
 
         public SystemBusController() {
             this.devices = new SystemBusDevice[SystemBusController.MaxId];
-            this.nextDeviceId = 128;
+            this.nextDeviceId = 0;
 
-            this.AddDevice(Architecture.Ids.Devices.SystemBusController, new SystemBusControllerDevice());
+			this.devices[SystemBusController.MaxId] = new SystemBusControllerDevice();
         }
 
         public void RaiseInterrupt(SystemBusDevice device, ulong data2) {
             this.InterruptController?.Enqueue(Interrupt.DeviceWaiting, device.Id, data2);
         }
 
-        public void AddDevice(ulong deviceId, SystemBusDevice device) {
-            device.Id = deviceId;
-            device.BusController = this;
-
-            this.devices[deviceId] = device;
-        }
-
         public ulong AddDevice(SystemBusDevice device) {
-            this.AddDevice(this.nextDeviceId, device);
+			if (this.nextDeviceId > SystemBusController.MaxId - 1) throw new InvalidOperationException("Max devices exceeded.");
 
-            return this.nextDeviceId++;
+			device.Id = this.nextDeviceId;
+			device.BusController = this;
+
+			this.devices[this.nextDeviceId] = device;
+
+			return this.nextDeviceId++;
         }
 
         public void Start() {
-            var address = (Ids.Devices.SystemBusController << 52) + 1;
+			var address = SystemBusController.DeviceId + 1;
             var count = 0UL;
 
             foreach (var device in this.devices) {
@@ -69,6 +68,8 @@ namespace ArkeOS.Hardware.Devices {
             foreach (var d in this.devices)
                 d?.Stop();
         }
+
+		public ulong FindBootManagerId() => this.devices.Single(d => d.Type == DeviceType.BootManager).Id;
 
         public ulong ReadWord(ulong address) {
             var id = this.GetDeviceId(address);
@@ -106,7 +107,7 @@ namespace ArkeOS.Hardware.Devices {
         private class SystemBusControllerDevice : SystemBusDevice {
             private ulong[] memory;
 
-            public SystemBusControllerDevice() : base(Ids.ArkeIndustries.VendorId, Ids.ArkeIndustries.Products.AB100, DeviceType.SystemBusController) {
+            public SystemBusControllerDevice() : base(VendorIds.ArkeIndustries, ArkeIndustries.ProductIds.AB100, DeviceType.SystemBusController) {
                 this.memory = new ulong[SystemBusController.MaxId * 4 + 1];
             }
 

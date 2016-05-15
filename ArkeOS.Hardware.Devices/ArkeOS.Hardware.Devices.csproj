@@ -39,18 +39,20 @@
     <!-- A reference to the entire .NET Framework is automatically included -->
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="ArkeIndustries\ProductIds.cs" />
+    <Compile Include="VendorIds.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Devices\BootManager.cs" />
+    <Compile Include="ArkeIndustries\BootManager.cs" />
     <Compile Include="SystemManager.cs" />
     <Compile Include="SystemBusDevice.cs" />
-    <Compile Include="Devices\DiskDrive.cs" />
+    <Compile Include="ArkeIndustries\DiskDrive.cs" />
     <Compile Include="InstructionHandlers.cs" />
-    <Compile Include="Devices\InterruptController.cs" />
-    <Compile Include="Devices\Keyboard.cs" />
-    <Compile Include="Devices\RandomAccessMemoryController.cs" />
+    <Compile Include="ArkeIndustries\InterruptController.cs" />
+    <Compile Include="ArkeIndustries\Keyboard.cs" />
+    <Compile Include="ArkeIndustries\RandomAccessMemoryController.cs" />
     <Compile Include="SystemBusController.cs" />
     <Compile Include="Operand.cs" />
-    <Compile Include="Devices\Processor.cs" />
+    <Compile Include="ArkeIndustries\Processor.cs" />
   </ItemGroup>
   <ItemGroup />
   <ItemGroup>

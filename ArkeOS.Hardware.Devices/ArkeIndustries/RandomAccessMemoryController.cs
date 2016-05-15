@@ -6,7 +6,7 @@ namespace ArkeOS.Hardware.Devices {
 
         public ulong Size { get; set; }
 
-        public RandomAccessMemoryController() : base(Ids.ArkeIndustries.VendorId, Ids.ArkeIndustries.Products.MEM100, DeviceType.RandomAccessMemory) {
+        public RandomAccessMemoryController() : base(VendorIds.ArkeIndustries, ArkeIndustries.ProductIds.MEM100, DeviceType.RandomAccessMemory) {
 
         }
 

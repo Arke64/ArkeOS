@@ -4,7 +4,7 @@ namespace ArkeOS.Hardware.Devices {
     public class BootManager : SystemBusDevice {
         public ulong[] BootImage { get; set; }
 
-        public BootManager() : base(Ids.ArkeIndustries.VendorId, Ids.ArkeIndustries.Products.B100, DeviceType.BootManager) {
+        public BootManager() : base(VendorIds.ArkeIndustries, ArkeIndustries.ProductIds.B100, DeviceType.BootManager) {
 
         }
 
