@@ -1,7 +1,7 @@
 ﻿DEFINE DeviceAddressBitSize 0d52
 
 DEFINE BootDeviceType 0d5
-DEFINE BootDeviceSignature 0x000000444556494E
+DEFINE BootDeviceSignature 0x0000004E49564544
 DEFINE BootDeviceSignatureOffset 0x0
 DEFINE BootDeviceEntryPointOffset 0x1
 

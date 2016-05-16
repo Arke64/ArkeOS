@@ -390,7 +390,7 @@ namespace ArkeOS.Hardware.Devices.ArkeIndustries {
 		#region Basic
 
 		private void ExecuteHLT(Operand a, Operand b, Operand c) {
-			this.InterruptController.WaitForInterrupt(500);
+			this.InterruptController.WaitForInterrupt(100);
 			this.supressRIPIncrement = true;
 		}
 
