@@ -9,8 +9,14 @@
             <Button Name="BreakButton" Content="Break" Click="BreakButton_Click" />
             <Button Name="ContinueButton" Content="Continue" Click="ContinueButton_Click" />
             <Button Name="StepButton" Content="Step" Click="StepButton_Click" />
-            <Button Name="ApplyButton" Content="Apply" Click="ApplyButton_Click" />
-        </StackPanel>
+			<Button Name="RefreshButton" Content="Refresh" Click="RefreshButton_Click" />
+		</StackPanel>
+
+		<StackPanel Orientation="Horizontal">
+			<RadioButton Name="HexRadioButton" GroupName="NumberFormat" Checked="FormatRadioButton_Checked" IsChecked="true">Hex</RadioButton>
+			<RadioButton Name="DecRadioButton" GroupName="NumberFormat" Checked="FormatRadioButton_Checked">Dec</RadioButton>
+			<RadioButton Name="BinRadioButton" GroupName="NumberFormat" Checked="FormatRadioButton_Checked">Bin</RadioButton>
+		</StackPanel>
 
         <TextBlock Name="CurrentInstructionLabel" />
 

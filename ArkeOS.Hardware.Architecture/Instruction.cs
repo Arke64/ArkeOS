@@ -19,15 +19,17 @@ namespace ArkeOS.Hardware.Architecture {
 		public Parameter Parameter2 { get; }
 		public Parameter Parameter3 { get; }
 
-		public override string ToString() {
+		public override string ToString() => this.ToString(16);
+		
+		public string ToString(int radix) {
 			var str = string.Empty;
 
 			if (this.ConditionalParameter != null) {
 				str += this.ConditionalZero ? "IFZ " : "IFNZ ";
-				str += this.ConditionalParameter.ToString();
+				str += this.ConditionalParameter.ToString(radix);
 			}
 
-			return str + " " + this.Definition.Mnemonic + " " + this.Parameter1?.ToString() + " " + this.Parameter2?.ToString() + " " + this.Parameter3?.ToString();
+			return str + " " + this.Definition.Mnemonic + " " + this.Parameter1?.ToString(radix) + " " + this.Parameter2?.ToString(radix) + " " + this.Parameter3?.ToString(radix);
 		}
 
 		public Instruction(byte code, IList<Parameter> parameters, Parameter conditionalParameter, bool conditionalZero) {

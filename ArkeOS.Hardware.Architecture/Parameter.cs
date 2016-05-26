@@ -1,4 +1,6 @@
-﻿namespace ArkeOS.Hardware.Architecture {
+﻿using ArkeOS.Utilities.Extensions;
+
+namespace ArkeOS.Hardware.Architecture {
     public class Parameter {
         public class Calculated {
             public bool IsPositive { get; set; }
@@ -74,25 +76,27 @@
             };
         }
 
-        public override string ToString() {
+		public override string ToString() => this.ToString(16);
+
+		public string ToString(int radix) {
             var str = "";
 
             switch (this.Type) {
                 default: return string.Empty;
-                case ParameterType.Address: str = "0x" + this.Address.ToString("X"); break;
+                case ParameterType.Address: str = this.Address.ToString(radix); break;
                 case ParameterType.Register: str = this.Register.ToString(); break;
                 case ParameterType.Stack: str = "S"; break;
                 case ParameterType.Calculated:
-                    str = this.Base.Parameter.ToString();
+                    str = this.Base.Parameter.ToString(radix);
 
                     if (this.Index != null)
-                        str += (((this.Index.IsPositive && this.Scale.IsPositive) || (!this.Index.IsPositive && !this.Scale.IsPositive)) ? " + " : " - ") + this.Index.Parameter.ToString();
+                        str += (((this.Index.IsPositive && this.Scale.IsPositive) || (!this.Index.IsPositive && !this.Scale.IsPositive)) ? " + " : " - ") + this.Index.Parameter.ToString(radix);
 
                     if (this.Scale != null)
-                        str += " * " + this.Scale.Parameter.ToString();
+                        str += " * " + this.Scale.Parameter.ToString(radix);
 
                     if (this.Offset != null)
-                        str += (this.Offset.IsPositive ? " + " : " - ") + this.Offset.Parameter.ToString();
+                        str += (this.Offset.IsPositive ? " + " : " - ") + this.Offset.Parameter.ToString(radix);
 
                     str = "(" + str + ")";
 

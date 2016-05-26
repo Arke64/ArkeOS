@@ -11,7 +11,6 @@ namespace ArkeOS.Hardware.Devices.ArkeIndustries {
 		private ulong instructionCacheSize;
 		private Timer systemTickTimer;
 		private byte systemTickInterval;
-		private bool supressRIPIncrement;
 		private bool interruptsEnabled;
 		private bool inIsr;
 		private bool running;
@@ -45,7 +44,6 @@ namespace ArkeOS.Hardware.Devices.ArkeIndustries {
 			this.instructionCacheBaseAddress = this.StartAddress;
 			this.instructionCacheSize = 4096;
 			this.instructionCache = new Instruction[this.instructionCacheSize];
-			this.supressRIPIncrement = false;
 			this.interruptsEnabled = false;
 			this.inIsr = false;
 			this.systemTickInterval = 50;
@@ -124,6 +122,8 @@ namespace ArkeOS.Hardware.Devices.ArkeIndustries {
 		private void Tick() {
 			var execute = true;
 
+			this.WriteRegister(Register.RIP, this.ReadRegister(Register.RIP) + this.CurrentInstruction.Length);
+
 			if (this.CurrentInstruction.ConditionalParameter != null) {
 				var value = this.GetValue(this.CurrentInstruction.ConditionalParameter);
 
@@ -134,6 +134,7 @@ namespace ArkeOS.Hardware.Devices.ArkeIndustries {
 				if (InstructionDefinition.IsCodeValid(this.CurrentInstruction.Code)) {
 					this.LoadParameters(this.operandA, this.operandB, this.operandC);
 
+
 					this.Execute(this.CurrentInstruction.Code, this.operandA, this.operandB, this.operandC);
 
 					this.SaveParameters(this.operandA, this.operandB, this.operandC);
@@ -141,13 +142,6 @@ namespace ArkeOS.Hardware.Devices.ArkeIndustries {
 				else {
 					this.RaiseInterrupt(Interrupt.InvalidInstruction, this.CurrentInstruction.Code, this.ReadRegister(Register.RIP));
 				}
-			}
-
-			if (!this.supressRIPIncrement) {
-				this.WriteRegister(Register.RIP, this.ReadRegister(Register.RIP) + this.CurrentInstruction.Length);
-			}
-			else {
-				this.supressRIPIncrement = false;
 			}
 
 			if (this.interruptsEnabled && !this.inIsr && this.InterruptController.PendingCount != 0)
@@ -197,7 +191,7 @@ namespace ArkeOS.Hardware.Devices.ArkeIndustries {
 			}
 
 			if (parameter.IsRIPRelative)
-				value += this.ReadRegister(Register.RIP);
+				value += this.ReadRegister(Register.RIP) - this.CurrentInstruction.Length;
 
 			if (parameter.IsIndirect)
 				value = this.BusController.ReadWord(value);
@@ -210,9 +204,6 @@ namespace ArkeOS.Hardware.Devices.ArkeIndustries {
 				if (parameter.Type == ParameterType.Register) {
 					if (parameter.Register != Register.RZERO && parameter.Register != Register.RONE && parameter.Register != Register.RMAX) {
 						this.WriteRegister(parameter.Register, value);
-
-						if (parameter.Register == Register.RIP)
-							this.supressRIPIncrement = true;
 					}
 				}
 				else if (parameter.Type == ParameterType.Stack) {
@@ -236,7 +227,7 @@ namespace ArkeOS.Hardware.Devices.ArkeIndustries {
 				}
 
 				if (parameter.IsRIPRelative)
-					address += this.ReadRegister(Register.RIP);
+					address += this.ReadRegister(Register.RIP) - this.CurrentInstruction.Length;
 
 				this.BusController.WriteWord(address, value);
 			}
@@ -391,7 +382,8 @@ namespace ArkeOS.Hardware.Devices.ArkeIndustries {
 
 		private void ExecuteHLT(Operand a, Operand b, Operand c) {
 			this.InterruptController.WaitForInterrupt(100);
-			this.supressRIPIncrement = true;
+
+			this.WriteRegister(Register.RIP, this.ReadRegister(Register.RIP) - this.CurrentInstruction.Length);
 		}
 
 		private void ExecuteNOP(Operand a, Operand b, Operand c) {
@@ -417,7 +409,6 @@ namespace ArkeOS.Hardware.Devices.ArkeIndustries {
 			this.WriteRegister(Register.RSIP, 0);
 
 			this.inIsr = false;
-			this.supressRIPIncrement = true;
 		}
 
 		private void ExecuteINTE(Operand a, Operand b, Operand c) {
@@ -577,9 +568,6 @@ namespace ArkeOS.Hardware.Devices.ArkeIndustries {
 		}
 
 		private void ExecuteBRK(Operand a, Operand b, Operand c) {
-			this.supressRIPIncrement = true;
-
-			this.WriteRegister(Register.RIP, this.ReadRegister(Register.RIP) + this.CurrentInstruction.Length);
 			this.SetNextInstruction();
 
 			this.Break();
