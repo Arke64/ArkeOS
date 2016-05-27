@@ -9,6 +9,7 @@ namespace ArkeOS.Hardware.Devices.ArkeIndustries {
 		private Instruction[] instructionCache;
 		private ulong instructionCacheBaseAddress;
 		private ulong instructionCacheSize;
+		private ulong executingAddress;
 		private Timer systemTickTimer;
 		private byte systemTickInterval;
 		private bool interruptsEnabled;
@@ -41,6 +42,7 @@ namespace ArkeOS.Hardware.Devices.ArkeIndustries {
 
 			Array.Clear(this.registers, 0, this.registers.Length);
 
+			this.executingAddress = this.StartAddress;
 			this.instructionCacheBaseAddress = this.StartAddress;
 			this.instructionCacheSize = 4096;
 			this.instructionCache = new Instruction[this.instructionCacheSize];
@@ -95,34 +97,32 @@ namespace ArkeOS.Hardware.Devices.ArkeIndustries {
 		private void OnSystemTimerTick(object state) => this.RaiseInterrupt(Interrupt.SystemTimer, 0, 0);
 
 		private void SetNextInstruction() {
-			var address = this.ReadRegister(Register.RIP);
-
 			if (this.instructionCacheSize == 0) {
-				this.CurrentInstruction = new Instruction(this.BusController, address);
+				this.CurrentInstruction = new Instruction(this.BusController, this.executingAddress);
 
 				return;
 			}
 
-			if (address < this.instructionCacheBaseAddress || address >= this.instructionCacheBaseAddress + this.instructionCacheSize) {
-				this.instructionCacheBaseAddress = address;
+			if (this.executingAddress < this.instructionCacheBaseAddress || this.executingAddress >= this.instructionCacheBaseAddress + this.instructionCacheSize) {
+				this.instructionCacheBaseAddress = this.executingAddress;
 
 				Array.Clear(this.instructionCache, 0, (int)this.instructionCacheSize);
 			}
 
-			var offset = address - this.instructionCacheBaseAddress;
+			var offset = this.executingAddress - this.instructionCacheBaseAddress;
 
 			if (this.instructionCache[offset] != null) {
 				this.CurrentInstruction = this.instructionCache[offset];
 			}
 			else {
-				this.CurrentInstruction = this.instructionCache[offset] = new Instruction(this.BusController, address);
+				this.CurrentInstruction = this.instructionCache[offset] = new Instruction(this.BusController, this.executingAddress);
 			}
 		}
 
 		private void Tick() {
 			var execute = true;
 
-			this.WriteRegister(Register.RIP, this.ReadRegister(Register.RIP) + this.CurrentInstruction.Length);
+			this.WriteRegister(Register.RIP, this.executingAddress + this.CurrentInstruction.Length);
 
 			if (this.CurrentInstruction.ConditionalParameter != null) {
 				var value = this.GetValue(this.CurrentInstruction.ConditionalParameter);
@@ -134,15 +134,16 @@ namespace ArkeOS.Hardware.Devices.ArkeIndustries {
 				if (InstructionDefinition.IsCodeValid(this.CurrentInstruction.Code)) {
 					this.LoadParameters(this.operandA, this.operandB, this.operandC);
 
-
 					this.Execute(this.CurrentInstruction.Code, this.operandA, this.operandB, this.operandC);
 
 					this.SaveParameters(this.operandA, this.operandB, this.operandC);
 				}
 				else {
-					this.RaiseInterrupt(Interrupt.InvalidInstruction, this.CurrentInstruction.Code, this.ReadRegister(Register.RIP));
+					this.RaiseInterrupt(Interrupt.InvalidInstruction, this.CurrentInstruction.Code, this.executingAddress);
 				}
 			}
+
+			this.executingAddress = this.ReadRegister(Register.RIP);
 
 			if (this.interruptsEnabled && !this.inIsr && this.InterruptController.PendingCount != 0)
 				this.EnterInterrupt(this.InterruptController.Dequeue());
@@ -157,16 +158,16 @@ namespace ArkeOS.Hardware.Devices.ArkeIndustries {
 		}
 
 		private void SaveParameters(Operand a, Operand b, Operand c) {
-			if (c.Dirty) this.SetValue(this.CurrentInstruction.Parameter3, c.Value);
-			if (b.Dirty) this.SetValue(this.CurrentInstruction.Parameter2, b.Value);
-			if (a.Dirty) this.SetValue(this.CurrentInstruction.Parameter1, a.Value);
+			if (c.Dirty && this.CurrentInstruction.Definition.ParameterCount >= 3 && (this.CurrentInstruction.Definition.Parameter3Direction & ParameterDirection.Write) != 0) this.SetValue(this.CurrentInstruction.Parameter3, c.Value);
+			if (b.Dirty && this.CurrentInstruction.Definition.ParameterCount >= 2 && (this.CurrentInstruction.Definition.Parameter2Direction & ParameterDirection.Write) != 0) this.SetValue(this.CurrentInstruction.Parameter2, b.Value);
+			if (a.Dirty && this.CurrentInstruction.Definition.ParameterCount >= 1 && (this.CurrentInstruction.Definition.Parameter1Direction & ParameterDirection.Write) != 0) this.SetValue(this.CurrentInstruction.Parameter1, a.Value);
 		}
 
 		private void EnterInterrupt(InterruptRecord interrupt) {
 			if (interrupt.Handler == 0)
 				return;
 
-			this.WriteRegister(Register.RSIP, this.ReadRegister(Register.RIP));
+			this.WriteRegister(Register.RSIP, this.executingAddress);
 			this.WriteRegister(Register.RIP, interrupt.Handler);
 			this.WriteRegister(Register.RINT1, interrupt.Data1);
 			this.WriteRegister(Register.RINT2, interrupt.Data2);
@@ -191,7 +192,7 @@ namespace ArkeOS.Hardware.Devices.ArkeIndustries {
 			}
 
 			if (parameter.IsRIPRelative)
-				value += this.ReadRegister(Register.RIP) - this.CurrentInstruction.Length;
+				value += this.executingAddress;
 
 			if (parameter.IsIndirect)
 				value = this.BusController.ReadWord(value);
@@ -227,7 +228,7 @@ namespace ArkeOS.Hardware.Devices.ArkeIndustries {
 				}
 
 				if (parameter.IsRIPRelative)
-					address += this.ReadRegister(Register.RIP) - this.CurrentInstruction.Length;
+					address += this.executingAddress;
 
 				this.BusController.WriteWord(address, value);
 			}
@@ -383,7 +384,7 @@ namespace ArkeOS.Hardware.Devices.ArkeIndustries {
 		private void ExecuteHLT(Operand a, Operand b, Operand c) {
 			this.InterruptController.WaitForInterrupt(100);
 
-			this.WriteRegister(Register.RIP, this.ReadRegister(Register.RIP) - this.CurrentInstruction.Length);
+			this.WriteRegister(Register.RIP, this.executingAddress);
 		}
 
 		private void ExecuteNOP(Operand a, Operand b, Operand c) {
@@ -427,21 +428,21 @@ namespace ArkeOS.Hardware.Devices.ArkeIndustries {
 		}
 
 		private void ExecuteCAS(Operand a, Operand b, Operand c) {
-			if (c.Value == b.Value) {
-				c.Value = a.Value;
+			if (a.Value == b.Value) {
+				a.Value = c.Value;
 			}
 			else {
-				b.Value = c.Value;
+				b.Value = a.Value;
 			}
 		}
 
 		private void ExecuteMOV(Operand a, Operand b, Operand c) {
-			b.Value = a.Value;
+			a.Value = b.Value;
 		}
 
 		private void ExecuteCPY(Operand a, Operand b, Operand c) {
-			this.BusController.Copy(a.Value, b.Value, c.Value);
-			this.RaiseInterrupt(Interrupt.CPYComplete, a.Value, b.Value);
+			this.BusController.Copy(b.Value, a.Value, c.Value);
+			this.RaiseInterrupt(Interrupt.CPYComplete, b.Value, a.Value);
 		}
 
 		#endregion
@@ -450,114 +451,114 @@ namespace ArkeOS.Hardware.Devices.ArkeIndustries {
 
 		private void ExecuteADD(Operand a, Operand b, Operand c) {
 			unchecked {
-				c.Value = a.Value + b.Value;
+				a.Value = b.Value + c.Value;
 			}
 		}
 
 		private void ExecuteADDF(Operand a, Operand b, Operand c) {
-			var aa = BitConverter.Int64BitsToDouble((long)a.Value);
 			var bb = BitConverter.Int64BitsToDouble((long)b.Value);
+			var cc = BitConverter.Int64BitsToDouble((long)c.Value);
 
-			c.Value = (ulong)BitConverter.DoubleToInt64Bits(aa + bb);
+			a.Value = (ulong)BitConverter.DoubleToInt64Bits(bb + cc);
 		}
 
 		private void ExecuteSUB(Operand a, Operand b, Operand c) {
 			unchecked {
-				c.Value = b.Value - a.Value;
+				a.Value = b.Value - c.Value;
 			}
 		}
 
 		private void ExecuteSUBF(Operand a, Operand b, Operand c) {
-			var aa = BitConverter.Int64BitsToDouble((long)a.Value);
 			var bb = BitConverter.Int64BitsToDouble((long)b.Value);
+			var cc = BitConverter.Int64BitsToDouble((long)c.Value);
 
-			c.Value = (ulong)BitConverter.DoubleToInt64Bits(bb - aa);
+			a.Value = (ulong)BitConverter.DoubleToInt64Bits(bb - cc);
 		}
 
 		private void ExecuteDIV(Operand a, Operand b, Operand c) {
-			if (a.Value != 0) {
-				c.Value = b.Value / a.Value;
+			if (c.Value != 0) {
+				a.Value = b.Value / c.Value;
 			}
 			else {
-				this.RaiseInterrupt(Interrupt.DivideByZero, this.ReadRegister(Register.RIP), 0);
+				this.RaiseInterrupt(Interrupt.DivideByZero, this.executingAddress, 0);
 			}
 		}
 
 		private void ExecuteDIVF(Operand a, Operand b, Operand c) {
-			var aa = BitConverter.Int64BitsToDouble((long)a.Value);
 			var bb = BitConverter.Int64BitsToDouble((long)b.Value);
+			var cc = BitConverter.Int64BitsToDouble((long)c.Value);
 
-			if (aa != 0.0) {
-				c.Value = (ulong)BitConverter.DoubleToInt64Bits(bb / aa);
+			if (bb != 0.0) {
+				a.Value = (ulong)BitConverter.DoubleToInt64Bits(bb / cc);
 			}
 			else {
-				this.RaiseInterrupt(Interrupt.DivideByZero, this.ReadRegister(Register.RIP), 0);
+				this.RaiseInterrupt(Interrupt.DivideByZero, this.executingAddress, 0);
 			}
 		}
 
 		private void ExecuteMUL(Operand a, Operand b, Operand c) {
 			unchecked {
-				c.Value = a.Value * b.Value;
+				a.Value = b.Value * c.Value;
 			}
 		}
 
 		private void ExecuteMULF(Operand a, Operand b, Operand c) {
-			var aa = BitConverter.Int64BitsToDouble((long)a.Value);
 			var bb = BitConverter.Int64BitsToDouble((long)b.Value);
+			var cc = BitConverter.Int64BitsToDouble((long)c.Value);
 
-			c.Value = (ulong)BitConverter.DoubleToInt64Bits(bb * aa);
+			a.Value = (ulong)BitConverter.DoubleToInt64Bits(bb * cc);
 		}
 
 		private void ExecuteMOD(Operand a, Operand b, Operand c) {
-			if (a.Value != 0) {
-				c.Value = b.Value % a.Value;
+			if (c.Value != 0) {
+				a.Value = b.Value % c.Value;
 			}
 			else {
-				this.RaiseInterrupt(Interrupt.DivideByZero, this.ReadRegister(Register.RIP), 0);
+				this.RaiseInterrupt(Interrupt.DivideByZero, this.executingAddress, 0);
 			}
 		}
 
 		private void ExecuteMODF(Operand a, Operand b, Operand c) {
-			var aa = BitConverter.Int64BitsToDouble((long)a.Value);
 			var bb = BitConverter.Int64BitsToDouble((long)b.Value);
+			var cc = BitConverter.Int64BitsToDouble((long)c.Value);
 
-			if (aa != 0.0) {
-				c.Value = (ulong)BitConverter.DoubleToInt64Bits(bb % aa);
+			if (bb != 0.0) {
+				a.Value = (ulong)BitConverter.DoubleToInt64Bits(bb % cc);
 			}
 			else {
-				this.RaiseInterrupt(Interrupt.DivideByZero, this.ReadRegister(Register.RIP), 0);
+				this.RaiseInterrupt(Interrupt.DivideByZero, this.executingAddress, 0);
 			}
 		}
 
 		private void ExecuteITOF(Operand a, Operand b, Operand c) {
-			b.Value = (ulong)BitConverter.DoubleToInt64Bits(a.Value);
+			a.Value = (ulong)BitConverter.DoubleToInt64Bits(b.Value);
 		}
 
 		private void ExecuteFTOI(Operand a, Operand b, Operand c) {
-			b.Value = (ulong)BitConverter.Int64BitsToDouble((long)a.Value);
+			a.Value = (ulong)BitConverter.Int64BitsToDouble((long)b.Value);
 		}
 
 		#endregion
 
 		#region Logic
 
-		private void ExecuteSR(Operand a, Operand b, Operand c) => c.Value = b.Value >> (byte)a.Value;
-		private void ExecuteSL(Operand a, Operand b, Operand c) => c.Value = b.Value << (byte)a.Value;
-		private void ExecuteRR(Operand a, Operand b, Operand c) => c.Value = (b.Value >> (byte)a.Value) | (b.Value << (64 - (byte)a.Value));
-		private void ExecuteRL(Operand a, Operand b, Operand c) => c.Value = (b.Value << (byte)a.Value) | (b.Value >> (64 - (byte)a.Value));
-		private void ExecuteNAND(Operand a, Operand b, Operand c) => c.Value = ~(a.Value & b.Value);
-		private void ExecuteAND(Operand a, Operand b, Operand c) => c.Value = a.Value & b.Value;
-		private void ExecuteNOR(Operand a, Operand b, Operand c) => c.Value = ~(a.Value | b.Value);
-		private void ExecuteOR(Operand a, Operand b, Operand c) => c.Value = a.Value | b.Value;
-		private void ExecuteNXOR(Operand a, Operand b, Operand c) => c.Value = ~(a.Value ^ b.Value);
-		private void ExecuteXOR(Operand a, Operand b, Operand c) => c.Value = a.Value ^ b.Value;
-		private void ExecuteNOT(Operand a, Operand b, Operand c) => b.Value = ~a.Value;
-		private void ExecuteGT(Operand a, Operand b, Operand c) => c.Value = b.Value > a.Value ? ulong.MaxValue : 0;
-		private void ExecuteGTE(Operand a, Operand b, Operand c) => c.Value = b.Value >= a.Value ? ulong.MaxValue : 0;
-		private void ExecuteLT(Operand a, Operand b, Operand c) => c.Value = b.Value < a.Value ? ulong.MaxValue : 0;
-		private void ExecuteLTE(Operand a, Operand b, Operand c) => c.Value = b.Value <= a.Value ? ulong.MaxValue : 0;
-		private void ExecuteEQ(Operand a, Operand b, Operand c) => c.Value = b.Value == a.Value ? ulong.MaxValue : 0;
-		private void ExecuteNEQ(Operand a, Operand b, Operand c) => c.Value = b.Value != a.Value ? ulong.MaxValue : 0;
+		private void ExecuteSR(Operand a, Operand b, Operand c) => a.Value = b.Value >> (byte)c.Value;
+		private void ExecuteSL(Operand a, Operand b, Operand c) => a.Value = b.Value << (byte)c.Value;
+		private void ExecuteRR(Operand a, Operand b, Operand c) => a.Value = (b.Value >> (byte)c.Value) | (b.Value << (64 - (byte)c.Value));
+		private void ExecuteRL(Operand a, Operand b, Operand c) => a.Value = (b.Value << (byte)c.Value) | (b.Value >> (64 - (byte)c.Value));
+		private void ExecuteNAND(Operand a, Operand b, Operand c) => a.Value = (b.Value & c.Value) == 0 ? ulong.MaxValue : 0;
+		private void ExecuteAND(Operand a, Operand b, Operand c) => a.Value = (b.Value & c.Value) != 0 ? ulong.MaxValue : 0;
+		private void ExecuteNOR(Operand a, Operand b, Operand c) => a.Value = (b.Value | c.Value) == 0 ? ulong.MaxValue : 0;
+		private void ExecuteOR(Operand a, Operand b, Operand c) => a.Value = (b.Value | c.Value) != 0 ? ulong.MaxValue : 0;
+		private void ExecuteNXOR(Operand a, Operand b, Operand c) => a.Value = (b.Value ^ c.Value) == 0 ? ulong.MaxValue : 0;
+		private void ExecuteXOR(Operand a, Operand b, Operand c) => a.Value = (b.Value ^ c.Value) != 0 ? ulong.MaxValue : 0;
+		private void ExecuteNOT(Operand a, Operand b, Operand c) => a.Value = ~b.Value;
+		private void ExecuteGT(Operand a, Operand b, Operand c) => a.Value = b.Value > c.Value ? ulong.MaxValue : 0;
+		private void ExecuteGTE(Operand a, Operand b, Operand c) => a.Value = b.Value >= c.Value ? ulong.MaxValue : 0;
+		private void ExecuteLT(Operand a, Operand b, Operand c) => a.Value = b.Value < c.Value ? ulong.MaxValue : 0;
+		private void ExecuteLTE(Operand a, Operand b, Operand c) => a.Value = b.Value <= c.Value ? ulong.MaxValue : 0;
+		private void ExecuteEQ(Operand a, Operand b, Operand c) => a.Value = b.Value == c.Value ? ulong.MaxValue : 0;
+		private void ExecuteNEQ(Operand a, Operand b, Operand c) => a.Value = b.Value != c.Value ? ulong.MaxValue : 0;
 
 		#endregion
 

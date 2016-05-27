@@ -75,49 +75,49 @@ Basic
 04 INTE: Enables interrupts
 05 INTD: Disables interrupts
 06 XCHG A B: Swap A and B
-07 CAS A B C: If C and B are equal, set C to A, else set B to C
-08 MOV A B: Move A into B
-09 CPY A B C: Copy C bytes from A into B
+07 CAS A B C: If A and B are equal, set A to C, else set B to A
+08 SET A B: Set A to B
+09 CPY A B C: Copy C bytes from B into A
 
 Math
 ----
-20 ADD A B C: Add A to B and store in C
-21 ADDF A B C: Add the IEEE 754 value in A to B and store in C
-22 SUB A B C: Subtract A from B and store in C
-23 SUBF A B C: Subtract the IEEE 754 value in A from B and store in C
-24 DIV A B C: Divide B by A and store in C
-25 DIVF A B C: Divide B by the IEEE 754 value in A and store in C
-26 MUL A B C: Multiply B by A and store in C
-27 MULF A B C: Multiply B by the IEEE 754 value in A and store in C
-28 MOD A B C: Take the remainder of dividing B by A and store in C
-29 MODF A B C: Take the remainder of dividing B by the IEEE 754 value in A and store in C
-30 ITOF A B: Convert the integer in A to an IEEE 754 value and store it in B
-31 FTOI A B: Convert the IEEE 754 value in A to an integer and store it in B
+20 ADD A B C: Set A to A + B
+21 ADDF A B C: Set A to B + C interpreting each as an IEEE 754 value
+22 SUB A B C: Set A to B - C
+23 SUBF A B C: Set A to B - C interpreting each as an IEEE 754 value
+24 DIV A B C: Set A to B / C
+25 DIVF A B C: Set A to B / C interpreting each as an IEEE 754 value
+26 MUL A B C: Set A to B * C
+27 MULF A B C: Set A to B * C interpreting each as an IEEE 754 value
+28 MOD A B C: Set A to B % C
+29 MODF A B C: Set A to B % C interpreting each as an IEEE 754 value
+30 ITOF A B: Convert the integer B to an IEEE 754 value and store it in A
+31 FTOI A B: Convert the IEEE 754 value in B to an integer and store it in A
 
 Logic
 -----
-40 SR A B C: Shift B right by A and store in C
-41 SL A B C: Shift B left by A and store in C
-42 RR A B C: Rotate B right by A and store in C
-43 RL A B C: Rotate B left by A and store in C
-44 NAND A B C: Store the NAND of A and B in C
-45 AND A B C: Store the AND of A and B in C
-46 NOR A B C: Store the NOR of A and B in C
-47 OR A B C: Store the OR of A and B in C
-48 NXOR A B C: Store the NXOR of A and B in C
-49 XOR A B C: Store the XOR of A and B in C
-50 NOT A B: Store the NOT of A in B
-51 GT A B C: Store in C if B is greater than A
-52 GTE A B C: Store in C if B is greater than or equal to A
-53 LT A B C: Store in C if B is less than A
-54 LTE A B C: Store in C if B is less than or equal to A
-55 EQ A B C: Store in C if B is equal to A
-56 NEQ A B C: Store in C if B is not equal to A
+40 SR A B C: Set A to B >> C
+41 SL A B C: Set A to B << C
+42 RR A B C: Set A to B >> C rotating in the removed bits
+43 RL A B C: Set A to B << C rotating in the removed bits
+44 NAND A B C: Set A to !(B & C)
+45 AND A B C: Set A to B & C
+46 NOR A B C: Set A to !(B | C)
+47 OR A B C: Set A to B | C
+48 NXOR A B C: Set A to !(B ^ C)
+49 XOR A B C: Set A to B ^ C
+50 NOT A B: Set A to !B
+51 GT A B C: Set A to B > C
+52 GTE A B C: Set A to B >= C
+53 LT A B C: Set A to B < C
+54 LTE A B C: Set A to B <= C
+55 EQ A B C: Set A to B == C
+56 NEQ A B C: Set A to B != C
 
 Debug
 -----
-60 DBG A: Debug use
-61 PAU: Pause execution
+60 DBG A B C: Debug use
+61 BRK: Break execution
 
 =======
 Devices

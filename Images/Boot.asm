@@ -12,40 +12,39 @@ DEFINE BusDeviceEntryLength 0d4
 DEFINE BusDeviceEntryIdOffset 0d0
 DEFINE BusDeviceEntryTypeOffset 0d1
 
-MOV $BusDeviceId R0
-SL $DeviceAddressBitSize R0 R0
+SET R0 $BusDeviceId
+SL R0 R0 $DeviceAddressBitSize
 
-MOV [(R0 + $BusDeviceEntryCountOffset)] R1
+SET R1 [(R0 + $BusDeviceEntryCountOffset)]
 
-ADD $BusDeviceEntriesOffset R0 R0
+ADD R0 R0 $BusDeviceEntriesOffset
 
 LABEL BootDeviceEnumerationLoopStart
-IFZ R1 MOV $NoBootDevice RIP
-EQ $BootDeviceType [(R0 + $BusDeviceEntryTypeOffset)] R2
-IFNZ R2 MOV $TestBootDevice RIP
+IFZ R1 SET RIP $NoBootDevice
+EQ R2 $BootDeviceType [(R0 + $BusDeviceEntryTypeOffset)]
+IFNZ R2 SET RIP $TestBootDevice
 LABEL BootDeviceTestFailed
-SUB 0d1 R1 R1
-ADD $BusDeviceEntryLength R0 R0
-MOV $BootDeviceEnumerationLoopStart RIP
+SUB R1 R1 0d1
+ADD R0 R0 $BusDeviceEntryLength
+SET RIP $BootDeviceEnumerationLoopStart
 
 LABEL TestBootDevice
-MOV [(R0 + $BusDeviceEntryIdOffset)] R3
-SL $DeviceAddressBitSize R3 R3
-EQ $BootDeviceSignature [(R3 + $BootDeviceSignatureOffset)] R2
-IFNZ R2 MOV $FoundBootDevice RIP
-MOV $BootDeviceTestFailed RIP
+SET R3 [(R0 + $BusDeviceEntryIdOffset)]
+SL R3 R3 $DeviceAddressBitSize
+EQ R2 $BootDeviceSignature [(R3 + $BootDeviceSignatureOffset)]
+IFNZ R2 SET RIP $FoundBootDevice
+SET RIP $BootDeviceTestFailed
 
 LABEL FoundBootDevice
-MOV R3 R0
-MOV 0d0 R1
-MOV 0d0 R2
-MOV 0d0 R3
-MOV (R0 + $BootDeviceEntryPointOffset) RIP
+SET R0 R3
+SET R1 0d0
+SET R2 0d0
+SET R3 0d0
+SET RIP (R0 + $BootDeviceEntryPointOffset)
 
 LABEL NoBootDevice
-MOV 0d0 R0
-MOV 0d0 R1
-MOV 0d0 R2
-MOV 0d0 R3
+SET R0 0d0
+SET R1 0d0
+SET R2 0d0
+SET R3 0d0
 HLT
-MOV $NoBootDevice RIP

@@ -1,29 +1,42 @@
 ﻿CONST 0x0000004E49564544
 
 DEFINE LoopIterations 0d1000000
-DEFINE TicksPerSecond 0d10000000
+DEFINE TimeUnitsPerSecond 0d10000000
 DEFINE OpsPerIteration 0d2
 
-MOV $TicksPerSecond R0
-MUL $LoopIterations R0 R0
-MUL $OpsPerIteration R0 R0
+SET R0 $TimeUnitsPerSecond
+MUL R0 R0 $LoopIterations
+MUL R0 R0 $OpsPerIteration
+
+SET R5 RZERO
+SET R6 RZERO
+SET R7 RZERO
+SET R8 RZERO
 
 LABEL ProgramStart
-MOV $LoopIterations R1
+SET R1 $LoopIterations
 
-DBG R2
+DBG R2 RZERO RZERO
 LABEL LoopStart
-SUB RONE R1 R1
-IFNZ R1 MOV $LoopStart RIP
-DBG R3
+SUB R1 R1 RONE
+IFNZ R1 SET RIP $LoopStart
+DBG R3 RZERO RZERO
 
-SUB R2 R3 R3
-DIV R3 R0 R4
-ADD RONE R5 R5
+SUB R3 R3 R2
+DIV R4 R0 R3
+ADD R5 R5 RONE
 
-ADD R3 R6 R6
-ADD R4 R7 R7
-DIV R5 R6 R8
-DIV R5 R7 R9
+ADD R6 R6 R3
+ADD R7 R7 R4
+DIV R8 R6 R5
+DIV R9 R7 R5
 
-MOV $ProgramStart RIP
+SET RIP $ProgramStart
+
+//R3 = Delta
+//R4 = IPS
+//R5 = Count
+//R6 = Sum Delta
+//R7 = Sum IPS
+//R8 = Avg Delta
+//R9 = Avg IPS
