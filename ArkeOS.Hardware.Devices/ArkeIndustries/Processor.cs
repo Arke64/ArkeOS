@@ -340,7 +340,7 @@ namespace ArkeOS.Hardware.Devices.ArkeIndustries {
 				case 5: this.ExecuteINTD(a, b, c); break;
 				case 6: this.ExecuteXCHG(a, b, c); break;
 				case 7: this.ExecuteCAS(a, b, c); break;
-				case 8: this.ExecuteMOV(a, b, c); break;
+				case 8: this.ExecuteSET(a, b, c); break;
 				case 9: this.ExecuteCPY(a, b, c); break;
 
 				case 20: this.ExecuteADD(a, b, c); break;
@@ -436,7 +436,7 @@ namespace ArkeOS.Hardware.Devices.ArkeIndustries {
 			}
 		}
 
-		private void ExecuteMOV(Operand a, Operand b, Operand c) {
+		private void ExecuteSET(Operand a, Operand b, Operand c) {
 			a.Value = b.Value;
 		}
 
