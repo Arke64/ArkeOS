@@ -88,17 +88,11 @@ namespace ArkeOS.Hardware.Architecture {
                 case ParameterType.Stack: str = "S"; break;
                 case ParameterType.Calculated:
                     str = this.Base.Parameter.ToString(radix);
+					str += (this.Index.IsPositive ? " + " : " + -") + this.Index.Parameter.ToString(radix);
+					str += (this.Scale.IsPositive ? " * " : " * -") + this.Scale.Parameter.ToString(radix);
+					str += (this.Offset.IsPositive ? " + " : " + -") + this.Offset.Parameter.ToString(radix);
 
-                    if (this.Index != null)
-                        str += (((this.Index.IsPositive && this.Scale.IsPositive) || (!this.Index.IsPositive && !this.Scale.IsPositive)) ? " + " : " - ") + this.Index.Parameter.ToString(radix);
-
-                    if (this.Scale != null)
-                        str += " * " + this.Scale.Parameter.ToString(radix);
-
-                    if (this.Offset != null)
-                        str += (this.Offset.IsPositive ? " + " : " - ") + this.Offset.Parameter.ToString(radix);
-
-                    str = "(" + str + ")";
+					str = "(" + str + ")";
 
                     break;
             }

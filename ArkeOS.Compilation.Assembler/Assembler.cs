@@ -180,7 +180,7 @@ namespace ArkeOS.Tools.Assembler {
 
 				if (parts[0][0] == '-') throw new InvalidParameterException("Base can't be negative.");
 
-				var @base = new Parameter.Calculated(true, this.ParseParameter(parts[0].TrimStart('-'), resolveNames));
+				var @base = new Parameter.Calculated(true, this.ParseParameter(parts[0], resolveNames));
                 var index = parts.Length > 1 ? new Parameter.Calculated(parts[1][0] != '-', this.ParseParameter(parts[1].TrimStart('-'), resolveNames)) : null;
                 var scale = parts.Length > 2 ? new Parameter.Calculated(parts[2][0] != '-', this.ParseParameter(parts[2].TrimStart('-'), resolveNames)) : null;
                 var offset = parts.Length > 3 ? new Parameter.Calculated(parts[3][0] != '-', this.ParseParameter(parts[3].TrimStart('-'), resolveNames)) : null;
