@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices.WindowsRuntime;
@@ -21,10 +22,12 @@ namespace ArkeOS.Hosts.UAP {
 		private WriteableBitmap displayBitmap;
 		private DispatcherTimer displayRefreshTimer;
 		private Keyboard keyboard;
+		private HashSet<ulong> currentPressedKeys;
 
 		public MainPage() {
 			this.InitializeComponent();
-			
+
+			this.currentPressedKeys = new HashSet<ulong>();
 			this.displayBitmap = new WriteableBitmap((int)this.ScreenImage.Width, (int)this.ScreenImage.Height);
 			this.displayRefreshTimer = new DispatcherTimer();
 			this.displayRefreshTimer.Interval = TimeSpan.FromMilliseconds(1000 / 24);
@@ -89,17 +92,25 @@ namespace ArkeOS.Hosts.UAP {
 			this.StepButton.IsEnabled = true;
 			this.RefreshButton.IsEnabled = true;
 		}
-
+		
 		private void OnKeyEvent(object sender, KeyRoutedEventArgs e) {
-			//https://msdn.microsoft.com/en-us/library/aa299374(v=vs.60).aspx
-			if (e.KeyStatus.IsKeyReleased) {
-				this.keyboard.TriggerKeyUp((ulong)e.Key);
-			}
-			else {
-				this.keyboard.TriggerKeyDown((ulong)e.Key);
-			}
+			var scanCode = Helpers.ConvertFromWindowsScanCode(e.KeyStatus.IsExtendedKey, e.KeyStatus.ScanCode);
 
 			e.Handled = true;
+
+			if (e.KeyStatus.IsKeyReleased) {
+				this.currentPressedKeys.Remove(scanCode);
+
+				this.keyboard.TriggerKeyUp(scanCode);
+			}
+			else {
+				if (this.currentPressedKeys.Contains(scanCode))
+					return;
+
+				this.currentPressedKeys.Remove(scanCode);
+
+				this.keyboard.TriggerKeyDown(scanCode);
+			}
 		}
 
 		private void StopButton_Click(object sender, RoutedEventArgs e) {
@@ -122,6 +133,8 @@ namespace ArkeOS.Hosts.UAP {
 			this.InputTextBox.KeyUp -= this.OnKeyEvent;
 
 			this.displayBitmap.Clear();
+
+			this.currentPressedKeys.Clear();
 		}
 
 		private void BreakButton_Click(object sender, RoutedEventArgs e) {
