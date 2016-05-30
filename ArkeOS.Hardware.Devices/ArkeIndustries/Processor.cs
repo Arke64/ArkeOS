@@ -10,7 +10,6 @@ namespace ArkeOS.Hardware.Devices.ArkeIndustries {
 		private ulong instructionCacheBaseAddress;
 		private ulong instructionCacheSize;
 		private ulong executingAddress;
-		private Timer systemTickTimer;
 		private byte systemTickInterval;
 		private bool interruptsEnabled;
 		private bool inIsr;
@@ -21,6 +20,7 @@ namespace ArkeOS.Hardware.Devices.ArkeIndustries {
 		private Operand operandB;
 		private Operand operandC;
 		private Task runner;
+		private Task systemTimer;
 
 		public Instruction CurrentInstruction { get; private set; }
 		public ulong StartAddress { get; set; }
@@ -32,7 +32,6 @@ namespace ArkeOS.Hardware.Devices.ArkeIndustries {
 			this.operandB = new Operand();
 			this.operandC = new Operand();
 			this.registers = new ulong[32];
-			this.systemTickTimer = new Timer(this.OnSystemTimerTick, null, Timeout.Infinite, Timeout.Infinite);
 			this.disposed = false;
 		}
 
@@ -60,18 +59,25 @@ namespace ArkeOS.Hardware.Devices.ArkeIndustries {
 
 		public void Break() {
 			this.running = false;
-			this.systemTickTimer.Change(Timeout.Infinite, Timeout.Infinite);
 		}
 
 		public void Continue() {
 			this.running = true;
-			this.systemTickTimer.Change(this.systemTickInterval, this.systemTickInterval);
 
 			this.runner = new Task(() => {
 				while (this.running)
 					this.Tick();
 			}, TaskCreationOptions.LongRunning);
 			this.runner.Start();
+
+			this.systemTimer = new Task(async () => {
+				while (this.running) {
+					await Task.Delay(this.systemTickInterval);
+
+					this.RaiseInterrupt(Interrupt.SystemTimer, 0, 0);
+				}
+			}, TaskCreationOptions.LongRunning);
+			this.systemTimer.Start();
 		}
 
 		public void Step() {
@@ -86,8 +92,8 @@ namespace ArkeOS.Hardware.Devices.ArkeIndustries {
 				this.Break();
 
 				this.runner?.Wait();
+				this.systemTimer?.Wait();
 
-				this.systemTickTimer.Dispose();
 				this.instructionCache = null;
 				this.registers = null;
 			}
@@ -96,8 +102,6 @@ namespace ArkeOS.Hardware.Devices.ArkeIndustries {
 
 			base.Dispose(disposing);
 		}
-
-		private void OnSystemTimerTick(object state) => this.RaiseInterrupt(Interrupt.SystemTimer, 0, 0);
 
 		private void SetNextInstruction() {
 			if (this.instructionCacheSize == 0) {
@@ -297,7 +301,6 @@ namespace ArkeOS.Hardware.Devices.ArkeIndustries {
 		public override void WriteWord(ulong address, ulong data) {
 			if (address == 0) {
 				this.systemTickInterval = (byte)data;
-				this.systemTickTimer.Change(this.systemTickInterval, this.systemTickInterval);
 			}
 			else if (address == 1) {
 				this.instructionCacheSize = data;
