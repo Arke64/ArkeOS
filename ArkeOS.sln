@@ -19,7 +19,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ArkeOS.Hosts.UAP", "ArkeOS.
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ArkeOS.OS.Executable", "ArkeOS.OS.Executable\ArkeOS.OS.Executable.csproj", "{2531BE7F-42D5-485A-8695-EBF598937EF2}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ArkeOS.Hardware.Devices", "ArkeOS.Hardware.Devices\ArkeOS.Hardware.Devices.csproj", "{36396D22-3CCD-4283-A0C4-2D865DA2D863}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ArkeOS.Hardware.ArkeIndustries", "ArkeOS.Hardware.ArkeIndustries\ArkeOS.Hardware.ArkeIndustries.csproj", "{36396D22-3CCD-4283-A0C4-2D865DA2D863}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ArkeOS.Hardware.Architecture", "ArkeOS.Hardware.Architecture\ArkeOS.Hardware.Architecture.csproj", "{F983D92B-E6A3-490F-9177-D578DA2EFB80}"
 EndProject

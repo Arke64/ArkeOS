@@ -1,7 +1,7 @@
 ﻿using System.Text;
 using ArkeOS.Hardware.Architecture;
 
-namespace ArkeOS.Hardware.Devices.ArkeIndustries {
+namespace ArkeOS.Hardware.ArkeIndustries {
 	public class Display : SystemBusDevice {
 		private const int CharacterWidth = 5;
 		private const int CharacterHeight = 8;

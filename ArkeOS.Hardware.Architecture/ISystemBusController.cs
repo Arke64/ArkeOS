@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using ArkeOS.Utilities;
 
-namespace ArkeOS.Hardware.Devices {
+namespace ArkeOS.Hardware.Architecture {
 	public interface ISystemBusController : IWordStream, IDisposable {
 		IProcessor Processor { get; set; }
 		IInterruptController InterruptController { get; set; }

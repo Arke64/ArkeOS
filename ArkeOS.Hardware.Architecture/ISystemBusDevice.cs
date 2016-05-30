@@ -1,7 +1,6 @@
 ﻿using System;
-using ArkeOS.Hardware.Architecture;
 
-namespace ArkeOS.Hardware.Devices {
+namespace ArkeOS.Hardware.Architecture {
 	public interface ISystemBusDevice : IDisposable {
 		ISystemBusController BusController { get; set; }
 		IInterruptController InterruptController { get; set; }

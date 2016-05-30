@@ -127,17 +127,13 @@
     </Page>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\ArkeOS.OS.Executable\ArkeOS.OS.Executable.csproj">
-      <Project>{2531be7f-42d5-485a-8695-ebf598937ef2}</Project>
-      <Name>ArkeOS.OS.Executable</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\ArkeOS.Hardware.Devices\ArkeOS.Hardware.Devices.csproj">
-      <Project>{36396d22-3ccd-4283-a0c4-2d865da2d863}</Project>
-      <Name>ArkeOS.Hardware.Devices</Name>
-    </ProjectReference>
     <ProjectReference Include="..\ArkeOS.Hardware.Architecture\ArkeOS.Hardware.Architecture.csproj">
-      <Project>{f983d92b-e6a3-490f-9177-d578da2efb80}</Project>
+      <Project>{F983D92B-E6A3-490F-9177-D578DA2EFB80}</Project>
       <Name>ArkeOS.Hardware.Architecture</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\ArkeOS.Hardware.ArkeIndustries\ArkeOS.Hardware.ArkeIndustries.csproj">
+      <Project>{36396d22-3ccd-4283-a0c4-2d865da2d863}</Project>
+      <Name>ArkeOS.Hardware.ArkeIndustries</Name>
     </ProjectReference>
     <ProjectReference Include="..\ArkeOS.Utilities\ArkeOS.Utilities.csproj">
       <Project>{2E225CED-2308-4336-84A4-4D053581BBD0}</Project>

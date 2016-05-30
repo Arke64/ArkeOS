@@ -2,7 +2,7 @@
 using System.Threading.Tasks;
 using ArkeOS.Hardware.Architecture;
 
-namespace ArkeOS.Hardware.Devices.ArkeIndustries {
+namespace ArkeOS.Hardware.ArkeIndustries {
 	public class Processor : SystemBusDevice, IProcessor {
 		private ulong[] registers;
 		private Instruction[] instructionCache;

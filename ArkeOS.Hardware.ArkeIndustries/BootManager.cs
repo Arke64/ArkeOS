@@ -1,6 +1,6 @@
 ﻿using ArkeOS.Hardware.Architecture;
 
-namespace ArkeOS.Hardware.Devices.ArkeIndustries {
+namespace ArkeOS.Hardware.ArkeIndustries {
     public class BootManager : SystemBusDevice {
 		private ulong[] image;
 

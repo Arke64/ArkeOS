@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using ArkeOS.Hardware.Architecture;
 
-namespace ArkeOS.Hardware.Devices.ArkeIndustries {
+namespace ArkeOS.Hardware.ArkeIndustries {
 	public class SystemBusController : ISystemBusController {
 		private ISystemBusDevice[] devices;
 		private ulong nextDeviceId;

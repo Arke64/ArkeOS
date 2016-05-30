@@ -1,4 +1,4 @@
-﻿namespace ArkeOS.Hardware.Devices.ArkeIndustries {
+﻿namespace ArkeOS.Hardware.ArkeIndustries {
 	public static class ProductIds {
 		public static ulong Vendor => 0;
 		public static ulong MEM100 => 0;

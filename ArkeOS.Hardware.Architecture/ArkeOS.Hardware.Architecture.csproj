@@ -38,7 +38,11 @@
     <!-- A reference to the entire .NET Framework is automatically included -->
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="IInterruptController.cs" />
     <Compile Include="InterruptRecord.cs" />
+    <Compile Include="IProcessor.cs" />
+    <Compile Include="ISystemBusController.cs" />
+    <Compile Include="ISystemBusDevice.cs" />
     <Compile Include="ParameterDirection.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="DeviceType.cs" />

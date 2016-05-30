@@ -1,6 +1,4 @@
-﻿using ArkeOS.Hardware.Architecture;
-
-namespace ArkeOS.Hardware.Devices {
+﻿namespace ArkeOS.Hardware.Architecture {
 	public interface IInterruptController {
 		int PendingCount { get; }
 

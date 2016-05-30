@@ -1,4 +1,4 @@
-﻿namespace ArkeOS.Hardware.Devices {
+﻿namespace ArkeOS.Hardware.Architecture {
 	public interface IProcessor {
 		ulong StartAddress { get; set; }
 	}

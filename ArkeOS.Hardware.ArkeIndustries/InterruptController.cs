@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Threading;
 using ArkeOS.Hardware.Architecture;
 
-namespace ArkeOS.Hardware.Devices.ArkeIndustries {
+namespace ArkeOS.Hardware.ArkeIndustries {
     public class InterruptController : SystemBusDevice, IInterruptController {
         private Queue<InterruptRecord> pending;
         private ManualResetEvent evt;

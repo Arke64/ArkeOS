@@ -3,7 +3,7 @@ using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices.WindowsRuntime;
 using ArkeOS.Hardware.Architecture;
-using ArkeOS.Hardware.Devices.ArkeIndustries;
+using ArkeOS.Hardware.ArkeIndustries;
 using ArkeOS.Utilities;
 using ArkeOS.Utilities.Extensions;
 using Windows.Storage;

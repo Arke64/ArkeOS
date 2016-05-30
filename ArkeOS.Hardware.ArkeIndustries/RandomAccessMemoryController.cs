@@ -1,7 +1,7 @@
 ﻿using System;
 using ArkeOS.Hardware.Architecture;
 
-namespace ArkeOS.Hardware.Devices.ArkeIndustries {
+namespace ArkeOS.Hardware.ArkeIndustries {
     public class RandomAccessMemoryController : SystemBusDevice {
         private ulong[] memory;
 

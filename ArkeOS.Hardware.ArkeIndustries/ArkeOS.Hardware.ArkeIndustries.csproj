@@ -8,8 +8,8 @@
     <ProjectGuid>{36396D22-3CCD-4283-A0C4-2D865DA2D863}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>ArkeOS.Hardware.Devices</RootNamespace>
-    <AssemblyName>ArkeOS.Hardware.Devices</AssemblyName>
+    <RootNamespace>ArkeOS.Hardware.ArkeIndustries</RootNamespace>
+    <AssemblyName>ArkeOS.Hardware.ArkeIndustries</AssemblyName>
     <DefaultLanguage>en-US</DefaultLanguage>
     <FileAlignment>512</FileAlignment>
     <ProjectTypeGuids>{786C830F-07A1-408B-BD7F-6EE04809D6DB};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
@@ -40,21 +40,17 @@
     <!-- A reference to the entire .NET Framework is automatically included -->
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="ArkeIndustries\Display.cs" />
-    <Compile Include="ArkeIndustries\ProductIds.cs" />
-    <Compile Include="IProcessor.cs" />
-    <Compile Include="IInterruptController.cs" />
-    <Compile Include="ISystemBusDevice.cs" />
+    <Compile Include="Display.cs" />
+    <Compile Include="ProductIds.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="ArkeIndustries\BootManager.cs" />
-    <Compile Include="ArkeIndustries\SystemBusDevice.cs" />
-    <Compile Include="ArkeIndustries\DiskDrive.cs" />
-    <Compile Include="ArkeIndustries\InterruptController.cs" />
-    <Compile Include="ArkeIndustries\Keyboard.cs" />
-    <Compile Include="ArkeIndustries\RandomAccessMemoryController.cs" />
-    <Compile Include="ArkeIndustries\SystemBusController.cs" />
-    <Compile Include="ArkeIndustries\Processor.cs" />
-    <Compile Include="ISystemBusController.cs" />
+    <Compile Include="BootManager.cs" />
+    <Compile Include="SystemBusDevice.cs" />
+    <Compile Include="DiskDrive.cs" />
+    <Compile Include="InterruptController.cs" />
+    <Compile Include="Keyboard.cs" />
+    <Compile Include="RandomAccessMemoryController.cs" />
+    <Compile Include="SystemBusController.cs" />
+    <Compile Include="Processor.cs" />
   </ItemGroup>
   <ItemGroup />
   <ItemGroup>
