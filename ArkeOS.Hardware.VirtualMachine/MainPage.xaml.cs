@@ -24,7 +24,7 @@ namespace ArkeOS.Hardware.VirtualMachine {
 
 		public MainPage() {
 			this.InitializeComponent();
-
+			
 			this.displayBitmap = new WriteableBitmap((int)this.ScreenImage.Width, (int)this.ScreenImage.Height);
 			this.displayRefreshTimer = new DispatcherTimer();
 			this.displayRefreshTimer.Interval = TimeSpan.FromMilliseconds(1000 / 24);
