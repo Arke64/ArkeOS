@@ -24,7 +24,7 @@ namespace ArkeOS.Hardware.ArkeIndustries {
 
 		}
 
-		public void RaiseInterrupt(ulong data) => this.InterruptController.Enqueue(Interrupt.DeviceWaiting, this.Id, data);
+		public void RaiseInterrupt(ulong data) => this.InterruptController.Enqueue(Interrupt.DeviceWaiting, this.Id << this.BusController.AddressBits, data);
 		public void RaiseInterrupt(Interrupt type, ulong data1, ulong data2) => this.InterruptController.Enqueue(type, data1, data2);
 
 		public virtual ulong ReadWord(ulong address) {
