@@ -13,6 +13,7 @@ DEFINE DisplayHeightOffset 0d3
 DEFINE DisplayCharacterWidthOffset 0d2
 DEFINE DisplayCharacterHeightOffset 0d3
 DEFINE DisplayCharacterOffset 0x100000
+DEFINE DisplayBackspaceCharacter 0x08
 DEFINE DisplayNewLineCharacter 0x0D
 DEFINE DisplaySpaceCharacter 0x20
 
@@ -60,6 +61,14 @@ IFNZ RI0 EINT
 SL RINT1 RINT1 $DeviceAddressBitSize
 EQ RI0 RINT1 R5
 IFZ RI0 HLT
+
+EQ RI0 RINT2 $DisplayBackspaceCharacter
+IFZ RI0 SET RIP $PrintCharacter
+IFZ R2 EINT
+SUB R2 R2 RONE
+SET [(R0 + R1 * R7 + R2)] $DisplaySpaceCharacter
+EINT
+
 EQ RI0 RINT2 $DisplayNewLineCharacter
 IFZ RI0 SET RIP $PrintCharacter
 SET R2 RZERO
