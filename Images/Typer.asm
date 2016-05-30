@@ -26,6 +26,11 @@ DEFINE BusDeviceEntryTypeOffset 0d1
 
 CONST 0x0000004E49564544
 
+CPY RZERO $SOF ($EOF + -$SOF)
+SET RIP RZERO
+
+LABEL SOF
+
 SET RSP 0x10000
 
 SET R0 $InterruptControllerDeviceType
@@ -128,3 +133,5 @@ SET R2 RZERO
 SET R3 RZERO
 RET
 //END FindDevice
+
+LABEL EOF
