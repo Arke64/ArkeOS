@@ -107,14 +107,68 @@ namespace ArkeOS.Utilities {
 					case 0x5B: return 0x36; // OPTION
 					case 0x38: return 0x37; // LEFT ALT
 					case 0x39: return 0x38; // SPACE
+
 					case 0x5D: return 0x3A; // MENU
+
+					case 0x01: return 0x3C; // ESCAPE
+					case 0x3B: return 0x3D; // F1
+					case 0x3C: return 0x3E; // F2
+					case 0x3D: return 0x3F; // F3
+					case 0x3E: return 0x40; // F4
+					case 0x3F: return 0x41; // F5
+					case 0x40: return 0x42; // F6
+					case 0x41: return 0x43; // F7
+					case 0x42: return 0x44; // F8
+					case 0x43: return 0x45; // F9
+					case 0x44: return 0x46; // F10
+					case 0x57: return 0x47; // F11
+					case 0x58: return 0x48; // F12
+
+					case 0x46: return 0x4A; // SCROLL LOCK
+
+					case 0x37: return 0x58; // NUMERIC *
+					case 0x4A: return 0x59; // NUMERIC -
+					case 0x4E: return 0x5A; // NUMERIC +
+
+					case 0x53: return 0x5C; // NUMERIC.
+					case 0x52: return 0x5D; // NUMERIC 0
+					case 0x4F: return 0x5E; // NUMERIC 1
+					case 0x50: return 0x5F; // NUMERIC 2
+					case 0x51: return 0x60; // NUMERIC 3
+					case 0x4B: return 0x61; // NUMERIC 4
+					case 0x4C: return 0x62; // NUMERIC 5
+					case 0x4D: return 0x63; // NUMERIC 6
+					case 0x47: return 0x64; // NUMERIC 7
+					case 0x48: return 0x65; // NUMERIC 8
+					case 0x49: return 0x66; // NUMERIC 9
+
 					default: return 0;
 				}
 			}
 			else {
 				switch (code) {
 					case 0x38: return 0x39; // RIGHT ALT
-					case 0x1D: return 0x3B; // RIGHT CONTROL
+
+					//case 0x1D: return 0x3B; // RIGHT CONTROL
+
+					case 0x37: return 0x49; // PRINT SCREEN
+
+					case 0x1D: return 0x4B; // PAUSE BREAK
+					case 0x52: return 0x4C; // INSERT
+					case 0x53: return 0x4D; // DELETE
+					case 0x47: return 0x4E; // HOME
+					case 0x4F: return 0x4F; // END
+					case 0x49: return 0x50; // PAGE UP
+					case 0x51: return 0x51; // PAGE DOWN
+					case 0x48: return 0x52; // UP
+					case 0x50: return 0x53; // DOWN
+					case 0x4B: return 0x54; // LEFT
+					case 0x4D: return 0x55; // RIGHT
+					case 0x45: return 0x56; // NUM LOCK
+					case 0x35: return 0x57; // NUMERIC /
+
+					case 0x1C: return 0x5B; // NUMERIC ENTER
+
 					default: return 0;
 				}
 			}
