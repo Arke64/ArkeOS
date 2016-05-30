@@ -31,7 +31,7 @@ namespace ArkeOS.Tools.Assembler {
 			while (this.ProcessIncludes(ref lines))
 				;
 
-			lines = lines.Where(l => !string.IsNullOrWhiteSpace(l) && !l.StartsWith(@"//")).Select(l => Assembler.Sanitize(l));
+			lines = lines.Select(l => l.Split(new string[] { "//" }, StringSplitOptions.None)[0].Trim()).Where(l => !string.IsNullOrWhiteSpace(l)).Select(l => Assembler.Sanitize(l));
 
 			this.DiscoverDefines(lines);
 			this.DiscoverAddresses(lines);
