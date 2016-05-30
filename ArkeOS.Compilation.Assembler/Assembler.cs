@@ -26,7 +26,12 @@ namespace ArkeOS.Tools.Assembler {
 		private static string Sanitize(string input) => Regex.Replace(input, @"\s+", " ").Replace("+ ", "+").Replace(" +", "+").Replace("- ", "-").Replace(" -", "-").Replace("* ", "*").Replace(" *", "*");
 		
 		public byte[] Assemble(string[] inputLines) {
-			var lines = inputLines.Where(l => !string.IsNullOrWhiteSpace(l) && !l.StartsWith(@"//")).Select(l => Assembler.Sanitize(l));
+			IEnumerable<string> lines = inputLines.ToList();
+
+			while (this.ProcessIncludes(ref lines))
+				;
+
+			lines = lines.Where(l => !string.IsNullOrWhiteSpace(l) && !l.StartsWith(@"//")).Select(l => Assembler.Sanitize(l));
 
 			this.DiscoverDefines(lines);
 			this.DiscoverAddresses(lines);
@@ -71,6 +76,33 @@ namespace ArkeOS.Tools.Assembler {
                 }
             }
         }
+
+		private bool ProcessIncludes(ref IEnumerable<string> lines) {
+			var result = new List<string>();
+			var last = 0;
+			var i = 0;
+
+			for (; i < lines.Count(); i++) {
+				var line = lines.ElementAt(i);
+
+				if (line.StartsWith("INCLUDE")) {
+					result.AddRange(lines.Skip(last).Take(i - last));
+
+					result.AddRange(File.ReadAllLines(line.Substring(line.IndexOf(' ') + 1)));
+
+					last = i + 1;
+				}
+			}
+
+			if (result.Count == 0)
+				return false;
+
+			result.AddRange(lines.Skip(last).Take(i - last));
+
+			lines = result;
+
+			return true;
+		}
 
 		private void DiscoverDefines(IEnumerable<string> lines) {
 			var indirectDefines = new Dictionary<string, string>();
