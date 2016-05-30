@@ -3,11 +3,11 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
 VisualStudioVersion = 15.0.25123.0
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ArkeOS.Tools.Assembler", "ArkeOS.Compilation.Assembler\ArkeOS.Tools.Assembler.csproj", "{E9776C8D-E3AD-4BCA-AA37-0C4883463480}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ArkeOS.Tools.Assembler", "ArkeOS.Tools.Assembler\ArkeOS.Tools.Assembler.csproj", "{E9776C8D-E3AD-4BCA-AA37-0C4883463480}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ArkeOS.Tools.Linker", "ArkeOS.Compilation.Linker\ArkeOS.Tools.Linker.csproj", "{53262617-800D-4DDE-8D6F-15AFAC2BED99}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ArkeOS.Tools.Linker", "ArkeOS.Tools.Linker\ArkeOS.Tools.Linker.csproj", "{53262617-800D-4DDE-8D6F-15AFAC2BED99}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ArkeOS.Tools.Compiler", "ArkeOS.Compilation.Compiler\ArkeOS.Tools.Compiler.csproj", "{86B8F678-D2A9-4DAD-9F80-7D3925E630EF}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ArkeOS.Tools.Compiler", "ArkeOS.Tools.Compiler\ArkeOS.Tools.Compiler.csproj", "{86B8F678-D2A9-4DAD-9F80-7D3925E630EF}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{A8A09D5A-380E-4C15-8DDD-1837F84F41C6}"
 	ProjectSection(SolutionItems) = preProject
