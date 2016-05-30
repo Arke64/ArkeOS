@@ -26,20 +26,19 @@ DEFINE BusDeviceEntryTypeOffset 0d1
 
 CONST 0x0000004E49564544
 
+SET RSP 0x10000
+
 SET R0 $InterruptControllerDeviceType
-SET S (RIP + 0d2)
-SET RIP $FindDevice
+CALL $FindDevice
 
 SET [(R0 + $InterruptControllerDeviceWaitingOffset)] $DeviceWaiting
 
 SET R0 $KeyboardDeviceType
-SET S (RIP + 0d2)
-SET RIP $FindDevice
+CALL $FindDevice
 SET R5 R0
 
 SET R0 $DisplayDeviceType
-SET S (RIP + 0d2)
-SET RIP $FindDevice
+CALL $FindDevice
 
 SET R6 [(R0 + $DisplayRowsOffset)]
 SET R7 [(R0 + $DisplayColumnsOffset)]
@@ -127,5 +126,5 @@ SL R0 R0 $DeviceAddressBitSize
 SET R1 RZERO
 SET R2 RZERO
 SET R3 RZERO
-SET RIP S
+RET
 //END FindDevice

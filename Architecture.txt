@@ -24,10 +24,10 @@ Interrupts
 0x00: Invalid instruction (Code, Address)
 0x01: Divide by zero (Address)
 0x02: System call
-0x04: System timer
-0x05: Device waiting (Device, Data)
-0x06: CPY complete (Source, Destination)
-0x07-0xFF: Reserved
+0x03: System timer
+0x04: Device waiting (Device, Data)
+0x05: CPY complete (Source, Destination)
+0x06-0xFF: Reserved
 0x100-0xFFF: Undefined
 
 ==================
@@ -78,6 +78,8 @@ Basic
 07 CAS A B C: If A and B are equal, set A to C, else set B to A
 08 SET A B: Set A to B
 09 CPY A B C: Copy C bytes from B into A
+10 CALL A: Push RIP onto the stack and set RIP to A
+11 RET: Pop the stack into RIP
 
 Math
 ----

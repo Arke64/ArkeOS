@@ -350,6 +350,8 @@ namespace ArkeOS.Hardware.Devices.ArkeIndustries {
 				case 7: this.ExecuteCAS(a, b, c); break;
 				case 8: this.ExecuteSET(a, b, c); break;
 				case 9: this.ExecuteCPY(a, b, c); break;
+				case 10: this.ExecuteCALL(a, b, c); break;
+				case 11: this.ExecuteRET(a, b, c); break;
 
 				case 20: this.ExecuteADD(a, b, c); break;
 				case 21: this.ExecuteADDF(a, b, c); break;
@@ -451,6 +453,15 @@ namespace ArkeOS.Hardware.Devices.ArkeIndustries {
 		private void ExecuteCPY(Operand a, Operand b, Operand c) {
 			this.BusController.Copy(b.Value, a.Value, c.Value);
 			this.RaiseInterrupt(Interrupt.CPYComplete, b.Value, a.Value);
+		}
+
+		private void ExecuteCALL(Operand a, Operand b, Operand c) {
+			this.Push(this.ReadRegister(Register.RIP));
+			this.WriteRegister(Register.RIP, a.Value);
+		}
+
+		private void ExecuteRET(Operand a, Operand b, Operand c) {
+			this.WriteRegister(Register.RIP, this.Pop());
 		}
 
 		#endregion

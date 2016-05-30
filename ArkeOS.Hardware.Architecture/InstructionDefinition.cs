@@ -31,6 +31,8 @@ namespace ArkeOS.Hardware.Architecture {
 			InstructionDefinition.Add("CAS", 7, ParameterDirection.Write | ParameterDirection.Read, ParameterDirection.Write | ParameterDirection.Read, ParameterDirection.Read);
 			InstructionDefinition.Add("SET", 8, ParameterDirection.Write, ParameterDirection.Read);
 			InstructionDefinition.Add("CPY", 9, ParameterDirection.Read, ParameterDirection.Read, ParameterDirection.Read);
+			InstructionDefinition.Add("CALL", 10, ParameterDirection.Read);
+			InstructionDefinition.Add("RET", 11);
 
 			InstructionDefinition.Add("ADD", 20, ParameterDirection.Write, ParameterDirection.Read, ParameterDirection.Read);
 			InstructionDefinition.Add("ADDF", 21, ParameterDirection.Write, ParameterDirection.Read, ParameterDirection.Read);
