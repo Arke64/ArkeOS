@@ -1,12 +1,11 @@
 ﻿using System;
 using System.Drawing;
-using System.IO;
 using System.Linq;
 
 namespace FontGenerator {
 	class Program {
 		static void Main(string[] args) {
-			var bmp = new Bitmap("Untitled.bmp");
+			var bmp = new Bitmap(args[0]);
 			var final = "";
 
 			for (var i = 0; i < 95; i++) {
