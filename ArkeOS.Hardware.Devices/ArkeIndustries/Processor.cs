@@ -52,6 +52,7 @@ namespace ArkeOS.Hardware.Devices.ArkeIndustries {
 
 			this.WriteRegister(Register.RMAX, ulong.MaxValue);
 			this.WriteRegister(Register.RONE, 1);
+			this.WriteRegister(Register.RZERO, 0);
 			this.WriteRegister(Register.RIP, this.StartAddress);
 
 			this.SetNextInstruction();
@@ -83,6 +84,8 @@ namespace ArkeOS.Hardware.Devices.ArkeIndustries {
 
 			if (disposing) {
 				this.Break();
+
+				this.runner?.Wait();
 
 				this.systemTickTimer.Dispose();
 				this.instructionCache = null;
@@ -171,6 +174,8 @@ namespace ArkeOS.Hardware.Devices.ArkeIndustries {
 			this.WriteRegister(Register.RIP, interrupt.Handler);
 			this.WriteRegister(Register.RINT1, interrupt.Data1);
 			this.WriteRegister(Register.RINT2, interrupt.Data2);
+
+			this.executingAddress = interrupt.Handler;
 
 			this.inIsr = true;
 		}
@@ -569,6 +574,8 @@ namespace ArkeOS.Hardware.Devices.ArkeIndustries {
 		}
 
 		private void ExecuteBRK(Operand a, Operand b, Operand c) {
+			this.executingAddress = this.ReadRegister(Register.RIP);
+
 			this.SetNextInstruction();
 
 			this.Break();

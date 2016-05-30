@@ -31,6 +31,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Images", "Images", "{0608B5
 		Images\Program.bin = Images\Program.bin
 		Images\TimedLoop.asm = Images\TimedLoop.asm
 		Images\TimedLoop.bin = Images\TimedLoop.bin
+		Images\Typer.asm = Images\Typer.asm
+		Images\Typer.bin = Images\Typer.bin
 	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ArkeOS.Utilities", "ArkeOS.Utilities\ArkeOS.Utilities.csproj", "{2E225CED-2308-4336-84A4-4D053581BBD0}"

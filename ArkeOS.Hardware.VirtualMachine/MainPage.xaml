@@ -176,6 +176,7 @@
                 <TextBox Name="R15TextBox" />
             </StackPanel>
         </Grid>
-        <Image Width="640" Height="480" Name="ScreenImage" />
+		
+        <Image Margin="10" Width="160" Height="120" Name="ScreenImage" />
     </StackPanel>
 </Page>

@@ -19,6 +19,9 @@ namespace ArkeOS.Utilities {
             else if (prefix == "0b") {
                 return Convert.ToUInt64(value, 2);
             }
+			else if (prefix == "0c") {
+				return value[0];
+			}
             else {
                 return 0;
             }

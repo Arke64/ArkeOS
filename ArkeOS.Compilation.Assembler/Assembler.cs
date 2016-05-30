@@ -216,10 +216,10 @@ namespace ArkeOS.Tools.Assembler {
                     return Parameter.CreateAddress(isIndirect, true, unchecked(this.labels[value] - this.currentOffset));
                 }
 
-                throw new VariableNotFoundException();
+                throw new VariableNotFoundException(value);
             }
             else {
-                throw new InvalidParameterException();
+                throw new InvalidParameterException(value);
             }
         }
 

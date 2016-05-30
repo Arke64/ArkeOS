@@ -8,5 +8,6 @@
 		public static ulong MB100 => 4;
 		public static ulong HDD100 => 5;
 		public static ulong KB100 => 6;
+		public static ulong D100 => 7;
 	}
 }

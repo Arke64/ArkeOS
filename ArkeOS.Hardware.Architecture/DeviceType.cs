@@ -6,6 +6,7 @@
         InterruptController,
         BootManager,
         DiskDrive,
-        Keyboard
-    }
+        Keyboard,
+		Display
+	}
 }
