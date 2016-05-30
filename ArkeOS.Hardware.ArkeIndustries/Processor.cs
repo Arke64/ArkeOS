@@ -245,26 +245,20 @@ namespace ArkeOS.Hardware.ArkeIndustries {
 		private ulong GetCalculatedValue(Parameter parameter) {
 			var address = this.GetValue(parameter.Base.Parameter);
 
-			if (parameter.Index != null) {
-				var index = this.GetValue(parameter.Index.Parameter) * (parameter.Scale != null ? this.GetValue(parameter.Scale.Parameter) : 1);
-
-				if ((parameter.Index.IsPositive && parameter.Scale.IsPositive) || (!parameter.Index.IsPositive && !parameter.Scale.IsPositive)) {
-					address += index;
-				}
-				else {
-					address -= index;
-				}
+			var index = this.GetValue(parameter.Index.Parameter) * this.GetValue(parameter.Scale.Parameter);
+			if ((parameter.Index.IsPositive && parameter.Scale.IsPositive) || (!parameter.Index.IsPositive && !parameter.Scale.IsPositive)) {
+				address += index;
+			}
+			else {
+				address -= index;
 			}
 
-			if (parameter.Offset != null) {
-				var offset = this.GetValue(parameter.Offset.Parameter);
-
-				if (parameter.Offset.IsPositive) {
-					address += offset;
-				}
-				else {
-					address -= offset;
-				}
+			var offset = this.GetValue(parameter.Offset.Parameter);
+			if (parameter.Offset.IsPositive) {
+				address += offset;
+			}
+			else {
+				address -= offset;
 			}
 
 			return address;
@@ -564,12 +558,12 @@ namespace ArkeOS.Hardware.ArkeIndustries {
 		private void ExecuteSL(Operand a, Operand b, Operand c) => a.Value = b.Value << (byte)c.Value;
 		private void ExecuteRR(Operand a, Operand b, Operand c) => a.Value = (b.Value >> (byte)c.Value) | (b.Value << (64 - (byte)c.Value));
 		private void ExecuteRL(Operand a, Operand b, Operand c) => a.Value = (b.Value << (byte)c.Value) | (b.Value >> (64 - (byte)c.Value));
-		private void ExecuteNAND(Operand a, Operand b, Operand c) => a.Value = (b.Value & c.Value) == 0 ? ulong.MaxValue : 0;
-		private void ExecuteAND(Operand a, Operand b, Operand c) => a.Value = (b.Value & c.Value) != 0 ? ulong.MaxValue : 0;
-		private void ExecuteNOR(Operand a, Operand b, Operand c) => a.Value = (b.Value | c.Value) == 0 ? ulong.MaxValue : 0;
-		private void ExecuteOR(Operand a, Operand b, Operand c) => a.Value = (b.Value | c.Value) != 0 ? ulong.MaxValue : 0;
-		private void ExecuteNXOR(Operand a, Operand b, Operand c) => a.Value = (b.Value ^ c.Value) == 0 ? ulong.MaxValue : 0;
-		private void ExecuteXOR(Operand a, Operand b, Operand c) => a.Value = (b.Value ^ c.Value) != 0 ? ulong.MaxValue : 0;
+		private void ExecuteNAND(Operand a, Operand b, Operand c) => a.Value = ~(b.Value & c.Value);
+		private void ExecuteAND(Operand a, Operand b, Operand c) => a.Value = (b.Value & c.Value);
+		private void ExecuteNOR(Operand a, Operand b, Operand c) => a.Value = ~(b.Value | c.Value);
+		private void ExecuteOR(Operand a, Operand b, Operand c) => a.Value = (b.Value | c.Value);
+		private void ExecuteNXOR(Operand a, Operand b, Operand c) => a.Value = ~(b.Value ^ c.Value);
+		private void ExecuteXOR(Operand a, Operand b, Operand c) => a.Value = (b.Value ^ c.Value);
 		private void ExecuteNOT(Operand a, Operand b, Operand c) => a.Value = ~b.Value;
 		private void ExecuteGT(Operand a, Operand b, Operand c) => a.Value = b.Value > c.Value ? ulong.MaxValue : 0;
 		private void ExecuteGTE(Operand a, Operand b, Operand c) => a.Value = b.Value >= c.Value ? ulong.MaxValue : 0;
