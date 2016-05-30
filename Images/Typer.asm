@@ -63,12 +63,13 @@ EQ RI0 RINT1 R5
 IFZ RI0 HLT
 
 EQ RI0 RINT2 $DisplayBackspaceCharacter
-IFZ RI0 SET RIP $PrintCharacter
+IFZ RI0 SET RIP $CheckNewLine
 IFZ R2 EINT
 SUB R2 R2 RONE
 SET [(R0 + R1 * R7 + R2)] $DisplaySpaceCharacter
 EINT
 
+LABEL CheckNewLine
 EQ RI0 RINT2 $DisplayNewLineCharacter
 IFZ RI0 SET RIP $PrintCharacter
 SET R2 RZERO
@@ -116,7 +117,7 @@ IFZ R2 HLT
 EQ R3 R0 [(R1 + $BusDeviceEntryTypeOffset)]
 IFNZ R3 SET RIP $FoundDevice
 
-SUB R2 R2 0d1
+SUB R2 R2 RONE
 ADD R1 R1 $BusDeviceEntryLength
 SET RIP $FindDeviceLoopStart
 

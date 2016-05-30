@@ -24,7 +24,7 @@ IFZ R1 SET RIP $NoBootDevice
 EQ R2 $BootDeviceType [(R0 + $BusDeviceEntryTypeOffset)]
 IFNZ R2 SET RIP $TestBootDevice
 LABEL BootDeviceTestFailed
-SUB R1 R1 0d1
+SUB R1 R1 RONE
 ADD R0 R0 $BusDeviceEntryLength
 SET RIP $BootDeviceEnumerationLoopStart
 
@@ -37,14 +37,14 @@ SET RIP $BootDeviceTestFailed
 
 LABEL FoundBootDevice
 SET R0 R3
-SET R1 0d0
-SET R2 0d0
-SET R3 0d0
+SET R1 RZERO
+SET R2 RZERO
+SET R3 RZERO
 SET RIP (R0 + $BootDeviceEntryPointOffset)
 
 LABEL NoBootDevice
-SET R0 0d0
-SET R1 0d0
-SET R2 0d0
-SET R3 0d0
+SET R0 RZERO
+SET R1 RZERO
+SET R2 RZERO
+SET R3 RZERO
 HLT

@@ -203,7 +203,14 @@ namespace ArkeOS.Tools.Assembler {
                     return Parameter.CreateAddress(isIndirect, false, this.currentOffset);
                 }
                 else if (this.defines.ContainsKey(value)) {
-                    return Parameter.CreateAddress(isIndirect, false, this.defines[value]);
+					var address = this.defines[value];
+
+					if (address > 1 && address != ulong.MaxValue) {
+						return Parameter.CreateAddress(isIndirect, false, address);
+					}
+					else {
+						return Parameter.CreateRegister(isIndirect, false, address == 0 ? Register.RZERO : (address == 1 ? Register.RONE : Register.RMAX));
+					}
                 }
 
 				if (!resolveNames)
