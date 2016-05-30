@@ -10,8 +10,8 @@ DEFINE DisplayColumnsOffset 0d0
 DEFINE DisplayRowsOffset 0d1
 DEFINE DisplayWidthOffset 0d2
 DEFINE DisplayHeightOffset 0d3
-DEFINE DisplayCharacterWidthOffset 0d2
-DEFINE DisplayCharacterHeightOffset 0d3
+DEFINE DisplayCharacterWidthOffset 0d4
+DEFINE DisplayCharacterHeightOffset 0d5
 DEFINE DisplayCharacterOffset 0x100000
 DEFINE DisplayBackspaceCharacter 0x08
 DEFINE DisplayNewLineCharacter 0x0D

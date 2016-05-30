@@ -33,7 +33,8 @@ namespace ArkeOS.OS.Executable {
 
 					writer.BaseStream.Seek(Header.Size, SeekOrigin.Begin);
 
-					this.Sections.ForEach(s => s.Serialize(writer));
+					foreach (var s in this.Sections)
+						s.Serialize(writer);
 				}
 
 				return stream.ToArray();

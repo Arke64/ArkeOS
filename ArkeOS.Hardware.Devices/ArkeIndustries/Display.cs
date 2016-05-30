@@ -12,6 +12,7 @@ namespace ArkeOS.Hardware.Devices.ArkeIndustries {
 		private ulong columns;
 		private char[] characterBuffer;
 		private char[] decodeBuffer;
+		private byte[] encodeBuffer;
 		private ulong[] fontData;
 
 		public byte[] RawBuffer { get; private set; }
@@ -25,6 +26,7 @@ namespace ArkeOS.Hardware.Devices.ArkeIndustries {
 			this.rows = this.height / Display.CharacterHeight;
 			this.characterBuffer = new char[this.columns * this.rows];
 			this.decodeBuffer = new char[8];
+			this.encodeBuffer = new byte[8];
 
 			this.fontData = new ulong[256];
 			this.SetFontData();
@@ -50,14 +52,12 @@ namespace ArkeOS.Hardware.Devices.ArkeIndustries {
 				return Display.CharacterHeight;
 			}
 			else if (address >= 0x100000) {
-				ulong data;
-
 				address -= 0x100000;
 
-				fixed (char* c = this.characterBuffer)
-					Encoding.UTF8.GetBytes(c + address, 1, (byte*)&data, 8);
+				Encoding.UTF8.GetBytes(this.characterBuffer, (int)address, 1, this.encodeBuffer, 0);
 
-				return data;
+				fixed (byte* b = this.encodeBuffer)
+					return *(ulong*)b;
 			}
 			else {
 				return 0;
@@ -70,8 +70,10 @@ namespace ArkeOS.Hardware.Devices.ArkeIndustries {
 
 			address -= 0x100000;
 
-			fixed (char* c = this.decodeBuffer)
-				Encoding.UTF8.GetChars((byte*)&data, 8, c, 8);
+			fixed (byte* b = this.encodeBuffer)
+				*(ulong*)b = data;
+
+			Encoding.UTF8.GetChars(this.encodeBuffer, 0, 8, this.decodeBuffer, 0);
 
 			this.characterBuffer[address] = this.decodeBuffer[0];
 
