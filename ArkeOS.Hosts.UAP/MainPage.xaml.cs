@@ -13,7 +13,7 @@ using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Input;
 using Windows.UI.Xaml.Media.Imaging;
 
-namespace ArkeOS.Hardware.VirtualMachine {
+namespace ArkeOS.Hosts.UAP {
 	public partial class MainPage : Page {
 		private SystemBusController system;
 		private Processor processor;

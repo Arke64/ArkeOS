@@ -5,7 +5,7 @@ using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Navigation;
 
-namespace ArkeOS.Hardware.VirtualMachine {
+namespace ArkeOS.Hosts.UAP {
 	public sealed partial class App : Application {
 		public App() {
 			this.InitializeComponent();

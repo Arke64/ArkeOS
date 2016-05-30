@@ -6,7 +6,7 @@
   <mp:PhoneIdentity PhoneProductId="fc7d35ed-c3ad-4862-946c-a21d4fde227c" PhonePublisherId="00000000-0000-0000-0000-000000000000" />
   
   <Properties>
-    <DisplayName>ArkeOS Virtual Machine</DisplayName>
+    <DisplayName>ArkeOS UAP Host</DisplayName>
     <PublisherDisplayName>John Brochue</PublisherDisplayName>
     <Logo>Assets\StoreLogo.png</Logo>
   </Properties>
@@ -20,8 +20,8 @@
   </Resources>
   
   <Applications>
-    <Application Id="App" Executable="$targetnametoken$.exe" EntryPoint="ArkeOS.Hardware.VirtualMachine.App">
-      <uap:VisualElements DisplayName="ArkeOS Virtual Machine" Square150x150Logo="Assets\Square150x150Logo.png" Square44x44Logo="Assets\Square44x44Logo.png" Description="ArkeOS Virtual Machine" BackgroundColor="transparent">
+    <Application Id="App" Executable="$targetnametoken$.exe" EntryPoint="ArkeOS.Hosts.UAP.App">
+      <uap:VisualElements DisplayName="ArkeOS UAP Host" Square150x150Logo="Assets\Square150x150Logo.png" Square44x44Logo="Assets\Square44x44Logo.png" Description="ArkeOS UAP Host" BackgroundColor="transparent">
         <uap:DefaultTile Wide310x150Logo="Assets\Wide310x150Logo.png" />
         <uap:SplashScreen Image="Assets\SplashScreen.png" />
       </uap:VisualElements>
