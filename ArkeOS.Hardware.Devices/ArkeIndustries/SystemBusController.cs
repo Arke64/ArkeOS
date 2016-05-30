@@ -34,7 +34,7 @@ namespace ArkeOS.Hardware.Devices.ArkeIndustries {
 			var index = 0;
 			var bootId = 0UL;
 
-			memory[index++] = count;
+			memory[index++] = count - 1;
 
 			foreach (var device in this.Devices) {
 				memory[index++] = device.Id;
