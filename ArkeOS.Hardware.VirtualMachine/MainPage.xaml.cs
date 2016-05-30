@@ -91,6 +91,7 @@ namespace ArkeOS.Hardware.VirtualMachine {
 		}
 
 		private void OnKeyEvent(object sender, KeyRoutedEventArgs e) {
+			//https://msdn.microsoft.com/en-us/library/aa299374(v=vs.60).aspx
 			if (e.KeyStatus.IsKeyReleased) {
 				this.keyboard.TriggerKeyUp((ulong)e.Key);
 			}
