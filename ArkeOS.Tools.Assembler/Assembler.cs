@@ -44,7 +44,7 @@ namespace ArkeOS.Tools.Assembler {
                         this.currentOffset = (ulong)stream.Position / 8;
 
                         if (parts[0] == "OFFSET") {
-                            stream.Seek((long)this.ParseParameter(parts[1], true).Address * 8, SeekOrigin.Begin);
+                            stream.Seek((long)this.ParseParameter(parts[1], true).Literal * 8, SeekOrigin.Begin);
                         }
 						else if (parts[0] == "LABEL") {
 
@@ -53,10 +53,10 @@ namespace ArkeOS.Tools.Assembler {
 
 						}
 						else if (parts[0] == "VAR") {
-                            writer.Write(this.ParseParameter(parts[2], true).Address);
+                            writer.Write(this.ParseParameter(parts[2], true).Literal);
                         }
                         else if (parts[0] == "CONST") {
-                            writer.Write(this.ParseParameter(parts[1], true).Address);
+                            writer.Write(this.ParseParameter(parts[1], true).Literal);
                         }
                         else if (parts[0] == "STR") {
                             var start = line.IndexOf("\"") + 1;
@@ -149,7 +149,7 @@ namespace ArkeOS.Tools.Assembler {
                 var parts = line.Split(' ');
 
 				if (parts[0] == "OFFSET") {
-					this.currentOffset = this.ParseParameter(parts[1], false).Address;
+					this.currentOffset = this.ParseParameter(parts[1], false).Literal;
                 }
                 else if (parts[0] == "LABEL") {
                     this.labels.Add(parts[1], this.currentOffset);
@@ -220,7 +220,7 @@ namespace ArkeOS.Tools.Assembler {
                 return this.ReduceCalculated(Parameter.CreateCalculated(isIndirect, false, @base, index, scale, offset));
             }
             else if (value[0] == '0') {
-                return Parameter.CreateAddress(isIndirect, false, Helpers.ParseLiteral(value));
+                return Parameter.CreateLiteral(isIndirect, false, Helpers.ParseLiteral(value));
             }
             else if (value[0] == 'R') {
                 return Parameter.CreateRegister(isIndirect, false, Helpers.ParseEnum<Register>(value));
@@ -232,30 +232,30 @@ namespace ArkeOS.Tools.Assembler {
                 value = value.Substring(1);
 
                 if (value == "Offset") {
-                    return Parameter.CreateAddress(isIndirect, false, this.currentOffset);
+                    return Parameter.CreateLiteral(isIndirect, false, this.currentOffset);
                 }
                 else if (this.defines.ContainsKey(value)) {
-					var address = this.defines[value];
+					var literal = this.defines[value];
 
-					if (address > 1 && address != ulong.MaxValue) {
-						return Parameter.CreateAddress(isIndirect, false, address);
+					if (literal > 1 && literal != ulong.MaxValue) {
+						return Parameter.CreateLiteral(isIndirect, false, literal);
 					}
 					else {
-						return Parameter.CreateRegister(isIndirect, false, address == 0 ? Register.RZERO : (address == 1 ? Register.RONE : Register.RMAX));
+						return Parameter.CreateRegister(isIndirect, false, literal == 0 ? Register.RZERO : (literal == 1 ? Register.RONE : Register.RMAX));
 					}
                 }
 
 				if (!resolveNames)
-					return Parameter.CreateAddress(isIndirect, false, 0);
+					return Parameter.CreateLiteral(isIndirect, false, 0);
 
 				if (this.variables.ContainsKey(value)) {
-                    return Parameter.CreateAddress(isIndirect, true, unchecked(this.variables[value] - this.currentOffset));
+                    return Parameter.CreateLiteral(isIndirect, true, unchecked(this.variables[value] - this.currentOffset));
 				}
 				else if (this.strings.ContainsKey(value)) {
-					return Parameter.CreateAddress(isIndirect, true, unchecked(this.strings[value] - this.currentOffset));
+					return Parameter.CreateLiteral(isIndirect, true, unchecked(this.strings[value] - this.currentOffset));
 				}
 				else if (this.labels.ContainsKey(value)) {
-                    return Parameter.CreateAddress(isIndirect, true, unchecked(this.labels[value] - this.currentOffset));
+                    return Parameter.CreateLiteral(isIndirect, true, unchecked(this.labels[value] - this.currentOffset));
                 }
 
                 throw new VariableNotFoundException(value);
@@ -266,18 +266,18 @@ namespace ArkeOS.Tools.Assembler {
         }
 
         private Parameter ReduceCalculated(Parameter calculated) {
-            Func<Parameter.Calculated, bool> valid = c => c == null || (c.Parameter.Type == ParameterType.Address && c.Parameter.IsIndirect == false);
+            bool valid(Parameter.Calculated c) => c == null || (c.Parameter.Type == ParameterType.Literal && !c.Parameter.IsIndirect);
 
             if (!valid(calculated.Base) || !valid(calculated.Index) || !valid(calculated.Scale) || !valid(calculated.Offset))
                 return calculated;
 
-            var value = calculated.Base.Parameter.Address;
+            var value = calculated.Base.Parameter.Literal;
 
             if (calculated.Index != null) {
-                var calc = calculated.Index.Parameter.Address;
+                var calc = calculated.Index.Parameter.Literal;
 
                 if (calculated.Scale != null)
-                    calc *= calculated.Scale.Parameter.Address;
+                    calc *= calculated.Scale.Parameter.Literal;
 
                 if (calculated.Index.IsPositive) {
                     value += calc;
@@ -288,7 +288,7 @@ namespace ArkeOS.Tools.Assembler {
             }
 
             if (calculated.Offset != null) {
-                var calc = calculated.Offset.Parameter.Address;
+                var calc = calculated.Offset.Parameter.Literal;
 
                 if (calculated.Offset.IsPositive) {
                     value += calc;
@@ -298,7 +298,7 @@ namespace ArkeOS.Tools.Assembler {
                 }
             }
 
-            return Parameter.CreateAddress(calculated.IsIndirect, calculated.IsRIPRelative, value);
+            return Parameter.CreateLiteral(calculated.IsIndirect, calculated.IsRIPRelative, value);
         }
     }
 }

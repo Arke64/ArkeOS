@@ -14,7 +14,7 @@ namespace ArkeOS.Hardware.Architecture {
 
         public ParameterType Type { get; set; }
         public Register Register { get; set; }
-        public ulong Address { get; set; }
+        public ulong Literal { get; set; }
         public bool IsIndirect { get; set; }
         public bool IsRIPRelative { get; set; }
 
@@ -28,7 +28,7 @@ namespace ArkeOS.Hardware.Architecture {
                 if (this.Type == ParameterType.Calculated) {
                     return (byte)(1 + this.Base.Parameter.Length + (this.Index?.Parameter.Length ?? 0) + (this.Scale?.Parameter.Length ?? 0) + (this.Offset?.Parameter.Length ?? 0));
                 }
-                else if (this.Type == ParameterType.Address) {
+                else if (this.Type == ParameterType.Literal) {
                     return 1;
                 }
                 else {
@@ -37,62 +37,54 @@ namespace ArkeOS.Hardware.Architecture {
             }
         }
 
-        public static Parameter CreateStack(bool isIndirect, bool isRIPRelative) {
-            return new Parameter() {
-                IsIndirect = isIndirect,
-                IsRIPRelative = isRIPRelative,
-                Type = ParameterType.Stack,
-            };
-        }
+        public static Parameter CreateStack(bool isIndirect, bool isRIPRelative) => new Parameter() {
+            IsIndirect = isIndirect,
+            IsRIPRelative = isRIPRelative,
+            Type = ParameterType.Stack,
+        };
 
-        public static Parameter CreateRegister(bool isIndirect, bool isRIPRelative, Register register) {
-            return new Parameter() {
-                IsIndirect = isIndirect,
-                IsRIPRelative = isRIPRelative,
-                Type = ParameterType.Register,
-                Register = register,
-            };
-        }
+        public static Parameter CreateRegister(bool isIndirect, bool isRIPRelative, Register register) => new Parameter() {
+            IsIndirect = isIndirect,
+            IsRIPRelative = isRIPRelative,
+            Type = ParameterType.Register,
+            Register = register,
+        };
 
-        public static Parameter CreateAddress(bool isIndirect, bool isRIPRelative, ulong address) {
-            return new Parameter() {
-                IsIndirect = isIndirect,
-                IsRIPRelative = isRIPRelative,
-                Type = ParameterType.Address,
-                Address = address,
-            };
-        }
+        public static Parameter CreateLiteral(bool isIndirect, bool isRIPRelative, ulong literal) => new Parameter() {
+            IsIndirect = isIndirect,
+            IsRIPRelative = isRIPRelative,
+            Type = ParameterType.Literal,
+            Literal = literal,
+        };
 
-        public static Parameter CreateCalculated(bool isIndirect, bool isRIPRelative, Calculated @base, Calculated index, Calculated scale, Calculated offset) {
-            return new Parameter() {
-                Base = @base,
-                Index = index,
-                Scale = scale,
-                Offset = offset,
+        public static Parameter CreateCalculated(bool isIndirect, bool isRIPRelative, Calculated @base, Calculated index, Calculated scale, Calculated offset) => new Parameter() {
+            Base = @base,
+            Index = index,
+            Scale = scale,
+            Offset = offset,
 
-                IsIndirect = isIndirect,
-                IsRIPRelative = isRIPRelative,
-                Type = ParameterType.Calculated,
-            };
-        }
+            IsIndirect = isIndirect,
+            IsRIPRelative = isRIPRelative,
+            Type = ParameterType.Calculated,
+        };
 
-		public override string ToString() => this.ToString(16);
+        public override string ToString() => this.ToString(16);
 
-		public string ToString(int radix) {
+        public string ToString(int radix) {
             var str = "";
 
             switch (this.Type) {
                 default: return string.Empty;
-                case ParameterType.Address: str = this.Address.ToString(radix); break;
+                case ParameterType.Literal: str = this.Literal.ToString(radix); break;
                 case ParameterType.Register: str = this.Register.ToString(); break;
                 case ParameterType.Stack: str = "S"; break;
                 case ParameterType.Calculated:
                     str = this.Base.Parameter.ToString(radix);
-					str += (this.Index.IsPositive ? " + " : " + -") + this.Index.Parameter.ToString(radix);
-					str += (this.Scale.IsPositive ? " * " : " * -") + this.Scale.Parameter.ToString(radix);
-					str += (this.Offset.IsPositive ? " + " : " + -") + this.Offset.Parameter.ToString(radix);
+                    str += (this.Index.IsPositive ? " + " : " + -") + this.Index.Parameter.ToString(radix);
+                    str += (this.Scale.IsPositive ? " * " : " * -") + this.Scale.Parameter.ToString(radix);
+                    str += (this.Offset.IsPositive ? " + " : " + -") + this.Offset.Parameter.ToString(radix);
 
-					str = "(" + str + ")";
+                    str = "(" + str + ")";
 
                     break;
             }

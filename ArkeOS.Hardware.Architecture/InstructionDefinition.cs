@@ -1,9 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
+﻿using System.Collections.Generic;
 
 namespace ArkeOS.Hardware.Architecture {
-	public class InstructionDefinition {
+    public class InstructionDefinition {
 		private static Dictionary<string, InstructionDefinition> mnemonics;
 		private static InstructionDefinition[] instructions;
 
@@ -14,8 +12,6 @@ namespace ArkeOS.Hardware.Architecture {
 		public ParameterDirection Parameter1Direction { get; }
 		public ParameterDirection Parameter2Direction { get; }
 		public ParameterDirection Parameter3Direction { get; }
-
-		public static IReadOnlyList<InstructionDefinition> All => InstructionDefinition.instructions.Where(c => c != null).ToList();
 
 		static InstructionDefinition() {
 			InstructionDefinition.mnemonics = new Dictionary<string, InstructionDefinition>();

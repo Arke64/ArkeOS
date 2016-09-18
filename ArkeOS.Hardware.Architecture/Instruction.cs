@@ -87,8 +87,8 @@ namespace ArkeOS.Hardware.Architecture {
 
 				this.Length++;
 			}
-			else if (para.Type == ParameterType.Address) {
-				para.Address = stream.ReadWord(address++);
+			else if (para.Type == ParameterType.Literal) {
+				para.Literal = stream.ReadWord(address++);
 
 				this.Length++;
 			}
@@ -139,8 +139,8 @@ namespace ArkeOS.Hardware.Architecture {
 			if (parameter.Type == ParameterType.Calculated) {
 				this.EncodeCalculatedParameter(writer, parameter);
 			}
-			else if (parameter.Type == ParameterType.Address) {
-				writer.Write(parameter.Address);
+			else if (parameter.Type == ParameterType.Literal) {
+				writer.Write(parameter.Literal);
 			}
 		}
 

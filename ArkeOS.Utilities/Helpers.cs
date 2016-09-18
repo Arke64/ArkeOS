@@ -5,31 +5,19 @@ namespace ArkeOS.Utilities {
 		public static ulong ParseLiteral(string value) {
 			var prefix = value.Substring(0, 2);
 
-			value = value.Substring(2);
+            value = value.Substring(2).Replace('_', '\0'); ;
 
-			if (prefix == "0x") {
-				return Convert.ToUInt64(value, 16);
-			}
-			else if (prefix == "0d") {
-				return Convert.ToUInt64(value, 10);
-			}
-			else if (prefix == "0o") {
-				return Convert.ToUInt64(value, 8);
-			}
-			else if (prefix == "0b") {
-				return Convert.ToUInt64(value, 2);
-			}
-			else if (prefix == "0c") {
-				return value[0];
-			}
-			else {
-				return 0;
-			}
+            switch (prefix) {
+                case "0x": return Convert.ToUInt64(value, 16);
+                case "0d": return Convert.ToUInt64(value, 10);
+                case "0o": return Convert.ToUInt64(value, 8);
+                case "0b": return Convert.ToUInt64(value, 2);
+                case "0c": return value[0];
+                default: return 0;
+            }
 		}
 
-		public static T ParseEnum<T>(string value) {
-			return (T)Enum.Parse(typeof(T), value);
-		}
+		public static T ParseEnum<T>(string value) => (T)Enum.Parse(typeof(T), value);
 
 		public static ulong[] ConvertArray(byte[] buffer) {
 			var result = new ulong[buffer.Length / 8];

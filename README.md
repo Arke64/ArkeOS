@@ -1,6 +1,6 @@
 ArkeOS
 ======
-This is a computer built from the ground up from hardware to software.
+ArkeOS is an entirely new computer architecture.
 
 Registers
 =========
@@ -74,18 +74,18 @@ Basic
 
 Math
 ----
-- 20 ADD A B C: Set A to A + B
-- 21 ADDF A B C: Set A to B + C interpreting each as an IEEE 754 value
+- 20 ADD A B C: Set A to B + C
+- 21 ADDF A B C: Set A to B + C interpreting each as a double precision IEEE 754 value
 - 22 SUB A B C: Set A to B - C
-- 23 SUBF A B C: Set A to B - C interpreting each as an IEEE 754 value
+- 23 SUBF A B C: Set A to B - C interpreting each as a double precision IEEE 754 value
 - 24 DIV A B C: Set A to B / C
-- 25 DIVF A B C: Set A to B / C interpreting each as an IEEE 754 value
+- 25 DIVF A B C: Set A to B / C interpreting each as a double precision IEEE 754 value
 - 26 MUL A B C: Set A to B * C
-- 27 MULF A B C: Set A to B * C interpreting each as an IEEE 754 value
+- 27 MULF A B C: Set A to B * C interpreting each as a double precision IEEE 754 value
 - 28 MOD A B C: Set A to B % C
-- 29 MODF A B C: Set A to B % C interpreting each as an IEEE 754 value
-- 30 ITOF A B: Convert the integer B to an IEEE 754 value and store it in A
-- 31 FTOI A B: Convert the IEEE 754 value in B to an integer and store it in A
+- 29 MODF A B C: Set A to B % C interpreting each as a double precision IEEE 754 value
+- 30 ITOF A B: Convert the integer B to a double precision IEEE 754 value and store it in A
+- 31 FTOI A B: Convert the IEEE 754 value in B to a double precision integer and store it in A
 
 Logic
 -----

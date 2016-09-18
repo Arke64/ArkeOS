@@ -192,8 +192,8 @@ namespace ArkeOS.Hardware.ArkeIndustries {
 			else if (parameter.Type == ParameterType.Stack) {
 				value = this.Pop();
 			}
-			else if (parameter.Type == ParameterType.Address) {
-				value = parameter.Address;
+			else if (parameter.Type == ParameterType.Literal) {
+				value = parameter.Literal;
 			}
 			else if (parameter.Type == ParameterType.Calculated) {
 				value = this.GetCalculatedValue(parameter);
@@ -228,8 +228,8 @@ namespace ArkeOS.Hardware.ArkeIndustries {
 				else if (parameter.Type == ParameterType.Stack) {
 					address = this.Pop();
 				}
-				else if (parameter.Type == ParameterType.Address) {
-					address = parameter.Address;
+				else if (parameter.Type == ParameterType.Literal) {
+					address = parameter.Literal;
 				}
 				else if (parameter.Type == ParameterType.Calculated) {
 					address = this.GetCalculatedValue(parameter);
