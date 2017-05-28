@@ -2,7 +2,7 @@
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
 
-namespace ArkeOS.Hosts.UAP {
+namespace ArkeOS.Hosts.UWP {
     public sealed partial class App : Application {
         public App() {
             this.InitializeComponent();
