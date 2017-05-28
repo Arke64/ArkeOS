@@ -1,34 +1,8 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="15.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="$(CONFIG_PATH)\MSBuild\CS Universal Library.props" />
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <ProjectGuid>{F983D92B-E6A3-490F-9177-D578DA2EFB80}</ProjectGuid>
-    <RootNamespace>ArkeOS.Hardware.Architecture</RootNamespace>
-    <AssemblyName>ArkeOS.Hardware.Architecture</AssemblyName>
+    <TargetFramework>netstandard1.6</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
-    <None Include="project.json" />
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Include="IInterruptController.cs" />
-    <Compile Include="InterruptRecord.cs" />
-    <Compile Include="IProcessor.cs" />
-    <Compile Include="ISystemBusController.cs" />
-    <Compile Include="ISystemBusDevice.cs" />
-    <Compile Include="ParameterDirection.cs" />
-    <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="DeviceType.cs" />
-    <Compile Include="Instruction.cs" />
-    <Compile Include="InstructionDefinition.cs" />
-    <Compile Include="Interrupt.cs" />
-    <Compile Include="Parameter.cs" />
-    <Compile Include="ParameterType.cs" />
-    <Compile Include="Register.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\ArkeOS.Utilities\ArkeOS.Utilities.csproj">
-      <Project>{2E225CED-2308-4336-84A4-4D053581BBD0}</Project>
-      <Name>ArkeOS.Utilities</Name>
-    </ProjectReference>
+    <ProjectReference Include="..\ArkeOS.Utilities\ArkeOS.Utilities.csproj" />
   </ItemGroup>
 </Project>

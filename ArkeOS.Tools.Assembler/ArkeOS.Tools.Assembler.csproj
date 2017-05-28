@@ -1,41 +1,10 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="15.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="$(CONFIG_PATH)\MSBuild\CS Console.props" />
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <ProjectGuid>{E9776C8D-E3AD-4BCA-AA37-0C4883463480}</ProjectGuid>
-    <RootNamespace>ArkeOS.Tools.Assembler</RootNamespace>
-    <AssemblyName>ArkeOS.Tools.Assembler</AssemblyName>
-    <StartupObject>ArkeOS.Tools.Assembler.Program</StartupObject>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>netcoreapp1.1</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="System" />
-    <Reference Include="System.Core" />
-    <Reference Include="System.Xml.Linq" />
-    <Reference Include="System.Data.DataSetExtensions" />
-    <Reference Include="Microsoft.CSharp" />
-    <Reference Include="System.Data" />
-    <Reference Include="System.Net.Http" />
-    <Reference Include="System.Xml" />
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Include="Exceptions.cs" />
-    <Compile Include="Assembler.cs" />
-    <Compile Include="Program.cs" />
-    <Compile Include="Properties\AssemblyInfo.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="App.config">
-      <SubType>Designer</SubType>
-    </None>
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\ArkeOS.Hardware.Architecture\ArkeOS.Hardware.Architecture.csproj">
-      <Project>{F983D92B-E6A3-490F-9177-D578DA2EFB80}</Project>
-      <Name>ArkeOS.Hardware.Architecture</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\ArkeOS.Utilities\ArkeOS.Utilities.csproj">
-      <Project>{2E225CED-2308-4336-84A4-4D053581BBD0}</Project>
-      <Name>ArkeOS.Utilities</Name>
-    </ProjectReference>
+    <ProjectReference Include="..\ArkeOS.Hardware.Architecture\ArkeOS.Hardware.Architecture.csproj" />
+    <ProjectReference Include="..\ArkeOS.Utilities\ArkeOS.Utilities.csproj" />
   </ItemGroup>
 </Project>
