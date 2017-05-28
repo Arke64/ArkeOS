@@ -3,19 +3,19 @@
         public int Position { get; private set; }
         public ulong Word { get; private set; }
 
-		public BitStream() : this(0) { }
+        public BitStream() : this(0) { }
 
-		public BitStream(ulong word) {
-			this.Word = word;
-			this.Position = 0;
-		}
+        public BitStream(ulong word) {
+            this.Word = word;
+            this.Position = 0;
+        }
 
-		public void Advance(int size) => this.Position += size;
+        public void Advance(int size) => this.Position += size;
 
-		public void Write(bool data) => this.Write(data ? 1U : 0U, 1);
-		public void Write(byte data) => this.Write(data, 8);
+        public void Write(bool data) => this.Write(data ? 1U : 0U, 1);
+        public void Write(byte data) => this.Write(data, 8);
 
-		public void Write(ulong bits, int size) {
+        public void Write(ulong bits, int size) {
             this.Word |= (bits & ((1UL << size) - 1)) << this.Position;
             this.Position += size;
         }

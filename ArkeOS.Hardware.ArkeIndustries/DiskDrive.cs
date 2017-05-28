@@ -1,19 +1,19 @@
-﻿using System;
-using System.IO;
-using ArkeOS.Hardware.Architecture;
+﻿using ArkeOS.Hardware.Architecture;
 using ArkeOS.Utilities;
+using System;
+using System.IO;
 
 namespace ArkeOS.Hardware.ArkeIndustries {
     public class DiskDrive : SystemBusDevice {
         private Stream stream;
         private byte[] buffer;
         private ulong length;
-		private bool disposed;
+        private bool disposed;
 
         public DiskDrive(Stream stream) : base(ProductIds.Vendor, ProductIds.HDD100, DeviceType.DiskDrive) {
             this.stream = stream;
             this.length = (ulong)stream.Length / 8UL;
-			this.disposed = false;
+            this.disposed = false;
             this.buffer = new byte[8];
         }
 
@@ -58,18 +58,18 @@ namespace ArkeOS.Hardware.ArkeIndustries {
             this.stream.Write(buffer, 0, buffer.Length);
         }
 
-		public override void Reset() => this.stream.Flush();
+        public override void Reset() => this.stream.Flush();
 
-		protected override void Dispose(bool disposing) {
-			if (this.disposed)
-				return;
+        protected override void Dispose(bool disposing) {
+            if (this.disposed)
+                return;
 
-			if (disposing)
-				this.stream.Dispose();
+            if (disposing)
+                this.stream.Dispose();
 
-			this.disposed = true;
+            this.disposed = true;
 
-			base.Dispose(disposing);
+            base.Dispose(disposing);
         }
     }
 }

@@ -7,6 +7,6 @@
         BootManager,
         DiskDrive,
         Keyboard,
-		Display
-	}
+        Display
+    }
 }

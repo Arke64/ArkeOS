@@ -13,11 +13,7 @@ namespace ArkeOS.Hosts.UWP {
         protected override void OnLaunched(LaunchActivatedEventArgs e) {
             var rootFrame = Window.Current.Content as Frame;
 
-            if (rootFrame == null) {
-                rootFrame = new Frame();
-
-                Window.Current.Content = rootFrame;
-            }
+            Window.Current.Content = rootFrame ?? (rootFrame = new Frame());
 
             if (!e.PrelaunchActivated) {
                 if (rootFrame.Content == null)

@@ -1,11 +1,11 @@
-﻿using System;
+﻿using ArkeOS.Hardware.Architecture;
+using ArkeOS.Utilities;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
-using ArkeOS.Hardware.Architecture;
-using ArkeOS.Utilities;
 
 namespace ArkeOS.Tools.Assembler {
     public class Assembler {
@@ -15,28 +15,28 @@ namespace ArkeOS.Tools.Assembler {
         private Dictionary<string, ulong> strings;
         private ulong currentOffset;
 
-		public Assembler() {
+        public Assembler() {
             this.labels = new Dictionary<string, ulong>();
             this.defines = new Dictionary<string, ulong>();
             this.variables = new Dictionary<string, ulong>();
             this.strings = new Dictionary<string, ulong>();
-			this.currentOffset = 0;
-		}
+            this.currentOffset = 0;
+        }
 
-		private static string Sanitize(string input) => Regex.Replace(input, @"\s+", " ").Replace("+ ", "+").Replace(" +", "+").Replace("- ", "-").Replace(" -", "-").Replace("* ", "*").Replace(" *", "*");
-		
-		public byte[] Assemble(string[] inputLines) {
-			IEnumerable<string> lines = inputLines.ToList();
+        private static string Sanitize(string input) => Regex.Replace(input, @"\s+", " ").Replace("+ ", "+").Replace(" +", "+").Replace("- ", "-").Replace(" -", "-").Replace("* ", "*").Replace(" *", "*");
 
-			while (this.ProcessIncludes(ref lines))
-				;
+        public byte[] Assemble(string[] inputLines) {
+            IEnumerable<string> lines = inputLines.ToList();
 
-			lines = lines.Select(l => l.Split(new string[] { "//" }, StringSplitOptions.None)[0].Trim()).Where(l => !string.IsNullOrWhiteSpace(l)).Select(l => Assembler.Sanitize(l));
+            while (this.ProcessIncludes(ref lines))
+                ;
 
-			this.DiscoverDefines(lines);
-			this.DiscoverAddresses(lines);
+            lines = lines.Select(l => l.Split(new string[] { "//" }, StringSplitOptions.None)[0].Trim()).Where(l => !string.IsNullOrWhiteSpace(l)).Select(l => Assembler.Sanitize(l));
 
-			using (var stream = new MemoryStream()) {
+            this.DiscoverDefines(lines);
+            this.DiscoverAddresses(lines);
+
+            using (var stream = new MemoryStream()) {
                 using (var writer = new BinaryWriter(stream)) {
                     foreach (var line in lines) {
                         var parts = line.Split(' ');
@@ -46,13 +46,13 @@ namespace ArkeOS.Tools.Assembler {
                         if (parts[0] == "OFFSET") {
                             stream.Seek((long)this.ParseParameter(parts[1], true).Literal * 8, SeekOrigin.Begin);
                         }
-						else if (parts[0] == "LABEL") {
+                        else if (parts[0] == "LABEL") {
 
-						}
-						else if (parts[0] == "DEFINE") {
+                        }
+                        else if (parts[0] == "DEFINE") {
 
-						}
-						else if (parts[0] == "VAR") {
+                        }
+                        else if (parts[0] == "VAR") {
                             writer.Write(this.ParseParameter(parts[2], true).Literal);
                         }
                         else if (parts[0] == "CONST") {
@@ -77,105 +77,105 @@ namespace ArkeOS.Tools.Assembler {
             }
         }
 
-		private bool ProcessIncludes(ref IEnumerable<string> lines) {
-			var result = new List<string>();
-			var last = 0;
-			var i = 0;
+        private bool ProcessIncludes(ref IEnumerable<string> lines) {
+            var result = new List<string>();
+            var last = 0;
+            var i = 0;
 
-			for (; i < lines.Count(); i++) {
-				var line = lines.ElementAt(i);
+            for (; i < lines.Count(); i++) {
+                var line = lines.ElementAt(i);
 
-				if (line.StartsWith("INCLUDE")) {
-					result.AddRange(lines.Skip(last).Take(i - last));
+                if (line.StartsWith("INCLUDE")) {
+                    result.AddRange(lines.Skip(last).Take(i - last));
 
-					result.AddRange(File.ReadAllLines(line.Substring(line.IndexOf(' ') + 1)));
+                    result.AddRange(File.ReadAllLines(line.Substring(line.IndexOf(' ') + 1)));
 
-					last = i + 1;
-				}
-			}
+                    last = i + 1;
+                }
+            }
 
-			if (result.Count == 0)
-				return false;
+            if (result.Count == 0)
+                return false;
 
-			result.AddRange(lines.Skip(last).Take(i - last));
+            result.AddRange(lines.Skip(last).Take(i - last));
 
-			lines = result;
+            lines = result;
 
-			return true;
-		}
+            return true;
+        }
 
-		private void DiscoverDefines(IEnumerable<string> lines) {
-			var indirectDefines = new Dictionary<string, string>();
-
-			foreach (var line in lines) {
-				var parts = line.Split(' ');
-
-				if (parts[0] != "DEFINE")
-					continue;
-
-				if (parts[2].StartsWith("$")) {
-					indirectDefines.Add(parts[1], parts[2].Substring(1));
-				}
-				else {
-					this.defines.Add(parts[1], Helpers.ParseLiteral(parts[2]));
-				}
-			}
-
-			this.ReduceDefines(indirectDefines);
-		}
-
-		private void ReduceDefines(Dictionary<string, string> indirect) {
-			var remaining = new Dictionary<string, string>();
-			var failed = false;
-
-			foreach (var d in indirect) {
-				if (this.defines.ContainsKey(d.Key)) {
-					this.defines.Add(d.Key, this.defines[d.Key]);
-				}
-				else {
-					remaining.Add(d.Key, d.Value);
-					failed = true;
-				}
-			}
-
-			if (failed)
-				this.ReduceDefines(remaining);
-		}
-
-        private void DiscoverAddresses(IEnumerable<string> lines) {
-			this.currentOffset = 0;
+        private void DiscoverDefines(IEnumerable<string> lines) {
+            var indirectDefines = new Dictionary<string, string>();
 
             foreach (var line in lines) {
                 var parts = line.Split(' ');
 
-				if (parts[0] == "OFFSET") {
-					this.currentOffset = this.ParseParameter(parts[1], false).Literal;
+                if (parts[0] != "DEFINE")
+                    continue;
+
+                if (parts[2].StartsWith("$")) {
+                    indirectDefines.Add(parts[1], parts[2].Substring(1));
+                }
+                else {
+                    this.defines.Add(parts[1], Helpers.ParseLiteral(parts[2]));
+                }
+            }
+
+            this.ReduceDefines(indirectDefines);
+        }
+
+        private void ReduceDefines(Dictionary<string, string> indirect) {
+            var remaining = new Dictionary<string, string>();
+            var failed = false;
+
+            foreach (var d in indirect) {
+                if (this.defines.ContainsKey(d.Key)) {
+                    this.defines.Add(d.Key, this.defines[d.Key]);
+                }
+                else {
+                    remaining.Add(d.Key, d.Value);
+                    failed = true;
+                }
+            }
+
+            if (failed)
+                this.ReduceDefines(remaining);
+        }
+
+        private void DiscoverAddresses(IEnumerable<string> lines) {
+            this.currentOffset = 0;
+
+            foreach (var line in lines) {
+                var parts = line.Split(' ');
+
+                if (parts[0] == "OFFSET") {
+                    this.currentOffset = this.ParseParameter(parts[1], false).Literal;
                 }
                 else if (parts[0] == "LABEL") {
                     this.labels.Add(parts[1], this.currentOffset);
-				}
-				else if (parts[0] == "DEFINE") {
+                }
+                else if (parts[0] == "DEFINE") {
 
-				}
-				else if (parts[0] == "VAR") {
+                }
+                else if (parts[0] == "VAR") {
                     this.variables.Add(parts[1], this.currentOffset);
 
-					this.currentOffset += 1;
+                    this.currentOffset += 1;
                 }
                 else if (parts[0] == "CONST") {
-					this.currentOffset += 1;
+                    this.currentOffset += 1;
                 }
                 else if (parts[0] == "STR") {
                     var start = line.IndexOf("\"") + 1;
                     var end = line.LastIndexOf("\"");
-					var len = end - start;
+                    var len = end - start;
 
-					this.strings.Add(parts[1], this.currentOffset);
+                    this.strings.Add(parts[1], this.currentOffset);
 
-					this.currentOffset += (ulong)(len + len % 8);
+                    this.currentOffset += (ulong)(len + len % 8);
                 }
                 else {
-					this.currentOffset += this.ParseInstruction(parts, false).Length;
+                    this.currentOffset += this.ParseInstruction(parts, false).Length;
                 }
             }
         }
@@ -210,9 +210,9 @@ namespace ArkeOS.Tools.Assembler {
 
                 var parts = value.Split('+', '*');
 
-				if (parts[0][0] == '-') throw new InvalidParameterException("Base can't be negative.");
+                if (parts[0][0] == '-') throw new InvalidParameterException("Base can't be negative.");
 
-				var @base = new Parameter.Calculated(true, this.ParseParameter(parts[0], resolveNames));
+                var @base = new Parameter.Calculated(true, this.ParseParameter(parts[0], resolveNames));
                 var index = parts.Length > 1 ? new Parameter.Calculated(parts[1][0] != '-', this.ParseParameter(parts[1].TrimStart('-'), resolveNames)) : null;
                 var scale = parts.Length > 2 ? new Parameter.Calculated(parts[2][0] != '-', this.ParseParameter(parts[2].TrimStart('-'), resolveNames)) : null;
                 var offset = parts.Length > 3 ? new Parameter.Calculated(parts[3][0] != '-', this.ParseParameter(parts[3].TrimStart('-'), resolveNames)) : null;
@@ -235,26 +235,26 @@ namespace ArkeOS.Tools.Assembler {
                     return Parameter.CreateLiteral(isIndirect, false, this.currentOffset);
                 }
                 else if (this.defines.ContainsKey(value)) {
-					var literal = this.defines[value];
+                    var literal = this.defines[value];
 
-					if (literal > 1 && literal != ulong.MaxValue) {
-						return Parameter.CreateLiteral(isIndirect, false, literal);
-					}
-					else {
-						return Parameter.CreateRegister(isIndirect, false, literal == 0 ? Register.RZERO : (literal == 1 ? Register.RONE : Register.RMAX));
-					}
+                    if (literal > 1 && literal != ulong.MaxValue) {
+                        return Parameter.CreateLiteral(isIndirect, false, literal);
+                    }
+                    else {
+                        return Parameter.CreateRegister(isIndirect, false, literal == 0 ? Register.RZERO : (literal == 1 ? Register.RONE : Register.RMAX));
+                    }
                 }
 
-				if (!resolveNames)
-					return Parameter.CreateLiteral(isIndirect, false, 0);
+                if (!resolveNames)
+                    return Parameter.CreateLiteral(isIndirect, false, 0);
 
-				if (this.variables.ContainsKey(value)) {
+                if (this.variables.ContainsKey(value)) {
                     return Parameter.CreateLiteral(isIndirect, true, unchecked(this.variables[value] - this.currentOffset));
-				}
-				else if (this.strings.ContainsKey(value)) {
-					return Parameter.CreateLiteral(isIndirect, true, unchecked(this.strings[value] - this.currentOffset));
-				}
-				else if (this.labels.ContainsKey(value)) {
+                }
+                else if (this.strings.ContainsKey(value)) {
+                    return Parameter.CreateLiteral(isIndirect, true, unchecked(this.strings[value] - this.currentOffset));
+                }
+                else if (this.labels.ContainsKey(value)) {
                     return Parameter.CreateLiteral(isIndirect, true, unchecked(this.labels[value] - this.currentOffset));
                 }
 

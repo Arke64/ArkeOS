@@ -5,6 +5,6 @@
         SystemCall,
         SystemTimer,
         DeviceWaiting,
-		CPYComplete,
+        CPYComplete,
     }
 }

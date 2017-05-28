@@ -29,8 +29,7 @@ namespace ArkeOS.Hosts.UWP {
 
             this.currentPressedKeys = new HashSet<ulong>();
             this.displayBitmap = new WriteableBitmap((int)this.ScreenImage.Width, (int)this.ScreenImage.Height);
-            this.displayRefreshTimer = new DispatcherTimer();
-            this.displayRefreshTimer.Interval = TimeSpan.FromMilliseconds(1000 / 24);
+            this.displayRefreshTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(1000 / 24) };
             this.displayRefreshTimer.Tick += (s, e) => this.RefreshDisplay();
 
             this.ScreenImage.Source = this.displayBitmap;
@@ -49,10 +48,11 @@ namespace ArkeOS.Hosts.UWP {
             var bootManager = new BootManager(Helpers.ConvertArray((await FileIO.ReadBufferAsync(await ApplicationData.Current.LocalFolder.GetFileAsync("Boot.bin"))).ToArray()));
 
             this.processor = new Processor();
-            this.system = new SystemBusController();
 
-            this.system.Processor = this.processor;
-            this.system.InterruptController = interruptController;
+            this.system = new SystemBusController() {
+                Processor = this.processor,
+                InterruptController = interruptController
+            };
 
             this.system.AddDevice(ram);
             this.system.AddDevice(bootManager);
@@ -197,12 +197,8 @@ namespace ArkeOS.Hosts.UWP {
 
         private void RefreshDisplay() => this.displayBitmap.FromByteArray(this.display.RawBuffer);
 
-        private void FormatRadioButton_Checked(object sender, RoutedEventArgs e) {
-            this.RefreshDebug();
-        }
+        private void FormatRadioButton_Checked(object sender, RoutedEventArgs e) => this.RefreshDebug();
 
-        private void RefreshButton_Click(object sender, RoutedEventArgs e) {
-            this.RefreshDebug();
-        }
+        private void RefreshButton_Click(object sender, RoutedEventArgs e) => this.RefreshDebug();
     }
 }
