@@ -25,10 +25,10 @@ namespace ArkeOS.Tools.Assembler {
 
         private static string Sanitize(string input) => Regex.Replace(input, @"\s+", " ").Replace("+ ", "+").Replace(" +", "+").Replace("- ", "-").Replace(" -", "-").Replace("* ", "*").Replace(" *", "*");
 
-        public byte[] Assemble(string[] inputLines) {
+        public byte[] Assemble(string sourceFolder, string[] inputLines) {
             IEnumerable<string> lines = inputLines.ToList();
 
-            while (this.ProcessIncludes(ref lines))
+            while (this.ProcessIncludes(sourceFolder, ref lines))
                 ;
 
             lines = lines.Select(l => l.Split(new string[] { "//" }, StringSplitOptions.None)[0].Trim()).Where(l => !string.IsNullOrWhiteSpace(l)).Select(l => Assembler.Sanitize(l));
@@ -77,7 +77,7 @@ namespace ArkeOS.Tools.Assembler {
             }
         }
 
-        private bool ProcessIncludes(ref IEnumerable<string> lines) {
+        private bool ProcessIncludes(string sourceFolder, ref IEnumerable<string> lines) {
             var result = new List<string>();
             var last = 0;
             var i = 0;
@@ -88,7 +88,7 @@ namespace ArkeOS.Tools.Assembler {
                 if (line.StartsWith("INCLUDE")) {
                     result.AddRange(lines.Skip(last).Take(i - last));
 
-                    result.AddRange(File.ReadAllLines(line.Substring(line.IndexOf(' ') + 1)));
+                    result.AddRange(File.ReadAllLines(Path.Combine(sourceFolder, line.Substring(line.IndexOf(' ') + 1))));
 
                     last = i + 1;
                 }

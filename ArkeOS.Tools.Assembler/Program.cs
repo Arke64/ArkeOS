@@ -12,7 +12,7 @@ namespace ArkeOS.Tools.Assembler {
                 return;
             }
 
-            File.WriteAllBytes(Path.ChangeExtension(input, "bin"), new Assembler().Assemble(File.ReadAllLines(input)));
+            File.WriteAllBytes(Path.ChangeExtension(input, "bin"), new Assembler().Assemble(Path.GetDirectoryName(input), File.ReadAllLines(input)));
         }
     }
 }

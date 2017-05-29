@@ -69,18 +69,18 @@ IFNZ RI0 SET RI0 RMAX
 NOT RI0 RI0
 SET [$ShiftPressed] RI0
 EINT
- 
+
 LABEL NotShift
 IFZ RI0 EINT
-EQ RI0 RINT2 $BackspaceScanCode 
+EQ RI0 RINT2 $BackspaceScanCode
 IFZ RI0 SET RIP $CheckNewLine
 IFZ R2 EINT
 SUB R2 R2 RONE
-SET [(R0 + R1 * R7 + R2)] $SpaceUtf8 
+SET [(R0 + R1 * R7 + R2)] $SpaceUtf8
 EINT
 
 LABEL CheckNewLine
-EQ RI0 RINT2 $EnterScanCode 
+EQ RI0 RINT2 $EnterScanCode
 IFZ RI0 SET RIP $PrintCharacter
 SET R2 RZERO
 ADD R1 R1 RONE
@@ -107,13 +107,13 @@ CPY R0 (R0 + R7) (RZERO + R6 * R7 + -R7)
 SET RI0 R7
 LABEL ScrollClearLoopStart
 SUB RI0 RI0 RONE
-SET [(R0 + R1 * R7 + RI0)] $SpaceUtf8 
+SET [(R0 + R1 * R7 + RI0)] $SpaceUtf8
 IFZ RI0 EINT
 SET RIP $ScrollClearLoopStart
 
 EINT
 
-INCLUDE .\Images\FindDevice.asm
+INCLUDE .\FindDevice.asm
 
 VAR ShiftPressed 0d0
 VAR ToProcess 0d0
