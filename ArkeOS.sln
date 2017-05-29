@@ -7,7 +7,6 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ArkeOS.Tools.Assembler", "A
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{A8A09D5A-380E-4C15-8DDD-1837F84F41C6}"
 	ProjectSection(SolutionItems) = preProject
-		Install.bat = Install.bat
 		README.md = README.md
 	EndProjectSection
 EndProject
