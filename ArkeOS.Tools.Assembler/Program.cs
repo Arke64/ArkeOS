@@ -4,6 +4,12 @@ using System.IO;
 namespace ArkeOS.Tools.Assembler {
     public static class Program {
         public static void Main(string[] args) {
+            if (args.Length < 1) {
+                Console.WriteLine("Need at least one argument: the file to assemble");
+
+                return;
+            }
+
             var input = args[0];
 
             if (!File.Exists(input)) {
