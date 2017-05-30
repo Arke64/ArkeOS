@@ -1,0 +1,5 @@
+<Window xmlns="https://github.com/avaloniaui" MinWidth="1000" MinHeight="1000"
+    Title="ArkeOS Simulator"
+    xmlns:local="clr-namespace:ArkeOS.Hosts.Avalonia;assembly=ArkeOS.Hosts.Avalonia">
+    <local:MainPage/>
+</Window>
