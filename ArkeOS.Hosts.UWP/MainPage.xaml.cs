@@ -45,7 +45,7 @@ namespace ArkeOS.Hosts.UWP {
         private async void StartButton_Click(object sender, RoutedEventArgs e) {
             var interruptController = new InterruptController();
             var ram = new RandomAccessMemoryController(1 * 1024 * 1024);
-            var bootManager = new BootManager(Helpers.ConvertArray((await FileIO.ReadBufferAsync(await ApplicationData.Current.LocalFolder.GetFileAsync("Boot.bin"))).ToArray()));
+            var bootManager = new BootManager((await FileIO.ReadBufferAsync(await ApplicationData.Current.LocalFolder.GetFileAsync("Boot.bin"))).AsStream());
 
             this.processor = new Processor();
 
