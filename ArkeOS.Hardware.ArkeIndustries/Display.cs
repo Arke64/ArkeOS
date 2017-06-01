@@ -86,7 +86,7 @@ namespace ArkeOS.Hardware.ArkeIndustries {
 
                 for (var r = 0; r < Display.CharacterHeight; r++)
                     for (var c = 0; c < Display.CharacterWidth; c++)
-                        pixels[r * (int)this.width + c] = (pixelData & (1UL << (r * Display.CharacterWidth + c))) != 0 ? 0x00FFFFFFU : 0x0U;
+                        pixels[r * (int)this.width + c] = (pixelData & (1UL << (r * Display.CharacterWidth + c))) != 0 ? 0xFFFFFFFFU : 0x0U;
             }
         }
 
