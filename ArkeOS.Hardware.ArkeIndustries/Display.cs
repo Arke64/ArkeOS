@@ -30,6 +30,8 @@ namespace ArkeOS.Hardware.ArkeIndustries {
 
             this.fontData = new ulong[256];
             this.SetFontData();
+
+            this.ClearDisplay();
         }
 
         public override unsafe ulong ReadWord(ulong address) {
@@ -86,7 +88,16 @@ namespace ArkeOS.Hardware.ArkeIndustries {
 
                 for (var r = 0; r < Display.CharacterHeight; r++)
                     for (var c = 0; c < Display.CharacterWidth; c++)
-                        pixels[r * (int)this.width + c] = (pixelData & (1UL << (r * Display.CharacterWidth + c))) != 0 ? 0xFFFFFFFFU : 0x0U;
+                        pixels[r * (int)this.width + c] = (pixelData & (1UL << (r * Display.CharacterWidth + c))) != 0 ? 0xFFFFFFFFU : 0xFF000000U;
+            }
+        }
+
+        private unsafe void ClearDisplay() {
+            fixed (byte* bb = this.RawBuffer) {
+                var b = (uint*)bb;
+
+                for (var i = 0U; i < this.width * this.height; i++)
+                    b[i] = 0xFF000000U;
             }
         }
 
