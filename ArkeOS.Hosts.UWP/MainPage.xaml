@@ -177,6 +177,10 @@
             </StackPanel>
         </Grid>
 
-        <Image Margin="10" Width="160" Height="120" Name="ScreenImage" />
+        <Viewbox Stretch="None" HorizontalAlignment="Center">
+            <Border Margin="10" BorderThickness="4" BorderBrush="Gray">
+                <Image Width="160" Height="120" Name="ScreenImage" />
+            </Border>
+        </Viewbox>
     </StackPanel>
 </Page>
