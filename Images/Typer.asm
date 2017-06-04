@@ -46,8 +46,15 @@ SET R10 [(R0 + $DisplayCharacterHeightOffset)]
 SET R11 [(R0 + $DisplayCharacterWidthOffset)]
 
 ADD R0 R0 $DisplayCharacterOffset
-SET R1 RZERO
+SET R1 RONE
 SET R2 RZERO
+
+SET [(R0 + RZERO * R7 + 0d0)] 0x52
+SET [(R0 + RZERO * R7 + 0d1)] 0x45
+SET [(R0 + RZERO * R7 + 0d2)] 0x41
+SET [(R0 + RZERO * R7 + 0d3)] 0x44
+SET [(R0 + RZERO * R7 + 0d4)] 0x59
+
 INTE
 HLT
 
