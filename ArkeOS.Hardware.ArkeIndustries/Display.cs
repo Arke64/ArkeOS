@@ -6,8 +6,9 @@ namespace ArkeOS.Hardware.ArkeIndustries {
         private const int CharacterWidth = 9;
         private const int CharacterHeight = 16;
 
-        private ulong height;
-        private ulong width;
+        public ulong Height { get; }
+        public ulong Width { get; }
+
         private ulong rows;
         private ulong columns;
         private char[] characterBuffer;
@@ -17,13 +18,13 @@ namespace ArkeOS.Hardware.ArkeIndustries {
 
         public byte[] RawBuffer { get; private set; }
 
-        public Display(int width, int height) : base(ProductIds.Vendor, ProductIds.D100, DeviceType.Display) {
+        public Display(ulong width, ulong height) : base(ProductIds.Vendor, ProductIds.D100, DeviceType.Display) {
             this.RawBuffer = new byte[width * height * 4];
 
-            this.width = (ulong)width;
-            this.height = (ulong)height;
-            this.columns = this.width / Display.CharacterWidth;
-            this.rows = this.height / Display.CharacterHeight;
+            this.Width = width;
+            this.Height = height;
+            this.columns = this.Width / Display.CharacterWidth;
+            this.rows = this.Height / Display.CharacterHeight;
             this.characterBuffer = new char[this.columns * this.rows];
             this.decodeBuffer = new char[8];
             this.encodeBuffer = new byte[8];
@@ -42,10 +43,10 @@ namespace ArkeOS.Hardware.ArkeIndustries {
                 return this.rows;
             }
             else if (address == 2) {
-                return this.width;
+                return this.Width;
             }
             else if (address == 3) {
-                return this.height;
+                return this.Height;
             }
             else if (address == 4) {
                 return Display.CharacterWidth;
@@ -84,11 +85,11 @@ namespace ArkeOS.Hardware.ArkeIndustries {
             fixed (byte* b = this.RawBuffer) {
                 var column = address % this.columns;
                 var row = address / this.columns;
-                var pixels = (uint*)b + row * this.width * Display.CharacterHeight + column * Display.CharacterWidth;
+                var pixels = (uint*)b + row * this.Width * Display.CharacterHeight + column * Display.CharacterWidth;
 
                 for (var r = 0; r < Display.CharacterHeight; r++)
                     for (var c = 0; c < Display.CharacterWidth; c++)
-                        pixels[r * (int)this.width + c] = pixelData[r * Display.CharacterWidth + c];
+                        pixels[r * (int)this.Width + c] = pixelData[r * Display.CharacterWidth + c];
             }
         }
 
@@ -96,7 +97,7 @@ namespace ArkeOS.Hardware.ArkeIndustries {
             fixed (byte* bb = this.RawBuffer) {
                 var b = (uint*)bb;
 
-                for (var i = 0U; i < this.width * this.height; i++)
+                for (var i = 0U; i < this.Width * this.Height; i++)
                     b[i] = 0xFF000000U;
             }
         }
