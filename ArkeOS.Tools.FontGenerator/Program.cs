@@ -1,10 +1,20 @@
 ﻿using System;
 using System.Drawing;
+using System.IO;
 using System.Linq;
 
 namespace ArkeOS.Tools.FontGenerator {
     public class Program {
+        private const int CharacterWidth = 5;
+        private const int CharacterHeight = 8;
+
         public static void Main(string[] args) {
+            if (args.Length == 0 || !File.Exists(args[0])) {
+                Console.WriteLine("Usage: [input file name]");
+
+                return;
+            }
+
             //TODO Remove CoreCompat reference once .NET Standard 2.0 adds System.Drawing
             var bmp = new Bitmap(args[0]);
             var final = "";
