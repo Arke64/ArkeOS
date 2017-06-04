@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
 using System.Linq;
@@ -20,13 +21,13 @@ namespace ArkeOS.Tools.FontGenerator {
                 var final = "";
 
                 for (var i = 0; i < 95; i++) {
-                    var bin = "";
+                    var bin = new List<Color>(Program.CharacterHeight * Program.CharacterWidth);
 
-                    for (var y = 0; y < 8; y++)
-                        for (var x = 0; x < 5; x++)
-                            bin += bmp.GetPixel(x + i * 5, y).R == 0 ? "1" : "0";
+                    for (var y = 0; y < Program.CharacterHeight; y++)
+                        for (var x = 0; x < Program.CharacterWidth; x++)
+                            bin.Add(bmp.GetPixel(x + i * Program.CharacterWidth, y).R == 0 ? Color.White : Color.FromArgb(0, 0, 0, 0));
 
-                    final += "			this.fontData['" + (char)(' ' + i) + "'] = 0x" + Convert.ToUInt64(new string(bin.Reverse().ToArray()), 2).ToString("X") + ";\r\n";
+                    final += "			this.fontData['" + (char)(' ' + i) + "'] = new uint[] { " + string.Join(",", bin.Select(b => "0x" + Convert.ToString(b.ToArgb(), 16).ToUpper())) + " };\r\n";
                 }
 
                 Console.Write(final);
