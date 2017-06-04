@@ -1,10 +1,5 @@
-﻿<Page x:Class="ArkeOS.Hosts.UWP.MainPage" mc:Ignorable="d" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:d="http://schemas.microsoft.com/expression/blend/2008" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006">
+﻿<Page x:Class="ArkeOS.Hosts.UWP.Debugger" mc:Ignorable="d" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:d="http://schemas.microsoft.com/expression/blend/2008" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006">
     <StackPanel>
-        <StackPanel Orientation="Horizontal">
-            <Button Name="StartButton" Content="Start" Click="StartButton_Click" />
-            <Button Name="StopButton" Content="Stop" Click="StopButton_Click" />
-        </StackPanel>
-
         <StackPanel Orientation="Horizontal">
             <Button Name="BreakButton" Content="Break" Click="BreakButton_Click" />
             <Button Name="ContinueButton" Content="Continue" Click="ContinueButton_Click" />
@@ -27,22 +22,17 @@
                 <RowDefinition />
                 <RowDefinition />
                 <RowDefinition />
+                <RowDefinition />
+                <RowDefinition />
+                <RowDefinition />
+                <RowDefinition />
             </Grid.RowDefinitions>
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="200" />
                 <ColumnDefinition Width="200" />
                 <ColumnDefinition Width="200" />
                 <ColumnDefinition Width="200" />
-                <ColumnDefinition Width="200" />
-                <ColumnDefinition Width="200" />
-                <ColumnDefinition Width="200" />
-                <ColumnDefinition Width="200" />
             </Grid.ColumnDefinitions>
-
-            <StackPanel Grid.Column="0" Grid.Row="0">
-                <TextBlock>Input</TextBlock>
-                <TextBox Name="InputTextBox" />
-            </StackPanel>
 
             <StackPanel Grid.Column="0" Grid.Row="1">
                 <TextBlock>RIP</TextBlock>
@@ -60,127 +50,121 @@
                 <TextBlock>RINT1</TextBlock>
                 <TextBox Name="RINT1TextBox" />
             </StackPanel>
-            <StackPanel Grid.Column="4" Grid.Row="1">
+            <StackPanel Grid.Column="0" Grid.Row="2">
                 <TextBlock>RINT2</TextBlock>
                 <TextBox Name="RINT2TextBox" />
             </StackPanel>
-            <StackPanel Grid.Column="5" Grid.Row="1">
+            <StackPanel Grid.Column="1" Grid.Row="2">
                 <TextBlock>RZERO</TextBlock>
                 <TextBox Name="RZEROTextBox" />
             </StackPanel>
-            <StackPanel Grid.Column="7" Grid.Row="1">
+            <StackPanel Grid.Column="2" Grid.Row="2">
                 <TextBlock>RONE</TextBlock>
                 <TextBox Name="RONETextBox" />
             </StackPanel>
-            <StackPanel Grid.Column="6" Grid.Row="1">
+            <StackPanel Grid.Column="3" Grid.Row="2">
                 <TextBlock>RMAX</TextBlock>
                 <TextBox Name="RMAXTextBox" />
             </StackPanel>
 
-            <StackPanel Grid.Column="0" Grid.Row="2">
+            <StackPanel Grid.Column="0" Grid.Row="3">
                 <TextBlock>RI0</TextBlock>
                 <TextBox Name="RI0TextBox" />
             </StackPanel>
-            <StackPanel Grid.Column="1" Grid.Row="2">
+            <StackPanel Grid.Column="1" Grid.Row="3">
                 <TextBlock>RI1</TextBlock>
                 <TextBox Name="RI1TextBox" />
             </StackPanel>
-            <StackPanel Grid.Column="2" Grid.Row="2">
+            <StackPanel Grid.Column="2" Grid.Row="3">
                 <TextBlock>RI2</TextBlock>
                 <TextBox Name="RI2TextBox" />
             </StackPanel>
-            <StackPanel Grid.Column="3" Grid.Row="2">
+            <StackPanel Grid.Column="3" Grid.Row="3">
                 <TextBlock>RI3</TextBlock>
                 <TextBox Name="RI3TextBox" />
             </StackPanel>
-            <StackPanel Grid.Column="4" Grid.Row="2">
+            <StackPanel Grid.Column="0" Grid.Row="4">
                 <TextBlock>RI4</TextBlock>
                 <TextBox Name="RI4TextBox" />
             </StackPanel>
-            <StackPanel Grid.Column="5" Grid.Row="2">
+            <StackPanel Grid.Column="1" Grid.Row="4">
                 <TextBlock>RI5</TextBlock>
                 <TextBox Name="RI5TextBox" />
             </StackPanel>
-            <StackPanel Grid.Column="6" Grid.Row="2">
+            <StackPanel Grid.Column="2" Grid.Row="4">
                 <TextBlock>RI6</TextBlock>
                 <TextBox Name="RI6TextBox" />
             </StackPanel>
-            <StackPanel Grid.Column="7" Grid.Row="2">
+            <StackPanel Grid.Column="3" Grid.Row="4">
                 <TextBlock>RI7</TextBlock>
                 <TextBox Name="RI7TextBox" />
             </StackPanel>
 
-            <StackPanel Grid.Column="0" Grid.Row="3">
+            <StackPanel Grid.Column="0" Grid.Row="5">
                 <TextBlock>R0</TextBlock>
                 <TextBox Name="R0TextBox" />
             </StackPanel>
-            <StackPanel Grid.Column="1" Grid.Row="3">
+            <StackPanel Grid.Column="1" Grid.Row="5">
                 <TextBlock>R1</TextBlock>
                 <TextBox Name="R1TextBox" />
             </StackPanel>
-            <StackPanel Grid.Column="2" Grid.Row="3">
+            <StackPanel Grid.Column="2" Grid.Row="5">
                 <TextBlock>R2</TextBlock>
                 <TextBox Name="R2TextBox" />
             </StackPanel>
-            <StackPanel Grid.Column="3" Grid.Row="3">
+            <StackPanel Grid.Column="3" Grid.Row="5">
                 <TextBlock>R3</TextBlock>
                 <TextBox Name="R3TextBox" />
             </StackPanel>
-            <StackPanel Grid.Column="4" Grid.Row="3">
+            <StackPanel Grid.Column="0" Grid.Row="6">
                 <TextBlock>R4</TextBlock>
                 <TextBox Name="R4TextBox" />
             </StackPanel>
-            <StackPanel Grid.Column="5" Grid.Row="3">
+            <StackPanel Grid.Column="1" Grid.Row="6">
                 <TextBlock>R5</TextBlock>
                 <TextBox Name="R5TextBox" />
             </StackPanel>
-            <StackPanel Grid.Column="6" Grid.Row="3">
+            <StackPanel Grid.Column="2" Grid.Row="6">
                 <TextBlock>R6</TextBlock>
                 <TextBox Name="R6TextBox" />
             </StackPanel>
-            <StackPanel Grid.Column="7" Grid.Row="3">
+            <StackPanel Grid.Column="3" Grid.Row="6">
                 <TextBlock>R7</TextBlock>
                 <TextBox Name="R7TextBox" />
             </StackPanel>
 
-            <StackPanel Grid.Column="0" Grid.Row="4">
+            <StackPanel Grid.Column="0" Grid.Row="7">
                 <TextBlock>R8</TextBlock>
                 <TextBox Name="R8TextBox" />
             </StackPanel>
-            <StackPanel Grid.Column="1" Grid.Row="4">
+            <StackPanel Grid.Column="1" Grid.Row="7">
                 <TextBlock>R9</TextBlock>
                 <TextBox Name="R9TextBox" />
             </StackPanel>
-            <StackPanel Grid.Column="2" Grid.Row="4">
+            <StackPanel Grid.Column="2" Grid.Row="7">
                 <TextBlock>R10</TextBlock>
                 <TextBox Name="R10TextBox" />
             </StackPanel>
-            <StackPanel Grid.Column="3" Grid.Row="4">
+            <StackPanel Grid.Column="3" Grid.Row="7">
                 <TextBlock>R11</TextBlock>
                 <TextBox Name="R11TextBox" />
             </StackPanel>
-            <StackPanel Grid.Column="4" Grid.Row="4">
+            <StackPanel Grid.Column="0" Grid.Row="8">
                 <TextBlock>R12</TextBlock>
                 <TextBox Name="R12TextBox" />
             </StackPanel>
-            <StackPanel Grid.Column="5" Grid.Row="4">
+            <StackPanel Grid.Column="1" Grid.Row="8">
                 <TextBlock>R13</TextBlock>
                 <TextBox Name="R13TextBox" />
             </StackPanel>
-            <StackPanel Grid.Column="6" Grid.Row="4">
+            <StackPanel Grid.Column="2" Grid.Row="8">
                 <TextBlock>R14</TextBlock>
                 <TextBox Name="R14TextBox" />
             </StackPanel>
-            <StackPanel Grid.Column="7" Grid.Row="4">
+            <StackPanel Grid.Column="3" Grid.Row="8">
                 <TextBlock>R15</TextBlock>
                 <TextBox Name="R15TextBox" />
             </StackPanel>
         </Grid>
-
-        <Viewbox Stretch="None" HorizontalAlignment="Center">
-            <Border Margin="10" BorderThickness="4" BorderBrush="Gray">
-                <Image Width="720" Height="480" Name="ScreenImage" />
-            </Border>
-        </Viewbox>
     </StackPanel>
 </Page>

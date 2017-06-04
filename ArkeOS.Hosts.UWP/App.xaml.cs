@@ -17,7 +17,7 @@ namespace ArkeOS.Hosts.UWP {
 
             if (!e.PrelaunchActivated) {
                 if (rootFrame.Content == null)
-                    rootFrame.Navigate(typeof(MainPage), e.Arguments);
+                    rootFrame.Navigate(typeof(Host), e.Arguments);
 
                 Window.Current.Activate();
             }

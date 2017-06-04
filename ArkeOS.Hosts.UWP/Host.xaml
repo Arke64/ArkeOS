@@ -1,0 +1,7 @@
+﻿<Page x:Class="ArkeOS.Hosts.UWP.Host" mc:Ignorable="d" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:d="http://schemas.microsoft.com/expression/blend/2008" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006">
+    <StackPanel Orientation="Horizontal">
+        <Button Name="StartButton" Content="Start" Click="StartButton_Click" />
+        <Button Name="StopButton" Content="Stop" Click="StopButton_Click" />
+        <Button Name="ShowDebuggerButton" Content="Show Debugger" Click="ShowDebuggerButton_Click" />
+    </StackPanel>
+</Page>
