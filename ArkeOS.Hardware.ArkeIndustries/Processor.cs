@@ -21,6 +21,7 @@ namespace ArkeOS.Hardware.ArkeIndustries {
         private Task runner;
         private Task systemTimer;
 
+        public bool IsRunning => this.running;
         public Instruction CurrentInstruction { get; private set; }
         public ulong StartAddress { get; set; }
         public Action<Operand, Operand, Operand> DebugHandler { get; set; }
