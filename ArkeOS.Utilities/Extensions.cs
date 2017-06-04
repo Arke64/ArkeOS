@@ -1,6 +1,6 @@
 ﻿using System;
 using System.IO;
-using System.Text.RegularExpressions;
+using System.Linq;
 
 namespace ArkeOS.Utilities.Extensions {
     public static class BinaryWriterExtensions {
@@ -14,10 +14,19 @@ namespace ArkeOS.Utilities.Extensions {
     }
 
     public static class UlongExtensions {
-        public static string ToString(this ulong self, int radix) => (radix == 16 ? "0x" : (radix == 10 ? "0d" : "0b")) + (radix == 10 ? self.ToString() : Convert.ToString((long)self, radix).ToUpper()).InsertDivider('_', radix == 10 ? 3 : 4);
-    }
+        public static string ToString(this ulong self, int radix) {
+            var prefix = radix == 16 ? "0x" :
+                         radix == 10 ? "0d" :
+                         radix == 2 ? "0b" :
+                         throw new ArgumentException("Invalid radix.", nameof(radix));
 
-    public static class StringExtensions {
-        public static string InsertDivider(this string self, char divider, int chunkSize) => Regex.Replace(self.PadLeft(self.Length + (chunkSize - self.Length % chunkSize), '0'), ".{" + chunkSize + "}", "$0" + divider).TrimStart('0').TrimEnd(divider).PadLeft(1, '0');
+            var str = Convert.ToString((long)self, radix).ToUpper();
+            var chunkSize = radix == 10 ? 3 : 4;
+            var formattedLength = str.Length % chunkSize == 0 ? str.Length : (str.Length / chunkSize + 1) * chunkSize;
+
+            str = str.PadLeft(formattedLength, '0');
+
+            return prefix + string.Join("_", Enumerable.Range(0, str.Length / chunkSize).Select(i => str.Substring(i * chunkSize, chunkSize)));
+        }
     }
 }
