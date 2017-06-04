@@ -30,7 +30,7 @@ namespace ArkeOS.Hosts.UWP {
             this.currentPressedKeys = new HashSet<ulong>();
             this.displayBitmap = new WriteableBitmap((int)this.ScreenImage.Width, (int)this.ScreenImage.Height);
             this.displayRefreshTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(1000 / 24) };
-            this.displayRefreshTimer.Tick += (s, e) => this.RefreshDisplay();
+            this.displayRefreshTimer.Tick += (s, e) => this.RefreshData();
 
             this.ScreenImage.Source = this.displayBitmap;
 
@@ -196,6 +196,11 @@ namespace ArkeOS.Hosts.UWP {
         }
 
         private void RefreshDisplay() => this.displayBitmap.FromByteArray(this.display.RawBuffer);
+
+        private void RefreshData() {
+            this.RefreshDisplay();
+            this.RefreshDebug();
+        }
 
         private void FormatRadioButton_Checked(object sender, RoutedEventArgs e) => this.RefreshDebug();
 
