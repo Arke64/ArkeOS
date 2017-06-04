@@ -179,7 +179,7 @@
 
         <Viewbox Stretch="None" HorizontalAlignment="Center">
             <Border Margin="10" BorderThickness="4" BorderBrush="Gray">
-                <Image Width="800" Height="512" Name="ScreenImage" />
+                <Image Width="720" Height="480" Name="ScreenImage" />
             </Border>
         </Viewbox>
     </StackPanel>

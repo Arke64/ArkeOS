@@ -6,8 +6,8 @@ using System.Linq;
 
 namespace ArkeOS.Tools.FontGenerator {
     public class Program {
-        private const int CharacterWidth = 5;
-        private const int CharacterHeight = 8;
+        private const int CharacterWidth = 9;
+        private const int CharacterHeight = 16;
 
         public static void Main(string[] args) {
             if (args.Length == 0 || !File.Exists(args[0])) {
