@@ -2,9 +2,9 @@
 using System.Drawing;
 using System.Linq;
 
-namespace FontGenerator {
-    class Program {
-        static void Main(string[] args) {
+namespace ArkeOS.Tools.FontGenerator {
+    public class Program {
+        public static void Main(string[] args) {
             //TODO Remove CoreCompat reference once .NET Standard 2.0 adds System.Drawing
             var bmp = new Bitmap(args[0]);
             var final = "";
