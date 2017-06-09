@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
-VisualStudioVersion = 15.0.26430.6
+VisualStudioVersion = 15.0.26430.12
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ArkeOS.Tools.Assembler", "ArkeOS.Tools.Assembler\ArkeOS.Tools.Assembler.csproj", "{E9776C8D-E3AD-4BCA-AA37-0C4883463480}"
 EndProject
@@ -30,6 +30,8 @@ EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ArkeOS.Tools.FontGenerator", "ArkeOS.Tools.FontGenerator\ArkeOS.Tools.FontGenerator.csproj", "{A200BF0B-74E1-41D3-AB07-37A8260126BA}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ArkeOS.Hosts.UWP", "ArkeOS.Hosts.UWP\ArkeOS.Hosts.UWP.csproj", "{34989760-80B2-4A55-931F-46D623CE774D}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ArkeOS.Tools.KohlCompiler", "ArkeOS.Tools.KohlCompiler\ArkeOS.Tools.KohlCompiler.csproj", "{CADE7C38-BF79-436F-9313-237E3D256B83}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -63,6 +65,10 @@ Global
 		{34989760-80B2-4A55-931F-46D623CE774D}.Release|x64.ActiveCfg = Release|x64
 		{34989760-80B2-4A55-931F-46D623CE774D}.Release|x64.Build.0 = Release|x64
 		{34989760-80B2-4A55-931F-46D623CE774D}.Release|x64.Deploy.0 = Release|x64
+		{CADE7C38-BF79-436F-9313-237E3D256B83}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{CADE7C38-BF79-436F-9313-237E3D256B83}.Debug|x64.Build.0 = Debug|Any CPU
+		{CADE7C38-BF79-436F-9313-237E3D256B83}.Release|x64.ActiveCfg = Release|Any CPU
+		{CADE7C38-BF79-436F-9313-237E3D256B83}.Release|x64.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
