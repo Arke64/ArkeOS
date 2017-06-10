@@ -6,6 +6,9 @@ namespace ArkeOS.Tools.Assembler {
     public static class Program {
         public static void Main(string[] args) {
             var source = "1 * (2 + 3) - 9 * 7 / (4 - -3) + +3 ^ (12 + 3 + (5 % 1) / (6 - -(2 - 3)) * 3)"; //387,420,485
+
+            source = "0 - 1 + 2 * 3 / 4 ^ 5 % 6";
+
             var lexer = new Lexer(source);
             var tokens = lexer.Lex();
             var parser = new Parser(tokens);
@@ -119,27 +122,42 @@ namespace ArkeOS.Tools.Assembler {
         Exponentiation
     }
 
-    public class Node {
+    public abstract class Node {
         public Node Left { get; }
         public Node Right { get; }
-        public Operation Operation { get; }
-        public Term Term { get; }
 
-        private Node(Node left, Operation operation, Node right, Term term) => (this.Left, this.Right, this.Operation, this.Term) = (left, right, operation, term);
-        public Node(Node left, Operation operation, Node right) : this(left, operation, right, default(Term)) { }
-        public Node(Term term) : this(null, Operation.Leaf, null, term) { }
+        protected Node(Node left, Node right) => (this.Left, this.Right) = (left, right);
     }
 
-    public struct Term {
-        public int Value;
+    public class TermNode : Node {
+        public int Value { get; }
 
-        public Term(string value) => this.Value = int.Parse(value);
+        public TermNode(Node left, Node right, string value) : base(left, right) => this.Value = int.Parse(value);
+    }
+
+    public class OperationNode : Node {
+        public Operation Operation { get; }
+
+        public OperationNode(Node left, Node right, Operation operation) : base(left, right) => this.Operation = operation;
     }
 
     public class Parser {
         private readonly IReadOnlyList<Token> tokens;
         private readonly int length;
         private int index = 0;
+
+        private bool Peek(out Token value) {
+            if (this.index < this.length) {
+                value = this.tokens[this.index];
+
+                return true;
+            }
+            else {
+                value = default(Token);
+
+                return false;
+            }
+        }
 
         private bool Read(out Token value) {
             if (this.index < this.length) {
@@ -161,23 +179,30 @@ namespace ArkeOS.Tools.Assembler {
 
         public Parser(IReadOnlyList<Token> tokens) => (this.tokens, this.length) = (tokens, tokens.Count);
 
-        public Node Parse() => new Node(this.ReadTerm(), this.ReadOperation(), this.ReadTerm());
+        public Node Parse() => this.ReadExpression();
 
-        private Node ReadTerm() {
-            if (this.Read(out var token)) {
-                switch (token.Type) {
-                    case TokenType.Number: return new Node(new Term(token.Value));
-                    case TokenType.OpenParenthesis:
-                        var res = this.ReadTerm();
+        private Node ReadExpression() {
+            if (this.Read(out var token) && token.Type == TokenType.Number) {
+                var term = new TermNode(null, null, token.Value);
 
-                        this.Read(TokenType.CloseParenthesis);
+                if (this.Peek(out var next)) {
+                    switch (next.Type) {
+                        case TokenType.Plus:
+                        case TokenType.Minus:
+                        case TokenType.Asterisk:
+                        case TokenType.ForwardSlash:
+                        case TokenType.Percent:
+                        case TokenType.Caret:
+                            var op = this.ReadOperation();
 
-                        return res;
+                            return new OperationNode(term, this.ReadExpression(), op);
+                    }
                 }
+
+                return term;
             }
 
-            throw new InvalidOperationException("Unexpected term.");
-
+            throw new InvalidOperationException("Expected token.");
         }
 
         private Operation ReadOperation() {
