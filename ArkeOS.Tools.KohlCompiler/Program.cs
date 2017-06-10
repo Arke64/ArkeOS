@@ -7,12 +7,14 @@ namespace ArkeOS.Tools.Assembler {
         public static void Main(string[] args) {
             var source = "1 * (2 + 3) - 9 * 7 / (4 - -3) + +3 ^ (12 + 3 + (5 % 1) / (6 - -(2 - 3)) * 3)"; //387,420,485
 
-            source = "0 - 1 + 2 * 3 / 4 ^ 5 % 6";
+            source = "4 + 10 - 3 * 4 / 38 % 6 ^ 2";
 
             var lexer = new Lexer(source);
             var tokens = lexer.Lex();
             var parser = new Parser(tokens);
             var tree = parser.Parse();
+            var emitter = new Emitter(tree);
+            emitter.Emit();
         }
     }
 
@@ -113,7 +115,6 @@ namespace ArkeOS.Tools.Assembler {
     }
 
     public enum Operation {
-        Leaf,
         Addition,
         Subtraction,
         Multiplication,
@@ -218,6 +219,38 @@ namespace ArkeOS.Tools.Assembler {
             }
 
             throw new InvalidOperationException("Expected operator.");
+        }
+    }
+
+    public class Emitter {
+        private readonly Node tree;
+
+        public Emitter(Node tree) => this.tree = tree;
+
+        public void Emit() => Console.WriteLine(this.Calculate(this.tree).ToString("N0"));
+
+        private int Calculate(Node node) {
+            switch (node) {
+                case TermNode n:
+                    return n.Value;
+
+                case OperationNode n:
+                    var a = this.Calculate(n.Left);
+                    var b = this.Calculate(n.Right);
+
+                    switch (n.Operation) {
+                        case Operation.Addition: return a + b;
+                        case Operation.Subtraction: return a - b;
+                        case Operation.Multiplication: return a * b;
+                        case Operation.Division: return a / b;
+                        case Operation.Exponentiation: return (int)Math.Pow(a, b);
+                        case Operation.Remainder: return a % b;
+                        default: throw new InvalidOperationException("Unexpected operation.");
+                    }
+
+                default:
+                    throw new InvalidOperationException("Unexpected node.");
+            }
         }
     }
 }
