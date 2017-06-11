@@ -60,16 +60,13 @@ namespace ArkeOS.Tools.Assembler {
         }
 
         private bool Read(out char value) {
-            if (this.index < this.length) {
-                value = this.source[this.index++];
+            if (this.Peek(out value)) {
+                this.index++;
 
                 return true;
             }
-            else {
-                value = '\0';
 
-                return false;
-            }
+            return false;
         }
 
         private void Add(TokenType type, char c) => this.result.Add(new Token { Type = type, Value = c.ToString() });
@@ -77,7 +74,7 @@ namespace ArkeOS.Tools.Assembler {
 
         public Lexer(string source) => (this.source, this.length) = (source, source.Length);
 
-        public IReadOnlyList<Token> Lex() {
+        public TokenStream Lex() {
             while (this.Read(out var c)) {
                 switch (c) {
                     case '+': this.Add(TokenType.Plus, c); break;
@@ -98,7 +95,7 @@ namespace ArkeOS.Tools.Assembler {
                 }
             }
 
-            return this.result;
+            return new TokenStream(this.result);
         }
 
         private string ReadString(char start, Func<char, bool> validator) {
@@ -114,6 +111,42 @@ namespace ArkeOS.Tools.Assembler {
 
             return res.ToString();
         }
+    }
+
+    public class TokenStream {
+        private readonly IReadOnlyList<Token> tokens;
+        private readonly int length;
+        private int index = 0;
+
+        public TokenStream(IReadOnlyList<Token> tokens) => (this.tokens, this.length) = (tokens, tokens.Count);
+
+        public int Remaining => this.length - this.index;
+
+        public bool Peek(Func<Token, bool> validator, out Token value) {
+            if (this.index < this.length) {
+                var val = this.tokens[this.index];
+
+                if (validator(val)) {
+                    value = val;
+                    return true;
+                }
+            }
+
+            value = default(Token);
+            return false;
+        }
+
+        public bool Read(Func<Token, bool> validator, out Token value) {
+            if (this.Peek(validator, out value)) {
+                this.index++;
+
+                return true;
+            }
+
+            return false;
+        }
+
+        public bool Read(TokenType type, out Token value) => this.Read(t => t.Type == type, out value);
     }
 
     public enum Operation {
@@ -148,42 +181,14 @@ namespace ArkeOS.Tools.Assembler {
         private static IReadOnlyDictionary<Operation, uint> Precedences { get; } = new Dictionary<Operation, uint> { [Operation.Addition] = 0, [Operation.Subtraction] = 0, [Operation.Multiplication] = 1, [Operation.Division] = 1, [Operation.Remainder] = 1, [Operation.Exponentiation] = 2 };
         private static IReadOnlyDictionary<Operation, bool> LeftAssociative { get; } = new Dictionary<Operation, bool> { [Operation.Addition] = true, [Operation.Subtraction] = true, [Operation.Multiplication] = true, [Operation.Division] = true, [Operation.Remainder] = true, [Operation.Exponentiation] = false };
 
-        private readonly IReadOnlyList<Token> tokens;
-        private readonly int length;
-        private int index = 0;
+        private readonly TokenStream tokens;
 
-        private bool Peek(Func<Token, bool> validator, out Token value) {
-            if (this.index < this.length) {
-                var val = this.tokens[this.index];
-
-                if (validator(val)) {
-                    value = val;
-                    return true;
-                }
-            }
-
-            value = default(Token);
-            return false;
-        }
-
-        private bool Read(Func<Token, bool> validator, out Token value) {
-            if (this.Peek(validator, out value)) {
-                this.index++;
-
-                return true;
-            }
-
-            return false;
-        }
-
-        private bool Read(TokenType type, out Token value) => this.Read(t => t.Type == type, out value);
-
-        public Parser(IReadOnlyList<Token> tokens) => (this.tokens, this.length) = (tokens, tokens.Count);
+        public Parser(TokenStream tokens) => this.tokens = tokens;
 
         public Node Parse() {
             var res = this.ReadExpression();
 
-            if (this.index != this.length)
+            if (this.tokens.Remaining > 0)
                 throw new InvalidOperationException("Unexpected end.");
 
             return res;
@@ -195,7 +200,7 @@ namespace ArkeOS.Tools.Assembler {
 
             outputStack.Push(this.ReadNumber());
 
-            while (this.Peek(this.IsOperation, out var token)) {
+            while (this.tokens.Peek(this.IsOperation, out var token)) {
                 var op = this.ReadOperation();
 
                 while (operatorStack.Any() && ((Parser.Precedences[operatorStack.Peek()] > Parser.Precedences[op]) || (Parser.Precedences[operatorStack.Peek()] == Parser.Precedences[op] && Parser.LeftAssociative[op])))
@@ -220,9 +225,9 @@ namespace ArkeOS.Tools.Assembler {
             }
         }
 
-        private Operation ReadOperation() => this.Read(this.IsOperation, out var token) ? (Operation)token.Type : throw new InvalidOperationException("Expected token");
+        private Operation ReadOperation() => this.tokens.Read(this.IsOperation, out var token) ? (Operation)token.Type : throw new InvalidOperationException("Expected token");
 
-        private Node ReadNumber() => this.Read(TokenType.Number, out var token) ? new NumberNode(token.Value) : throw new InvalidOperationException("Expected token");
+        private Node ReadNumber() => this.tokens.Read(TokenType.Number, out var token) ? new NumberNode(token.Value) : throw new InvalidOperationException("Expected token");
 
         private bool IsOperation(Token token) {
             switch (token.Type) {
