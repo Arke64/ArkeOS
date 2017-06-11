@@ -173,11 +173,6 @@ namespace ArkeOS.Tools.Assembler {
             }
         }
 
-        private void Read(TokenType token) {
-            if (!this.Read(out var t) || t.Type != token)
-                throw new InvalidOperationException($"Expected '{token}'");
-        }
-
         public Parser(IReadOnlyList<Token> tokens) => (this.tokens, this.length) = (tokens, tokens.Count);
 
         public Node Parse() {
@@ -193,39 +188,26 @@ namespace ArkeOS.Tools.Assembler {
             if (this.Read(out var token) && token.Type == TokenType.Number) {
                 var term = new TermNode(null, null, token.Value);
 
-                if (this.Peek(out var next)) {
-                    switch (next.Type) {
-                        case TokenType.Plus:
-                        case TokenType.Minus:
-                        case TokenType.Asterisk:
-                        case TokenType.ForwardSlash:
-                        case TokenType.Percent:
-                        case TokenType.Caret:
-                            var op = this.ReadOperation();
+                if (this.Read(out var next)) {
+                    Operation op;
 
-                            return new OperationNode(term, this.ReadExpression(), op);
+                    switch (next.Type) {
+                        case TokenType.Plus: op = Operation.Addition; break;
+                        case TokenType.Minus: op = Operation.Subtraction; break;
+                        case TokenType.Asterisk: op = Operation.Multiplication; break;
+                        case TokenType.ForwardSlash: op = Operation.Division; break;
+                        case TokenType.Percent: op = Operation.Remainder; break;
+                        case TokenType.Caret: op = Operation.Exponentiation; break;
+                        default: throw new InvalidOperationException("Unexpected token.");
                     }
+
+                    return new OperationNode(term, this.ReadExpression(), op);
                 }
 
                 return term;
             }
 
             throw new InvalidOperationException("Expected token.");
-        }
-
-        private Operation ReadOperation() {
-            if (this.Read(out var token)) {
-                switch (token.Type) {
-                    case TokenType.Plus: return Operation.Addition;
-                    case TokenType.Minus: return Operation.Subtraction;
-                    case TokenType.Asterisk: return Operation.Multiplication;
-                    case TokenType.ForwardSlash: return Operation.Division;
-                    case TokenType.Percent: return Operation.Remainder;
-                    case TokenType.Caret: return Operation.Exponentiation;
-                }
-            }
-
-            throw new InvalidOperationException("Expected operator.");
         }
     }
 
