@@ -7,7 +7,7 @@ namespace ArkeOS.Tools.Assembler {
         public static void Main(string[] args) {
             var source = "1 * (2 + 3) - 9 * 7 / (4 - -3) + +3 ^ (12 + 3 + (5 % 1) / (6 - -(2 - 3)) * 3)"; //387,420,485
 
-            source = "4 + 10 - 3 * 4 / 38 % 6 ^ 2";
+            source = "4 + 10 - 3 * 4 / 38 % 6 ^ 2"; //8
 
             var lexer = new Lexer(source);
             var tokens = lexer.Lex();
@@ -180,7 +180,14 @@ namespace ArkeOS.Tools.Assembler {
 
         public Parser(IReadOnlyList<Token> tokens) => (this.tokens, this.length) = (tokens, tokens.Count);
 
-        public Node Parse() => this.ReadExpression();
+        public Node Parse() {
+            var res = this.ReadExpression();
+
+            if (this.index != this.length)
+                throw new InvalidOperationException("Unexpected end.");
+
+            return res;
+        }
 
         private Node ReadExpression() {
             if (this.Read(out var token) && token.Type == TokenType.Number) {
