@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 
 namespace ArkeOS.Tools.Assembler {
@@ -7,7 +8,8 @@ namespace ArkeOS.Tools.Assembler {
         public static void Main(string[] args) {
             var source = "1 * (2 + 3) - 9 * 7 / (4 - -3) + +3 ^ (12 + 3 + (5 % 1) / (6 - -(2 - 3)) * 3)"; //387,420,485
 
-            source = "4 + 10 - 3 * 4 / 38 % 6 ^ 2"; //8
+            source = "4 + 10 - 6 * 4 / 2 % 3 ^ 2"; //11
+            //source = "3 ^ 2 ^ 3"; // 6561
 
             var lexer = new Lexer(source);
             var tokens = lexer.Lex();
@@ -115,12 +117,12 @@ namespace ArkeOS.Tools.Assembler {
     }
 
     public enum Operation {
-        Addition,
-        Subtraction,
-        Multiplication,
-        Division,
-        Remainder,
-        Exponentiation
+        Addition = TokenType.Plus,
+        Subtraction = TokenType.Minus,
+        Multiplication = TokenType.Asterisk,
+        Division = TokenType.ForwardSlash,
+        Remainder = TokenType.Percent,
+        Exponentiation = TokenType.Caret,
     }
 
     public abstract class Node {
@@ -130,10 +132,10 @@ namespace ArkeOS.Tools.Assembler {
         protected Node(Node left, Node right) => (this.Left, this.Right) = (left, right);
     }
 
-    public class TermNode : Node {
+    public class NumberNode : Node {
         public int Value { get; }
 
-        public TermNode(Node left, Node right, string value) : base(left, right) => this.Value = int.Parse(value);
+        public NumberNode(string value) : base(null, null) => this.Value = int.Parse(value);
     }
 
     public class OperationNode : Node {
@@ -143,6 +145,9 @@ namespace ArkeOS.Tools.Assembler {
     }
 
     public class Parser {
+        private static IReadOnlyDictionary<Operation, uint> Precedences { get; } = new Dictionary<Operation, uint> { [Operation.Addition] = 0, [Operation.Subtraction] = 0, [Operation.Multiplication] = 1, [Operation.Division] = 1, [Operation.Remainder] = 1, [Operation.Exponentiation] = 2 };
+        private static IReadOnlyDictionary<Operation, bool> LeftAssociative { get; } = new Dictionary<Operation, bool> { [Operation.Addition] = true, [Operation.Subtraction] = true, [Operation.Multiplication] = true, [Operation.Division] = true, [Operation.Remainder] = true, [Operation.Exponentiation] = false };
+
         private readonly IReadOnlyList<Token> tokens;
         private readonly int length;
         private int index = 0;
@@ -185,29 +190,48 @@ namespace ArkeOS.Tools.Assembler {
         }
 
         private Node ReadExpression() {
-            if (this.Read(out var token) && token.Type == TokenType.Number) {
-                var term = new TermNode(null, null, token.Value);
+            if (!this.Peek(out var token) || token.Type != TokenType.Number) throw new InvalidOperationException("Expected token.");
 
-                if (this.Read(out var next)) {
-                    Operation op;
+            var outputStack = new Stack<Node>();
+            var operatorStack = new Stack<Operation>();
+            var cont = true;
 
-                    switch (next.Type) {
-                        case TokenType.Plus: op = Operation.Addition; break;
-                        case TokenType.Minus: op = Operation.Subtraction; break;
-                        case TokenType.Asterisk: op = Operation.Multiplication; break;
-                        case TokenType.ForwardSlash: op = Operation.Division; break;
-                        case TokenType.Percent: op = Operation.Remainder; break;
-                        case TokenType.Caret: op = Operation.Exponentiation; break;
-                        default: throw new InvalidOperationException("Unexpected token.");
-                    }
+            do {
+                switch (token.Type) {
+                    default: cont = false; break;
+                    case TokenType.Number: outputStack.Push(new NumberNode(token.Value)); break;
+                    case TokenType.Plus:
+                    case TokenType.Minus:
+                    case TokenType.Asterisk:
+                    case TokenType.ForwardSlash:
+                    case TokenType.Percent:
+                    case TokenType.Caret:
+                        var op = (Operation)token.Type;
 
-                    return new OperationNode(term, this.ReadExpression(), op);
+                        while (operatorStack.Any() && ((Parser.Precedences[operatorStack.Peek()] > Parser.Precedences[op]) || (Parser.Precedences[operatorStack.Peek()] == Parser.Precedences[op] && Parser.LeftAssociative[op])))
+                            reduce();
+
+                        operatorStack.Push(op);
+
+                        break;
                 }
 
-                return term;
-            }
+                if (cont)
+                    this.Read(out _);
+            } while (cont && this.Peek(out token));
 
-            throw new InvalidOperationException("Expected token.");
+            while (operatorStack.Any())
+                reduce();
+
+            return outputStack.Single();
+
+            void reduce()
+            {
+                var r = outputStack.Pop();
+                var l = outputStack.Pop();
+
+                outputStack.Push(new OperationNode(l, r, operatorStack.Pop()));
+            }
         }
     }
 
@@ -220,7 +244,7 @@ namespace ArkeOS.Tools.Assembler {
 
         private int Calculate(Node node) {
             switch (node) {
-                case TermNode n:
+                case NumberNode n:
                     return n.Value;
 
                 case OperationNode n:
