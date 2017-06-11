@@ -3,20 +3,31 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-namespace ArkeOS.Tools.Assembler {
+namespace ArkeOS.Tools.KohlCompiler {
     public static class Program {
         public static void Main(string[] args) {
             var source = "1 * (2 + 3) - 9 * 7 / (4 - -3) + +3 ^ (12 + 3 + (5 % 1) / (6 - -(2 - 3)) * 3)"; //387,420,485
 
-            source = "4 + 10 - 6 * 4 / 2 % 3 ^ 2"; //11
-            //source = "3 ^ 2 ^ 3"; // 6561
+            Console.WriteLine(new Dictionary<string, int> {
+                ["3 ^ 2 ^ 3"] = 6561,
+                ["4 + 10 - 6 * 4 / 2 % 3 ^ 2"] = 11
+            }.All(t => new Compiler(t.Key).Compile() == t.Value));
+        }
+    }
 
-            var lexer = new Lexer(source);
+    public class Compiler {
+        private readonly string source;
+
+        public Compiler(string source) => this.source = source;
+
+        public int Compile() {
+            var lexer = new Lexer(this.source);
             var tokens = lexer.Lex();
             var parser = new Parser(tokens);
             var tree = parser.Parse();
             var emitter = new Emitter(tree);
-            emitter.Emit();
+
+            return emitter.Emit();
         }
     }
 
@@ -249,7 +260,7 @@ namespace ArkeOS.Tools.Assembler {
 
         public Emitter(Node tree) => this.tree = tree;
 
-        public void Emit() => Console.WriteLine(this.Calculate(this.tree).ToString("N0"));
+        public int Emit() => this.Calculate(this.tree);
 
         private int Calculate(Node node) {
             switch (node) {
