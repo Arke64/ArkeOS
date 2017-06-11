@@ -5,15 +5,12 @@ using System.Text;
 
 namespace ArkeOS.Tools.KohlCompiler {
     public static class Program {
-        public static void Main(string[] args) {
-            var source = "1 * (2 + 3) - 9 * 7 / (4 - -3) + +3 ^ (12 + 3 + (5 % 1) / (6 - -(2 - 3)) * 3)"; //387,420,485
-
-            Console.WriteLine(new Dictionary<string, int> {
-                ["3 ^ 2 ^ 3"] = 6561,
-                ["4 + 10 - 6 * 4 / 2 % 3 ^ 2"] = 11,
-                ["-4 - -10 + 2 - 4 + +2"] = 6,
-            }.All(t => new Compiler(t.Key).Compile() == t.Value));
-        }
+        public static void Main() => Console.WriteLine(new Dictionary<string, int> {
+            ["3 ^ 2 ^ 3"] = 6561,
+            ["4 + 10 - 6 * 4 / 2 % 3 ^ 2"] = 11,
+            ["-4 - -10 + 2 - 4 + +2"] = 6,
+            //["1 * (2 + 3) - 9 * 7 / (4 - -3) + +3 ^ (12 + 3 + (5 % 1) / (6 - -(2 - 3)) * 3)"] = 387_420_485,
+        }.All(t => new Compiler(t.Key).Compile() == t.Value));
     }
 
     public class Compiler {
@@ -156,10 +153,13 @@ namespace ArkeOS.Tools.KohlCompiler {
         }
 
         public bool Peek(Func<Token, bool> validator, out Token value) => this.Peek(out value) && validator(value);
-
         public bool Read(Func<Token, bool> validator, out Token value) => this.Read(out value) && validator(value);
 
+        public bool Peek(TokenType type, out Token value) => this.Peek(t => t.Type == type, out value);
         public bool Read(TokenType type, out Token value) => this.Read(t => t.Type == type, out value);
+
+        public bool Peek(TokenType type) => this.Peek(type, out _);
+        public bool Read(TokenType type) => this.Read(type, out _);
 
         public T Read<T>(TokenType t1, Func<Token, T> case1, TokenType t2, Func<Token, T> case2, TokenType t3, Func<Token, T> case3) {
             if (this.Peek(out var token)) {
