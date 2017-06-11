@@ -152,31 +152,31 @@ namespace ArkeOS.Tools.Assembler {
         private readonly int length;
         private int index = 0;
 
-        private bool Peek(out Token value) {
+        private bool Peek(Func<Token, bool> validator, out Token value) {
             if (this.index < this.length) {
-                value = this.tokens[this.index];
+                var val = this.tokens[this.index];
+
+                if (validator(val)) {
+                    value = val;
+                    return true;
+                }
+            }
+
+            value = default(Token);
+            return false;
+        }
+
+        private bool Read(Func<Token, bool> validator, out Token value) {
+            if (this.Peek(validator, out value)) {
+                this.index++;
 
                 return true;
             }
-            else {
-                value = default(Token);
 
-                return false;
-            }
+            return false;
         }
 
-        private bool Read(out Token value) {
-            if (this.index < this.length) {
-                value = this.tokens[this.index++];
-
-                return true;
-            }
-            else {
-                value = default(Token);
-
-                return false;
-            }
-        }
+        private bool Read(TokenType type, out Token value) => this.Read(t => t.Type == type, out value);
 
         public Parser(IReadOnlyList<Token> tokens) => (this.tokens, this.length) = (tokens, tokens.Count);
 
@@ -190,35 +190,21 @@ namespace ArkeOS.Tools.Assembler {
         }
 
         private Node ReadExpression() {
-            if (!this.Peek(out var token) || token.Type != TokenType.Number) throw new InvalidOperationException("Expected token.");
-
             var outputStack = new Stack<Node>();
             var operatorStack = new Stack<Operation>();
-            var cont = true;
 
-            do {
-                switch (token.Type) {
-                    default: cont = false; break;
-                    case TokenType.Number: outputStack.Push(new NumberNode(token.Value)); break;
-                    case TokenType.Plus:
-                    case TokenType.Minus:
-                    case TokenType.Asterisk:
-                    case TokenType.ForwardSlash:
-                    case TokenType.Percent:
-                    case TokenType.Caret:
-                        var op = (Operation)token.Type;
+            outputStack.Push(this.ReadNumber());
 
-                        while (operatorStack.Any() && ((Parser.Precedences[operatorStack.Peek()] > Parser.Precedences[op]) || (Parser.Precedences[operatorStack.Peek()] == Parser.Precedences[op] && Parser.LeftAssociative[op])))
-                            reduce();
+            while (this.Peek(this.IsOperation, out var token)) {
+                var op = this.ReadOperation();
 
-                        operatorStack.Push(op);
+                while (operatorStack.Any() && ((Parser.Precedences[operatorStack.Peek()] > Parser.Precedences[op]) || (Parser.Precedences[operatorStack.Peek()] == Parser.Precedences[op] && Parser.LeftAssociative[op])))
+                    reduce();
 
-                        break;
-                }
+                operatorStack.Push(op);
 
-                if (cont)
-                    this.Read(out _);
-            } while (cont && this.Peek(out token));
+                outputStack.Push(this.ReadNumber());
+            }
 
             while (operatorStack.Any())
                 reduce();
@@ -232,6 +218,24 @@ namespace ArkeOS.Tools.Assembler {
 
                 outputStack.Push(new OperationNode(l, r, operatorStack.Pop()));
             }
+        }
+
+        private Operation ReadOperation() => this.Read(this.IsOperation, out var token) ? (Operation)token.Type : throw new InvalidOperationException("Expected token");
+
+        private Node ReadNumber() => this.Read(TokenType.Number, out var token) ? new NumberNode(token.Value) : throw new InvalidOperationException("Expected token");
+
+        private bool IsOperation(Token token) {
+            switch (token.Type) {
+                case TokenType.Plus:
+                case TokenType.Minus:
+                case TokenType.Asterisk:
+                case TokenType.ForwardSlash:
+                case TokenType.Percent:
+                case TokenType.Caret:
+                    return true;
+            }
+
+            return false;
         }
     }
 
