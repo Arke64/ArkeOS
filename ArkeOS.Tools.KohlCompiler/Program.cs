@@ -206,39 +206,22 @@ namespace ArkeOS.Tools.KohlCompiler {
         }
 
         private Node ReadExpression() {
-            var outputStack = new Stack<Node>();
-            var operatorStack = new Stack<Operation>();
+            var stack = new ExpressionStack();
 
-            outputStack.Push(this.ReadNumber());
+            stack.Push(this.ReadNumber());
 
-            while (this.tokens.Peek(this.IsOperation, out var token)) {
-                var op = this.ReadOperation();
+            while (this.tokens.Peek(this.IsOperation, out _)) {
+                stack.Push(this.ReadOperation());
 
-                while (operatorStack.Any() && ((Parser.Precedences[operatorStack.Peek()] > Parser.Precedences[op]) || (Parser.Precedences[operatorStack.Peek()] == Parser.Precedences[op] && Parser.LeftAssociative[op])))
-                    reduce();
-
-                operatorStack.Push(op);
-
-                outputStack.Push(this.ReadNumber());
+                stack.Push(this.ReadNumber());
             }
 
-            while (operatorStack.Any())
-                reduce();
-
-            return outputStack.Single();
-
-            void reduce()
-            {
-                var r = outputStack.Pop();
-                var l = outputStack.Pop();
-
-                outputStack.Push(new OperationNode(l, r, operatorStack.Pop()));
-            }
+            return stack.ToNode();
         }
 
         private Operation ReadOperation() => this.tokens.Read(this.IsOperation, out var token) ? (Operation)token.Type : throw new InvalidOperationException("Expected token");
 
-        private Node ReadNumber() => this.tokens.Read(TokenType.Number, out var token) ? new NumberNode(token.Value) : throw new InvalidOperationException("Expected token");
+        private NumberNode ReadNumber() => this.tokens.Read(TokenType.Number, out var token) ? new NumberNode(token.Value) : throw new InvalidOperationException("Expected token");
 
         private bool IsOperation(Token token) {
             switch (token.Type) {
@@ -252,6 +235,37 @@ namespace ArkeOS.Tools.KohlCompiler {
             }
 
             return false;
+        }
+    }
+
+    public class ExpressionStack {
+        private static IReadOnlyDictionary<Operation, uint> Precedences { get; } = new Dictionary<Operation, uint> { [Operation.Addition] = 0, [Operation.Subtraction] = 0, [Operation.Multiplication] = 1, [Operation.Division] = 1, [Operation.Remainder] = 1, [Operation.Exponentiation] = 2 };
+        private static IReadOnlyDictionary<Operation, bool> LeftAssociative { get; } = new Dictionary<Operation, bool> { [Operation.Addition] = true, [Operation.Subtraction] = true, [Operation.Multiplication] = true, [Operation.Division] = true, [Operation.Remainder] = true, [Operation.Exponentiation] = false };
+
+        private readonly Stack<Node> outputStack = new Stack<Node>();
+        private readonly Stack<Operation> operatorStack = new Stack<Operation>();
+
+        public void Push(NumberNode node) => this.outputStack.Push(node);
+
+        public void Push(Operation op) {
+            while (this.operatorStack.Any() && ((ExpressionStack.Precedences[this.operatorStack.Peek()] > ExpressionStack.Precedences[op]) || (ExpressionStack.Precedences[this.operatorStack.Peek()] == ExpressionStack.Precedences[op] && ExpressionStack.LeftAssociative[op])))
+                this.Reduce();
+
+            this.operatorStack.Push(op);
+        }
+
+        public Node ToNode() {
+            while (this.operatorStack.Any())
+                this.Reduce();
+
+            return this.outputStack.Single();
+        }
+
+        private void Reduce() {
+            var r = this.outputStack.Pop();
+            var l = this.outputStack.Pop();
+
+            this.outputStack.Push(new OperationNode(l, r, this.operatorStack.Pop()));
         }
     }
 
