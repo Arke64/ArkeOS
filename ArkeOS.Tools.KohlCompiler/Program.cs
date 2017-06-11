@@ -10,7 +10,8 @@ namespace ArkeOS.Tools.KohlCompiler {
 
             Console.WriteLine(new Dictionary<string, int> {
                 ["3 ^ 2 ^ 3"] = 6561,
-                ["4 + 10 - 6 * 4 / 2 % 3 ^ 2"] = 11
+                ["4 + 10 - 6 * 4 / 2 % 3 ^ 2"] = 11,
+                ["-4 - -10 + 2 - 4 + +2"] = 6,
             }.All(t => new Compiler(t.Key).Compile() == t.Value));
         }
     }
@@ -133,22 +134,19 @@ namespace ArkeOS.Tools.KohlCompiler {
 
         public int Remaining => this.length - this.index;
 
-        public bool Peek(Func<Token, bool> validator, out Token value) {
+        public bool Peek(out Token value) {
             if (this.index < this.length) {
-                var val = this.tokens[this.index];
-
-                if (validator(val)) {
-                    value = val;
-                    return true;
-                }
+                value = this.tokens[this.index];
+                return true;
             }
-
-            value = default(Token);
-            return false;
+            else {
+                value = default(Token);
+                return false;
+            }
         }
 
-        public bool Read(Func<Token, bool> validator, out Token value) {
-            if (this.Peek(validator, out value)) {
+        public bool Read(out Token value) {
+            if (this.Peek(out value)) {
                 this.index++;
 
                 return true;
@@ -156,6 +154,10 @@ namespace ArkeOS.Tools.KohlCompiler {
 
             return false;
         }
+
+        public bool Peek(Func<Token, bool> validator, out Token value) => this.Peek(out value) && validator(value);
+
+        public bool Read(Func<Token, bool> validator, out Token value) => this.Read(out value) && validator(value);
 
         public bool Read(TokenType type, out Token value) => this.Read(t => t.Type == type, out value);
     }
@@ -179,7 +181,7 @@ namespace ArkeOS.Tools.KohlCompiler {
     public class NumberNode : Node {
         public int Value { get; }
 
-        public NumberNode(string value) : base(null, null) => this.Value = int.Parse(value);
+        public NumberNode(int value) : base(null, null) => this.Value = value;
     }
 
     public class OperationNode : Node {
@@ -221,7 +223,19 @@ namespace ArkeOS.Tools.KohlCompiler {
 
         private Operation ReadOperation() => this.tokens.Read(this.IsOperation, out var token) ? (Operation)token.Type : throw new InvalidOperationException("Expected token");
 
-        private NumberNode ReadNumber() => this.tokens.Read(TokenType.Number, out var token) ? new NumberNode(token.Value) : throw new InvalidOperationException("Expected token");
+        private NumberNode ReadNumber() {
+            if (this.tokens.Peek(out var token)) {
+                var sign = 1;
+
+                switch (token.Type) {
+                    case TokenType.Plus: sign = 1; this.tokens.Read(out _); goto case TokenType.Number;
+                    case TokenType.Minus: sign = -1; this.tokens.Read(out _); goto case TokenType.Number;
+                    case TokenType.Number: return this.tokens.Read(TokenType.Number, out token) ? new NumberNode(int.Parse(token.Value) * sign) : throw new InvalidOperationException("Expected token");
+                }
+            }
+
+            throw new InvalidOperationException("Expected token");
+        }
 
         private bool IsOperation(Token token) {
             switch (token.Type) {
