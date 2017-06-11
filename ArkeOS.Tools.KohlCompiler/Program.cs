@@ -85,10 +85,10 @@ namespace ArkeOS.Tools.Assembler {
                     case '%': this.Add(TokenType.Percent, c); break;
                     case '(': this.Add(TokenType.OpenParenthesis, c); break;
                     case ')': this.Add(TokenType.CloseParenthesis, c); break;
-                    case ' ': break;
                     default:
                         if (char.IsNumber(c)) this.Add(TokenType.Number, this.ReadString(c, char.IsDigit));
                         else if (char.IsLetter(c)) this.Add(TokenType.String, this.ReadString(c, char.IsLetter));
+                        else if (char.IsWhiteSpace(c)) continue;
                         else throw new InvalidOperationException($"Unexpected '{c}'");
 
                         break;
