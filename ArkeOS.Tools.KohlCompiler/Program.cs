@@ -160,6 +160,16 @@ namespace ArkeOS.Tools.KohlCompiler {
         public bool Read(Func<Token, bool> validator, out Token value) => this.Read(out value) && validator(value);
 
         public bool Read(TokenType type, out Token value) => this.Read(t => t.Type == type, out value);
+
+        public T Read<T>(TokenType t1, Func<Token, T> case1, TokenType t2, Func<Token, T> case2, TokenType t3, Func<Token, T> case3) {
+            if (this.Peek(out var token)) {
+                if (token.Type == t1) { this.Read(out _); return case1(token); }
+                else if (token.Type == t2) { this.Read(out _); return case2(token); }
+                else if (token.Type == t3) { this.Read(out _); return case3(token); }
+            }
+
+            throw new InvalidOperationException("Expected token.");
+        }
     }
 
     public enum Operation {
@@ -181,7 +191,8 @@ namespace ArkeOS.Tools.KohlCompiler {
     public class NumberNode : Node {
         public int Value { get; }
 
-        public NumberNode(int value) : base(null, null) => this.Value = value;
+        public NumberNode(Token token) : this(token, false) { }
+        public NumberNode(Token token, bool isNegative) : base(null, null) => this.Value = int.Parse(token.Value) * (isNegative ? -1 : 1);
     }
 
     public class OperationNode : Node {
@@ -223,19 +234,12 @@ namespace ArkeOS.Tools.KohlCompiler {
 
         private Operation ReadOperation() => this.tokens.Read(this.IsOperation, out var token) ? (Operation)token.Type : throw new InvalidOperationException("Expected token");
 
-        private NumberNode ReadNumber() {
-            if (this.tokens.Peek(out var token)) {
-                var sign = 1;
+        private NumberNode ReadNumber() => this.tokens.Read(
+                TokenType.Plus, t => new NumberNode(this.ReadOnlyNumber()),
+                TokenType.Minus, t => new NumberNode(this.ReadOnlyNumber(), true),
+                TokenType.Number, t => new NumberNode(t));
 
-                switch (token.Type) {
-                    case TokenType.Plus: sign = 1; this.tokens.Read(out _); goto case TokenType.Number;
-                    case TokenType.Minus: sign = -1; this.tokens.Read(out _); goto case TokenType.Number;
-                    case TokenType.Number: return this.tokens.Read(TokenType.Number, out token) ? new NumberNode(int.Parse(token.Value) * sign) : throw new InvalidOperationException("Expected token");
-                }
-            }
-
-            throw new InvalidOperationException("Expected token");
-        }
+        private Token ReadOnlyNumber() => this.tokens.Read(TokenType.Number, out var t) ? t : throw new InvalidOperationException("Expected token");
 
         private bool IsOperation(Token token) {
             switch (token.Type) {
