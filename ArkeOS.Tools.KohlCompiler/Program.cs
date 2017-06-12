@@ -19,7 +19,7 @@ namespace ArkeOS.Tools.KohlCompiler {
 
         public Compiler(string source) => this.source = source;
 
-        public int Compile() {
+        public long Compile() {
             var lexer = new Lexer(this.source);
             var tokens = lexer.Lex();
             var parser = new Parser(tokens);
@@ -204,13 +204,13 @@ namespace ArkeOS.Tools.KohlCompiler {
         }
     }
 
-    public enum Operation {
-        Addition = TokenType.Plus,
-        Subtraction = TokenType.Minus,
-        Multiplication = TokenType.Asterisk,
-        Division = TokenType.ForwardSlash,
-        Remainder = TokenType.Percent,
-        Exponentiation = TokenType.Caret,
+    public enum Operator {
+        Addition,
+        Subtraction,
+        Multiplication,
+        Division,
+        Remainder,
+        Exponentiation,
     }
 
     public abstract class Node {
@@ -218,23 +218,29 @@ namespace ArkeOS.Tools.KohlCompiler {
     }
 
     public class NumberNode : Node {
-        public int Value { get; }
+        public string Value { get; }
 
-        public NumberNode(Token token) : this(token, false) { }
-        public NumberNode(Token token, bool isNegative) => this.Value = int.Parse(token.Value) * (isNegative ? -1 : 1);
+        public NumberNode(string value) => this.Value = value;
     }
 
     public class BinaryOperationNode : Node {
         public Node Left { get; }
         public Node Right { get; }
-        public Operation Operation { get; }
+        public Operator Operator { get; }
 
-        public BinaryOperationNode(Node left, Node right, Operation operation) => (this.Left, this.Right, this.Operation) = (left, right, operation);
+        public BinaryOperationNode(Node left, Node right, Operator op) => (this.Left, this.Right, this.Operator) = (left, right, op);
+    }
+
+    public class UnaryOperationNode : Node {
+        public Node Node { get; }
+        public Operator Operator { get; }
+
+        public UnaryOperationNode(Node node, Operator op) => (this.Node, this.Operator) = (node, op);
     }
 
     public class Parser {
-        private static IReadOnlyDictionary<Operation, uint> Precedences { get; } = new Dictionary<Operation, uint> { [Operation.Addition] = 0, [Operation.Subtraction] = 0, [Operation.Multiplication] = 1, [Operation.Division] = 1, [Operation.Remainder] = 1, [Operation.Exponentiation] = 2 };
-        private static IReadOnlyDictionary<Operation, bool> LeftAssociative { get; } = new Dictionary<Operation, bool> { [Operation.Addition] = true, [Operation.Subtraction] = true, [Operation.Multiplication] = true, [Operation.Division] = true, [Operation.Remainder] = true, [Operation.Exponentiation] = false };
+        private static IReadOnlyDictionary<Operator, uint> Precedences { get; } = new Dictionary<Operator, uint> { [Operator.Addition] = 0, [Operator.Subtraction] = 0, [Operator.Multiplication] = 1, [Operator.Division] = 1, [Operator.Remainder] = 1, [Operator.Exponentiation] = 2 };
+        private static IReadOnlyDictionary<Operator, bool> LeftAssociative { get; } = new Dictionary<Operator, bool> { [Operator.Addition] = true, [Operator.Subtraction] = true, [Operator.Multiplication] = true, [Operator.Division] = true, [Operator.Remainder] = true, [Operator.Exponentiation] = false };
 
         private readonly TokenStream tokens;
 
@@ -254,8 +260,8 @@ namespace ArkeOS.Tools.KohlCompiler {
 
             stack.Push(this.ReadNumber());
 
-            while (this.tokens.Peek(this.IsOperation, out _)) {
-                stack.Push(this.ReadOperation());
+            while (this.tokens.Peek(this.IsOperator, out _)) {
+                stack.Push(this.ReadOperator());
 
                 stack.Push(this.ReadNumber());
             }
@@ -263,16 +269,11 @@ namespace ArkeOS.Tools.KohlCompiler {
             return stack.ToNode();
         }
 
-        private Operation ReadOperation() => this.tokens.Read(this.IsOperation, out var token) ? (Operation)token.Type : throw new InvalidOperationException("Expected token");
+        private Operator ReadOperator() => this.tokens.Read(this.IsOperator, out var token) ? this.GetOperator(token) : throw new InvalidOperationException("Expected token");
 
-        private NumberNode ReadNumber() => this.tokens.Read(
-                TokenType.Plus, t => new NumberNode(this.ReadOnlyNumber()),
-                TokenType.Minus, t => new NumberNode(this.ReadOnlyNumber(), true),
-                TokenType.Number, t => new NumberNode(t));
+        private NumberNode ReadNumber() => this.tokens.Read(TokenType.Number, out var token) ? new NumberNode(token.Value) : throw new InvalidOperationException("Expected token");
 
-        private Token ReadOnlyNumber() => this.tokens.Read(TokenType.Number, out var t) ? t : throw new InvalidOperationException("Expected token");
-
-        private bool IsOperation(Token token) {
+        private bool IsOperator(Token token) {
             switch (token.Type) {
                 case TokenType.Plus:
                 case TokenType.Minus:
@@ -285,18 +286,30 @@ namespace ArkeOS.Tools.KohlCompiler {
 
             return false;
         }
+
+        private Operator GetOperator(Token token) {
+            switch (token.Type) {
+                case TokenType.Plus: return Operator.Addition;
+                case TokenType.Minus: return Operator.Subtraction;
+                case TokenType.Asterisk: return Operator.Multiplication;
+                case TokenType.ForwardSlash: return Operator.Division;
+                case TokenType.Percent: return Operator.Remainder;
+                case TokenType.Caret: return Operator.Exponentiation;
+                default: throw new InvalidOperationException("Expected token");
+            }
+        }
     }
 
     public class ExpressionStack {
-        private static IReadOnlyDictionary<Operation, uint> Precedences { get; } = new Dictionary<Operation, uint> { [Operation.Addition] = 0, [Operation.Subtraction] = 0, [Operation.Multiplication] = 1, [Operation.Division] = 1, [Operation.Remainder] = 1, [Operation.Exponentiation] = 2 };
-        private static IReadOnlyDictionary<Operation, bool> LeftAssociative { get; } = new Dictionary<Operation, bool> { [Operation.Addition] = true, [Operation.Subtraction] = true, [Operation.Multiplication] = true, [Operation.Division] = true, [Operation.Remainder] = true, [Operation.Exponentiation] = false };
+        private static IReadOnlyDictionary<Operator, uint> Precedences { get; } = new Dictionary<Operator, uint> { [Operator.Addition] = 0, [Operator.Subtraction] = 0, [Operator.Multiplication] = 1, [Operator.Division] = 1, [Operator.Remainder] = 1, [Operator.Exponentiation] = 2 };
+        private static IReadOnlyDictionary<Operator, bool> LeftAssociative { get; } = new Dictionary<Operator, bool> { [Operator.Addition] = true, [Operator.Subtraction] = true, [Operator.Multiplication] = true, [Operator.Division] = true, [Operator.Remainder] = true, [Operator.Exponentiation] = false };
 
         private readonly Stack<Node> outputStack = new Stack<Node>();
-        private readonly Stack<Operation> operatorStack = new Stack<Operation>();
+        private readonly Stack<Operator> operatorStack = new Stack<Operator>();
 
         public void Push(NumberNode node) => this.outputStack.Push(node);
 
-        public void Push(Operation op) {
+        public void Push(Operator op) {
             while (this.operatorStack.Any() && ((ExpressionStack.Precedences[this.operatorStack.Peek()] > ExpressionStack.Precedences[op]) || (ExpressionStack.Precedences[this.operatorStack.Peek()] == ExpressionStack.Precedences[op] && ExpressionStack.LeftAssociative[op])))
                 this.Reduce();
 
@@ -323,24 +336,24 @@ namespace ArkeOS.Tools.KohlCompiler {
 
         public Emitter(Node tree) => this.tree = tree;
 
-        public int Emit() => this.Calculate(this.tree);
+        public long Emit() => this.Calculate(this.tree);
 
-        private int Calculate(Node node) {
+        private long Calculate(Node node) {
             switch (node) {
                 case NumberNode n:
-                    return n.Value;
+                    return long.Parse(n.Value);
 
                 case BinaryOperationNode n:
                     var a = this.Calculate(n.Left);
                     var b = this.Calculate(n.Right);
 
-                    switch (n.Operation) {
-                        case Operation.Addition: return a + b;
-                        case Operation.Subtraction: return a - b;
-                        case Operation.Multiplication: return a * b;
-                        case Operation.Division: return a / b;
-                        case Operation.Exponentiation: return (int)Math.Pow(a, b);
-                        case Operation.Remainder: return a % b;
+                    switch (n.Operator) {
+                        case Operator.Addition: return a + b;
+                        case Operator.Subtraction: return a - b;
+                        case Operator.Multiplication: return a * b;
+                        case Operator.Division: return a / b;
+                        case Operator.Exponentiation: return (int)Math.Pow(a, b);
+                        case Operator.Remainder: return a % b;
                         default: throw new InvalidOperationException("Unexpected operation.");
                     }
 
