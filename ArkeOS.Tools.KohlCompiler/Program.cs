@@ -212,9 +212,9 @@ namespace ArkeOS.Tools.KohlCompiler {
     }
 
     public class NumberNode : Node {
-        public string Value { get; }
+        public long Value { get; }
 
-        public NumberNode(string value) => this.Value = value;
+        public NumberNode(string value) => this.Value = long.Parse(value);
     }
 
     public class BinaryOperationNode : Node {
@@ -478,7 +478,7 @@ namespace ArkeOS.Tools.KohlCompiler {
         private long Calculate(Node node) {
             switch (node) {
                 case NumberNode n:
-                    return long.Parse(n.Value);
+                    return n.Value;
 
                 case BinaryOperationNode n:
                     var l = this.Calculate(n.Left);
