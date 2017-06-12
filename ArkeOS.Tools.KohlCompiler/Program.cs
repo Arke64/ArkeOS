@@ -10,7 +10,7 @@ namespace ArkeOS.Tools.KohlCompiler {
             ("4 + 10 - 6 * 4 / 2 % 3 ^ 2", 11),
             ("-4 - -10 + 2 - 4 + +2", 6),
             ("0xAB_cD + 1 + -0b010_1 + 0d_12345_", 56322),
-            ("1 * (2 + 3) - 9 * 7 / (4 - -3) + +3 ^ (12 + 3 + (5 % 1) / (6 - -(2 - 3)) * 3)", 387_420_485),
+            ("1 * (2 + 3) - 9 * 7 / (4 - -3) + +3 ^ (12 + 3 + (11 % 6) / (6 - -(2 - 3)) * 3)", 387_420_485),
         }.All(t => new Compiler(t.source).Compile() == t.result));
     }
 
@@ -192,16 +192,6 @@ namespace ArkeOS.Tools.KohlCompiler {
 
         public bool Peek(TokenType type) => this.Peek(type, out _);
         public bool Read(TokenType type) => this.Read(type, out _);
-
-        public T Read<T>(TokenType t1, Func<Token, T> case1, TokenType t2, Func<Token, T> case2, TokenType t3, Func<Token, T> case3) {
-            if (this.Peek(out var token)) {
-                if (token.Type == t1) { this.Read(out _); return case1(token); }
-                else if (token.Type == t2) { this.Read(out _); return case2(token); }
-                else if (token.Type == t3) { this.Read(out _); return case3(token); }
-            }
-
-            throw new InvalidOperationException("Expected token.");
-        }
     }
 
     public enum Operator {
@@ -240,6 +230,8 @@ namespace ArkeOS.Tools.KohlCompiler {
         public Operator Operator { get; }
 
         public UnaryOperationNode(Node node, Operator op) => (this.Node, this.Operator) = (node, op);
+
+        public static bool IsValidOperator(Operator op) => op == Operator.UnaryMinus || op == Operator.UnaryPlus;
     }
 
     public class Parser {
@@ -261,17 +253,121 @@ namespace ArkeOS.Tools.KohlCompiler {
 
         private Node ReadExpression() {
             var stack = new ExpressionStack();
+            var state = ExpressionParseState.Start;
+            var cont = true;
 
-            while (this.tokens.Peek(out var token)) {
-                if (token.Type == TokenType.Number) stack.Push(this.ReadNumber());
-                else if (this.IsOperator(token)) stack.Push(this.ReadOperator());
-                else break;
+            while (cont && this.tokens.Peek(out var token)) {
+                switch (state) {
+                    case ExpressionParseState.Start:
+                        if (token.Type == TokenType.Number) {
+                            stack.Push(this.ReadNumber());
+                            state = ExpressionParseState.FoundNumber;
+                        }
+                        else if (token.Type == TokenType.OpenParenthesis) {
+                            stack.Push(this.ReadOperator(false));
+                            state = ExpressionParseState.FoundOpenParenthesis;
+                        }
+                        else if (token.Type == TokenType.CloseParenthesis) {
+                            throw new InvalidOperationException("Expected token.");
+                        }
+                        else if (this.IsOperator(token)) {
+                            stack.Push(this.ReadOperator(true));
+                            state = ExpressionParseState.FoundOperator;
+                        }
+                        else {
+                            cont = false;
+                        }
+
+                        break;
+
+                    case ExpressionParseState.FoundNumber:
+                        if (token.Type == TokenType.CloseParenthesis) {
+                            stack.Push(this.ReadOperator(false));
+                            state = ExpressionParseState.FoundCloseParenthesis;
+                        }
+                        else if (this.IsOperator(token)) {
+                            if (token.Type == TokenType.Percent)
+                                token = token;
+                            stack.Push(this.ReadOperator(false));
+                            state = ExpressionParseState.FoundOperator;
+                        }
+                        else {
+                            cont = false;
+                        }
+
+                        break;
+
+                    case ExpressionParseState.FoundOperator:
+                        if (token.Type == TokenType.Number) {
+                            stack.Push(this.ReadNumber());
+                            state = ExpressionParseState.FoundNumber;
+                        }
+                        else if (token.Type == TokenType.OpenParenthesis) {
+                            stack.Push(this.ReadOperator(false));
+                            state = ExpressionParseState.FoundOpenParenthesis;
+                        }
+                        else if (token.Type == TokenType.CloseParenthesis) {
+                            throw new InvalidOperationException("Expected token.");
+                        }
+                        else if (this.IsOperator(token)) {
+                            stack.Push(this.ReadOperator(true));
+                            state = ExpressionParseState.FoundOperator;
+                        }
+                        else {
+                            cont = false;
+                        }
+
+                        break;
+
+                    case ExpressionParseState.FoundOpenParenthesis:
+                        if (token.Type == TokenType.Number) {
+                            stack.Push(this.ReadNumber());
+                            state = ExpressionParseState.FoundNumber;
+                        }
+                        else if (token.Type == TokenType.OpenParenthesis) {
+                            stack.Push(this.ReadOperator(false));
+                            state = ExpressionParseState.FoundOpenParenthesis;
+                        }
+                        else if (token.Type == TokenType.CloseParenthesis) {
+                            throw new InvalidOperationException("Expected token.");
+                        }
+                        else if (this.IsOperator(token)) {
+                            stack.Push(this.ReadOperator(true));
+                            state = ExpressionParseState.FoundOperator;
+                        }
+                        else {
+                            cont = false;
+                        }
+
+                        break;
+
+                    case ExpressionParseState.FoundCloseParenthesis:
+                        if (token.Type == TokenType.Number) {
+                            throw new InvalidOperationException("Expected token.");
+                        }
+                        else if (token.Type == TokenType.OpenParenthesis) {
+                            throw new InvalidOperationException("Expected token.");
+                        }
+                        else if (token.Type == TokenType.CloseParenthesis) {
+                            stack.Push(this.ReadOperator(false));
+                            state = ExpressionParseState.FoundCloseParenthesis;
+                        }
+                        else if (this.IsOperator(token)) {
+                            stack.Push(this.ReadOperator(false));
+                            state = ExpressionParseState.FoundOperator;
+                        }
+                        else {
+                            cont = false;
+                        }
+
+                        break;
+                }
             }
 
             return stack.ToNode();
         }
 
-        private Operator ReadOperator() => this.tokens.Read(this.IsOperator, out var token) ? this.GetOperator(token) : throw new InvalidOperationException("Expected token");
+        private Operator ReadOperator(bool unary) => this.tokens.Read(this.IsOperator, out var token) ? this.GetOperator(token, unary) : throw new InvalidOperationException("Expected token");
 
         private NumberNode ReadNumber() => this.tokens.Read(TokenType.Number, out var token) ? new NumberNode(token.Value) : throw new InvalidOperationException("Expected token");
 
@@ -291,24 +387,41 @@ namespace ArkeOS.Tools.KohlCompiler {
             return false;
         }
 
-        private Operator GetOperator(Token token) {
-            switch (token.Type) {
-                case TokenType.Plus: return Operator.Addition;
-                case TokenType.Minus: return Operator.Subtraction;
-                case TokenType.Asterisk: return Operator.Multiplication;
-                case TokenType.ForwardSlash: return Operator.Division;
-                case TokenType.Percent: return Operator.Remainder;
-                case TokenType.Caret: return Operator.Exponentiation;
-                case TokenType.OpenParenthesis: return Operator.OpenParenthesis;
-                case TokenType.CloseParenthesis: return Operator.CloseParenthesis;
-                default: throw new InvalidOperationException("Expected token");
+        private Operator GetOperator(Token token, bool unary) {
+            if (!unary) {
+                switch (token.Type) {
+                    case TokenType.Plus: return Operator.Addition;
+                    case TokenType.Minus: return Operator.Subtraction;
+                    case TokenType.Asterisk: return Operator.Multiplication;
+                    case TokenType.ForwardSlash: return Operator.Division;
+                    case TokenType.Percent: return Operator.Remainder;
+                    case TokenType.Caret: return Operator.Exponentiation;
+                    case TokenType.OpenParenthesis: return Operator.OpenParenthesis;
+                    case TokenType.CloseParenthesis: return Operator.CloseParenthesis;
+                }
             }
+            else {
+                switch (token.Type) {
+                    case TokenType.Plus: return Operator.UnaryPlus;
+                    case TokenType.Minus: return Operator.UnaryMinus;
+                }
+            }
+
+            throw new InvalidOperationException("Expected token");
+        }
+
+        private enum ExpressionParseState {
+            Start,
+            FoundNumber,
+            FoundOperator,
+            FoundOpenParenthesis,
+            FoundCloseParenthesis,
         }
     }
 
     public class ExpressionStack {
-        private static IReadOnlyDictionary<Operator, int> Precedences { get; } = new Dictionary<Operator, int> { [Operator.Addition] = 0, [Operator.Subtraction] = 0, [Operator.Multiplication] = 1, [Operator.Division] = 1, [Operator.Remainder] = 1, [Operator.Exponentiation] = 2, [Operator.OpenParenthesis] = -1, [Operator.CloseParenthesis] = -1 };
-        private static IReadOnlyDictionary<Operator, bool> LeftAssociative { get; } = new Dictionary<Operator, bool> { [Operator.Addition] = true, [Operator.Subtraction] = true, [Operator.Multiplication] = true, [Operator.Division] = true, [Operator.Remainder] = true, [Operator.Exponentiation] = false, [Operator.OpenParenthesis] = true, [Operator.CloseParenthesis] = true };
+        private static IReadOnlyDictionary<Operator, int> Precedences { get; } = new Dictionary<Operator, int> { [Operator.Addition] = 0, [Operator.Subtraction] = 0, [Operator.Multiplication] = 1, [Operator.Division] = 1, [Operator.Remainder] = 1, [Operator.Exponentiation] = 2, [Operator.UnaryMinus] = 3, [Operator.UnaryPlus] = 3, [Operator.OpenParenthesis] = -1, [Operator.CloseParenthesis] = -1 };
+        private static IReadOnlyDictionary<Operator, bool> LeftAssociative { get; } = new Dictionary<Operator, bool> { [Operator.Addition] = true, [Operator.Subtraction] = true, [Operator.Multiplication] = true, [Operator.Division] = true, [Operator.Remainder] = true, [Operator.Exponentiation] = false, [Operator.UnaryMinus] = false, [Operator.UnaryPlus] = false, [Operator.OpenParenthesis] = true, [Operator.CloseParenthesis] = true };
 
         private readonly Stack<Node> outputStack = new Stack<Node>();
         private readonly Stack<Operator> operatorStack = new Stack<Operator>();
@@ -341,10 +454,17 @@ namespace ArkeOS.Tools.KohlCompiler {
         }
 
         private void Reduce() {
-            var r = this.outputStack.Pop();
-            var l = this.outputStack.Pop();
+            var op = this.operatorStack.Pop();
 
-            this.outputStack.Push(new BinaryOperationNode(l, r, this.operatorStack.Pop()));
+            if (!UnaryOperationNode.IsValidOperator(op)) {
+                var r = this.outputStack.Pop();
+                var l = this.outputStack.Pop();
+
+                this.outputStack.Push(new BinaryOperationNode(l, r, op));
+            }
+            else {
+                this.outputStack.Push(new UnaryOperationNode(this.outputStack.Pop(), op));
+            }
         }
     }
 
