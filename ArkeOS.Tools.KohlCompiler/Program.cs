@@ -260,12 +260,10 @@ namespace ArkeOS.Tools.KohlCompiler {
         private Node ReadExpression() {
             var stack = new ExpressionStack();
 
-            stack.Push(this.ReadNumber());
-
-            while (this.tokens.Peek(this.IsOperator, out _)) {
-                stack.Push(this.ReadOperator());
-
-                stack.Push(this.ReadNumber());
+            while (this.tokens.Peek(out var token)) {
+                if (token.Type == TokenType.Number) stack.Push(this.ReadNumber());
+                else if (this.IsOperator(token)) stack.Push(this.ReadOperator());
+                else break;
             }
 
             return stack.ToNode();
