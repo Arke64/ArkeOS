@@ -211,6 +211,8 @@ namespace ArkeOS.Tools.KohlCompiler {
         Division,
         Remainder,
         Exponentiation,
+        UnaryPlus,
+        UnaryMinus,
     }
 
     public abstract class Node {
@@ -344,18 +346,28 @@ namespace ArkeOS.Tools.KohlCompiler {
                     return long.Parse(n.Value);
 
                 case BinaryOperationNode n:
-                    var a = this.Calculate(n.Left);
-                    var b = this.Calculate(n.Right);
+                    var l = this.Calculate(n.Left);
+                    var r = this.Calculate(n.Right);
 
                     switch (n.Operator) {
-                        case Operator.Addition: return a + b;
-                        case Operator.Subtraction: return a - b;
-                        case Operator.Multiplication: return a * b;
-                        case Operator.Division: return a / b;
-                        case Operator.Exponentiation: return (int)Math.Pow(a, b);
-                        case Operator.Remainder: return a % b;
-                        default: throw new InvalidOperationException("Unexpected operation.");
+                        case Operator.Addition: return l + r;
+                        case Operator.Subtraction: return l - r;
+                        case Operator.Multiplication: return l * r;
+                        case Operator.Division: return l / r;
+                        case Operator.Exponentiation: return (int)Math.Pow(l, r);
+                        case Operator.Remainder: return l % r;
+                        default: throw new InvalidOperationException("Unexpected operator.");
                     }
+
+                case UnaryOperationNode n:
+                    var o = this.Calculate(n.Node);
+
+                    switch (n.Operator) {
+                        case Operator.UnaryPlus: return o;
+                        case Operator.UnaryMinus: return -o;
+                        default: throw new InvalidOperationException("Unexpected operator.");
+                    }
+
 
                 default:
                     throw new InvalidOperationException("Unexpected node.");
