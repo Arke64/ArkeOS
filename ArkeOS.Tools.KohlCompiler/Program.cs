@@ -5,13 +5,13 @@ using System.Text;
 
 namespace ArkeOS.Tools.KohlCompiler {
     public static class Program {
-        public static void Main() => Console.WriteLine(new Dictionary<string, int> {
-            ["3 ^ 2 ^ 3"] = 6561,
-            ["4 + 10 - 6 * 4 / 2 % 3 ^ 2"] = 11,
-            ["-4 - -10 + 2 - 4 + +2"] = 6,
-            ["0xAB_cD + 1 + -0b010_1 + 0d_12345_"] = 56322,
-            ["1 * (2 + 3) - 9 * 7 / (4 - -3) + +3 ^ (12 + 3 + (5 % 1) / (6 - -(2 - 3)) * 3)"] = 387_420_485,
-        }.All(t => new Compiler(t.Key).Compile() == t.Value));
+        public static void Main() => Console.WriteLine(new List<(string source, int result)> {
+            ("3 ^ 2 ^ 3", 6561),
+            ("4 + 10 - 6 * 4 / 2 % 3 ^ 2", 11),
+            ("-4 - -10 + 2 - 4 + +2", 6),
+            ("0xAB_cD + 1 + -0b010_1 + 0d_12345_", 56322),
+            ("1 * (2 + 3) - 9 * 7 / (4 - -3) + +3 ^ (12 + 3 + (5 % 1) / (6 - -(2 - 3)) * 3)", 387_420_485),
+        }.All(t => new Compiler(t.source).Compile() == t.result));
     }
 
     public class Compiler {
