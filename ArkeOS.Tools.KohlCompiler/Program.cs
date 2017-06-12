@@ -10,7 +10,7 @@ namespace ArkeOS.Tools.KohlCompiler {
             ["4 + 10 - 6 * 4 / 2 % 3 ^ 2"] = 11,
             ["-4 - -10 + 2 - 4 + +2"] = 6,
             ["0xAB_cD + 1 + -0b010_1 + 0d_12345_"] = 56322,
-            //["1 * (2 + 3) - 9 * 7 / (4 - -3) + +3 ^ (12 + 3 + (5 % 1) / (6 - -(2 - 3)) * 3)"] = 387_420_485,
+            ["1 * (2 + 3) - 9 * 7 / (4 - -3) + +3 ^ (12 + 3 + (5 % 1) / (6 - -(2 - 3)) * 3)"] = 387_420_485,
         }.All(t => new Compiler(t.Key).Compile() == t.Value));
     }
 
@@ -213,6 +213,8 @@ namespace ArkeOS.Tools.KohlCompiler {
         Exponentiation,
         UnaryPlus,
         UnaryMinus,
+        OpenParenthesis,
+        CloseParenthesis,
     }
 
     public abstract class Node {
@@ -281,6 +283,8 @@ namespace ArkeOS.Tools.KohlCompiler {
                 case TokenType.ForwardSlash:
                 case TokenType.Percent:
                 case TokenType.Caret:
+                case TokenType.OpenParenthesis:
+                case TokenType.CloseParenthesis:
                     return true;
             }
 
@@ -295,14 +299,16 @@ namespace ArkeOS.Tools.KohlCompiler {
                 case TokenType.ForwardSlash: return Operator.Division;
                 case TokenType.Percent: return Operator.Remainder;
                 case TokenType.Caret: return Operator.Exponentiation;
+                case TokenType.OpenParenthesis: return Operator.OpenParenthesis;
+                case TokenType.CloseParenthesis: return Operator.CloseParenthesis;
                 default: throw new InvalidOperationException("Expected token");
             }
         }
     }
 
     public class ExpressionStack {
-        private static IReadOnlyDictionary<Operator, uint> Precedences { get; } = new Dictionary<Operator, uint> { [Operator.Addition] = 0, [Operator.Subtraction] = 0, [Operator.Multiplication] = 1, [Operator.Division] = 1, [Operator.Remainder] = 1, [Operator.Exponentiation] = 2 };
-        private static IReadOnlyDictionary<Operator, bool> LeftAssociative { get; } = new Dictionary<Operator, bool> { [Operator.Addition] = true, [Operator.Subtraction] = true, [Operator.Multiplication] = true, [Operator.Division] = true, [Operator.Remainder] = true, [Operator.Exponentiation] = false };
+        private static IReadOnlyDictionary<Operator, int> Precedences { get; } = new Dictionary<Operator, int> { [Operator.Addition] = 0, [Operator.Subtraction] = 0, [Operator.Multiplication] = 1, [Operator.Division] = 1, [Operator.Remainder] = 1, [Operator.Exponentiation] = 2, [Operator.OpenParenthesis] = -1, [Operator.CloseParenthesis] = -1 };
+        private static IReadOnlyDictionary<Operator, bool> LeftAssociative { get; } = new Dictionary<Operator, bool> { [Operator.Addition] = true, [Operator.Subtraction] = true, [Operator.Multiplication] = true, [Operator.Division] = true, [Operator.Remainder] = true, [Operator.Exponentiation] = false, [Operator.OpenParenthesis] = true, [Operator.CloseParenthesis] = true };
 
         private readonly Stack<Node> outputStack = new Stack<Node>();
         private readonly Stack<Operator> operatorStack = new Stack<Operator>();
@@ -310,10 +316,21 @@ namespace ArkeOS.Tools.KohlCompiler {
         public void Push(NumberNode node) => this.outputStack.Push(node);
 
         public void Push(Operator op) {
-            while (this.operatorStack.Any() && ((ExpressionStack.Precedences[this.operatorStack.Peek()] > ExpressionStack.Precedences[op]) || (ExpressionStack.Precedences[this.operatorStack.Peek()] == ExpressionStack.Precedences[op] && ExpressionStack.LeftAssociative[op])))
-                this.Reduce();
+            if (op == Operator.CloseParenthesis) {
+                while (this.operatorStack.Any() && this.operatorStack.Peek() != Operator.OpenParenthesis)
+                    this.Reduce();
 
-            this.operatorStack.Push(op);
+                this.operatorStack.Pop();
+            }
+            else if (op == Operator.OpenParenthesis) {
+                this.operatorStack.Push(op);
+            }
+            else {
+                while (this.operatorStack.Any() && ((ExpressionStack.Precedences[this.operatorStack.Peek()] > ExpressionStack.Precedences[op]) || (ExpressionStack.Precedences[this.operatorStack.Peek()] == ExpressionStack.Precedences[op] && ExpressionStack.LeftAssociative[op])))
+                    this.Reduce();
+
+                this.operatorStack.Push(op);
+            }
         }
 
         public Node ToNode() {
