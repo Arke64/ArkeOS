@@ -9,6 +9,7 @@ namespace ArkeOS.Tools.KohlCompiler {
             ["3 ^ 2 ^ 3"] = 6561,
             ["4 + 10 - 6 * 4 / 2 % 3 ^ 2"] = 11,
             ["-4 - -10 + 2 - 4 + +2"] = 6,
+            ["0xAB_cD + 1 + -0b010_1 + 0d_12345_"] = 56322,
             //["1 * (2 + 3) - 9 * 7 / (4 - -3) + +3 ^ (12 + 3 + (5 % 1) / (6 - -(2 - 3)) * 3)"] = 387_420_485,
         }.All(t => new Compiler(t.Key).Compile() == t.Value));
     }
@@ -50,6 +51,8 @@ namespace ArkeOS.Tools.KohlCompiler {
     }
 
     public class Lexer {
+        private static IReadOnlyDictionary<int, char[]> ValidDigitsForBase { get; } = new Dictionary<int, char[]> { [2] = new[] { '0', '1' }, [8] = new[] { '0', '1', '2', '3', '4', '5', '6', '7' }, [10] = new[] { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9' }, [16] = new[] { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f', 'A', 'B', 'C', 'D', 'E', 'F' } };
+
         private readonly List<Token> result = new List<Token>();
         private readonly string source;
         private readonly int length;
@@ -95,8 +98,8 @@ namespace ArkeOS.Tools.KohlCompiler {
                     case '(': this.Add(TokenType.OpenParenthesis, c); break;
                     case ')': this.Add(TokenType.CloseParenthesis, c); break;
                     default:
-                        if (char.IsNumber(c)) this.Add(TokenType.Number, this.ReadString(c, char.IsDigit));
-                        else if (char.IsLetter(c)) this.Add(TokenType.String, this.ReadString(c, char.IsLetter));
+                        if (char.IsNumber(c)) this.Add(TokenType.Number, this.ReadNumber(c));
+                        else if (char.IsLetter(c)) this.Add(TokenType.String, this.ReadIdentifier(c));
                         else if (char.IsWhiteSpace(c)) continue;
                         else throw new InvalidOperationException($"Unexpected '{c}'");
 
@@ -107,12 +110,41 @@ namespace ArkeOS.Tools.KohlCompiler {
             return new TokenStream(this.result);
         }
 
-        private string ReadString(char start, Func<char, bool> validator) {
+        private string ReadNumber(char start) {
+            var res = new StringBuilder();
+            var radix = 10;
+
+            if (start == '0' && this.Peek(out var c)) {
+                switch (c) {
+                    case 'd': radix = 10; this.Read(out _); break;
+                    case 'x': radix = 16; this.Read(out _); break;
+                    case 'b': radix = 2; this.Read(out _); break;
+                    case 'o': radix = 8; this.Read(out _); break;
+                    default: res.Append(start); break;
+                }
+            }
+            else {
+                res.Append(start);
+            }
+
+            var valid = Lexer.ValidDigitsForBase[radix];
+
+            while (this.Peek(out c) && (valid.Contains(c) || c == '_')) {
+                this.Read(out _);
+
+                if (c != '_')
+                    res.Append(c);
+            }
+
+            return Convert.ToUInt64(res.ToString(), radix).ToString();
+        }
+
+        private string ReadIdentifier(char start) {
             var res = new StringBuilder();
 
             res.Append(start);
 
-            while (this.Peek(out var c) && validator(c)) {
+            while (this.Peek(out var c) && char.IsLetterOrDigit(c)) {
                 this.Read(out _);
 
                 res.Append(c);
