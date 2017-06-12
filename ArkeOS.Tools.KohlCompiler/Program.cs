@@ -258,38 +258,14 @@ namespace ArkeOS.Tools.KohlCompiler {
 
             while (cont && this.tokens.Peek(out var token)) {
                 switch (state) {
-                    case ExpressionParseState.Start:
-                        if (token.Type == TokenType.Number) {
-                            stack.Push(this.ReadNumber());
-                            state = ExpressionParseState.FoundNumber;
-                        }
-                        else if (token.Type == TokenType.OpenParenthesis) {
-                            stack.Push(this.ReadOperator(false));
-                            state = ExpressionParseState.FoundOpenParenthesis;
-                        }
-                        else if (token.Type == TokenType.CloseParenthesis) {
-                            throw new InvalidOperationException("Expected token.");
-                        }
-                        else if (this.IsOperator(token)) {
-                            stack.Push(this.ReadOperator(true));
-                            state = ExpressionParseState.FoundOperator;
-                        }
-                        else {
-                            cont = false;
-                        }
-
-                        break;
-
                     case ExpressionParseState.FoundNumber:
                         if (token.Type == TokenType.CloseParenthesis) {
                             stack.Push(this.ReadOperator(false));
                             state = ExpressionParseState.FoundCloseParenthesis;
                         }
                         else if (this.IsOperator(token)) {
-                            if (token.Type == TokenType.Percent)
-                                token = token;
                             stack.Push(this.ReadOperator(false));
-                            state = ExpressionParseState.FoundOperator;
+                            state = ExpressionParseState.Start;
                         }
                         else {
                             cont = false;
@@ -297,43 +273,17 @@ namespace ArkeOS.Tools.KohlCompiler {
 
                         break;
 
-                    case ExpressionParseState.FoundOperator:
+                    case ExpressionParseState.Start:
                         if (token.Type == TokenType.Number) {
                             stack.Push(this.ReadNumber());
                             state = ExpressionParseState.FoundNumber;
-                        }
-                        else if (token.Type == TokenType.OpenParenthesis) {
-                            stack.Push(this.ReadOperator(false));
-                            state = ExpressionParseState.FoundOpenParenthesis;
                         }
                         else if (token.Type == TokenType.CloseParenthesis) {
                             throw new InvalidOperationException("Expected token.");
                         }
                         else if (this.IsOperator(token)) {
-                            stack.Push(this.ReadOperator(true));
-                            state = ExpressionParseState.FoundOperator;
-                        }
-                        else {
-                            cont = false;
-                        }
-
-                        break;
-
-                    case ExpressionParseState.FoundOpenParenthesis:
-                        if (token.Type == TokenType.Number) {
-                            stack.Push(this.ReadNumber());
-                            state = ExpressionParseState.FoundNumber;
-                        }
-                        else if (token.Type == TokenType.OpenParenthesis) {
-                            stack.Push(this.ReadOperator(false));
-                            state = ExpressionParseState.FoundOpenParenthesis;
-                        }
-                        else if (token.Type == TokenType.CloseParenthesis) {
-                            throw new InvalidOperationException("Expected token.");
-                        }
-                        else if (this.IsOperator(token)) {
-                            stack.Push(this.ReadOperator(true));
-                            state = ExpressionParseState.FoundOperator;
+                            stack.Push(this.ReadOperator(token.Type != TokenType.OpenParenthesis));
+                            state = ExpressionParseState.Start;
                         }
                         else {
                             cont = false;
@@ -342,10 +292,7 @@ namespace ArkeOS.Tools.KohlCompiler {
                         break;
 
                     case ExpressionParseState.FoundCloseParenthesis:
-                        if (token.Type == TokenType.Number) {
-                            throw new InvalidOperationException("Expected token.");
-                        }
-                        else if (token.Type == TokenType.OpenParenthesis) {
+                        if (token.Type == TokenType.Number || token.Type == TokenType.OpenParenthesis) {
                             throw new InvalidOperationException("Expected token.");
                         }
                         else if (token.Type == TokenType.CloseParenthesis) {
@@ -354,7 +301,7 @@ namespace ArkeOS.Tools.KohlCompiler {
                         }
                         else if (this.IsOperator(token)) {
                             stack.Push(this.ReadOperator(false));
-                            state = ExpressionParseState.FoundOperator;
+                            state = ExpressionParseState.Start;
                         }
                         else {
                             cont = false;
@@ -413,8 +360,6 @@ namespace ArkeOS.Tools.KohlCompiler {
         private enum ExpressionParseState {
             Start,
             FoundNumber,
-            FoundOperator,
-            FoundOpenParenthesis,
             FoundCloseParenthesis,
         }
     }
