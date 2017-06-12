@@ -214,23 +214,22 @@ namespace ArkeOS.Tools.KohlCompiler {
     }
 
     public abstract class Node {
-        public Node Left { get; }
-        public Node Right { get; }
 
-        protected Node(Node left, Node right) => (this.Left, this.Right) = (left, right);
     }
 
     public class NumberNode : Node {
         public int Value { get; }
 
         public NumberNode(Token token) : this(token, false) { }
-        public NumberNode(Token token, bool isNegative) : base(null, null) => this.Value = int.Parse(token.Value) * (isNegative ? -1 : 1);
+        public NumberNode(Token token, bool isNegative) => this.Value = int.Parse(token.Value) * (isNegative ? -1 : 1);
     }
 
-    public class OperationNode : Node {
+    public class BinaryOperationNode : Node {
+        public Node Left { get; }
+        public Node Right { get; }
         public Operation Operation { get; }
 
-        public OperationNode(Node left, Node right, Operation operation) : base(left, right) => this.Operation = operation;
+        public BinaryOperationNode(Node left, Node right, Operation operation) => (this.Left, this.Right, this.Operation) = (left, right, operation);
     }
 
     public class Parser {
@@ -315,7 +314,7 @@ namespace ArkeOS.Tools.KohlCompiler {
             var r = this.outputStack.Pop();
             var l = this.outputStack.Pop();
 
-            this.outputStack.Push(new OperationNode(l, r, this.operatorStack.Pop()));
+            this.outputStack.Push(new BinaryOperationNode(l, r, this.operatorStack.Pop()));
         }
     }
 
@@ -331,7 +330,7 @@ namespace ArkeOS.Tools.KohlCompiler {
                 case NumberNode n:
                     return n.Value;
 
-                case OperationNode n:
+                case BinaryOperationNode n:
                     var a = this.Calculate(n.Left);
                     var b = this.Calculate(n.Right);
 
