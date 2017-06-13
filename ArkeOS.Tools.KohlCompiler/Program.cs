@@ -1,5 +1,7 @@
-﻿using System;
+﻿using ArkeOS.Hardware.Architecture;
+using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 
@@ -7,10 +9,10 @@ namespace ArkeOS.Tools.KohlCompiler {
     public static class Program {
         public static void Main() => Console.WriteLine(new List<(string source, int result)> {
             ("3 ^ 2 ^ 3", 6561),
-            ("4 + 10 - 6 * 4 / 2 % 3 ^ 2", 11),
-            ("-4 - -10 + 2 - 4 + +2", 6),
-            ("0xAB_cD + 1 + -0b010_1 + 0d_12345_", 56322),
-            ("1 * (2 + 3) - 9 * 7 / (4 - -3) + +3 ^ (0xC + 3 + (1_1 % 6) / (6 - -(2 - 3)) * 3)", 387_420_485),
+            //("4 + 10 - 6 * 4 / 2 % 3 ^ 2", 11),
+            //("-4 - -10 + 2 - 4 + +2", 6),
+            //("0xAB_cD + 1 + -0b010_1 + 0d_12345_", 56322),
+            //("1 * (2 + 3) - 9 * 7 / (4 - -3) + +3 ^ (0xC + 3 + (1_1 % 6) / (6 - -(2 - 3)) * 3)", 387_420_485),
         }.All(t => new Compiler(t.source).Compile() == t.result));
     }
 
@@ -26,7 +28,7 @@ namespace ArkeOS.Tools.KohlCompiler {
             var tree = parser.Parse();
             var emitter = new Emitter(tree);
 
-            return emitter.Emit();
+            return emitter.Emit("..\\Images\\Kohl.asm");
         }
     }
 
@@ -370,20 +372,74 @@ namespace ArkeOS.Tools.KohlCompiler {
     }
 
     public class Emitter {
+        private List<Instruction> instructions = new List<Instruction>();
         private readonly Node tree;
 
         public Emitter(Node tree) => this.tree = tree;
 
-        public long Emit() => this.Calculate(this.tree);
+        public long Emit(string outputFile) {
+            this.instructions.Add(new Instruction(InstructionDefinition.Find("BRK").Code, new List<Parameter> { }, null, false));
+            this.instructions.Add(new Instruction(InstructionDefinition.Find("SET").Code, new List<Parameter> { new Parameter { Type = ParameterType.Register, Register = Register.RSP }, new Parameter { Type = ParameterType.Literal, Literal = 0x10000 } }, null, false));
+
+            var res = this.Calculate(this.tree);
+
+            this.instructions.Add(new Instruction(InstructionDefinition.Find("SET").Code, new List<Parameter> { new Parameter { Type = ParameterType.Register, Register = Register.R0 }, new Parameter { Type = ParameterType.Stack } }, null, false));
+            this.instructions.Add(new Instruction(InstructionDefinition.Find("HLT").Code, new List<Parameter> { }, null, false));
+
+            var str =
+@"CONST 0x00000000454B5241
+CPY RZERO $SOF ($EOF + -$SOF)
+SET RIP RZERO
+LABEL SOF
+SET RSP 0x10000
+";
+
+            foreach (var i in instructions) {
+                str += i.ToString() + "\r\n";
+            }
+
+            str += "LABEL EOF\r\n";
+
+            //using (var stream = new MemoryStream()) {
+            //    using (var writer = new BinaryWriter(stream)) {
+            //        writer.Write(0x00000000454B5241UL);
+            //
+            //        foreach (var inst in this.instructions)
+            //            inst.Encode(writer);
+            //
+            //        File.WriteAllBytes(Path.ChangeExtension(outputFile, "bin"), stream.ToArray());
+            //    }
+            //}
+
+            File.WriteAllText(Path.ChangeExtension(outputFile, "asm"), str);
+
+            return res;
+        }
 
         private long Calculate(Node node) {
+            var stackParam = new Parameter { Type = ParameterType.Stack };
+
             switch (node) {
                 case NumberNode n:
+                    this.instructions.Add(new Instruction(InstructionDefinition.Find("SET").Code, new List<Parameter> { stackParam, new Parameter { Type = ParameterType.Literal, Literal = (ulong)n.Value } }, null, false));
+
                     return n.Value;
 
                 case BinaryOperationNode n:
                     var l = this.Calculate(n.Left);
                     var r = this.Calculate(n.Right);
+                    var inst = "";
+
+                    switch (n.Operator) {
+                        case Operator.Addition: inst = "ADD"; break;
+                        case Operator.Subtraction: inst = "SUB"; break;
+                        case Operator.Multiplication: inst = "MUL"; break;
+                        case Operator.Division: inst = "DIV"; break;
+                        case Operator.Exponentiation: inst = "POW"; break;
+                        case Operator.Remainder: inst = "MOD"; break;
+                    }
+
+                    this.instructions.Add(new Instruction(InstructionDefinition.Find(inst).Code, new List<Parameter> { stackParam, stackParam, stackParam }, null, false));
 
                     switch (n.Operator) {
                         case Operator.Addition: return l + r;
@@ -398,6 +454,9 @@ namespace ArkeOS.Tools.KohlCompiler {
                 case UnaryOperationNode n:
                     var o = this.Calculate(n.Node);
 
+                    if (n.Operator == Operator.UnaryMinus)
+                        this.instructions.Add(new Instruction(InstructionDefinition.Find("MUL").Code, new List<Parameter> { stackParam, stackParam, new Parameter { Type = ParameterType.Literal, Literal = unchecked((ulong)(-1)) } }, null, false));
+
                     switch (n.Operator) {
                         case Operator.UnaryPlus: return o;
                         case Operator.UnaryMinus: return -o;
@@ -408,6 +467,7 @@ namespace ArkeOS.Tools.KohlCompiler {
                 default:
                     throw new InvalidOperationException("Unexpected node.");
             }
+
         }
     }
 }
