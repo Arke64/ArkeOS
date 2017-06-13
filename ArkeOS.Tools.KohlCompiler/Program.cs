@@ -256,31 +256,20 @@ namespace ArkeOS.Tools.KohlCompiler {
             var start = true;
 
             while (this.tokens.Peek(out var token)) {
-                if (start) {
-                    if (token.Type == TokenType.Number) {
-                        stack.Push(this.ReadNumber());
-                        start = false;
-                    }
-                    else if (this.IsOperator(token)) {
-                        stack.Push(this.ReadOperator(token.Type != TokenType.OpenParenthesis));
-                        start = true;
-                    }
-                    else {
-                        break;
-                    }
+                if (start && token.Type == TokenType.Number) {
+                    stack.Push(this.ReadNumber());
+                    start = false;
+                }
+                else if (!start && token.Type == TokenType.CloseParenthesis) {
+                    stack.Push(this.ReadOperator(false));
+                    start = false;
+                }
+                else if (this.IsOperator(token)) {
+                    stack.Push(this.ReadOperator(start && token.Type != TokenType.OpenParenthesis));
+                    start = true;
                 }
                 else {
-                    if (token.Type == TokenType.CloseParenthesis) {
-                        stack.Push(this.ReadOperator(false));
-                        start = false;
-                    }
-                    else if (this.IsOperator(token)) {
-                        stack.Push(this.ReadOperator(false));
-                        start = true;
-                    }
-                    else {
-                        break;
-                    }
+                    break;
                 }
             }
 
