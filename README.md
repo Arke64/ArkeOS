@@ -82,10 +82,12 @@ Math
 - 25 DIVF A B C: Set A to B / C interpreting each as a double precision IEEE 754 value
 - 26 MUL A B C: Set A to B * C
 - 27 MULF A B C: Set A to B * C interpreting each as a double precision IEEE 754 value
-- 28 MOD A B C: Set A to B % C
-- 29 MODF A B C: Set A to B % C interpreting each as a double precision IEEE 754 value
-- 30 ITOF A B: Convert the integer B to a double precision IEEE 754 value and store it in A
-- 31 FTOI A B: Convert the IEEE 754 value in B to a double precision integer and store it in A
+- 28 POW A B C: Set A to B ^ C
+- 29 POWF A B C: Set A to B ^ C interpreting each as a double precision IEEE 754 value
+- 30 MOD A B C: Set A to B % C
+- 31 MODF A B C: Set A to B % C interpreting each as a double precision IEEE 754 value
+- 32 ITOF A B: Convert the integer B to a double precision IEEE 754 value and store it in A
+- 33 FTOI A B: Convert the IEEE 754 value in B to a double precision integer and store it in A
 
 Logic
 -----

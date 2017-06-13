@@ -38,10 +38,12 @@ namespace ArkeOS.Hardware.Architecture {
             InstructionDefinition.Add("DIVF", 25, ParameterDirection.Write, ParameterDirection.Read, ParameterDirection.Read);
             InstructionDefinition.Add("MUL", 26, ParameterDirection.Write, ParameterDirection.Read, ParameterDirection.Read);
             InstructionDefinition.Add("MULF", 27, ParameterDirection.Write, ParameterDirection.Read, ParameterDirection.Read);
-            InstructionDefinition.Add("MOD", 28, ParameterDirection.Write, ParameterDirection.Read, ParameterDirection.Read);
-            InstructionDefinition.Add("MODF", 29, ParameterDirection.Write, ParameterDirection.Read, ParameterDirection.Read);
-            InstructionDefinition.Add("ITOF", 30, ParameterDirection.Write, ParameterDirection.Read);
-            InstructionDefinition.Add("FTOI", 31, ParameterDirection.Write, ParameterDirection.Read);
+            InstructionDefinition.Add("POW", 28, ParameterDirection.Write, ParameterDirection.Read, ParameterDirection.Read);
+            InstructionDefinition.Add("POWF", 29, ParameterDirection.Write, ParameterDirection.Read, ParameterDirection.Read);
+            InstructionDefinition.Add("MOD", 30, ParameterDirection.Write, ParameterDirection.Read, ParameterDirection.Read);
+            InstructionDefinition.Add("MODF", 31, ParameterDirection.Write, ParameterDirection.Read, ParameterDirection.Read);
+            InstructionDefinition.Add("ITOF", 32, ParameterDirection.Write, ParameterDirection.Read);
+            InstructionDefinition.Add("FTOI", 33, ParameterDirection.Write, ParameterDirection.Read);
 
             InstructionDefinition.Add("SR", 40, ParameterDirection.Write, ParameterDirection.Read, ParameterDirection.Read);
             InstructionDefinition.Add("SL", 41, ParameterDirection.Write, ParameterDirection.Read, ParameterDirection.Read);
