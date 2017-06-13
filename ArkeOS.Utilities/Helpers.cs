@@ -5,7 +5,7 @@ namespace ArkeOS.Utilities {
         public static ulong ParseLiteral(string value) {
             var prefix = value.Substring(0, 2);
 
-            value = value.Substring(2).Replace('_', '\0'); ;
+            value = value.Substring(2).Replace("_", string.Empty);
 
             switch (prefix) {
                 case "0x": return Convert.ToUInt64(value, 16);
