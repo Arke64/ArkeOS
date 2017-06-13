@@ -7,28 +7,36 @@ using System.Text;
 
 namespace ArkeOS.Tools.KohlCompiler {
     public static class Program {
-        public static void Main() => Console.WriteLine(new List<(string source, int result)> {
-            ("3 ^ 2 ^ 3", 6561),
-            //("4 + 10 - 6 * 4 / 2 % 3 ^ 2", 11),
-            //("-4 - -10 + 2 - 4 + +2", 6),
-            //("0xAB_cD + 1 + -0b010_1 + 0d_12345_", 56322),
-            //("1 * (2 + 3) - 9 * 7 / (4 - -3) + +3 ^ (0xC + 3 + (1_1 % 6) / (6 - -(2 - 3)) * 3)", 387_420_485),
-        }.All(t => new Compiler(t.source).Compile() == t.result));
+        public static void Main(string[] args) {
+            if (args.Length < 1) {
+                Console.WriteLine("Need at least one argument: the file to assemble");
+
+                return;
+            }
+
+            var input = args[0];
+
+            if (!File.Exists(input)) {
+                Console.WriteLine("The specified file cannot be found.");
+
+                return;
+            }
+
+            Console.WriteLine(Compiler.Compile(input));
+        }
     }
 
-    public class Compiler {
-        private readonly string source;
+    public static class Compiler {
+        public static long Compile(string file) {
+            var source = File.ReadAllText(file);
 
-        public Compiler(string source) => this.source = source;
-
-        public long Compile() {
-            var lexer = new Lexer(this.source);
+            var lexer = new Lexer(source);
             var tokens = lexer.Lex();
             var parser = new Parser(tokens);
             var tree = parser.Parse();
             var emitter = new Emitter(tree);
 
-            return emitter.Emit("..\\Images\\Kohl.asm");
+            return emitter.Emit(Path.ChangeExtension(file, "bin"));
         }
     }
 

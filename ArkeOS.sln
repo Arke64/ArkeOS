@@ -20,6 +20,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Images", "Images", "{0608B5
 		Images\Boot.bin = Images\Boot.bin
 		Images\FindDevice.asm = Images\FindDevice.asm
 		Images\Kohl.bin = Images\Kohl.bin
+		Images\Kohl.k = Images\Kohl.k
 		Images\TimedLoop.asm = Images\TimedLoop.asm
 		Images\TimedLoop.bin = Images\TimedLoop.bin
 		Images\Typer.asm = Images\Typer.asm
