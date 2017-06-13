@@ -26,7 +26,7 @@ namespace ArkeOS.Hardware.Architecture {
 
             if (this.ConditionalParameter != null) {
                 str += this.ConditionalZero ? "IFZ " : "IFNZ ";
-                str += this.ConditionalParameter.ToString(radix);
+                str += this.ConditionalParameter.ToString(radix) + " ";
             }
 
             return (str + this.Definition.Mnemonic + " " + this.Parameter1?.ToString(radix) + " " + this.Parameter2?.ToString(radix) + " " + this.Parameter3?.ToString(radix)).Trim();
