@@ -29,7 +29,7 @@ namespace ArkeOS.Hardware.Architecture {
                 str += this.ConditionalParameter.ToString(radix);
             }
 
-            return str + (str == string.Empty ? string.Empty : " ") + this.Definition.Mnemonic + " " + this.Parameter1?.ToString(radix) + " " + this.Parameter2?.ToString(radix) + " " + this.Parameter3?.ToString(radix);
+            return (str + this.Definition.Mnemonic + " " + this.Parameter1?.ToString(radix) + " " + this.Parameter2?.ToString(radix) + " " + this.Parameter3?.ToString(radix)).Trim();
         }
 
         public Instruction(byte code, IList<Parameter> parameters, Parameter conditionalParameter, bool conditionalZero) {
