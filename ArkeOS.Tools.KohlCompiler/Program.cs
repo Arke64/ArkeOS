@@ -372,38 +372,34 @@ namespace ArkeOS.Tools.KohlCompiler {
     }
 
     public class Emitter {
-        private List<Instruction> instructions = new List<Instruction>();
+        private readonly List<Instruction> instructions = new List<Instruction>();
         private readonly Node tree;
 
         public Emitter(Node tree) => this.tree = tree;
 
         public long Emit(string outputFile) {
-            var len = new Parameter { Type = ParameterType.Literal, Literal = 12 };
+            var start = new Parameter { Type = ParameterType.Literal, Literal = 0, IsRIPRelative = true };
+            var len = new Parameter { Type = ParameterType.Literal, Literal = 0 };
 
-            var a = new Instruction(InstructionDefinition.Find("CPY").Code, new List<Parameter> { new Parameter { Type = ParameterType.Register, Register = Register.RZERO }, new Parameter { Type = ParameterType.Literal, Literal = 6, IsRIPRelative = true }, len }, null, false);
-            var b = new Instruction(InstructionDefinition.Find("SET").Code, new List<Parameter> { new Parameter { Type = ParameterType.Register, Register = Register.RSP }, new Parameter { Type = ParameterType.Literal, Literal = 0x10000 } }, null, false);
-            var c = new Instruction(InstructionDefinition.Find("SET").Code, new List<Parameter> { new Parameter { Type = ParameterType.Register, Register = Register.RIP }, new Parameter { Type = ParameterType.Register, Register = Register.RZERO } }, null, false);
+            this.instructions.Add(new Instruction(InstructionDefinition.Find("CPY").Code, new List<Parameter> { new Parameter { Type = ParameterType.Register, Register = Register.RZERO }, start, len }, null, false));
+            this.instructions.Add(new Instruction(InstructionDefinition.Find("SET").Code, new List<Parameter> { new Parameter { Type = ParameterType.Register, Register = Register.RSP }, new Parameter { Type = ParameterType.Literal, Literal = 0x10000 } }, null, false));
+            this.instructions.Add(new Instruction(InstructionDefinition.Find("SET").Code, new List<Parameter> { new Parameter { Type = ParameterType.Register, Register = Register.RIP }, new Parameter { Type = ParameterType.Register, Register = Register.RZERO } }, null, false));
+
+            start.Literal = (ulong)this.instructions.Sum(i => i.Length);
 
             var res = this.Calculate(this.tree);
 
-            var d = new Instruction(InstructionDefinition.Find("SET").Code, new List<Parameter> { new Parameter { Type = ParameterType.Register, Register = Register.R0 }, new Parameter { Type = ParameterType.Stack } }, null, false);
-            var e = new Instruction(InstructionDefinition.Find("HLT").Code, new List<Parameter> { }, null, false);
+            this.instructions.Add(new Instruction(InstructionDefinition.Find("SET").Code, new List<Parameter> { new Parameter { Type = ParameterType.Register, Register = Register.R0 }, new Parameter { Type = ParameterType.Stack } }, null, false));
+            this.instructions.Add(new Instruction(InstructionDefinition.Find("HLT").Code, new List<Parameter> { }, null, false));
 
-            len.Literal = (ulong)this.instructions.Sum(i => i.Length) + d.Length + e.Length;
+            len.Literal = (ulong)this.instructions.Sum(i => i.Length) - start.Literal;
 
             using (var stream = new MemoryStream()) {
                 using (var writer = new BinaryWriter(stream)) {
                     writer.Write(0x00000000454B5241UL);
 
-                    a.Encode(writer);
-                    b.Encode(writer);
-                    c.Encode(writer);
-
                     foreach (var inst in this.instructions)
                         inst.Encode(writer);
-
-                    d.Encode(writer);
-                    e.Encode(writer);
 
                     File.WriteAllBytes(Path.ChangeExtension(outputFile, "bin"), stream.ToArray());
                 }
