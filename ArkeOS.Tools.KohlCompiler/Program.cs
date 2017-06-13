@@ -378,40 +378,36 @@ namespace ArkeOS.Tools.KohlCompiler {
         public Emitter(Node tree) => this.tree = tree;
 
         public long Emit(string outputFile) {
-            this.instructions.Add(new Instruction(InstructionDefinition.Find("BRK").Code, new List<Parameter> { }, null, false));
-            this.instructions.Add(new Instruction(InstructionDefinition.Find("SET").Code, new List<Parameter> { new Parameter { Type = ParameterType.Register, Register = Register.RSP }, new Parameter { Type = ParameterType.Literal, Literal = 0x10000 } }, null, false));
+            var len = new Parameter { Type = ParameterType.Literal, Literal = 12 };
+
+            var a = new Instruction(InstructionDefinition.Find("CPY").Code, new List<Parameter> { new Parameter { Type = ParameterType.Register, Register = Register.RZERO }, new Parameter { Type = ParameterType.Literal, Literal = 6, IsRIPRelative = true }, len }, null, false);
+            var b = new Instruction(InstructionDefinition.Find("SET").Code, new List<Parameter> { new Parameter { Type = ParameterType.Register, Register = Register.RSP }, new Parameter { Type = ParameterType.Literal, Literal = 0x10000 } }, null, false);
+            var c = new Instruction(InstructionDefinition.Find("SET").Code, new List<Parameter> { new Parameter { Type = ParameterType.Register, Register = Register.RIP }, new Parameter { Type = ParameterType.Register, Register = Register.RZERO } }, null, false);
 
             var res = this.Calculate(this.tree);
 
-            this.instructions.Add(new Instruction(InstructionDefinition.Find("SET").Code, new List<Parameter> { new Parameter { Type = ParameterType.Register, Register = Register.R0 }, new Parameter { Type = ParameterType.Stack } }, null, false));
-            this.instructions.Add(new Instruction(InstructionDefinition.Find("HLT").Code, new List<Parameter> { }, null, false));
+            var d = new Instruction(InstructionDefinition.Find("SET").Code, new List<Parameter> { new Parameter { Type = ParameterType.Register, Register = Register.R0 }, new Parameter { Type = ParameterType.Stack } }, null, false);
+            var e = new Instruction(InstructionDefinition.Find("HLT").Code, new List<Parameter> { }, null, false);
 
-            var str =
-@"CONST 0x00000000454B5241
-CPY RZERO $SOF ($EOF + -$SOF)
-SET RIP RZERO
-LABEL SOF
-SET RSP 0x10000
-";
+            len.Literal = (ulong)this.instructions.Sum(i => i.Length) + d.Length + e.Length;
 
-            foreach (var i in instructions) {
-                str += i.ToString() + "\r\n";
+            using (var stream = new MemoryStream()) {
+                using (var writer = new BinaryWriter(stream)) {
+                    writer.Write(0x00000000454B5241UL);
+
+                    a.Encode(writer);
+                    b.Encode(writer);
+                    c.Encode(writer);
+
+                    foreach (var inst in this.instructions)
+                        inst.Encode(writer);
+
+                    d.Encode(writer);
+                    e.Encode(writer);
+
+                    File.WriteAllBytes(Path.ChangeExtension(outputFile, "bin"), stream.ToArray());
+                }
             }
-
-            str += "LABEL EOF\r\n";
-
-            //using (var stream = new MemoryStream()) {
-            //    using (var writer = new BinaryWriter(stream)) {
-            //        writer.Write(0x00000000454B5241UL);
-            //
-            //        foreach (var inst in this.instructions)
-            //            inst.Encode(writer);
-            //
-            //        File.WriteAllBytes(Path.ChangeExtension(outputFile, "bin"), stream.ToArray());
-            //    }
-            //}
-
-            File.WriteAllText(Path.ChangeExtension(outputFile, "asm"), str);
 
             return res;
         }
