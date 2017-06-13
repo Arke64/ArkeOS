@@ -16,7 +16,7 @@ namespace ArkeOS.Utilities.Extensions {
     public static class UlongExtensions {
         public static string ToString(this ulong self, int radix) {
             var prefix = radix == 16 ? "0x" :
-                         radix == 10 ? "0d" :
+                         radix == 10 ? "" :
                          radix == 2 ? "0b" :
                          throw new ArgumentException("Invalid radix.", nameof(radix));
 
@@ -26,7 +26,9 @@ namespace ArkeOS.Utilities.Extensions {
 
             str = str.PadLeft(formattedLength, '0');
 
-            return prefix + string.Join("_", Enumerable.Range(0, str.Length / chunkSize).Select(i => str.Substring(i * chunkSize, chunkSize)));
+            str = prefix + string.Join(radix != 10 ? "_" : ",", Enumerable.Range(0, str.Length / chunkSize).Select(i => str.Substring(i * chunkSize, chunkSize))).TrimStart('0');
+
+            return str.Length > (radix != 10 ? 2 : 0) ? str : str + '0';
         }
     }
 }

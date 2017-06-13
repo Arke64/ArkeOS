@@ -95,7 +95,7 @@ namespace ArkeOS.Hosts.UWP {
             foreach (var r in Enum.GetNames(typeof(Register))) {
                 var textbox = (TextBox)this.GetType().GetField(r + "TextBox", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(this);
 
-                this.host.Processor.WriteRegister((Register)Enum.Parse(typeof(Register), r), Convert.ToUInt64(textbox.Text.Substring(2).Replace("_", ""), displayBase));
+                this.host.Processor.WriteRegister((Register)Enum.Parse(typeof(Register), r), Convert.ToUInt64(textbox.Text.Replace("_", "").Replace(",", "").Replace("0b", "").Replace("0x", "").Replace("0d", ""), displayBase));
             }
         }
 
