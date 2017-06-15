@@ -55,6 +55,7 @@ namespace ArkeOS.Tools.KohlCompiler {
         OpenParenthesis,
         CloseParenthesis,
         EqualsSign,
+        Semicolon,
     }
 
     public struct Token {
@@ -184,6 +185,7 @@ namespace ArkeOS.Tools.KohlCompiler {
                         case '(': this.current = new Token(TokenType.OpenParenthesis, c); break;
                         case ')': this.current = new Token(TokenType.CloseParenthesis, c); break;
                         case '=': this.current = new Token(TokenType.EqualsSign, c); break;
+                        case ';': this.current = new Token(TokenType.Semicolon, c); break;
                         default: throw new InvalidOperationException($"Unexpected '{c}'");
                     }
 
@@ -325,6 +327,7 @@ namespace ArkeOS.Tools.KohlCompiler {
             var ident = this.ReadIdentifier();
             this.tokens.Read(TokenType.EqualsSign);
             var exp = this.ReadExpression();
+            this.tokens.Read(TokenType.Semicolon);
 
             return new AssignmentNode(ident, exp);
         }
