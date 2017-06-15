@@ -31,4 +31,8 @@ namespace ArkeOS.Utilities.Extensions {
             return str.Length > (radix != 10 ? 2 : 0) ? str : str + '0';
         }
     }
+
+    public static class StringExtensions {
+        public static T ToEnum<T>(this string self) where T : struct => (T)Enum.Parse(typeof(T), self);
+    }
 }
