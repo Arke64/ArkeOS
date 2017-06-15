@@ -290,10 +290,10 @@ namespace ArkeOS.Tools.KohlCompiler {
     }
 
     public class AssignmentNode : Node {
-        public IdentifierNode Identifier { get; }
+        public IdentifierNode Target { get; }
         public Node Value { get; }
 
-        public AssignmentNode(IdentifierNode identifier, Node value) => (this.Identifier, this.Value) = (identifier, value);
+        public AssignmentNode(IdentifierNode identifier, Node value) => (this.Target, this.Value) = (identifier, value);
     }
 
     public class ProgramNode : Node {
@@ -334,8 +334,12 @@ namespace ArkeOS.Tools.KohlCompiler {
             var start = true;
 
             while (this.tokens.Peek(out var token)) {
-                if (start && token.Type == TokenType.Number) {
-                    stack.Push(this.ReadNumber());
+                if (start && (token.Type == TokenType.Number || token.Type == TokenType.Identifier)) {
+                    if (token.Type == TokenType.Number)
+                        stack.Push(this.ReadNumber());
+                    else
+                        stack.Push(this.ReadIdentifier());
+
                     start = false;
                 }
                 else if (!start && token.Type == TokenType.CloseParenthesis) {
@@ -407,6 +411,7 @@ namespace ArkeOS.Tools.KohlCompiler {
         private readonly Stack<Operator> operatorStack = new Stack<Operator>();
 
         public void Push(NumberNode node) => this.outputStack.Push(node);
+        public void Push(IdentifierNode node) => this.outputStack.Push(node);
 
         public void Push(Operator op) {
             if (op == Operator.CloseParenthesis) {
@@ -494,12 +499,17 @@ namespace ArkeOS.Tools.KohlCompiler {
                 case AssignmentNode n:
                     this.Visit(n.Value);
 
-                    this.instructions.Add(new Instruction(InstructionDefinition.Find("SET").Code, new List<Parameter> { new Parameter { Type = ParameterType.Register, Register = n.Identifier.Identifier.ToEnum<Register>() }, Emitter.StackParam }, null, false));
+                    this.instructions.Add(new Instruction(InstructionDefinition.Find("SET").Code, new List<Parameter> { new Parameter { Type = ParameterType.Register, Register = n.Target.Identifier.ToEnum<Register>() }, Emitter.StackParam }, null, false));
 
                     break;
 
                 case NumberNode n:
                     this.instructions.Add(new Instruction(InstructionDefinition.Find("SET").Code, new List<Parameter> { Emitter.StackParam, new Parameter { Type = ParameterType.Literal, Literal = (ulong)n.Number } }, null, false));
+
+                    break;
+
+                case IdentifierNode n:
+                    this.instructions.Add(new Instruction(InstructionDefinition.Find("SET").Code, new List<Parameter> { Emitter.StackParam, new Parameter { Type = ParameterType.Register, Register = n.Identifier.ToEnum<Register>() } }, null, false));
 
                     break;
 
