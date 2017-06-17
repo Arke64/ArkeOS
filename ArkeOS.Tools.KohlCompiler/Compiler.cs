@@ -1,17 +1,28 @@
-﻿using System.IO;
+﻿using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 
 namespace ArkeOS.Tools.KohlCompiler {
-    public static class Compiler {
-        public static void Compile(string file) {
-            var source = File.ReadAllText(file);
+    public class Compiler {
+        private readonly IList<string> files = new List<string>();
 
-            var lexer = new Lexer(source);
+        public string OutputName { get; set; } = "Kohl.bin";
+        public bool Optimize { get; set; } = true;
+        public bool EmitAssemblyListing { get; set; } = false;
+        public bool EmitBootable { get; set; } = true;
+
+        public void AddSource(string file) => this.files.Add(file);
+
+        public void Compile() {
+            var sources = this.files.Select(f => File.ReadAllText(f));
+
+            var lexer = new Lexer(sources.First());
             var tokens = lexer.GetStream();
             var parser = new Parser(tokens);
             var tree = parser.Parse();
             var emitter = new Emitter(tree);
 
-            emitter.Emit(Path.ChangeExtension(file, "bin"));
+            emitter.Emit(this.OutputName);
         }
     }
 }
