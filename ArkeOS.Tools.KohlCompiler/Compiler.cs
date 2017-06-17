@@ -14,13 +14,10 @@ namespace ArkeOS.Tools.KohlCompiler {
         public void AddSource(string file) => this.files.Add(file);
 
         public void Compile() {
-            var sources = this.files.Select(f => File.ReadAllText(f));
-
-            var lexer = new Lexer(sources.First());
-            var tokens = lexer.GetStream();
-            var parser = new Parser(tokens);
-            var tree = parser.Parse();
-            var emitter = new Emitter(tree);
+            var sources = this.files.Select(f => File.ReadAllText(f)).ToList();
+            var lexer = new Lexer(sources);
+            var parser = new Parser(lexer.GetStream());
+            var emitter = new Emitter(parser.Parse());
 
             emitter.Emit(this.OutputName);
         }

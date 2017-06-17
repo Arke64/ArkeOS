@@ -8,26 +8,44 @@ namespace ArkeOS.Tools.KohlCompiler {
         private static IReadOnlyDictionary<int, char[]> ValidDigitsForBase { get; } = new Dictionary<int, char[]> { [2] = new[] { '0', '1' }, [8] = new[] { '0', '1', '2', '3', '4', '5', '6', '7' }, [10] = new[] { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9' }, [16] = new[] { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f', 'A', 'B', 'C', 'D', 'E', 'F' } };
 
         private readonly TokenStream stream;
-        private readonly string source;
-        private readonly int length;
+        private readonly IReadOnlyList<string> sources;
+        private readonly int[] lengths;
+        private string currentSource;
+        private int currentLength;
+        private int sourceIndex;
         private int index;
         private Token current;
-        private bool currentValid;
 
-        public Lexer(string source) {
+        public Lexer(IReadOnlyList<string> sources) {
             this.stream = new TokenStream(this);
-            this.source = source;
-            this.length = source.Length;
+            this.sources = sources;
+            this.lengths = sources.Select(s => s.Length).ToArray();
+            this.currentSource = this.sources[0];
+            this.currentLength = this.lengths[0];
+            this.sourceIndex = 0;
             this.index = 0;
 
             this.LexNextToken();
         }
 
-        private void Advance() => this.index++;
+        private void Advance() {
+            if (++this.index >= this.currentLength) {
+                this.index = 0;
+
+                if (++this.sourceIndex < this.sources.Count) {
+                    this.currentSource = this.sources[this.sourceIndex];
+                    this.currentLength = this.lengths[this.sourceIndex];
+                }
+                else {
+                    this.currentSource = string.Empty;
+                    this.currentLength = 0;
+                }
+            }
+        }
 
         private bool Peek(out char value) {
-            if (this.index < this.length) {
-                value = this.source[this.index];
+            if (this.index < this.currentLength) {
+                value = this.currentSource[this.index];
 
                 return true;
             }
@@ -128,11 +146,9 @@ namespace ArkeOS.Tools.KohlCompiler {
                     this.Advance();
                 }
 
-                this.currentValid = true;
             }
             else {
                 this.current = default(Token);
-                this.currentValid = false;
             }
         }
 
@@ -148,7 +164,7 @@ namespace ArkeOS.Tools.KohlCompiler {
         public bool PeekNext(out Token token) {
             token = this.current;
 
-            return this.currentValid;
+            return this.index < this.currentLength;
         }
 
         public TokenStream GetStream() => this.stream;
