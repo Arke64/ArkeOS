@@ -49,7 +49,7 @@ namespace ArkeOS.Tools.KohlCompiler {
                     stack.Push(this.ReadOperator(false), this.lexer.CurrentPosition);
                     start = false;
                 }
-                else if (this.IsOperator(token)) {
+                else if (token.IsOperator()) {
                     stack.Push(this.ReadOperator(start && token.Type != TokenType.OpenParenthesis), this.lexer.CurrentPosition);
                     start = true;
                 }
@@ -65,7 +65,7 @@ namespace ArkeOS.Tools.KohlCompiler {
         private IdentifierNode ReadIdentifier() => this.lexer.Read(TokenType.Identifier, out var token) ? new IdentifierNode(token) : throw this.GetExpectedTokenExceptionAtCurrent(TokenType.Identifier);
 
         private OperatorNode ReadOperator(bool unary) {
-            if (!this.lexer.Read(this.IsOperator, out var token))
+            if (!this.lexer.Read(t => t.IsOperator(), out var token))
                 throw this.GetExpectedTokenExceptionAtCurrent("operator");
 
             var res = default(Operator);
@@ -92,22 +92,6 @@ namespace ArkeOS.Tools.KohlCompiler {
             }
 
             return new OperatorNode(res);
-        }
-
-        private bool IsOperator(Token token) {
-            switch (token.Type) {
-                case TokenType.Plus:
-                case TokenType.Minus:
-                case TokenType.Asterisk:
-                case TokenType.ForwardSlash:
-                case TokenType.Percent:
-                case TokenType.Caret:
-                case TokenType.OpenParenthesis:
-                case TokenType.CloseParenthesis:
-                    return true;
-            }
-
-            return false;
         }
 
         private UnexpectedTokenException GetUnexpectedTokenExceptionAtCurrent(TokenType t) => new UnexpectedTokenException(this.lexer.CurrentPosition, t);
