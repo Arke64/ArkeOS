@@ -25,13 +25,19 @@
 
 	R0 = RONE;
 
-	if (R0)
+	if (R0 == R0)
 		R1 = 12;
 
-	if (R0) {
+	if (RZERO < RONE) {
 		R2 = 34;
 		R3 = 45;
 	}
+
+	if (RONE & RMAX)
+		R7 = 13;
+
+	if (RONE & RZERO)
+		R8 = 13;
 
 	if (RZERO) {
 		R4 = 56;

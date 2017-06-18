@@ -5,30 +5,25 @@ using System.Linq;
 
 namespace ArkeOS.Tools.KohlCompiler {
     public class ExpressionStack {
-        private static IReadOnlyDictionary<Operator, int> Precedences { get; } = new Dictionary<Operator, int> { [Operator.Addition] = 0, [Operator.Subtraction] = 0, [Operator.Multiplication] = 1, [Operator.Division] = 1, [Operator.Remainder] = 1, [Operator.Exponentiation] = 2, [Operator.UnaryMinus] = 3, [Operator.UnaryPlus] = 3, [Operator.OpenParenthesis] = -1, [Operator.CloseParenthesis] = -1 };
-        private static IReadOnlyDictionary<Operator, bool> LeftAssociative { get; } = new Dictionary<Operator, bool> { [Operator.Addition] = true, [Operator.Subtraction] = true, [Operator.Multiplication] = true, [Operator.Division] = true, [Operator.Remainder] = true, [Operator.Exponentiation] = false, [Operator.UnaryMinus] = false, [Operator.UnaryPlus] = false, [Operator.OpenParenthesis] = true, [Operator.CloseParenthesis] = true };
-
         private readonly Stack<ExpressionNode> outputStack = new Stack<ExpressionNode>();
         private readonly Stack<(OperatorNode, PositionInfo)> operatorStack = new Stack<(OperatorNode, PositionInfo)>();
 
-        private Operator PeekOperator() => this.operatorStack.Peek().Item1.Operator;
+        private OperatorNode PeekOperator() => this.operatorStack.Peek().Item1;
 
         public void Push(ExpressionNode node) => this.outputStack.Push(node);
 
         public void Push(OperatorNode node, PositionInfo position) {
-            var op = node.Operator;
-
-            if (op == Operator.CloseParenthesis) {
-                while (this.operatorStack.Any() && this.PeekOperator() != Operator.OpenParenthesis)
+            if (node.Operator == Operator.CloseParenthesis) {
+                while (this.operatorStack.Any() && this.PeekOperator().Operator != Operator.OpenParenthesis)
                     this.Reduce();
 
                 this.operatorStack.Pop();
             }
-            else if (op == Operator.OpenParenthesis) {
+            else if (node.Operator == Operator.OpenParenthesis) {
                 this.operatorStack.Push((node, position));
             }
             else {
-                while (this.operatorStack.Any() && ((ExpressionStack.Precedences[this.PeekOperator()] > ExpressionStack.Precedences[op]) || (ExpressionStack.Precedences[this.PeekOperator()] == ExpressionStack.Precedences[op] && ExpressionStack.LeftAssociative[op])))
+                while (this.operatorStack.Any() && ((this.PeekOperator().Precedence > node.Precedence) || (this.PeekOperator().Precedence == node.Precedence && node.IsLeftAssociative)))
                     this.Reduce();
 
                 this.operatorStack.Push((node, position));

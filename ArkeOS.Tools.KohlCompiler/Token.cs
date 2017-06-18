@@ -60,12 +60,30 @@
 
         public bool IsOperator() {
             switch (this.Type) {
+                case TokenType.EqualsSign:
+                case TokenType.DoubleEqualsSign:
+                case TokenType.ExclamationPoint:
+                case TokenType.Ampersand:
+                case TokenType.Pipe:
+                case TokenType.Tilde:
+                case TokenType.ExclamationPointAmpersand:
+                case TokenType.ExclamationPointPipe:
+                case TokenType.ExclamationPointTilde:
+                case TokenType.ExclamationPointEqualsSign:
+                case TokenType.LessThan:
+                case TokenType.LessThanEqualsSign:
+                case TokenType.DoubleLessThan:
+                case TokenType.TripleLessThan:
+                case TokenType.GreaterThan:
+                case TokenType.GreaterThanEqualsSign:
+                case TokenType.DoubleGreaterThan:
+                case TokenType.TripleGreaterThan:
                 case TokenType.Plus:
                 case TokenType.Minus:
                 case TokenType.Asterisk:
                 case TokenType.ForwardSlash:
-                case TokenType.Percent:
                 case TokenType.Caret:
+                case TokenType.Percent:
                 case TokenType.OpenParenthesis:
                 case TokenType.CloseParenthesis:
                     return true;

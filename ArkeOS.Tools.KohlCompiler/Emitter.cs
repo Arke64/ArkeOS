@@ -173,15 +173,36 @@ namespace ArkeOS.Tools.KohlCompiler {
                     this.Visit(n.Left);
                     this.Visit(n.Right);
 
+                    var def = default(InstructionDefinition);
+
                     switch (n.Op.Operator) {
-                        case Operator.Addition: this.Emit(InstructionDefinition.ADD, Emitter.StackParam, Emitter.StackParam, Emitter.StackParam); break;
-                        case Operator.Subtraction: this.Emit(InstructionDefinition.SUB, Emitter.StackParam, Emitter.StackParam, Emitter.StackParam); break;
-                        case Operator.Multiplication: this.Emit(InstructionDefinition.MUL, Emitter.StackParam, Emitter.StackParam, Emitter.StackParam); break;
-                        case Operator.Division: this.Emit(InstructionDefinition.DIV, Emitter.StackParam, Emitter.StackParam, Emitter.StackParam); break;
-                        case Operator.Exponentiation: this.Emit(InstructionDefinition.POW, Emitter.StackParam, Emitter.StackParam, Emitter.StackParam); break;
-                        case Operator.Remainder: this.Emit(InstructionDefinition.MOD, Emitter.StackParam, Emitter.StackParam, Emitter.StackParam); break;
+                        case Operator.Addition: def = InstructionDefinition.ADD; break;
+                        case Operator.Subtraction: def = InstructionDefinition.SUB; break;
+                        case Operator.Multiplication: def = InstructionDefinition.MUL; break;
+                        case Operator.Division: def = InstructionDefinition.DIV; break;
+                        case Operator.Remainder: def = InstructionDefinition.MOD; break;
+                        case Operator.Exponentiation: def = InstructionDefinition.POW; break;
+                        case Operator.ShiftLeft: def = InstructionDefinition.SL; break;
+                        case Operator.ShiftRight: def = InstructionDefinition.SR; break;
+                        case Operator.RotateLeft: def = InstructionDefinition.RL; break;
+                        case Operator.RotateRight: def = InstructionDefinition.RR; break;
+                        case Operator.And: def = InstructionDefinition.AND; break;
+                        case Operator.Or: def = InstructionDefinition.OR; break;
+                        case Operator.Xor: def = InstructionDefinition.XOR; break;
+                        case Operator.NotAnd: def = InstructionDefinition.NAND; break;
+                        case Operator.NotOr: def = InstructionDefinition.NOR; break;
+                        case Operator.NotXor: def = InstructionDefinition.NXOR; break;
+                        case Operator.Equals: def = InstructionDefinition.EQ; break;
+                        case Operator.NotEquals: def = InstructionDefinition.NEQ; break;
+                        case Operator.LessThan: def = InstructionDefinition.LT; break;
+                        case Operator.LessThanOrEqual: def = InstructionDefinition.LTE; break;
+                        case Operator.GreaterThan: def = InstructionDefinition.GT; break;
+                        case Operator.GreaterThanOrEqual: def = InstructionDefinition.GTE; break;
+
                         default: Debug.Assert(false); break;
                     }
+
+                    this.Emit(def, Emitter.StackParam, Emitter.StackParam, Emitter.StackParam);
 
                     break;
 
@@ -191,6 +212,7 @@ namespace ArkeOS.Tools.KohlCompiler {
                     switch (n.Op.Operator) {
                         case Operator.UnaryPlus: break;
                         case Operator.UnaryMinus: this.Emit(InstructionDefinition.MUL, Emitter.StackParam, Emitter.StackParam, Parameter.CreateLiteral(ulong.MaxValue)); break;
+                        case Operator.Not: this.Emit(InstructionDefinition.NOT, Emitter.StackParam, Emitter.StackParam); break;
                         default: Debug.Assert(false); break;
                     }
 

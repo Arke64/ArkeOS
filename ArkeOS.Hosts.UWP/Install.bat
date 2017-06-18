@@ -37,7 +37,7 @@ IF "%Extension%" == ".k" (
         GOTO :EOF
     )
 
-    dotnet "%KohlCompiler%" "%ScriptRoot%..\Images\%Disk%.k"
+    dotnet "%KohlCompiler%" "%ScriptRoot%..\Images\%Disk%.bin" "%ScriptRoot%..\Images\%Disk%.k"
 ) ELSE (IF "%Extension%" == ".asm" (
     dotnet "%Assembler%" "%ScriptRoot%..\Images\%Disk%.asm"
 ))

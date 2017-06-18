@@ -242,6 +242,22 @@ namespace ArkeOS.Tools.KohlCompiler {
                     case TokenType.ForwardSlash: res = Operator.Division; break;
                     case TokenType.Percent: res = Operator.Remainder; break;
                     case TokenType.Caret: res = Operator.Exponentiation; break;
+                    case TokenType.DoubleLessThan: res = Operator.ShiftLeft; break;
+                    case TokenType.DoubleGreaterThan: res = Operator.ShiftRight; break;
+                    case TokenType.TripleLessThan: res = Operator.RotateLeft; break;
+                    case TokenType.TripleGreaterThan: res = Operator.RotateRight; break;
+                    case TokenType.Ampersand: res = Operator.And; break;
+                    case TokenType.Pipe: res = Operator.Or; break;
+                    case TokenType.Tilde: res = Operator.Xor; break;
+                    case TokenType.ExclamationPointAmpersand: res = Operator.NotAnd; break;
+                    case TokenType.ExclamationPointPipe: res = Operator.NotOr; break;
+                    case TokenType.ExclamationPointTilde: res = Operator.NotXor; break;
+                    case TokenType.DoubleEqualsSign: res = Operator.Equals; break;
+                    case TokenType.ExclamationPointEqualsSign: res = Operator.NotEquals; break;
+                    case TokenType.LessThan: res = Operator.LessThan; break;
+                    case TokenType.LessThanEqualsSign: res = Operator.LessThanOrEqual; break;
+                    case TokenType.GreaterThan: res = Operator.GreaterThan; break;
+                    case TokenType.GreaterThanEqualsSign: res = Operator.GreaterThanOrEqual; break;
                     case TokenType.OpenParenthesis: res = Operator.OpenParenthesis; break;
                     case TokenType.CloseParenthesis: res = Operator.CloseParenthesis; break;
                     default: throw this.GetUnexpectedTokenExceptionAtCurrent(token.Type);
@@ -251,6 +267,7 @@ namespace ArkeOS.Tools.KohlCompiler {
                 switch (token.Type) {
                     case TokenType.Plus: res = Operator.UnaryPlus; break;
                     case TokenType.Minus: res = Operator.UnaryMinus; break;
+                    case TokenType.ExclamationPoint: res = Operator.Not; break;
                     default: throw this.GetUnexpectedTokenExceptionAtCurrent(token.Type);
                 }
             }
