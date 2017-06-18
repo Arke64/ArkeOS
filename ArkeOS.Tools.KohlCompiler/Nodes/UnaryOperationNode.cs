@@ -1,10 +1,8 @@
 ﻿namespace ArkeOS.Tools.KohlCompiler.Nodes {
     public class UnaryOperationNode : Node {
         public Node Node { get; }
-        public Operator Operator { get; }
+        public OperatorNode Op { get; }
 
-        public UnaryOperationNode(Node node, Operator op) => (this.Node, this.Operator) = (node, op);
-
-        public static bool IsValidOperator(Operator op) => op == Operator.UnaryMinus || op == Operator.UnaryPlus;
+        public UnaryOperationNode(Node node, OperatorNode op) => (this.Node, this.Op) = (node, op);
     }
 }

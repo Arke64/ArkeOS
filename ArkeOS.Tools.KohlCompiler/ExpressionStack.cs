@@ -9,26 +9,30 @@ namespace ArkeOS.Tools.KohlCompiler {
         private static IReadOnlyDictionary<Operator, bool> LeftAssociative { get; } = new Dictionary<Operator, bool> { [Operator.Addition] = true, [Operator.Subtraction] = true, [Operator.Multiplication] = true, [Operator.Division] = true, [Operator.Remainder] = true, [Operator.Exponentiation] = false, [Operator.UnaryMinus] = false, [Operator.UnaryPlus] = false, [Operator.OpenParenthesis] = true, [Operator.CloseParenthesis] = true };
 
         private readonly Stack<Node> outputStack = new Stack<Node>();
-        private readonly Stack<Operator> operatorStack = new Stack<Operator>();
+        private readonly Stack<(OperatorNode, PositionInfo)> operatorStack = new Stack<(OperatorNode, PositionInfo)>();
+
+        private Operator PeekOperator() => this.operatorStack.Peek().Item1.Operator;
 
         public void Push(NumberNode node) => this.outputStack.Push(node);
         public void Push(IdentifierNode node) => this.outputStack.Push(node);
 
-        public void Push(Operator op) {
+        public void Push(OperatorNode node, PositionInfo position) {
+            var op = node.Operator;
+
             if (op == Operator.CloseParenthesis) {
-                while (this.operatorStack.Any() && this.operatorStack.Peek() != Operator.OpenParenthesis)
+                while (this.operatorStack.Any() && this.PeekOperator() != Operator.OpenParenthesis)
                     this.Reduce();
 
                 this.operatorStack.Pop();
             }
             else if (op == Operator.OpenParenthesis) {
-                this.operatorStack.Push(op);
+                this.operatorStack.Push((node, position));
             }
             else {
-                while (this.operatorStack.Any() && ((ExpressionStack.Precedences[this.operatorStack.Peek()] > ExpressionStack.Precedences[op]) || (ExpressionStack.Precedences[this.operatorStack.Peek()] == ExpressionStack.Precedences[op] && ExpressionStack.LeftAssociative[op])))
+                while (this.operatorStack.Any() && ((ExpressionStack.Precedences[this.PeekOperator()] > ExpressionStack.Precedences[op]) || (ExpressionStack.Precedences[this.PeekOperator()] == ExpressionStack.Precedences[op] && ExpressionStack.LeftAssociative[op])))
                     this.Reduce();
 
-                this.operatorStack.Push(op);
+                this.operatorStack.Push((node, position));
             }
         }
 
@@ -36,28 +40,29 @@ namespace ArkeOS.Tools.KohlCompiler {
             while (this.operatorStack.Any())
                 this.Reduce();
 
-            if (this.outputStack.Count != 1) throw new ExpectedTokenException("", 0, 0, "operand");
-
-            return this.outputStack.Single();
+            return this.outputStack.SingleOrDefault();
         }
 
         private void Reduce() {
-            if (this.operatorStack.Count < 1) throw new ExpectedTokenException("", 0, 0, "operator");
-
             var op = this.operatorStack.Pop();
 
-            if (!UnaryOperationNode.IsValidOperator(op)) {
-                if (this.outputStack.Count < 2) throw new ExpectedTokenException("", 0, 0, "operand");
+            switch (OperatorNode.GetOperatorClass(op.Item1.Operator)) {
+                case OperatorClass.Binary:
+                    if (this.outputStack.Count < 2) throw new ExpectedTokenException(op.Item2, "operand");
 
-                var r = this.outputStack.Pop();
-                var l = this.outputStack.Pop();
+                    var r = this.outputStack.Pop();
+                    var l = this.outputStack.Pop();
 
-                this.outputStack.Push(new BinaryOperationNode(l, r, op));
-            }
-            else {
-                if (this.outputStack.Count < 1) throw new ExpectedTokenException("", 0, 0, "operand");
+                    this.outputStack.Push(new BinaryOperationNode(l, r, op.Item1));
 
-                this.outputStack.Push(new UnaryOperationNode(this.outputStack.Pop(), op));
+                    break;
+
+                case OperatorClass.Unary:
+                    if (this.outputStack.Count < 1) throw new ExpectedTokenException(op.Item2, "operand");
+
+                    this.outputStack.Push(new UnaryOperationNode(this.outputStack.Pop(), op.Item1));
+
+                    break;
             }
         }
     }

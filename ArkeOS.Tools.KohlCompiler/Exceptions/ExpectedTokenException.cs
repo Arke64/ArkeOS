@@ -2,7 +2,7 @@
 
 namespace ArkeOS.Tools.KohlCompiler.Exceptions {
     public class ExpectedTokenException : Exception {
-        public ExpectedTokenException(string file, int line, int column, string expected) : base($"Expected token in '{file}' at {line:N0}:{column:N0}: '{expected}'.") { }
-        public ExpectedTokenException(string file, int line, int column, TokenType expected) : this(file, line, column, expected.ToString()) { }
+        public ExpectedTokenException(PositionInfo position, string expected) : base($"Expected token in '{position.File}' at {position.Line:N0}:{position.Column:N0}: '{expected}'.") { }
+        public ExpectedTokenException(PositionInfo position, TokenType expected) : this(position, expected.ToString()) { }
     }
 }

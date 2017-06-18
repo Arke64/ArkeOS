@@ -2,6 +2,6 @@
     public class NumberNode : Node {
         public long Number { get; }
 
-        public NumberNode(string number) => this.Number = long.Parse(number);
+        public NumberNode(Token token) => this.Number = long.Parse(token.Value);
     }
 }

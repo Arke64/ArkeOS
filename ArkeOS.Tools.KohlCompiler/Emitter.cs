@@ -10,12 +10,14 @@ namespace ArkeOS.Tools.KohlCompiler {
     public class Emitter {
         private static Parameter StackParam { get; } = new Parameter { Type = ParameterType.Stack };
 
-        private readonly List<Instruction> instructions = new List<Instruction>();
         private readonly ProgramNode tree;
+        private List<Instruction> instructions;
 
         public Emitter(ProgramNode tree) => this.tree = tree;
 
         public void Emit(string outputFile) {
+            this.instructions = new List<Instruction>();
+
             var start = new Parameter { Type = ParameterType.Literal, Literal = 0, IsRIPRelative = true };
             var len = new Parameter { Type = ParameterType.Literal, Literal = 0 };
 
@@ -37,7 +39,7 @@ namespace ArkeOS.Tools.KohlCompiler {
                     foreach (var inst in this.instructions)
                         inst.Encode(writer);
 
-                    File.WriteAllBytes(Path.ChangeExtension(outputFile, "bin"), stream.ToArray());
+                    File.WriteAllBytes(outputFile, stream.ToArray());
                 }
             }
         }
@@ -73,7 +75,7 @@ namespace ArkeOS.Tools.KohlCompiler {
 
                     var inst = "";
 
-                    switch (n.Operator) {
+                    switch (n.Op.Operator) {
                         case Operator.Addition: inst = "ADD"; break;
                         case Operator.Subtraction: inst = "SUB"; break;
                         case Operator.Multiplication: inst = "MUL"; break;
@@ -89,7 +91,7 @@ namespace ArkeOS.Tools.KohlCompiler {
                 case UnaryOperationNode n:
                     this.Visit(n.Node);
 
-                    switch (n.Operator) {
+                    switch (n.Op.Operator) {
                         case Operator.UnaryPlus: break;
                         case Operator.UnaryMinus: this.instructions.Add(new Instruction(InstructionDefinition.Find("MUL").Code, new List<Parameter> { Emitter.StackParam, Emitter.StackParam, new Parameter { Type = ParameterType.Literal, Literal = unchecked((ulong)(-1)) } }, null, false)); break;
                         default: throw new InvalidOperationException("Unexpected operator.");

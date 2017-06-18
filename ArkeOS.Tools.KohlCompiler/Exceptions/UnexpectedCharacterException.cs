@@ -2,6 +2,6 @@
 
 namespace ArkeOS.Tools.KohlCompiler.Exceptions {
     public class UnexpectedCharacterException : Exception {
-        public UnexpectedCharacterException(string file, int line, int column, char unexpected) : base($"Unexpected character in '{file}' at {line:N0}:{column:N0}: '{unexpected}'.") { }
+        public UnexpectedCharacterException(PositionInfo position, char unexpected) : base($"Unexpected character in '{position.File}' at {position.Line:N0}:{position.Column:N0}: '{unexpected}'.") { }
     }
 }

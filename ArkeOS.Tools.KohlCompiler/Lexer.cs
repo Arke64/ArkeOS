@@ -10,39 +10,32 @@ namespace ArkeOS.Tools.KohlCompiler {
         private static IReadOnlyDictionary<int, char[]> ValidDigitsForBase { get; } = new Dictionary<int, char[]> { [2] = new[] { '0', '1' }, [8] = new[] { '0', '1', '2', '3', '4', '5', '6', '7' }, [10] = new[] { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9' }, [16] = new[] { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f', 'A', 'B', 'C', 'D', 'E', 'F' } };
 
         private readonly TokenStream stream;
-        private readonly IReadOnlyList<string> files;
+        private readonly IReadOnlyList<string> filePaths;
         private readonly IReadOnlyList<string> fileContents;
         private readonly int[] fileLengths;
         private string currentFileContents;
         private int currentFileLength;
         private int fileIndex;
         private int contentsIndex;
-        private int previousFileIndex;
-        private int previousContentsIndex;
         private Token currentToken;
         private bool readLast;
 
-        public Lexer(IReadOnlyList<string> files) {
+        public Lexer(IReadOnlyList<string> filePaths) {
             this.stream = new TokenStream(this);
-            this.files = files;
-            this.fileContents = this.files.Select(f => File.ReadAllText(f)).ToList();
+            this.filePaths = filePaths;
+            this.fileContents = this.filePaths.Select(f => File.ReadAllText(f)).ToList();
             this.fileLengths = this.fileContents.Select(s => s.Length).ToArray();
             this.currentFileContents = this.fileContents[0];
             this.currentFileLength = this.fileLengths[0];
             this.fileIndex = 0;
             this.contentsIndex = 0;
-            this.previousFileIndex = 0;
-            this.previousContentsIndex = 0;
             this.readLast = false;
 
             this.LexNextToken();
         }
 
         private void Advance() {
-            this.previousContentsIndex = this.contentsIndex;
-
             if (++this.contentsIndex >= this.currentFileLength) {
-                this.previousFileIndex = this.fileIndex;
                 this.contentsIndex = 0;
 
                 if (++this.fileIndex < this.fileContents.Count) {
@@ -70,10 +63,13 @@ namespace ArkeOS.Tools.KohlCompiler {
         }
 
         private UnexpectedCharacterException GetUnexpectedCharacterExceptionAtCurrent(char c) {
-            this.GetCurrentPositionInfo(out var file, out var line, out var column);
+            var info = this.GetCurrentPositionInfo();
 
-            return new UnexpectedCharacterException(file, line, column, c);
+            return new UnexpectedCharacterException(info, c);
         }
+
+        private Token NewToken(TokenType t, string s) => new Token(this.GetCurrentPositionInfo(), t, s);
+        private Token NewToken(TokenType t, char c) => new Token(this.GetCurrentPositionInfo(), t, c);
 
         private Token ReadIdentifier() {
             var res = new StringBuilder();
@@ -84,7 +80,7 @@ namespace ArkeOS.Tools.KohlCompiler {
                 res.Append(c);
             }
 
-            return new Token(TokenType.Identifier, res.ToString());
+            return this.NewToken(TokenType.Identifier, res.ToString());
         }
 
         private Token ReadNumber() {
@@ -117,7 +113,7 @@ namespace ArkeOS.Tools.KohlCompiler {
                     res.Append(c);
             }
 
-            return new Token(TokenType.Number, Convert.ToUInt64(res.ToString(), radix).ToString());
+            return this.NewToken(TokenType.Number, Convert.ToUInt64(res.ToString(), radix).ToString());
         }
 
         private Token ReadWhitespace() {
@@ -129,23 +125,23 @@ namespace ArkeOS.Tools.KohlCompiler {
                 res.Append(c);
             }
 
-            return new Token(TokenType.Whitespace, res.ToString());
+            return this.NewToken(TokenType.Whitespace, res.ToString());
         }
 
         private Token ReadSymbol(char c) {
             var res = default(Token);
 
             switch (c) {
-                case '+': res = new Token(TokenType.Plus, c); break;
-                case '-': res = new Token(TokenType.Minus, c); break;
-                case '*': res = new Token(TokenType.Asterisk, c); break;
-                case '/': res = new Token(TokenType.ForwardSlash, c); break;
-                case '^': res = new Token(TokenType.Caret, c); break;
-                case '%': res = new Token(TokenType.Percent, c); break;
-                case '(': res = new Token(TokenType.OpenParenthesis, c); break;
-                case ')': res = new Token(TokenType.CloseParenthesis, c); break;
-                case '=': res = new Token(TokenType.EqualsSign, c); break;
-                case ';': res = new Token(TokenType.Semicolon, c); break;
+                case '+': res = this.NewToken(TokenType.Plus, c); break;
+                case '-': res = this.NewToken(TokenType.Minus, c); break;
+                case '*': res = this.NewToken(TokenType.Asterisk, c); break;
+                case '/': res = this.NewToken(TokenType.ForwardSlash, c); break;
+                case '^': res = this.NewToken(TokenType.Caret, c); break;
+                case '%': res = this.NewToken(TokenType.Percent, c); break;
+                case '(': res = this.NewToken(TokenType.OpenParenthesis, c); break;
+                case ')': res = this.NewToken(TokenType.CloseParenthesis, c); break;
+                case '=': res = this.NewToken(TokenType.EqualsSign, c); break;
+                case ';': res = this.NewToken(TokenType.Semicolon, c); break;
                 default: throw this.GetUnexpectedCharacterExceptionAtCurrent(c);
             }
 
@@ -195,21 +191,19 @@ namespace ArkeOS.Tools.KohlCompiler {
             return !this.AtEnd;
         }
 
-        public bool AtEnd => this.readLast && this.contentsIndex >= this.currentFileLength;
+        public bool AtEnd => /*this.readLast &&*/ this.contentsIndex >= this.currentFileLength;
 
         public TokenStream GetStream() => this.stream;
 
-        public void GetCurrentPositionInfo(out string file, out int line, out int column) {
+        private PositionInfo GetCurrentPositionInfo() {
             var lengths = this.currentFileContents.Split(new[] { Environment.NewLine }, StringSplitOptions.None).Select(l => l.Length).ToArray();
             var idx = 0;
             var ln = 0;
 
-            while (idx + lengths[ln] < this.previousContentsIndex)
+            while (idx + lengths[ln] < this.contentsIndex)
                 idx += lengths[ln++] + Environment.NewLine.Length;
 
-            file = this.files[this.previousFileIndex];
-            line = ln + 1;
-            column = this.previousContentsIndex - idx + 1;
+            return new PositionInfo(this.filePaths[this.fileIndex], ln + 1, this.contentsIndex - idx + 1);
         }
     }
 }

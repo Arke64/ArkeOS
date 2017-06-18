@@ -2,19 +2,6 @@
 using ArkeOS.Tools.KohlCompiler.Nodes;
 
 namespace ArkeOS.Tools.KohlCompiler {
-    public enum Operator {
-        Addition,
-        Subtraction,
-        Multiplication,
-        Division,
-        Remainder,
-        Exponentiation,
-        UnaryPlus,
-        UnaryMinus,
-        OpenParenthesis,
-        CloseParenthesis,
-    }
-
     public class Parser {
         private readonly TokenStream tokens;
 
@@ -57,11 +44,11 @@ namespace ArkeOS.Tools.KohlCompiler {
                     start = false;
                 }
                 else if (!start && token.Type == TokenType.CloseParenthesis) {
-                    stack.Push(this.ReadOperator(false));
+                    stack.Push(this.ReadOperator(false, out var p), p);
                     start = false;
                 }
                 else if (this.IsOperator(token)) {
-                    stack.Push(this.ReadOperator(start && token.Type != TokenType.OpenParenthesis));
+                    stack.Push(this.ReadOperator(start && token.Type != TokenType.OpenParenthesis, out var p), p);
                     start = true;
                 }
                 else {
@@ -72,33 +59,40 @@ namespace ArkeOS.Tools.KohlCompiler {
             return stack.ToNode();
         }
 
-        private NumberNode ReadNumber() => this.tokens.Read(TokenType.Number, out var token) ? new NumberNode(token.Value) : throw this.GetExpectedTokenExceptionAtCurrent(TokenType.Number);
-        private IdentifierNode ReadIdentifier() => this.tokens.Read(TokenType.Identifier, out var token) ? new IdentifierNode(token.Value) : throw this.GetExpectedTokenExceptionAtCurrent(TokenType.Identifier);
+        private NumberNode ReadNumber() => this.tokens.Read(TokenType.Number, out var token) ? new NumberNode(token) : throw this.GetExpectedTokenExceptionAtCurrent(TokenType.Number);
+        private IdentifierNode ReadIdentifier() => this.tokens.Read(TokenType.Identifier, out var token) ? new IdentifierNode(token) : throw this.GetExpectedTokenExceptionAtCurrent(TokenType.Identifier);
+        private OperatorNode ReadOperator(bool unary) => this.ReadOperator(unary, out _);
 
-        private Operator ReadOperator(bool unary) {
+        private OperatorNode ReadOperator(bool unary, out PositionInfo position) {
             if (!this.tokens.Read(this.IsOperator, out var token))
                 throw this.GetExpectedTokenExceptionAtCurrent("operator");
 
+            var res = default(Operator);
+
             if (!unary) {
                 switch (token.Type) {
-                    case TokenType.Plus: return Operator.Addition;
-                    case TokenType.Minus: return Operator.Subtraction;
-                    case TokenType.Asterisk: return Operator.Multiplication;
-                    case TokenType.ForwardSlash: return Operator.Division;
-                    case TokenType.Percent: return Operator.Remainder;
-                    case TokenType.Caret: return Operator.Exponentiation;
-                    case TokenType.OpenParenthesis: return Operator.OpenParenthesis;
-                    case TokenType.CloseParenthesis: return Operator.CloseParenthesis;
+                    case TokenType.Plus: res = Operator.Addition; break;
+                    case TokenType.Minus: res = Operator.Subtraction; break;
+                    case TokenType.Asterisk: res = Operator.Multiplication; break;
+                    case TokenType.ForwardSlash: res = Operator.Division; break;
+                    case TokenType.Percent: res = Operator.Remainder; break;
+                    case TokenType.Caret: res = Operator.Exponentiation; break;
+                    case TokenType.OpenParenthesis: res = Operator.OpenParenthesis; break;
+                    case TokenType.CloseParenthesis: res = Operator.CloseParenthesis; break;
+                    default: throw this.GetUnexpectedTokenExceptionAtCurrent(token.Type);
                 }
             }
             else {
                 switch (token.Type) {
-                    case TokenType.Plus: return Operator.UnaryPlus;
-                    case TokenType.Minus: return Operator.UnaryMinus;
+                    case TokenType.Plus: res = Operator.UnaryPlus; break;
+                    case TokenType.Minus: res = Operator.UnaryMinus; break;
+                    default: throw this.GetUnexpectedTokenExceptionAtCurrent(token.Type);
                 }
             }
 
-            throw this.GetUnexpectedTokenExceptionAtCurrent(token.Type);
+            position = this.tokens.CurrentPosition;
+
+            return new OperatorNode(res);
         }
 
         private bool IsOperator(Token token) {
@@ -117,28 +111,9 @@ namespace ArkeOS.Tools.KohlCompiler {
             return false;
         }
 
-        private UnexpectedTokenException GetUnexpectedTokenExceptionAtCurrent(TokenType t) {
-            this.tokens.GetCurrentPositionInfo(out var file, out var line, out var column);
-
-            return new UnexpectedTokenException(file, line, column, t);
-        }
-
-        private UnexpectedTokenException GetUnexpectedTokenExceptionAtCurrent(string t) {
-            this.tokens.GetCurrentPositionInfo(out var file, out var line, out var column);
-
-            return new UnexpectedTokenException(file, line, column, t);
-        }
-
-        private ExpectedTokenException GetExpectedTokenExceptionAtCurrent(TokenType t) {
-            this.tokens.GetCurrentPositionInfo(out var file, out var line, out var column);
-
-            return new ExpectedTokenException(file, line, column, t);
-        }
-
-        private ExpectedTokenException GetExpectedTokenExceptionAtCurrent(string t) {
-            this.tokens.GetCurrentPositionInfo(out var file, out var line, out var column);
-
-            return new ExpectedTokenException(file, line, column, t);
-        }
+        private UnexpectedTokenException GetUnexpectedTokenExceptionAtCurrent(TokenType t) => new UnexpectedTokenException(this.tokens.CurrentPosition, t);
+        private UnexpectedTokenException GetUnexpectedTokenExceptionAtCurrent(string t) => new UnexpectedTokenException(this.tokens.CurrentPosition, t);
+        private ExpectedTokenException GetExpectedTokenExceptionAtCurrent(TokenType t) => new ExpectedTokenException(this.tokens.CurrentPosition, t);
+        private ExpectedTokenException GetExpectedTokenExceptionAtCurrent(string t) => new ExpectedTokenException(this.tokens.CurrentPosition, t);
     }
 }

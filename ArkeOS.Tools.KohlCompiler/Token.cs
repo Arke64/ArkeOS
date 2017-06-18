@@ -16,11 +16,12 @@
     }
 
     public struct Token {
+        public PositionInfo Position;
         public TokenType Type;
         public string Value;
 
-        public Token(TokenType type, string value) => (this.Type, this.Value) = (type, value);
-        public Token(TokenType type, char value) : this(type, value.ToString()) { }
+        public Token(PositionInfo position, TokenType type, string value) => (this.Position, this.Type, this.Value) = (position, type, value);
+        public Token(PositionInfo position, TokenType type, char value) : this(position, type, value.ToString()) { }
 
         public override string ToString() => $"{this.Type}{(this.Type == TokenType.Number || this.Type == TokenType.Identifier ? ": " + this.Value : string.Empty)}";
     }

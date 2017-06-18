@@ -2,8 +2,8 @@
     public class BinaryOperationNode : Node {
         public Node Left { get; }
         public Node Right { get; }
-        public Operator Operator { get; }
+        public OperatorNode Op { get; }
 
-        public BinaryOperationNode(Node left, Node right, Operator op) => (this.Left, this.Right, this.Operator) = (left, right, op);
+        public BinaryOperationNode(Node left, Node right, OperatorNode op) => (this.Left, this.Right, this.Op) = (left, right, op);
     }
 }

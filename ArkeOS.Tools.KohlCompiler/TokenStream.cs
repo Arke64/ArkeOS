@@ -8,7 +8,7 @@ namespace ArkeOS.Tools.KohlCompiler {
         public TokenStream(Lexer lexer) => this.lexer = lexer;
 
         public bool Peek(out Token value) => this.lexer.PeekNext(out value);
-        public bool Read(out Token value) => this.lexer.ReadNext(out value);
+        public bool Read(out Token value) { bool res = this.lexer.ReadNext(out value); if (res) this.CurrentPosition = value.Position; return res; }
 
         public bool Peek(Func<Token, bool> validator, out Token value) => this.Peek(out value) && validator(value);
         public bool Read(Func<Token, bool> validator, out Token value) => this.Peek(out value) && validator(value) && this.Read(out _);
@@ -20,8 +20,7 @@ namespace ArkeOS.Tools.KohlCompiler {
         public bool Read(TokenType type) => this.Read(type, out _);
 
         public bool AtEnd => this.lexer.AtEnd;
-
-        public void GetCurrentPositionInfo(out string file, out int line, out int column) => this.lexer.GetCurrentPositionInfo(out file, out line, out column);
+        public PositionInfo CurrentPosition { get; private set; }
 
         public List<Token> ToList() {
             var res = new List<Token>();

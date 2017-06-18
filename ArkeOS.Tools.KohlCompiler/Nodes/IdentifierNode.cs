@@ -2,6 +2,6 @@
     public class IdentifierNode : Node {
         public string Identifier { get; }
 
-        public IdentifierNode(string identifier) => this.Identifier = identifier;
+        public IdentifierNode(Token token) => this.Identifier = token.Value;
     }
 }
