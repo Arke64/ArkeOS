@@ -2,8 +2,57 @@
 
 namespace ArkeOS.Hardware.Architecture {
     public class InstructionDefinition {
-        private static Dictionary<string, InstructionDefinition> mnemonics;
-        private static InstructionDefinition[] instructions;
+        private static Dictionary<string, InstructionDefinition> mnemonics = new Dictionary<string, InstructionDefinition>();
+        private static InstructionDefinition[] instructions = new InstructionDefinition[256];
+
+        public static InstructionDefinition HLT { get; } = new InstructionDefinition(nameof(InstructionDefinition.HLT), 0);
+        public static InstructionDefinition NOP { get; } = new InstructionDefinition(nameof(InstructionDefinition.NOP), 1);
+        public static InstructionDefinition INT { get; } = new InstructionDefinition(nameof(InstructionDefinition.INT), 2, ParameterDirection.Read, ParameterDirection.Read, ParameterDirection.Read);
+        public static InstructionDefinition EINT { get; } = new InstructionDefinition(nameof(InstructionDefinition.EINT), 3);
+        public static InstructionDefinition INTE { get; } = new InstructionDefinition(nameof(InstructionDefinition.INTE), 4);
+        public static InstructionDefinition INTD { get; } = new InstructionDefinition(nameof(InstructionDefinition.INTD), 5);
+        public static InstructionDefinition XCHG { get; } = new InstructionDefinition(nameof(InstructionDefinition.XCHG), 6, ParameterDirection.Write | ParameterDirection.Read, ParameterDirection.Write | ParameterDirection.Read);
+        public static InstructionDefinition CAS { get; } = new InstructionDefinition(nameof(InstructionDefinition.CAS), 7, ParameterDirection.Write | ParameterDirection.Read, ParameterDirection.Write | ParameterDirection.Read, ParameterDirection.Read);
+        public static InstructionDefinition SET { get; } = new InstructionDefinition(nameof(InstructionDefinition.SET), 8, ParameterDirection.Write, ParameterDirection.Read);
+        public static InstructionDefinition CPY { get; } = new InstructionDefinition(nameof(InstructionDefinition.CPY), 9, ParameterDirection.Read, ParameterDirection.Read, ParameterDirection.Read);
+        public static InstructionDefinition CALL { get; } = new InstructionDefinition(nameof(InstructionDefinition.CALL), 10, ParameterDirection.Read);
+        public static InstructionDefinition RET { get; } = new InstructionDefinition(nameof(InstructionDefinition.RET), 11);
+
+        public static InstructionDefinition ADD { get; } = new InstructionDefinition(nameof(InstructionDefinition.ADD), 20, ParameterDirection.Write, ParameterDirection.Read, ParameterDirection.Read);
+        public static InstructionDefinition ADDF { get; } = new InstructionDefinition(nameof(InstructionDefinition.ADDF), 21, ParameterDirection.Write, ParameterDirection.Read, ParameterDirection.Read);
+        public static InstructionDefinition SUB { get; } = new InstructionDefinition(nameof(InstructionDefinition.SUB), 22, ParameterDirection.Write, ParameterDirection.Read, ParameterDirection.Read);
+        public static InstructionDefinition SUBF { get; } = new InstructionDefinition(nameof(InstructionDefinition.SUBF), 23, ParameterDirection.Write, ParameterDirection.Read, ParameterDirection.Read);
+        public static InstructionDefinition DIV { get; } = new InstructionDefinition(nameof(InstructionDefinition.DIV), 24, ParameterDirection.Write, ParameterDirection.Read, ParameterDirection.Read);
+        public static InstructionDefinition DIVF { get; } = new InstructionDefinition(nameof(InstructionDefinition.DIVF), 25, ParameterDirection.Write, ParameterDirection.Read, ParameterDirection.Read);
+        public static InstructionDefinition MUL { get; } = new InstructionDefinition(nameof(InstructionDefinition.MUL), 26, ParameterDirection.Write, ParameterDirection.Read, ParameterDirection.Read);
+        public static InstructionDefinition MULF { get; } = new InstructionDefinition(nameof(InstructionDefinition.MULF), 27, ParameterDirection.Write, ParameterDirection.Read, ParameterDirection.Read);
+        public static InstructionDefinition POW { get; } = new InstructionDefinition(nameof(InstructionDefinition.POW), 28, ParameterDirection.Write, ParameterDirection.Read, ParameterDirection.Read);
+        public static InstructionDefinition POWF { get; } = new InstructionDefinition(nameof(InstructionDefinition.POWF), 29, ParameterDirection.Write, ParameterDirection.Read, ParameterDirection.Read);
+        public static InstructionDefinition MOD { get; } = new InstructionDefinition(nameof(InstructionDefinition.MOD), 30, ParameterDirection.Write, ParameterDirection.Read, ParameterDirection.Read);
+        public static InstructionDefinition MODF { get; } = new InstructionDefinition(nameof(InstructionDefinition.MODF), 31, ParameterDirection.Write, ParameterDirection.Read, ParameterDirection.Read);
+        public static InstructionDefinition ITOF { get; } = new InstructionDefinition(nameof(InstructionDefinition.ITOF), 32, ParameterDirection.Write, ParameterDirection.Read);
+        public static InstructionDefinition FTOI { get; } = new InstructionDefinition(nameof(InstructionDefinition.FTOI), 33, ParameterDirection.Write, ParameterDirection.Read);
+
+        public static InstructionDefinition SR { get; } = new InstructionDefinition(nameof(InstructionDefinition.SR), 40, ParameterDirection.Write, ParameterDirection.Read, ParameterDirection.Read);
+        public static InstructionDefinition SL { get; } = new InstructionDefinition(nameof(InstructionDefinition.SL), 41, ParameterDirection.Write, ParameterDirection.Read, ParameterDirection.Read);
+        public static InstructionDefinition RR { get; } = new InstructionDefinition(nameof(InstructionDefinition.RR), 42, ParameterDirection.Write, ParameterDirection.Read, ParameterDirection.Read);
+        public static InstructionDefinition RL { get; } = new InstructionDefinition(nameof(InstructionDefinition.RL), 43, ParameterDirection.Write, ParameterDirection.Read, ParameterDirection.Read);
+        public static InstructionDefinition NAND { get; } = new InstructionDefinition(nameof(InstructionDefinition.NAND), 44, ParameterDirection.Write, ParameterDirection.Read, ParameterDirection.Read);
+        public static InstructionDefinition AND { get; } = new InstructionDefinition(nameof(InstructionDefinition.AND), 45, ParameterDirection.Write, ParameterDirection.Read, ParameterDirection.Read);
+        public static InstructionDefinition NOR { get; } = new InstructionDefinition(nameof(InstructionDefinition.NOR), 46, ParameterDirection.Write, ParameterDirection.Read, ParameterDirection.Read);
+        public static InstructionDefinition OR { get; } = new InstructionDefinition(nameof(InstructionDefinition.OR), 47, ParameterDirection.Write, ParameterDirection.Read, ParameterDirection.Read);
+        public static InstructionDefinition NXOR { get; } = new InstructionDefinition(nameof(InstructionDefinition.NXOR), 48, ParameterDirection.Write, ParameterDirection.Read, ParameterDirection.Read);
+        public static InstructionDefinition XOR { get; } = new InstructionDefinition(nameof(InstructionDefinition.XOR), 49, ParameterDirection.Write, ParameterDirection.Read, ParameterDirection.Read);
+        public static InstructionDefinition NOT { get; } = new InstructionDefinition(nameof(InstructionDefinition.NOT), 50, ParameterDirection.Write, ParameterDirection.Read);
+        public static InstructionDefinition GT { get; } = new InstructionDefinition(nameof(InstructionDefinition.GT), 51, ParameterDirection.Write, ParameterDirection.Read, ParameterDirection.Read);
+        public static InstructionDefinition GTE { get; } = new InstructionDefinition(nameof(InstructionDefinition.GTE), 52, ParameterDirection.Write, ParameterDirection.Read, ParameterDirection.Read);
+        public static InstructionDefinition LT { get; } = new InstructionDefinition(nameof(InstructionDefinition.LT), 53, ParameterDirection.Write, ParameterDirection.Read, ParameterDirection.Read);
+        public static InstructionDefinition LTE { get; } = new InstructionDefinition(nameof(InstructionDefinition.LTE), 54, ParameterDirection.Write, ParameterDirection.Read, ParameterDirection.Read);
+        public static InstructionDefinition EQ { get; } = new InstructionDefinition(nameof(InstructionDefinition.EQ), 55, ParameterDirection.Write, ParameterDirection.Read, ParameterDirection.Read);
+        public static InstructionDefinition NEQ { get; } = new InstructionDefinition(nameof(InstructionDefinition.NEQ), 56, ParameterDirection.Write, ParameterDirection.Read, ParameterDirection.Read);
+
+        public static InstructionDefinition DBG { get; } = new InstructionDefinition(nameof(InstructionDefinition.DBG), 60, ParameterDirection.Write | ParameterDirection.Read, ParameterDirection.Write | ParameterDirection.Read, ParameterDirection.Write | ParameterDirection.Read);
+        public static InstructionDefinition BRK { get; } = new InstructionDefinition(nameof(InstructionDefinition.BRK), 61);
 
         public string Mnemonic { get; }
         public byte Code { get; }
@@ -13,65 +62,6 @@ namespace ArkeOS.Hardware.Architecture {
         public ParameterDirection Parameter2Direction { get; }
         public ParameterDirection Parameter3Direction { get; }
 
-        static InstructionDefinition() {
-            InstructionDefinition.mnemonics = new Dictionary<string, InstructionDefinition>();
-            InstructionDefinition.instructions = new InstructionDefinition[256];
-
-            InstructionDefinition.Add("HLT", 0);
-            InstructionDefinition.Add("NOP", 1);
-            InstructionDefinition.Add("INT", 2, ParameterDirection.Read, ParameterDirection.Read, ParameterDirection.Read);
-            InstructionDefinition.Add("EINT", 3);
-            InstructionDefinition.Add("INTE", 4);
-            InstructionDefinition.Add("INTD", 5);
-            InstructionDefinition.Add("XCHG", 6, ParameterDirection.Write | ParameterDirection.Read, ParameterDirection.Write | ParameterDirection.Read);
-            InstructionDefinition.Add("CAS", 7, ParameterDirection.Write | ParameterDirection.Read, ParameterDirection.Write | ParameterDirection.Read, ParameterDirection.Read);
-            InstructionDefinition.Add("SET", 8, ParameterDirection.Write, ParameterDirection.Read);
-            InstructionDefinition.Add("CPY", 9, ParameterDirection.Read, ParameterDirection.Read, ParameterDirection.Read);
-            InstructionDefinition.Add("CALL", 10, ParameterDirection.Read);
-            InstructionDefinition.Add("RET", 11);
-
-            InstructionDefinition.Add("ADD", 20, ParameterDirection.Write, ParameterDirection.Read, ParameterDirection.Read);
-            InstructionDefinition.Add("ADDF", 21, ParameterDirection.Write, ParameterDirection.Read, ParameterDirection.Read);
-            InstructionDefinition.Add("SUB", 22, ParameterDirection.Write, ParameterDirection.Read, ParameterDirection.Read);
-            InstructionDefinition.Add("SUBF", 23, ParameterDirection.Write, ParameterDirection.Read, ParameterDirection.Read);
-            InstructionDefinition.Add("DIV", 24, ParameterDirection.Write, ParameterDirection.Read, ParameterDirection.Read);
-            InstructionDefinition.Add("DIVF", 25, ParameterDirection.Write, ParameterDirection.Read, ParameterDirection.Read);
-            InstructionDefinition.Add("MUL", 26, ParameterDirection.Write, ParameterDirection.Read, ParameterDirection.Read);
-            InstructionDefinition.Add("MULF", 27, ParameterDirection.Write, ParameterDirection.Read, ParameterDirection.Read);
-            InstructionDefinition.Add("POW", 28, ParameterDirection.Write, ParameterDirection.Read, ParameterDirection.Read);
-            InstructionDefinition.Add("POWF", 29, ParameterDirection.Write, ParameterDirection.Read, ParameterDirection.Read);
-            InstructionDefinition.Add("MOD", 30, ParameterDirection.Write, ParameterDirection.Read, ParameterDirection.Read);
-            InstructionDefinition.Add("MODF", 31, ParameterDirection.Write, ParameterDirection.Read, ParameterDirection.Read);
-            InstructionDefinition.Add("ITOF", 32, ParameterDirection.Write, ParameterDirection.Read);
-            InstructionDefinition.Add("FTOI", 33, ParameterDirection.Write, ParameterDirection.Read);
-
-            InstructionDefinition.Add("SR", 40, ParameterDirection.Write, ParameterDirection.Read, ParameterDirection.Read);
-            InstructionDefinition.Add("SL", 41, ParameterDirection.Write, ParameterDirection.Read, ParameterDirection.Read);
-            InstructionDefinition.Add("RR", 42, ParameterDirection.Write, ParameterDirection.Read, ParameterDirection.Read);
-            InstructionDefinition.Add("RL", 43, ParameterDirection.Write, ParameterDirection.Read, ParameterDirection.Read);
-            InstructionDefinition.Add("NAND", 44, ParameterDirection.Write, ParameterDirection.Read, ParameterDirection.Read);
-            InstructionDefinition.Add("AND", 45, ParameterDirection.Write, ParameterDirection.Read, ParameterDirection.Read);
-            InstructionDefinition.Add("NOR", 46, ParameterDirection.Write, ParameterDirection.Read, ParameterDirection.Read);
-            InstructionDefinition.Add("OR", 47, ParameterDirection.Write, ParameterDirection.Read, ParameterDirection.Read);
-            InstructionDefinition.Add("NXOR", 48, ParameterDirection.Write, ParameterDirection.Read, ParameterDirection.Read);
-            InstructionDefinition.Add("XOR", 49, ParameterDirection.Write, ParameterDirection.Read, ParameterDirection.Read);
-            InstructionDefinition.Add("NOT", 50, ParameterDirection.Write, ParameterDirection.Read);
-            InstructionDefinition.Add("GT", 51, ParameterDirection.Write, ParameterDirection.Read, ParameterDirection.Read);
-            InstructionDefinition.Add("GTE", 52, ParameterDirection.Write, ParameterDirection.Read, ParameterDirection.Read);
-            InstructionDefinition.Add("LT", 53, ParameterDirection.Write, ParameterDirection.Read, ParameterDirection.Read);
-            InstructionDefinition.Add("LTE", 54, ParameterDirection.Write, ParameterDirection.Read, ParameterDirection.Read);
-            InstructionDefinition.Add("EQ", 55, ParameterDirection.Write, ParameterDirection.Read, ParameterDirection.Read);
-            InstructionDefinition.Add("NEQ", 56, ParameterDirection.Write, ParameterDirection.Read, ParameterDirection.Read);
-
-            InstructionDefinition.Add("DBG", 60, ParameterDirection.Write | ParameterDirection.Read, ParameterDirection.Write | ParameterDirection.Read, ParameterDirection.Write | ParameterDirection.Read);
-            InstructionDefinition.Add("BRK", 61);
-        }
-
-        private static void Add(string mnemonic, byte code) => InstructionDefinition.Add(new InstructionDefinition(mnemonic, code));
-        private static void Add(string mnemonic, byte code, ParameterDirection parameter1Direction) => InstructionDefinition.Add(new InstructionDefinition(mnemonic, code, parameter1Direction));
-        private static void Add(string mnemonic, byte code, ParameterDirection parameter1Direction, ParameterDirection parameter2Direction) => InstructionDefinition.Add(new InstructionDefinition(mnemonic, code, parameter1Direction, parameter2Direction));
-        private static void Add(string mnemonic, byte code, ParameterDirection parameter1Direction, ParameterDirection parameter2Direction, ParameterDirection parameter3Direction) => InstructionDefinition.Add(new InstructionDefinition(mnemonic, code, parameter1Direction, parameter2Direction, parameter3Direction));
-
         private InstructionDefinition(string mnemonic, byte code, params ParameterDirection[] directions) {
             this.Mnemonic = mnemonic;
             this.Code = code;
@@ -80,11 +70,9 @@ namespace ArkeOS.Hardware.Architecture {
             if (this.ParameterCount > 2) this.Parameter3Direction = directions[2];
             if (this.ParameterCount > 1) this.Parameter2Direction = directions[1];
             if (this.ParameterCount > 0) this.Parameter1Direction = directions[0];
-        }
 
-        private static void Add(InstructionDefinition def) {
-            InstructionDefinition.mnemonics.Add(def.Mnemonic, def);
-            InstructionDefinition.instructions[def.Code] = def;
+            InstructionDefinition.mnemonics.Add(this.Mnemonic, this);
+            InstructionDefinition.instructions[this.Code] = this;
         }
 
         public static InstructionDefinition Find(string mnemonic) {
