@@ -37,6 +37,16 @@ namespace ArkeOS.Hardware.Architecture {
             }
         }
 
+        public static Parameter CreateStack() => Parameter.CreateStack(ParameterFlags.None);
+        public static Parameter CreateRegister(Register register) => Parameter.CreateRegister(register, ParameterFlags.None);
+        public static Parameter CreateLiteral(ulong literal) => Parameter.CreateLiteral(literal, ParameterFlags.None);
+        public static Parameter CreateCalculated(Calculated @base, Calculated index, Calculated scale, Calculated offset) => Parameter.CreateCalculated(@base, index, scale, offset, ParameterFlags.None);
+
+        public static Parameter CreateStack(ParameterFlags flags) => Parameter.CreateStack((flags & ParameterFlags.Indirect) != 0, (flags & ParameterFlags.RIPRelative) != 0);
+        public static Parameter CreateRegister(Register register, ParameterFlags flags) => Parameter.CreateRegister(register, (flags & ParameterFlags.Indirect) != 0, (flags & ParameterFlags.RIPRelative) != 0);
+        public static Parameter CreateLiteral(ulong literal, ParameterFlags flags) => Parameter.CreateLiteral(literal, (flags & ParameterFlags.Indirect) != 0, (flags & ParameterFlags.RIPRelative) != 0);
+        public static Parameter CreateCalculated(Calculated @base, Calculated index, Calculated scale, Calculated offset, ParameterFlags flags) => Parameter.CreateCalculated(@base, index, scale, offset, (flags & ParameterFlags.Indirect) != 0, (flags & ParameterFlags.RIPRelative) != 0);
+
         public static Parameter CreateStack(bool isIndirect, bool isRIPRelative) => new Parameter() {
             IsIndirect = isIndirect,
             IsRIPRelative = isRIPRelative,
