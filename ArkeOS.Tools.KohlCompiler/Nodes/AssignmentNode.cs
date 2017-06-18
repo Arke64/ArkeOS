@@ -1,8 +1,8 @@
 ﻿namespace ArkeOS.Tools.KohlCompiler.Nodes {
-    public class AssignmentNode : Node {
+    public class AssignmentNode : StatementNode {
         public IdentifierNode Target { get; }
-        public Node Value { get; }
+        public ExpressionNode Expression { get; }
 
-        public AssignmentNode(IdentifierNode identifier, Node value) => (this.Target, this.Value) = (identifier, value);
+        public AssignmentNode(IdentifierNode identifier, ExpressionNode expression) => (this.Target, this.Expression) = (identifier, expression);
     }
 }

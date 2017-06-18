@@ -1,10 +1,10 @@
 ﻿using System.Collections.Generic;
 namespace ArkeOS.Tools.KohlCompiler.Nodes {
-    public class ProgramNode : Node {
-        private List<AssignmentNode> assignments = new List<AssignmentNode>();
+    public class ProgramNode : StatementNode {
+        private List<StatementNode> statements = new List<StatementNode>();
 
-        public IReadOnlyList<AssignmentNode> Assignments => this.assignments;
+        public IReadOnlyList<StatementNode> Statements => this.statements;
 
-        public void Add(AssignmentNode node) => this.assignments.Add(node);
+        public void Add(StatementNode node) => this.statements.Add(node);
     }
 }

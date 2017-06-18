@@ -8,18 +8,20 @@ namespace ArkeOS.Tools.KohlCompiler {
         public Parser(Lexer lexer) => this.lexer = lexer;
 
         public ProgramNode Parse() {
-            var res = new ProgramNode();
+            var prog = new ProgramNode();
 
             while (!this.lexer.AtEnd)
-                res.Add(this.ReadAssignment());
+                prog.Add(this.ReadStatement());
 
-            return res;
+            return prog;
         }
 
         private void Read(TokenType t) {
             if (!this.lexer.Read(t))
                 throw this.GetExpectedTokenExceptionAtCurrent(t);
         }
+
+        private StatementNode ReadStatement() => this.ReadAssignment();
 
         private AssignmentNode ReadAssignment() {
             var ident = this.ReadIdentifier();
@@ -30,7 +32,7 @@ namespace ArkeOS.Tools.KohlCompiler {
             return new AssignmentNode(ident, exp);
         }
 
-        private Node ReadExpression() {
+        private ExpressionNode ReadExpression() {
             var stack = new ExpressionStack();
             var start = true;
 

@@ -47,13 +47,13 @@ namespace ArkeOS.Tools.KohlCompiler {
         private void Visit(Node node) {
             switch (node) {
                 case ProgramNode n:
-                    foreach (var a in n.Assignments)
+                    foreach (var a in n.Statements)
                         this.Visit(a);
 
                     break;
 
                 case AssignmentNode n:
-                    this.Visit(n.Value);
+                    this.Visit(n.Expression);
 
                     this.instructions.Add(new Instruction(InstructionDefinition.Find("SET").Code, new List<Parameter> { new Parameter { Type = ParameterType.Register, Register = n.Target.Identifier.ToEnum<Register>() }, Emitter.StackParam }, null, false));
 
@@ -69,7 +69,7 @@ namespace ArkeOS.Tools.KohlCompiler {
 
                     break;
 
-                case BinaryOperationNode n:
+                case BinaryExpressionNode n:
                     this.Visit(n.Left);
                     this.Visit(n.Right);
 
@@ -88,8 +88,8 @@ namespace ArkeOS.Tools.KohlCompiler {
 
                     break;
 
-                case UnaryOperationNode n:
-                    this.Visit(n.Node);
+                case UnaryExpressionNode n:
+                    this.Visit(n.Expression);
 
                     switch (n.Op.Operator) {
                         case Operator.UnaryPlus: break;
