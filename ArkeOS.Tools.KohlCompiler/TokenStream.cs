@@ -11,13 +11,17 @@ namespace ArkeOS.Tools.KohlCompiler {
         public bool Read(out Token value) => this.lexer.ReadNext(out value);
 
         public bool Peek(Func<Token, bool> validator, out Token value) => this.Peek(out value) && validator(value);
-        public bool Read(Func<Token, bool> validator, out Token value) => this.Read(out value) && validator(value);
+        public bool Read(Func<Token, bool> validator, out Token value) => this.Peek(out value) && validator(value) && this.Read(out _);
 
         public bool Peek(TokenType type, out Token value) => this.Peek(t => t.Type == type, out value);
         public bool Read(TokenType type, out Token value) => this.Read(t => t.Type == type, out value);
 
         public bool Peek(TokenType type) => this.Peek(type, out _);
         public bool Read(TokenType type) => this.Read(type, out _);
+
+        public bool AtEnd => this.lexer.AtEnd;
+
+        public void GetCurrentPositionInfo(out string file, out int line, out int column) => this.lexer.GetCurrentPositionInfo(out file, out line, out column);
 
         public List<Token> ToList() {
             var res = new List<Token>();

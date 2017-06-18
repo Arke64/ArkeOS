@@ -1,7 +1,20 @@
-﻿using ArkeOS.Tools.KohlCompiler.Nodes;
-using System;
+﻿using ArkeOS.Tools.KohlCompiler.Exceptions;
+using ArkeOS.Tools.KohlCompiler.Nodes;
 
 namespace ArkeOS.Tools.KohlCompiler {
+    public enum Operator {
+        Addition,
+        Subtraction,
+        Multiplication,
+        Division,
+        Remainder,
+        Exponentiation,
+        UnaryPlus,
+        UnaryMinus,
+        OpenParenthesis,
+        CloseParenthesis,
+    }
+
     public class Parser {
         private readonly TokenStream tokens;
 
@@ -10,17 +23,22 @@ namespace ArkeOS.Tools.KohlCompiler {
         public ProgramNode Parse() {
             var res = new ProgramNode();
 
-            while (this.tokens.Peek(out _))
+            while (!this.tokens.AtEnd)
                 res.Add(this.ReadAssignment());
 
             return res;
         }
 
+        private void Read(TokenType t) {
+            if (!this.tokens.Read(t))
+                throw this.GetExpectedTokenExceptionAtCurrent(t);
+        }
+
         private AssignmentNode ReadAssignment() {
             var ident = this.ReadIdentifier();
-            this.tokens.Read(TokenType.EqualsSign);
+            this.Read(TokenType.EqualsSign);
             var exp = this.ReadExpression();
-            this.tokens.Read(TokenType.Semicolon);
+            this.Read(TokenType.Semicolon);
 
             return new AssignmentNode(ident, exp);
         }
@@ -30,12 +48,12 @@ namespace ArkeOS.Tools.KohlCompiler {
             var start = true;
 
             while (this.tokens.Peek(out var token)) {
-                if (start && (token.Type == TokenType.Number || token.Type == TokenType.Identifier)) {
-                    if (token.Type == TokenType.Number)
-                        stack.Push(this.ReadNumber());
-                    else
-                        stack.Push(this.ReadIdentifier());
-
+                if (start && token.Type == TokenType.Number) {
+                    stack.Push(this.ReadNumber());
+                    start = false;
+                }
+                else if (start && token.Type == TokenType.Identifier) {
+                    stack.Push(this.ReadIdentifier());
                     start = false;
                 }
                 else if (!start && token.Type == TokenType.CloseParenthesis) {
@@ -54,28 +72,13 @@ namespace ArkeOS.Tools.KohlCompiler {
             return stack.ToNode();
         }
 
-        private Operator ReadOperator(bool unary) => this.tokens.Read(this.IsOperator, out var token) ? this.GetOperator(token, unary) : throw new InvalidOperationException("Expected token");
+        private NumberNode ReadNumber() => this.tokens.Read(TokenType.Number, out var token) ? new NumberNode(token.Value) : throw this.GetExpectedTokenExceptionAtCurrent(TokenType.Number);
+        private IdentifierNode ReadIdentifier() => this.tokens.Read(TokenType.Identifier, out var token) ? new IdentifierNode(token.Value) : throw this.GetExpectedTokenExceptionAtCurrent(TokenType.Identifier);
 
-        private NumberNode ReadNumber() => this.tokens.Read(TokenType.Number, out var token) ? new NumberNode(token.Value) : throw new InvalidOperationException("Expected token");
-        private IdentifierNode ReadIdentifier() => this.tokens.Read(TokenType.Identifier, out var token) ? new IdentifierNode(token.Value) : throw new InvalidOperationException("Expected token");
+        private Operator ReadOperator(bool unary) {
+            if (!this.tokens.Read(this.IsOperator, out var token))
+                throw this.GetExpectedTokenExceptionAtCurrent("operator");
 
-        private bool IsOperator(Token token) {
-            switch (token.Type) {
-                case TokenType.Plus:
-                case TokenType.Minus:
-                case TokenType.Asterisk:
-                case TokenType.ForwardSlash:
-                case TokenType.Percent:
-                case TokenType.Caret:
-                case TokenType.OpenParenthesis:
-                case TokenType.CloseParenthesis:
-                    return true;
-            }
-
-            return false;
-        }
-
-        private Operator GetOperator(Token token, bool unary) {
             if (!unary) {
                 switch (token.Type) {
                     case TokenType.Plus: return Operator.Addition;
@@ -95,7 +98,47 @@ namespace ArkeOS.Tools.KohlCompiler {
                 }
             }
 
-            throw new InvalidOperationException("Expected token");
+            throw this.GetUnexpectedTokenExceptionAtCurrent(token.Type);
+        }
+
+        private bool IsOperator(Token token) {
+            switch (token.Type) {
+                case TokenType.Plus:
+                case TokenType.Minus:
+                case TokenType.Asterisk:
+                case TokenType.ForwardSlash:
+                case TokenType.Percent:
+                case TokenType.Caret:
+                case TokenType.OpenParenthesis:
+                case TokenType.CloseParenthesis:
+                    return true;
+            }
+
+            return false;
+        }
+
+        private UnexpectedTokenException GetUnexpectedTokenExceptionAtCurrent(TokenType t) {
+            this.tokens.GetCurrentPositionInfo(out var file, out var line, out var column);
+
+            return new UnexpectedTokenException(file, line, column, t);
+        }
+
+        private UnexpectedTokenException GetUnexpectedTokenExceptionAtCurrent(string t) {
+            this.tokens.GetCurrentPositionInfo(out var file, out var line, out var column);
+
+            return new UnexpectedTokenException(file, line, column, t);
+        }
+
+        private ExpectedTokenException GetExpectedTokenExceptionAtCurrent(TokenType t) {
+            this.tokens.GetCurrentPositionInfo(out var file, out var line, out var column);
+
+            return new ExpectedTokenException(file, line, column, t);
+        }
+
+        private ExpectedTokenException GetExpectedTokenExceptionAtCurrent(string t) {
+            this.tokens.GetCurrentPositionInfo(out var file, out var line, out var column);
+
+            return new ExpectedTokenException(file, line, column, t);
         }
     }
 }

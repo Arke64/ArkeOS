@@ -17,7 +17,10 @@ namespace ArkeOS.Tools.KohlCompiler {
         private int currentFileLength;
         private int fileIndex;
         private int contentsIndex;
+        private int previousFileIndex;
+        private int previousContentsIndex;
         private Token currentToken;
+        private bool readLast;
 
         public Lexer(IReadOnlyList<string> files) {
             this.stream = new TokenStream(this);
@@ -28,12 +31,18 @@ namespace ArkeOS.Tools.KohlCompiler {
             this.currentFileLength = this.fileLengths[0];
             this.fileIndex = 0;
             this.contentsIndex = 0;
+            this.previousFileIndex = 0;
+            this.previousContentsIndex = 0;
+            this.readLast = false;
 
             this.LexNextToken();
         }
 
         private void Advance() {
+            this.previousContentsIndex = this.contentsIndex;
+
             if (++this.contentsIndex >= this.currentFileLength) {
+                this.previousFileIndex = this.fileIndex;
                 this.contentsIndex = 0;
 
                 if (++this.fileIndex < this.fileContents.Count) {
@@ -60,15 +69,10 @@ namespace ArkeOS.Tools.KohlCompiler {
             }
         }
 
-        private void ThrowUnexpectedCharacterAtCurrent(char c) {
-            var lengths = this.currentFileContents.Split(new[] { Environment.NewLine }, StringSplitOptions.None).Select(l => l.Length).ToArray();
-            var line = 0;
-            var idx = 0;
+        private UnexpectedCharacterException GetUnexpectedCharacterExceptionAtCurrent(char c) {
+            this.GetCurrentPositionInfo(out var file, out var line, out var column);
 
-            while (idx + lengths[line] < this.contentsIndex)
-                idx += lengths[line++] + Environment.NewLine.Length;
-
-            throw new UnexpectedCharacterException(this.files[this.fileIndex], line + 1, this.contentsIndex - idx + 1, c);
+            return new UnexpectedCharacterException(file, line, column, c);
         }
 
         private Token ReadIdentifier() {
@@ -142,7 +146,7 @@ namespace ArkeOS.Tools.KohlCompiler {
                 case ')': res = new Token(TokenType.CloseParenthesis, c); break;
                 case '=': res = new Token(TokenType.EqualsSign, c); break;
                 case ';': res = new Token(TokenType.Semicolon, c); break;
-                default: this.ThrowUnexpectedCharacterAtCurrent(c); break;
+                default: throw this.GetUnexpectedCharacterExceptionAtCurrent(c);
             }
 
             this.Advance();
@@ -176,6 +180,9 @@ namespace ArkeOS.Tools.KohlCompiler {
         public bool ReadNext(out Token token) {
             var res = this.PeekNext(out token);
 
+            if (this.contentsIndex >= this.currentFileLength)
+                this.readLast = true;
+
             if (res)
                 this.LexNextToken();
 
@@ -185,9 +192,24 @@ namespace ArkeOS.Tools.KohlCompiler {
         public bool PeekNext(out Token token) {
             token = this.currentToken;
 
-            return this.contentsIndex < this.currentFileLength;
+            return !this.AtEnd;
         }
 
+        public bool AtEnd => this.readLast && this.contentsIndex >= this.currentFileLength;
+
         public TokenStream GetStream() => this.stream;
+
+        public void GetCurrentPositionInfo(out string file, out int line, out int column) {
+            var lengths = this.currentFileContents.Split(new[] { Environment.NewLine }, StringSplitOptions.None).Select(l => l.Length).ToArray();
+            var idx = 0;
+            var ln = 0;
+
+            while (idx + lengths[ln] < this.previousContentsIndex)
+                idx += lengths[ln++] + Environment.NewLine.Length;
+
+            file = this.files[this.previousFileIndex];
+            line = ln + 1;
+            column = this.previousContentsIndex - idx + 1;
+        }
     }
 }
