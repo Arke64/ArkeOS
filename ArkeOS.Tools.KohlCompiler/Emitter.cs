@@ -44,14 +44,13 @@ namespace ArkeOS.Tools.KohlCompiler {
             }
         }
 
-        private void Visit(Node node) {
-            switch (node) {
-                case ProgramNode n:
-                    foreach (var a in n.Statements)
-                        this.Visit(a);
+        private void Visit(ProgramNode n) {
+            foreach (var s in n.Statements)
+                this.Visit(s);
+        }
 
-                    break;
-
+        private void Visit(StatementNode s) {
+            switch (s) {
                 case AssignmentNode n:
                     this.Visit(n.Expression);
 
@@ -59,16 +58,13 @@ namespace ArkeOS.Tools.KohlCompiler {
 
                     break;
 
-                case NumberNode n:
-                    this.instructions.Add(new Instruction(InstructionDefinition.Find("SET").Code, new List<Parameter> { Emitter.StackParam, new Parameter { Type = ParameterType.Literal, Literal = (ulong)n.Number } }, null, false));
+                default:
+                    throw new NotImplementedException();
+            }
+        }
 
-                    break;
-
-                case IdentifierNode n:
-                    this.instructions.Add(new Instruction(InstructionDefinition.Find("SET").Code, new List<Parameter> { Emitter.StackParam, new Parameter { Type = ParameterType.Register, Register = n.Identifier.ToEnum<Register>() } }, null, false));
-
-                    break;
-
+        private void Visit(ExpressionNode e) {
+            switch (e) {
                 case BinaryExpressionNode n:
                     this.Visit(n.Left);
                     this.Visit(n.Right);
@@ -99,10 +95,19 @@ namespace ArkeOS.Tools.KohlCompiler {
 
                     break;
 
-                default:
-                    throw new InvalidOperationException("Unexpected node.");
-            }
+                case NumberNode n:
+                    this.instructions.Add(new Instruction(InstructionDefinition.Find("SET").Code, new List<Parameter> { Emitter.StackParam, new Parameter { Type = ParameterType.Literal, Literal = (ulong)n.Number } }, null, false));
 
+                    break;
+
+                case IdentifierNode n:
+                    this.instructions.Add(new Instruction(InstructionDefinition.Find("SET").Code, new List<Parameter> { Emitter.StackParam, new Parameter { Type = ParameterType.Register, Register = n.Identifier.ToEnum<Register>() } }, null, false));
+
+                    break;
+
+                default:
+                    throw new NotImplementedException();
+            }
         }
     }
 }
