@@ -16,6 +16,17 @@
         OpenCurlyBrace,
         CloseCurlyBrace,
         IfKeyword,
+        DbgKeyword,
+        BrkKeyword,
+        HltKeyword,
+        NopKeyword,
+        IntKeyword,
+        EintKeyword,
+        InteKeyword,
+        IntdKeyword,
+        XchgKeyword,
+        CasKeyword,
+        CpyKeyword,
     }
 
     public struct Token {

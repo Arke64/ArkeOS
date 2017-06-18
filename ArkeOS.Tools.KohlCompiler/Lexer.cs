@@ -8,7 +8,7 @@ using System.Text;
 namespace ArkeOS.Tools.KohlCompiler {
     public class Lexer {
         private static IReadOnlyDictionary<int, char[]> ValidDigitsForBase { get; } = new Dictionary<int, char[]> { [2] = new[] { '0', '1' }, [8] = new[] { '0', '1', '2', '3', '4', '5', '6', '7' }, [10] = new[] { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9' }, [16] = new[] { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f', 'A', 'B', 'C', 'D', 'E', 'F' } };
-        private static IReadOnlyDictionary<string, TokenType> Keywords { get; } = new Dictionary<string, TokenType> { ["if"] = TokenType.IfKeyword };
+        private static IReadOnlyDictionary<string, TokenType> Keywords { get; } = new Dictionary<string, TokenType> { ["if"] = TokenType.IfKeyword, ["dbg"] = TokenType.DbgKeyword, ["brk"] = TokenType.BrkKeyword, ["hlt"] = TokenType.HltKeyword, ["nop"] = TokenType.NopKeyword, ["int"] = TokenType.IntKeyword, ["eint"] = TokenType.EintKeyword, ["inte"] = TokenType.InteKeyword, ["intd"] = TokenType.IntdKeyword, ["xchg"] = TokenType.XchgKeyword, ["cas"] = TokenType.CasKeyword, ["cpy"] = TokenType.CpyKeyword };
 
         private class FileInfo {
             private readonly string contents;

@@ -23,13 +23,10 @@ namespace ArkeOS.Tools.KohlCompiler {
             var len = Parameter.CreateLiteral(0);
 
             this.Emit(InstructionDefinition.CPY, Parameter.CreateRegister(Register.RZERO), start, len);
-            this.Emit(InstructionDefinition.SET, Parameter.CreateRegister(Register.RIP), Parameter.CreateRegister(Register.RZERO));
 
             start.Literal = (ulong)this.instructions.Sum(i => i.Length);
 
             this.Visit(this.tree);
-
-            this.Emit(InstructionDefinition.HLT);
 
             len.Literal = (ulong)this.instructions.Sum(i => i.Length) - start.Literal;
 
@@ -71,11 +68,32 @@ namespace ArkeOS.Tools.KohlCompiler {
                     break;
 
                 case AssignmentStatementNode n:
-                    this.Visit(n.Expression);
+                    if (n.Expression is IdentifierNode inode) {
+                        this.Emit(InstructionDefinition.SET, Parameter.CreateRegister(n.Target.Identifier.ToEnum<Register>()), Parameter.CreateRegister(inode.Identifier.ToEnum<Register>()));
+                    }
+                    else if (n.Expression is NumberNode nnode) {
+                        this.Emit(InstructionDefinition.SET, Parameter.CreateRegister(n.Target.Identifier.ToEnum<Register>()), Parameter.CreateLiteral((ulong)nnode.Number));
+                    }
+                    else {
+                        this.Visit(n.Expression);
 
-                    this.Emit(InstructionDefinition.SET, Parameter.CreateRegister(n.Target.Identifier.ToEnum<Register>()), Emitter.StackParam);
+                        this.Emit(InstructionDefinition.SET, Parameter.CreateRegister(n.Target.Identifier.ToEnum<Register>()), Emitter.StackParam);
+                    }
+
 
                     break;
+
+                case BrkStatementNode n: this.Emit(InstructionDefinition.BRK); break;
+                case EintStatementNode n: this.Emit(InstructionDefinition.EINT); break;
+                case HltStatementNode n: this.Emit(InstructionDefinition.HLT); break;
+                case IntdStatementNode n: this.Emit(InstructionDefinition.INTD); break;
+                case InteStatementNode n: this.Emit(InstructionDefinition.INTE); break;
+                case NopStatementNode n: this.Emit(InstructionDefinition.NOP); break;
+                case IntStatementNode n: this.Visit(n.A); this.Visit(n.B); this.Visit(n.C); this.Emit(InstructionDefinition.INT, Emitter.StackParam, Emitter.StackParam, Emitter.StackParam); break;
+                case CasStatementNode n: this.Visit(n.C); this.Emit(InstructionDefinition.CAS, Parameter.CreateRegister(n.A.Identifier.ToEnum<Register>()), Parameter.CreateRegister(n.B.Identifier.ToEnum<Register>()), Emitter.StackParam); break;
+                case CpyStatementNode n: this.Visit(n.A); this.Visit(n.B); this.Visit(n.C); this.Emit(InstructionDefinition.CPY, Emitter.StackParam, Emitter.StackParam, Emitter.StackParam); break;
+                case DbgStatementNode n: this.Visit(n.A); this.Visit(n.B); this.Visit(n.C); this.Emit(InstructionDefinition.DBG, Emitter.StackParam, Emitter.StackParam, Emitter.StackParam); break;
+                case XchgStatementNode n: this.Emit(InstructionDefinition.XCHG, Parameter.CreateRegister(n.A.Identifier.ToEnum<Register>()), Parameter.CreateRegister(n.B.Identifier.ToEnum<Register>())); break;
 
                 default:
                     throw new NotImplementedException();
@@ -111,6 +129,18 @@ namespace ArkeOS.Tools.KohlCompiler {
 
                     break;
 
+                case ValueNode n:
+                    this.Visit(n);
+
+                    break;
+
+                default:
+                    throw new NotImplementedException();
+            }
+        }
+
+        private void Visit(ValueNode v) {
+            switch (v) {
                 case NumberNode n:
                     this.Emit(InstructionDefinition.SET, Emitter.StackParam, Parameter.CreateLiteral((ulong)n.Number));
 
