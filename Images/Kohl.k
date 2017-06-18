@@ -1,12 +1,12 @@
 {
 	brk;
 	RSP = 0x10000;
-	dbg R0 R0 R0;
-	cpy RZERO RONE 0d1;
+	dbg (R0 R0 R0);
+	cpy (RZERO RONE 0d1);
 	nop;
 	R12 = 1;
 	R13 = 2;
-	xchg R12 R13;
+	xchg (R12 R13);
 	R1 = 1 * (2 + 3) - 9 * 7 / (4 - -3) + +3 ^ (0xC + 3 + (1_1 % 6) / (6 - -(2 - 3)) * 3);
 	R2 = 5;
 	R3 = 9;
@@ -20,8 +20,8 @@
 	R14 = RZERO;
 	R15 = RONE;
 
-	cas R13 R14 0d6;
-	cas R14 R15 0d8;
+	cas (R13 R14 0d6);
+	cas (R14 R15 0d8);
 
 	R0 = RONE;
 

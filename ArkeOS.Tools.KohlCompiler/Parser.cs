@@ -74,9 +74,11 @@ namespace ArkeOS.Tools.KohlCompiler {
 
         private CasStatementNode ReadCasStatement() {
             this.Read(TokenType.CasKeyword);
+            this.Read(TokenType.OpenParenthesis);
             var a = this.ReadIdentifier();
             var b = this.ReadIdentifier();
             var c = this.ReadValue();
+            this.Read(TokenType.CloseParenthesis);
             this.Read(TokenType.Semicolon);
 
             return new CasStatementNode(a, b, c);
@@ -84,9 +86,11 @@ namespace ArkeOS.Tools.KohlCompiler {
 
         private CpyStatementNode ReadCpyStatement() {
             this.Read(TokenType.CpyKeyword);
+            this.Read(TokenType.OpenParenthesis);
             var a = this.ReadValue();
             var b = this.ReadValue();
             var c = this.ReadValue();
+            this.Read(TokenType.CloseParenthesis);
             this.Read(TokenType.Semicolon);
 
             return new CpyStatementNode(a, b, c);
@@ -94,9 +98,11 @@ namespace ArkeOS.Tools.KohlCompiler {
 
         private DbgStatementNode ReadDbgStatement() {
             this.Read(TokenType.DbgKeyword);
+            this.Read(TokenType.OpenParenthesis);
             var a = this.ReadValue();
             var b = this.ReadValue();
             var c = this.ReadValue();
+            this.Read(TokenType.CloseParenthesis);
             this.Read(TokenType.Semicolon);
 
             return new DbgStatementNode(a, b, c);
@@ -132,9 +138,11 @@ namespace ArkeOS.Tools.KohlCompiler {
 
         private IntStatementNode ReadIntStatement() {
             this.Read(TokenType.IntKeyword);
+            this.Read(TokenType.OpenParenthesis);
             var a = this.ReadValue();
             var b = this.ReadValue();
             var c = this.ReadValue();
+            this.Read(TokenType.CloseParenthesis);
             this.Read(TokenType.Semicolon);
 
             return new IntStatementNode(a, b, c);
@@ -149,8 +157,10 @@ namespace ArkeOS.Tools.KohlCompiler {
 
         private XchgStatementNode ReadXchgStatement() {
             this.Read(TokenType.XchgKeyword);
+            this.Read(TokenType.OpenParenthesis);
             var a = this.ReadIdentifier();
             var b = this.ReadIdentifier();
+            this.Read(TokenType.CloseParenthesis);
             this.Read(TokenType.Semicolon);
 
             return new XchgStatementNode(a, b);
