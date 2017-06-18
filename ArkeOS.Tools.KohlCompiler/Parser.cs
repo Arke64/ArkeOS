@@ -161,9 +161,9 @@ namespace ArkeOS.Tools.KohlCompiler {
             this.Read(TokenType.OpenParenthesis);
             var exp = this.ReadExpression();
             this.Read(TokenType.CloseParenthesis);
-            var stmt = this.ReadStatement();
+            var block = this.ReadStatementBlock();
 
-            return new IfStatementNode(exp, stmt);
+            return new IfStatementNode(exp, block);
         }
 
         private AssignmentStatementNode ReadAssignmentStatement() {

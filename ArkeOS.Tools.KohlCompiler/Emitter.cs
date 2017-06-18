@@ -48,7 +48,7 @@ namespace ArkeOS.Tools.KohlCompiler {
                 case IfStatementNode n:
                     this.Visit(n.Expression);
 
-                    this.Visit(n.Statement);
+                    this.Visit(n.StatementBlock.Statements.Single());
 
                     var stmt = this.instructions.Last();
 
