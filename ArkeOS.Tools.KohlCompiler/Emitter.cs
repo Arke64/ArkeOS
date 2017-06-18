@@ -45,8 +45,8 @@ namespace ArkeOS.Tools.KohlCompiler {
             }
         }
 
-        private void Emit(InstructionDefinition def, params Parameter[] parameters) => this.instructions.Add(new Instruction(def.Code, parameters, null, false));
-        private void Emit(InstructionDefinition def, Parameter conditional, bool conditionalZero, params Parameter[] parameters) => this.instructions.Add(new Instruction(def.Code, parameters, conditional, conditionalZero));
+        private void Emit(InstructionDefinition def, params Parameter[] parameters) => this.instructions.Add(new Instruction(def, parameters));
+        private void Emit(InstructionDefinition def, Parameter conditional, bool conditionalZero, params Parameter[] parameters) => this.instructions.Add(new Instruction(def, parameters, conditional, conditionalZero));
 
         private void Visit(ProgramNode n) {
             foreach (var s in n.Statements)

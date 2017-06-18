@@ -32,12 +32,17 @@ namespace ArkeOS.Hardware.Architecture {
             return (str + this.Definition.Mnemonic + " " + this.Parameter1?.ToString(radix) + " " + this.Parameter2?.ToString(radix) + " " + this.Parameter3?.ToString(radix)).Trim();
         }
 
-        public Instruction(byte code, IList<Parameter> parameters, Parameter conditionalParameter, bool conditionalZero) {
-            this.Code = code;
+        public Instruction(byte code, IList<Parameter> parameters) : this(code, parameters, null, false) { }
+        public Instruction(byte code, IList<Parameter> parameters, Parameter conditionalParameter, bool conditionalZero) : this(InstructionDefinition.Find(code), parameters, conditionalParameter, conditionalZero) { }
+
+        public Instruction(InstructionDefinition def, IList<Parameter> parameters) : this(def, parameters, null, false) { }
+
+        public Instruction(InstructionDefinition def, IList<Parameter> parameters, Parameter conditionalParameter, bool conditionalZero) {
+            this.Definition = def;
+            this.Code = def.Code;
             this.Length = (byte)(1 + (conditionalParameter?.Length ?? 0));
             this.ConditionalParameter = conditionalParameter;
             this.ConditionalZero = conditionalZero;
-            this.Definition = InstructionDefinition.Find(this.Code);
 
             if (this.Definition.ParameterCount >= 1) {
                 this.Parameter1 = parameters[0];
