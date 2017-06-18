@@ -130,7 +130,7 @@ namespace ArkeOS.Hardware.ArkeIndustries {
             if (this.CurrentInstruction.ConditionalParameter != null) {
                 var value = this.GetValue(this.CurrentInstruction.ConditionalParameter);
 
-                execute = (this.CurrentInstruction.ConditionalZero && value == 0) || (!this.CurrentInstruction.ConditionalZero && value != 0);
+                execute = (this.CurrentInstruction.ConditionalType == InstructionConditionalType.WhenZero && value == 0) || (this.CurrentInstruction.ConditionalType == InstructionConditionalType.WhenNotZero && value != 0);
             }
 
             if (execute) {

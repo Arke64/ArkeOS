@@ -39,7 +39,7 @@ Base
 ----
 - 8b Code
 - 27b Parameters (3x9b parameter info)
-- 11b Conditional (1b is enabled, 1b is zero, 9b parameter info)
+- 11b Conditional (1b is enabled, 1b when non-zero, 9b parameter info)
 - 18b Reserved
 
 Calculated Parameter

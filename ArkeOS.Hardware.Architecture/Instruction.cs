@@ -13,7 +13,7 @@ namespace ArkeOS.Hardware.Architecture {
         public InstructionDefinition Definition { get; }
 
         public Parameter ConditionalParameter { get; }
-        public bool ConditionalZero { get; }
+        public InstructionConditionalType ConditionalType { get; }
 
         public Parameter Parameter1 { get; }
         public Parameter Parameter2 { get; }
@@ -25,24 +25,24 @@ namespace ArkeOS.Hardware.Architecture {
             var str = string.Empty;
 
             if (this.ConditionalParameter != null) {
-                str += this.ConditionalZero ? "IFZ " : "IFNZ ";
+                str += this.ConditionalType == InstructionConditionalType.WhenZero ? "IFZ " : "IFNZ ";
                 str += this.ConditionalParameter.ToString(radix) + " ";
             }
 
             return (str + this.Definition.Mnemonic + " " + this.Parameter1?.ToString(radix) + " " + this.Parameter2?.ToString(radix) + " " + this.Parameter3?.ToString(radix)).Trim();
         }
 
-        public Instruction(byte code, IList<Parameter> parameters) : this(code, parameters, null, false) { }
-        public Instruction(byte code, IList<Parameter> parameters, Parameter conditionalParameter, bool conditionalZero) : this(InstructionDefinition.Find(code), parameters, conditionalParameter, conditionalZero) { }
+        public Instruction(byte code, IList<Parameter> parameters) : this(code, parameters, null, default(InstructionConditionalType)) { }
+        public Instruction(byte code, IList<Parameter> parameters, Parameter conditionalParameter, InstructionConditionalType conditionalType) : this(InstructionDefinition.Find(code), parameters, conditionalParameter, conditionalType) { }
 
-        public Instruction(InstructionDefinition def, IList<Parameter> parameters) : this(def, parameters, null, false) { }
+        public Instruction(InstructionDefinition def, IList<Parameter> parameters) : this(def, parameters, null, default(InstructionConditionalType)) { }
 
-        public Instruction(InstructionDefinition def, IList<Parameter> parameters, Parameter conditionalParameter, bool conditionalZero) {
+        public Instruction(InstructionDefinition def, IList<Parameter> parameters, Parameter conditionalParameter, InstructionConditionalType conditionalType) {
             this.Definition = def;
             this.Code = def.Code;
             this.Length = (byte)(1 + (conditionalParameter?.Length ?? 0));
             this.ConditionalParameter = conditionalParameter;
-            this.ConditionalZero = conditionalZero;
+            this.ConditionalType = conditionalType;
 
             if (this.Definition.ParameterCount >= 1) {
                 this.Parameter1 = parameters[0];
@@ -74,7 +74,7 @@ namespace ArkeOS.Hardware.Architecture {
             bits.Advance((3 - this.Definition.ParameterCount) * 8);
 
             if (bits.ReadU1()) {
-                this.ConditionalZero = bits.ReadU1();
+                this.ConditionalType = bits.ReadU1() ? InstructionConditionalType.WhenNotZero : InstructionConditionalType.WhenZero;
                 this.ConditionalParameter = this.DecodeParameter(stream, ref address, bits);
             }
         }
@@ -127,7 +127,7 @@ namespace ArkeOS.Hardware.Architecture {
 
             if (this.ConditionalParameter != null) {
                 bits.Write(true);
-                bits.Write(this.ConditionalZero);
+                bits.Write(this.ConditionalType == InstructionConditionalType.WhenNotZero);
 
                 this.EncodeParameter(writer, bits, this.ConditionalParameter);
             }

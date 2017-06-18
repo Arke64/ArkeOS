@@ -182,11 +182,11 @@ namespace ArkeOS.Tools.Assembler {
 
         private Instruction ParseInstruction(string[] parts, bool resolveNames) {
             var conditional = default(Parameter);
-            var conditionalZero = false;
+            var conditionalZero = default(InstructionConditionalType);
             var skip = 0;
 
             if (parts[0] == "IFZ" || parts[0] == "IFNZ") {
-                conditionalZero = parts[0] == "IFZ";
+                conditionalZero = parts[0] == "IFZ" ? InstructionConditionalType.WhenZero : InstructionConditionalType.WhenNotZero;
                 conditional = this.ParseParameter(parts[1], resolveNames);
                 skip += 2;
             }
