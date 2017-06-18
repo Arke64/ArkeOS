@@ -36,6 +36,17 @@ namespace ArkeOS.Tools.KohlCompiler {
         private void Emit(InstructionDefinition def, params Parameter[] parameters) => this.instructions.Add(new Instruction(def, parameters));
         private void Emit(InstructionDefinition def, Parameter conditional, InstructionConditionalType conditionalType, params Parameter[] parameters) => this.instructions.Add(new Instruction(def, parameters, conditional, conditionalType));
 
+        private void EmitConditional(StatementBlockNode block) {
+            var start = this.instructions.Count;
+            var len = Parameter.CreateLiteral(0, ParameterFlags.RIPRelative);
+
+            this.Emit(InstructionDefinition.SET, Emitter.StackParam, InstructionConditionalType.WhenZero, Parameter.CreateRegister(Register.RIP), len);
+
+            this.Visit(block);
+
+            len.Literal = (ulong)this.instructions.Skip(start).Sum(i => i.Length);
+        }
+
         private void Visit(ProgramNode n) => this.Visit(n.StatementBlock);
 
         private void Visit(StatementBlockNode n) {
@@ -48,13 +59,7 @@ namespace ArkeOS.Tools.KohlCompiler {
                 case IfStatementNode n:
                     this.Visit(n.Expression);
 
-                    this.Visit(n.StatementBlock.Statements.Single());
-
-                    var stmt = this.instructions.Last();
-
-                    this.instructions.Remove(stmt);
-
-                    this.instructions.Add(new Instruction(stmt.Definition, new[] { stmt.Parameter1, stmt.Parameter2, stmt.Parameter3 }, Parameter.CreateStack(), InstructionConditionalType.WhenNotZero));
+                    this.EmitConditional(n.StatementBlock);
 
                     break;
 
@@ -70,7 +75,6 @@ namespace ArkeOS.Tools.KohlCompiler {
 
                         this.Emit(InstructionDefinition.SET, Parameter.CreateRegister(n.Target.Identifier.ToEnum<Register>()), Emitter.StackParam);
                     }
-
 
                     break;
 
