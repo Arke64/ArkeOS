@@ -12,6 +12,7 @@
         CloseParenthesis,
         EqualsSign,
         Semicolon,
+        Whitespace,
     }
 
     public struct Token {
@@ -19,7 +20,7 @@
         public string Value;
 
         public Token(TokenType type, string value) => (this.Type, this.Value) = (type, value);
-        public Token(TokenType type, char value) => (this.Type, this.Value) = (type, value.ToString());
+        public Token(TokenType type, char value) : this(type, value.ToString()) { }
 
         public override string ToString() => $"{this.Type}{(this.Type == TokenType.Number || this.Type == TokenType.Identifier ? ": " + this.Value : string.Empty)}";
     }

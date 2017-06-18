@@ -1,5 +1,7 @@
-﻿using System;
+﻿using ArkeOS.Tools.KohlCompiler.Exceptions;
+using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 
@@ -8,44 +10,46 @@ namespace ArkeOS.Tools.KohlCompiler {
         private static IReadOnlyDictionary<int, char[]> ValidDigitsForBase { get; } = new Dictionary<int, char[]> { [2] = new[] { '0', '1' }, [8] = new[] { '0', '1', '2', '3', '4', '5', '6', '7' }, [10] = new[] { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9' }, [16] = new[] { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f', 'A', 'B', 'C', 'D', 'E', 'F' } };
 
         private readonly TokenStream stream;
-        private readonly IReadOnlyList<string> sources;
-        private readonly int[] lengths;
-        private string currentSource;
-        private int currentLength;
-        private int sourceIndex;
-        private int index;
-        private Token current;
+        private readonly IReadOnlyList<string> files;
+        private readonly IReadOnlyList<string> fileContents;
+        private readonly int[] fileLengths;
+        private string currentFileContents;
+        private int currentFileLength;
+        private int fileIndex;
+        private int contentsIndex;
+        private Token currentToken;
 
-        public Lexer(IReadOnlyList<string> sources) {
+        public Lexer(IReadOnlyList<string> files) {
             this.stream = new TokenStream(this);
-            this.sources = sources;
-            this.lengths = sources.Select(s => s.Length).ToArray();
-            this.currentSource = this.sources[0];
-            this.currentLength = this.lengths[0];
-            this.sourceIndex = 0;
-            this.index = 0;
+            this.files = files;
+            this.fileContents = this.files.Select(f => File.ReadAllText(f)).ToList();
+            this.fileLengths = this.fileContents.Select(s => s.Length).ToArray();
+            this.currentFileContents = this.fileContents[0];
+            this.currentFileLength = this.fileLengths[0];
+            this.fileIndex = 0;
+            this.contentsIndex = 0;
 
             this.LexNextToken();
         }
 
         private void Advance() {
-            if (++this.index >= this.currentLength) {
-                this.index = 0;
+            if (++this.contentsIndex >= this.currentFileLength) {
+                this.contentsIndex = 0;
 
-                if (++this.sourceIndex < this.sources.Count) {
-                    this.currentSource = this.sources[this.sourceIndex];
-                    this.currentLength = this.lengths[this.sourceIndex];
+                if (++this.fileIndex < this.fileContents.Count) {
+                    this.currentFileContents = this.fileContents[this.fileIndex];
+                    this.currentFileLength = this.fileLengths[this.fileIndex];
                 }
                 else {
-                    this.currentSource = string.Empty;
-                    this.currentLength = 0;
+                    this.currentFileContents = string.Empty;
+                    this.currentFileLength = 0;
                 }
             }
         }
 
         private bool Peek(out char value) {
-            if (this.index < this.currentLength) {
-                value = this.currentSource[this.index];
+            if (this.contentsIndex < this.currentFileLength) {
+                value = this.currentFileContents[this.contentsIndex];
 
                 return true;
             }
@@ -56,7 +60,18 @@ namespace ArkeOS.Tools.KohlCompiler {
             }
         }
 
-        private string ReadIdentifier() {
+        private void ThrowUnexpectedCharacterAtCurrent(char c) {
+            var lengths = this.currentFileContents.Split(new[] { Environment.NewLine }, StringSplitOptions.None).Select(l => l.Length).ToArray();
+            var line = 0;
+            var idx = 0;
+
+            while (idx + lengths[line] < this.contentsIndex)
+                idx += lengths[line++] + Environment.NewLine.Length;
+
+            throw new UnexpectedCharacterException(this.files[this.fileIndex], line + 1, this.contentsIndex - idx + 1, c);
+        }
+
+        private Token ReadIdentifier() {
             var res = new StringBuilder();
 
             while (this.Peek(out var c) && (char.IsLetterOrDigit(c) || c == '_')) {
@@ -65,10 +80,10 @@ namespace ArkeOS.Tools.KohlCompiler {
                 res.Append(c);
             }
 
-            return res.ToString();
+            return new Token(TokenType.Identifier, res.ToString());
         }
 
-        private string ReadNumber() {
+        private Token ReadNumber() {
             var res = new StringBuilder();
             var radix = 10;
 
@@ -85,7 +100,7 @@ namespace ArkeOS.Tools.KohlCompiler {
                     }
                 }
                 else {
-                    return "0";
+                    res.Append(s);
                 }
             }
 
@@ -98,10 +113,10 @@ namespace ArkeOS.Tools.KohlCompiler {
                     res.Append(c);
             }
 
-            return Convert.ToUInt64(res.ToString(), radix).ToString();
+            return new Token(TokenType.Number, Convert.ToUInt64(res.ToString(), radix).ToString());
         }
 
-        private string ReadWhitespace() {
+        private Token ReadWhitespace() {
             var res = new StringBuilder();
 
             while (this.Peek(out var c) && char.IsWhiteSpace(c)) {
@@ -110,45 +125,51 @@ namespace ArkeOS.Tools.KohlCompiler {
                 res.Append(c);
             }
 
-            return res.ToString();
+            return new Token(TokenType.Whitespace, res.ToString());
+        }
+
+        private Token ReadSymbol(char c) {
+            var res = default(Token);
+
+            switch (c) {
+                case '+': res = new Token(TokenType.Plus, c); break;
+                case '-': res = new Token(TokenType.Minus, c); break;
+                case '*': res = new Token(TokenType.Asterisk, c); break;
+                case '/': res = new Token(TokenType.ForwardSlash, c); break;
+                case '^': res = new Token(TokenType.Caret, c); break;
+                case '%': res = new Token(TokenType.Percent, c); break;
+                case '(': res = new Token(TokenType.OpenParenthesis, c); break;
+                case ')': res = new Token(TokenType.CloseParenthesis, c); break;
+                case '=': res = new Token(TokenType.EqualsSign, c); break;
+                case ';': res = new Token(TokenType.Semicolon, c); break;
+                default: this.ThrowUnexpectedCharacterAtCurrent(c); break;
+            }
+
+            this.Advance();
+
+            return res;
         }
 
         private void LexNextToken() {
-            if (this.Peek(out var c)) {
-                if (char.IsLetter(c)) {
-                    this.current = new Token(TokenType.Identifier, this.ReadIdentifier());
-                }
-                else if (char.IsNumber(c)) {
-                    this.current = new Token(TokenType.Number, this.ReadNumber());
-                }
-                else if (char.IsWhiteSpace(c)) {
-                    this.ReadWhitespace();
+            if (!this.Peek(out var c)) {
+                this.currentToken = default(Token);
 
-                    this.LexNextToken();
+                return;
+            }
 
-                    return;
-                }
-                else {
-                    switch (c) {
-                        case '+': this.current = new Token(TokenType.Plus, c); break;
-                        case '-': this.current = new Token(TokenType.Minus, c); break;
-                        case '*': this.current = new Token(TokenType.Asterisk, c); break;
-                        case '/': this.current = new Token(TokenType.ForwardSlash, c); break;
-                        case '^': this.current = new Token(TokenType.Caret, c); break;
-                        case '%': this.current = new Token(TokenType.Percent, c); break;
-                        case '(': this.current = new Token(TokenType.OpenParenthesis, c); break;
-                        case ')': this.current = new Token(TokenType.CloseParenthesis, c); break;
-                        case '=': this.current = new Token(TokenType.EqualsSign, c); break;
-                        case ';': this.current = new Token(TokenType.Semicolon, c); break;
-                        default: throw new InvalidOperationException($"Unexpected '{c}'");
-                    }
+            if (char.IsLetter(c)) {
+                this.currentToken = this.ReadIdentifier();
+            }
+            else if (char.IsNumber(c)) {
+                this.currentToken = this.ReadNumber();
+            }
+            else if (char.IsWhiteSpace(c)) {
+                this.currentToken = this.ReadWhitespace();
 
-                    this.Advance();
-                }
-
+                this.LexNextToken();
             }
             else {
-                this.current = default(Token);
+                this.currentToken = this.ReadSymbol(c);
             }
         }
 
@@ -162,9 +183,9 @@ namespace ArkeOS.Tools.KohlCompiler {
         }
 
         public bool PeekNext(out Token token) {
-            token = this.current;
+            token = this.currentToken;
 
-            return this.index < this.currentLength;
+            return this.contentsIndex < this.currentFileLength;
         }
 
         public TokenStream GetStream() => this.stream;
