@@ -23,7 +23,7 @@
 	cas (R13, R14, 0d6);
 	cas (R14, R15, 0d8);
 
-	R0 = RONE;
+	R0 = true;
 
 	if (R0 == R0)
 		R1 = 12;
@@ -33,13 +33,13 @@
 		R3 = 45;
 	}
 
-	if (RONE & RMAX)
+	if (RONE & RMAX & true)
 		R7 = 13;
 
-	if (RONE & RZERO)
+	if (RONE & RZERO & false)
 		R8 = 13;
 
-	if (RZERO) {
+	if (RZERO | false) {
 		R4 = 56;
 		R5 = 78;
 		R6 = 90;

@@ -80,8 +80,11 @@ namespace ArkeOS.Tools.KohlCompiler {
                     if (n.Expression is RegisterNode rnode) {
                         this.Emit(InstructionDefinition.SET, target, Parameter.CreateRegister(rnode.Register));
                     }
-                    else if (n.Expression is NumberNode nnode) {
-                        this.Emit(InstructionDefinition.SET, target, Parameter.CreateLiteral((ulong)nnode.Number));
+                    else if (n.Expression is NumberLiteralNode nnode) {
+                        this.Emit(InstructionDefinition.SET, target, Parameter.CreateLiteral((ulong)nnode.Literal));
+                    }
+                    else if (n.Expression is BooleanLiteralNode bnode) {
+                        this.Emit(InstructionDefinition.SET, target, Parameter.CreateLiteral(bnode.Literal ? ulong.MaxValue : 0));
                     }
                     else {
                         this.Visit(n.Expression);
@@ -218,14 +221,30 @@ namespace ArkeOS.Tools.KohlCompiler {
 
                     break;
 
-                case NumberNode n:
-                    this.Emit(InstructionDefinition.SET, Emitter.StackParam, Parameter.CreateLiteral((ulong)n.Number));
+                case LiteralNode n:
+                    this.Visit(n);
 
                     break;
 
                 case IdentifierNode n:
                     this.Visit(n);
 
+                    break;
+
+                default:
+                    throw new NotImplementedException();
+            }
+        }
+
+        private void Visit(LiteralNode e) {
+            switch (e) {
+                case NumberLiteralNode n:
+                    this.Emit(InstructionDefinition.SET, Emitter.StackParam, Parameter.CreateLiteral((ulong)n.Literal));
+
+                    break;
+
+                case BooleanLiteralNode n:
+                    this.Emit(InstructionDefinition.SET, Emitter.StackParam, Parameter.CreateLiteral(n.Literal ? ulong.MaxValue : 0));
                     break;
 
                 default:

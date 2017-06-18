@@ -199,11 +199,15 @@ namespace ArkeOS.Tools.KohlCompiler {
                 if (token.Type == TokenType.OpenParenthesis) seenOpenParens++;
 
                 if (start && token.Type == TokenType.Number) {
-                    stack.Push(this.ReadNumber());
+                    stack.Push(this.ReadNumberLiteral());
                     start = false;
                 }
                 else if (start && token.Type == TokenType.Identifier) {
                     stack.Push(this.ReadIdentifier());
+                    start = false;
+                }
+                else if (start && (token.Type == TokenType.TrueKeyword || token.Type == TokenType.FalseKeyword)) {
+                    stack.Push(this.ReadBooleanLiteral());
                     start = false;
                 }
                 else if (!start && token.Type == TokenType.CloseParenthesis) {
@@ -225,7 +229,8 @@ namespace ArkeOS.Tools.KohlCompiler {
             return stack.ToNode();
         }
 
-        private NumberNode ReadNumber() => this.lexer.Read(TokenType.Number, out var token) ? new NumberNode(token) : throw this.GetExpectedTokenExceptionAtCurrent(TokenType.Number);
+        private LiteralNode ReadNumberLiteral() => this.lexer.Read(TokenType.Number, out var token) ? new NumberLiteralNode(token) : throw this.GetExpectedTokenExceptionAtCurrent(TokenType.Number);
+        private LiteralNode ReadBooleanLiteral() => this.lexer.Read(t => t.Type == TokenType.TrueKeyword || t.Type == TokenType.FalseKeyword, out var token) ? new BooleanLiteralNode(token) : throw this.GetExpectedTokenExceptionAtCurrent("bool");
         private IdentifierNode ReadIdentifier() => this.lexer.Read(TokenType.Identifier, out var token) ? new RegisterNode(token) : throw this.GetExpectedTokenExceptionAtCurrent(TokenType.Identifier);
 
         private OperatorNode ReadOperator(bool unary) {

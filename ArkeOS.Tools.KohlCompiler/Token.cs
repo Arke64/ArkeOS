@@ -34,6 +34,8 @@
         CloseParenthesis,
         OpenCurlyBrace,
         CloseCurlyBrace,
+        TrueKeyword,
+        FalseKeyword,
         IfKeyword,
         DbgKeyword,
         BrkKeyword,
