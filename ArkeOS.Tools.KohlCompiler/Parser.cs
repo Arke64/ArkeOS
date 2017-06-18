@@ -17,19 +17,28 @@ namespace ArkeOS.Tools.KohlCompiler {
         private StatementBlockNode ReadStatementBlock() {
             var block = new StatementBlockNode();
 
-            while (!this.lexer.AtEnd)
+            this.Read(TokenType.OpenCurlyBrace);
+
+            while (this.lexer.Peek(out var t) && t.Type != TokenType.CloseCurlyBrace)
                 block.Add(this.ReadStatement());
+
+            this.Read(TokenType.CloseCurlyBrace);
 
             return block;
         }
 
-        private StatementNode ReadStatement() => this.ReadAssignment();
+        private StatementNode ReadStatement() {
+            var res = this.ReadAssignment();
+
+            this.Read(TokenType.Semicolon);
+
+            return res;
+        }
 
         private AssignmentNode ReadAssignment() {
             var ident = this.ReadIdentifier();
             this.Read(TokenType.EqualsSign);
             var exp = this.ReadExpression();
-            this.Read(TokenType.Semicolon);
 
             return new AssignmentNode(ident, exp);
         }

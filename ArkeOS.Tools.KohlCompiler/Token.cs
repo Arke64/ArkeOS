@@ -13,6 +13,8 @@
         EqualsSign,
         Semicolon,
         Whitespace,
+        OpenCurlyBrace,
+        CloseCurlyBrace,
     }
 
     public struct Token {
