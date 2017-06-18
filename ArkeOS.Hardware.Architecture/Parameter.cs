@@ -43,21 +43,21 @@ namespace ArkeOS.Hardware.Architecture {
             Type = ParameterType.Stack,
         };
 
-        public static Parameter CreateRegister(bool isIndirect, bool isRIPRelative, Register register) => new Parameter() {
+        public static Parameter CreateRegister(Register register, bool isIndirect, bool isRIPRelative) => new Parameter() {
             IsIndirect = isIndirect,
             IsRIPRelative = isRIPRelative,
             Type = ParameterType.Register,
             Register = register,
         };
 
-        public static Parameter CreateLiteral(bool isIndirect, bool isRIPRelative, ulong literal) => new Parameter() {
+        public static Parameter CreateLiteral(ulong literal, bool isIndirect, bool isRIPRelative) => new Parameter() {
             IsIndirect = isIndirect,
             IsRIPRelative = isRIPRelative,
             Type = ParameterType.Literal,
             Literal = literal,
         };
 
-        public static Parameter CreateCalculated(bool isIndirect, bool isRIPRelative, Calculated @base, Calculated index, Calculated scale, Calculated offset) => new Parameter() {
+        public static Parameter CreateCalculated(Calculated @base, Calculated index, Calculated scale, Calculated offset, bool isIndirect, bool isRIPRelative) => new Parameter() {
             Base = @base,
             Index = index,
             Scale = scale,

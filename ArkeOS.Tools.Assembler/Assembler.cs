@@ -217,13 +217,13 @@ namespace ArkeOS.Tools.Assembler {
                 var scale = parts.Length > 2 ? new Parameter.Calculated(parts[2][0] != '-', this.ParseParameter(parts[2].TrimStart('-'), resolveNames)) : null;
                 var offset = parts.Length > 3 ? new Parameter.Calculated(parts[3][0] != '-', this.ParseParameter(parts[3].TrimStart('-'), resolveNames)) : null;
 
-                return this.ReduceCalculated(Parameter.CreateCalculated(isIndirect, false, @base, index, scale, offset));
+                return this.ReduceCalculated(Parameter.CreateCalculated(@base, index, scale, offset, isIndirect, false));
             }
             else if (value[0] == '0') {
-                return Parameter.CreateLiteral(isIndirect, false, Helpers.ParseLiteral(value));
+                return Parameter.CreateLiteral(Helpers.ParseLiteral(value), isIndirect, false);
             }
             else if (value[0] == 'R') {
-                return Parameter.CreateRegister(isIndirect, false, Helpers.ParseEnum<Register>(value));
+                return Parameter.CreateRegister(Helpers.ParseEnum<Register>(value), isIndirect, false);
             }
             else if (value == "S") {
                 return Parameter.CreateStack(isIndirect, false);
@@ -232,30 +232,30 @@ namespace ArkeOS.Tools.Assembler {
                 value = value.Substring(1);
 
                 if (value == "Offset") {
-                    return Parameter.CreateLiteral(isIndirect, false, this.currentOffset);
+                    return Parameter.CreateLiteral(this.currentOffset, isIndirect, false);
                 }
                 else if (this.defines.ContainsKey(value)) {
                     var literal = this.defines[value];
 
                     if (literal > 1 && literal != ulong.MaxValue) {
-                        return Parameter.CreateLiteral(isIndirect, false, literal);
+                        return Parameter.CreateLiteral(literal, isIndirect, false);
                     }
                     else {
-                        return Parameter.CreateRegister(isIndirect, false, literal == 0 ? Register.RZERO : (literal == 1 ? Register.RONE : Register.RMAX));
+                        return Parameter.CreateRegister(literal == 0 ? Register.RZERO : (literal == 1 ? Register.RONE : Register.RMAX), isIndirect, false);
                     }
                 }
 
                 if (!resolveNames)
-                    return Parameter.CreateLiteral(isIndirect, false, 0);
+                    return Parameter.CreateLiteral(0, isIndirect, false);
 
                 if (this.variables.ContainsKey(value)) {
-                    return Parameter.CreateLiteral(isIndirect, true, unchecked(this.variables[value] - this.currentOffset));
+                    return Parameter.CreateLiteral(unchecked(this.variables[value] - this.currentOffset), isIndirect, true);
                 }
                 else if (this.strings.ContainsKey(value)) {
-                    return Parameter.CreateLiteral(isIndirect, true, unchecked(this.strings[value] - this.currentOffset));
+                    return Parameter.CreateLiteral(unchecked(this.strings[value] - this.currentOffset), isIndirect, true);
                 }
                 else if (this.labels.ContainsKey(value)) {
-                    return Parameter.CreateLiteral(isIndirect, true, unchecked(this.labels[value] - this.currentOffset));
+                    return Parameter.CreateLiteral(unchecked(this.labels[value] - this.currentOffset), isIndirect, true);
                 }
 
                 throw new VariableNotFoundException(value);
@@ -298,7 +298,7 @@ namespace ArkeOS.Tools.Assembler {
                 }
             }
 
-            return Parameter.CreateLiteral(calculated.IsIndirect, calculated.IsRIPRelative, value);
+            return Parameter.CreateLiteral(value, calculated.IsIndirect, calculated.IsRIPRelative);
         }
     }
 }

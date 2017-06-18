@@ -19,11 +19,11 @@ namespace ArkeOS.Tools.KohlCompiler {
         public void Emit(string outputFile) {
             this.instructions = new List<Instruction>();
 
-            var start = Parameter.CreateLiteral(false, true, 0);
-            var len = Parameter.CreateLiteral(false, false, 0);
+            var start = Parameter.CreateLiteral(0, false, true);
+            var len = Parameter.CreateLiteral(0, false, false);
 
-            this.Emit(InstructionDefinition.CPY, Parameter.CreateRegister(false, false, Register.RZERO), start, len);
-            this.Emit(InstructionDefinition.SET, Parameter.CreateRegister(false, false, Register.RIP), Parameter.CreateRegister(false, false, Register.RZERO));
+            this.Emit(InstructionDefinition.CPY, Parameter.CreateRegister(Register.RZERO, false, false), start, len);
+            this.Emit(InstructionDefinition.SET, Parameter.CreateRegister(Register.RIP, false, false), Parameter.CreateRegister(Register.RZERO, false, false));
 
             start.Literal = (ulong)this.instructions.Sum(i => i.Length);
 
@@ -58,7 +58,7 @@ namespace ArkeOS.Tools.KohlCompiler {
                 case AssignmentNode n:
                     this.Visit(n.Expression);
 
-                    this.Emit(InstructionDefinition.SET, Parameter.CreateRegister(false, false, n.Target.Identifier.ToEnum<Register>()), Emitter.StackParam);
+                    this.Emit(InstructionDefinition.SET, Parameter.CreateRegister(n.Target.Identifier.ToEnum<Register>(), false, false), Emitter.StackParam);
 
                     break;
 
@@ -90,19 +90,19 @@ namespace ArkeOS.Tools.KohlCompiler {
 
                     switch (n.Op.Operator) {
                         case Operator.UnaryPlus: break;
-                        case Operator.UnaryMinus: this.Emit(InstructionDefinition.MUL, Emitter.StackParam, Emitter.StackParam, Parameter.CreateLiteral(false, false, ulong.MaxValue)); break;
+                        case Operator.UnaryMinus: this.Emit(InstructionDefinition.MUL, Emitter.StackParam, Emitter.StackParam, Parameter.CreateLiteral(ulong.MaxValue, false, false)); break;
                         default: Debug.Assert(false); break;
                     }
 
                     break;
 
                 case NumberNode n:
-                    this.Emit(InstructionDefinition.SET, Emitter.StackParam, Parameter.CreateLiteral(false, false, (ulong)n.Number));
+                    this.Emit(InstructionDefinition.SET, Emitter.StackParam, Parameter.CreateLiteral((ulong)n.Number, false, false));
 
                     break;
 
                 case IdentifierNode n:
-                    this.Emit(InstructionDefinition.SET, Emitter.StackParam, Parameter.CreateRegister(false, false, n.Identifier.ToEnum<Register>()));
+                    this.Emit(InstructionDefinition.SET, Emitter.StackParam, Parameter.CreateRegister(n.Identifier.ToEnum<Register>(), false, false));
 
                     break;
 

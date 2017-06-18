@@ -5,8 +5,8 @@ using System.IO;
 
 namespace ArkeOS.Hardware.Architecture {
     public class Instruction {
-        private static Parameter.Calculated RZEROCalculatedOperand { get; } = new Parameter.Calculated(true, Parameter.CreateRegister(false, false, Register.RZERO));
-        private static Parameter.Calculated RONECalculatedOperand { get; } = new Parameter.Calculated(true, Parameter.CreateRegister(false, false, Register.RONE));
+        private static Parameter.Calculated RZEROCalculatedOperand { get; } = new Parameter.Calculated(true, Parameter.CreateRegister(Register.RZERO, false, false));
+        private static Parameter.Calculated RONECalculatedOperand { get; } = new Parameter.Calculated(true, Parameter.CreateRegister(Register.RONE, false, false));
 
         public byte Code { get; }
         public byte Length { get; private set; }
