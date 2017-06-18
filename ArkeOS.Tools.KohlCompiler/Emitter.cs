@@ -1,4 +1,5 @@
 ﻿using ArkeOS.Hardware.Architecture;
+using ArkeOS.Tools.KohlCompiler.Exceptions;
 using ArkeOS.Tools.KohlCompiler.Nodes;
 using ArkeOS.Utilities.Extensions;
 using System;
@@ -47,6 +48,13 @@ namespace ArkeOS.Tools.KohlCompiler {
             len.Literal = (ulong)this.instructions.Skip(start).Sum(i => i.Length);
         }
 
+        private Parameter ExtractLValue(ExpressionNode expr) {
+            if (expr is IdentifierNode n)
+                return Parameter.CreateRegister(n.Identifier.ToEnum<Register>());
+
+            throw new ExceptedLValueException();
+        }
+
         private void Visit(ProgramNode n) => this.Visit(n.StatementBlock);
 
         private void Visit(StatementBlockNode n) {
@@ -64,16 +72,18 @@ namespace ArkeOS.Tools.KohlCompiler {
                     break;
 
                 case AssignmentStatementNode n:
+                    var target = this.ExtractLValue(n.Target);
+
                     if (n.Expression is IdentifierNode inode) {
-                        this.Emit(InstructionDefinition.SET, Parameter.CreateRegister(n.Target.Identifier.ToEnum<Register>()), Parameter.CreateRegister(inode.Identifier.ToEnum<Register>()));
+                        this.Emit(InstructionDefinition.SET, target, Parameter.CreateRegister(inode.Identifier.ToEnum<Register>()));
                     }
                     else if (n.Expression is NumberNode nnode) {
-                        this.Emit(InstructionDefinition.SET, Parameter.CreateRegister(n.Target.Identifier.ToEnum<Register>()), Parameter.CreateLiteral((ulong)nnode.Number));
+                        this.Emit(InstructionDefinition.SET, target, Parameter.CreateLiteral((ulong)nnode.Number));
                     }
                     else {
                         this.Visit(n.Expression);
 
-                        this.Emit(InstructionDefinition.SET, Parameter.CreateRegister(n.Target.Identifier.ToEnum<Register>()), Emitter.StackParam);
+                        this.Emit(InstructionDefinition.SET, target, Emitter.StackParam);
                     }
 
                     break;
@@ -84,11 +94,42 @@ namespace ArkeOS.Tools.KohlCompiler {
                 case IntdStatementNode n: this.Emit(InstructionDefinition.INTD); break;
                 case InteStatementNode n: this.Emit(InstructionDefinition.INTE); break;
                 case NopStatementNode n: this.Emit(InstructionDefinition.NOP); break;
-                case IntStatementNode n: this.Visit(n.A); this.Visit(n.B); this.Visit(n.C); this.Emit(InstructionDefinition.INT, Emitter.StackParam, Emitter.StackParam, Emitter.StackParam); break;
-                case CasStatementNode n: this.Visit(n.C); this.Emit(InstructionDefinition.CAS, Parameter.CreateRegister(n.A.Identifier.ToEnum<Register>()), Parameter.CreateRegister(n.B.Identifier.ToEnum<Register>()), Emitter.StackParam); break;
-                case CpyStatementNode n: this.Visit(n.A); this.Visit(n.B); this.Visit(n.C); this.Emit(InstructionDefinition.CPY, Emitter.StackParam, Emitter.StackParam, Emitter.StackParam); break;
-                case DbgStatementNode n: this.Visit(n.A); this.Visit(n.B); this.Visit(n.C); this.Emit(InstructionDefinition.DBG, Emitter.StackParam, Emitter.StackParam, Emitter.StackParam); break;
-                case XchgStatementNode n: this.Emit(InstructionDefinition.XCHG, Parameter.CreateRegister(n.A.Identifier.ToEnum<Register>()), Parameter.CreateRegister(n.B.Identifier.ToEnum<Register>())); break;
+                case CpyStatementNode n: this.Visit(n.ArgumentList); this.Emit(InstructionDefinition.CPY, Emitter.StackParam, Emitter.StackParam, Emitter.StackParam); break;
+                case IntStatementNode n: this.Visit(n.ArgumentList); this.Emit(InstructionDefinition.INT, Emitter.StackParam, Emitter.StackParam, Emitter.StackParam); break;
+
+                case DbgStatementNode n: {
+                        if (n.ArgumentList.Extract(0, out var arg0) && n.ArgumentList.Extract(1, out var arg1) && n.ArgumentList.Extract(2, out var arg2)) {
+                            this.Emit(InstructionDefinition.DBG, this.ExtractLValue(arg0), this.ExtractLValue(arg1), this.ExtractLValue(arg2));
+                        }
+                        else {
+                            throw new TooFewArgumentsException();
+                        }
+                    }
+
+                    break;
+
+                case CasStatementNode n: {
+                        if (n.ArgumentList.Extract(0, out var arg0) && n.ArgumentList.Extract(1, out var arg1) && n.ArgumentList.Extract(2, out var arg2)) {
+                            this.Visit(arg2);
+                            this.Emit(InstructionDefinition.CAS, this.ExtractLValue(arg0), this.ExtractLValue(arg1), Emitter.StackParam);
+                        }
+                        else {
+                            throw new TooFewArgumentsException();
+                        }
+                    }
+
+                    break;
+
+                case XchgStatementNode n: {
+                        if (n.ArgumentList.Extract(0, out var arg0) && n.ArgumentList.Extract(1, out var arg1)) {
+                            this.Emit(InstructionDefinition.XCHG, this.ExtractLValue(arg0), this.ExtractLValue(arg1));
+                        }
+                        else {
+                            throw new TooFewArgumentsException();
+                        }
+                    }
+
+                    break;
 
                 default:
                     throw new NotImplementedException();
@@ -137,6 +178,11 @@ namespace ArkeOS.Tools.KohlCompiler {
                 default:
                     throw new NotImplementedException();
             }
+        }
+
+        private void Visit(ArgumentListNode argumentList) {
+            foreach (var a in argumentList.Arguments)
+                this.Visit(a);
         }
     }
 }

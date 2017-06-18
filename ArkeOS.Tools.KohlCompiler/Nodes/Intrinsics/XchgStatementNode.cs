@@ -1,8 +1,7 @@
 ﻿namespace ArkeOS.Tools.KohlCompiler.Nodes {
     public class XchgStatementNode : StatementNode {
-        public IdentifierNode A { get; }
-        public IdentifierNode B { get; }
+        public ArgumentListNode ArgumentList { get; }
 
-        public XchgStatementNode(IdentifierNode a, IdentifierNode b) => (this.A, this.B) = (a, b);
+        public XchgStatementNode(ArgumentListNode argumentList) => this.ArgumentList = argumentList;
     }
 }

@@ -49,7 +49,7 @@ namespace ArkeOS.Tools.KohlCompiler {
                 return false;
             }
 
-            private void GetNextNewLine() { this.nextNewLine = this.contents.IndexOf(Environment.NewLine, this.nextNewLine, StringComparison.Ordinal); if (this.nextNewLine == -1) this.nextNewLine += Environment.NewLine.Length; }
+            private void GetNextNewLine() { this.nextNewLine = this.contents.IndexOf(Environment.NewLine, this.nextNewLine, StringComparison.Ordinal); if (this.nextNewLine != -1) this.nextNewLine += Environment.NewLine.Length; }
         }
 
         private readonly Queue<FileInfo> files;
@@ -212,6 +212,10 @@ namespace ArkeOS.Tools.KohlCompiler {
 
             return !res;
         }
+
+        public bool Peek(TokenType type) => this.Peek(type, out _);
+        public bool Peek(TokenType type, out Token token) => this.Peek(t => t.Type == type, out token);
+        public bool Peek(Func<Token, bool> validator, out Token token) => this.Peek(out token) && validator(token);
 
         public bool Read(TokenType type) => this.Read(type, out _);
         public bool Read(TokenType type, out Token token) => this.Read(t => t.Type == type, out token);

@@ -21,6 +21,14 @@ namespace ArkeOS.Tools.KohlCompiler {
                 throw this.GetExpectedTokenExceptionAtCurrent(t);
         }
 
+        private void Peek(TokenType t) {
+            if (!this.lexer.Read(t))
+                throw this.GetExpectedTokenExceptionAtCurrent(t);
+        }
+
+        private bool TryRead(TokenType t) => this.lexer.Read(t);
+        private bool TryPeek(TokenType t) => this.lexer.Peek(t);
+
         private StatementBlockNode ReadStatementBlock() {
             var block = new StatementBlockNode();
 
@@ -65,6 +73,22 @@ namespace ArkeOS.Tools.KohlCompiler {
             return res;
         }
 
+        private ArgumentListNode ReadArgumentList() {
+            var list = new ArgumentListNode();
+
+            this.Read(TokenType.OpenParenthesis);
+
+            if (!this.TryPeek(TokenType.CloseParenthesis)) {
+                do {
+                    list.Add(this.ReadExpression());
+                } while (this.TryRead(TokenType.Comma));
+            }
+
+            this.Read(TokenType.CloseParenthesis);
+
+            return list;
+        }
+
         private BrkStatementNode ReadBrkStatement() {
             this.Read(TokenType.BrkKeyword);
             this.Read(TokenType.Semicolon);
@@ -74,38 +98,26 @@ namespace ArkeOS.Tools.KohlCompiler {
 
         private CasStatementNode ReadCasStatement() {
             this.Read(TokenType.CasKeyword);
-            this.Read(TokenType.OpenParenthesis);
-            var a = this.ReadIdentifier();
-            var b = this.ReadIdentifier();
-            var c = this.ReadExpression();
-            this.Read(TokenType.CloseParenthesis);
+            var args = this.ReadArgumentList();
             this.Read(TokenType.Semicolon);
 
-            return new CasStatementNode(a, b, c);
+            return new CasStatementNode(args);
         }
 
         private CpyStatementNode ReadCpyStatement() {
             this.Read(TokenType.CpyKeyword);
-            this.Read(TokenType.OpenParenthesis);
-            var a = this.ReadExpression();
-            var b = this.ReadExpression();
-            var c = this.ReadExpression();
-            this.Read(TokenType.CloseParenthesis);
+            var args = this.ReadArgumentList();
             this.Read(TokenType.Semicolon);
 
-            return new CpyStatementNode(a, b, c);
+            return new CpyStatementNode(args);
         }
 
         private DbgStatementNode ReadDbgStatement() {
             this.Read(TokenType.DbgKeyword);
-            this.Read(TokenType.OpenParenthesis);
-            var a = this.ReadExpression();
-            var b = this.ReadExpression();
-            var c = this.ReadExpression();
-            this.Read(TokenType.CloseParenthesis);
+            var args = this.ReadArgumentList();
             this.Read(TokenType.Semicolon);
 
-            return new DbgStatementNode(a, b, c);
+            return new DbgStatementNode(args);
         }
 
         private EintStatementNode ReadEintStatement() {
@@ -138,14 +150,10 @@ namespace ArkeOS.Tools.KohlCompiler {
 
         private IntStatementNode ReadIntStatement() {
             this.Read(TokenType.IntKeyword);
-            this.Read(TokenType.OpenParenthesis);
-            var a = this.ReadExpression();
-            var b = this.ReadExpression();
-            var c = this.ReadExpression();
-            this.Read(TokenType.CloseParenthesis);
+            var args = this.ReadArgumentList();
             this.Read(TokenType.Semicolon);
 
-            return new IntStatementNode(a, b, c);
+            return new IntStatementNode(args);
         }
 
         private NopStatementNode ReadNopStatement() {
@@ -157,13 +165,10 @@ namespace ArkeOS.Tools.KohlCompiler {
 
         private XchgStatementNode ReadXchgStatement() {
             this.Read(TokenType.XchgKeyword);
-            this.Read(TokenType.OpenParenthesis);
-            var a = this.ReadIdentifier();
-            var b = this.ReadIdentifier();
-            this.Read(TokenType.CloseParenthesis);
+            var args = this.ReadArgumentList();
             this.Read(TokenType.Semicolon);
 
-            return new XchgStatementNode(a, b);
+            return new XchgStatementNode(args);
         }
 
         private IfStatementNode ReadIfStatement() {
