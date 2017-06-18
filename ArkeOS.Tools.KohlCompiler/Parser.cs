@@ -7,18 +7,20 @@ namespace ArkeOS.Tools.KohlCompiler {
 
         public Parser(Lexer lexer) => this.lexer = lexer;
 
-        public ProgramNode Parse() {
-            var prog = new ProgramNode();
-
-            while (!this.lexer.AtEnd)
-                prog.Add(this.ReadStatement());
-
-            return prog;
-        }
+        public ProgramNode Parse() => new ProgramNode(this.ReadStatementBlock());
 
         private void Read(TokenType t) {
             if (!this.lexer.Read(t))
                 throw this.GetExpectedTokenExceptionAtCurrent(t);
+        }
+
+        private StatementBlockNode ReadStatementBlock() {
+            var block = new StatementBlockNode();
+
+            while (!this.lexer.AtEnd)
+                block.Add(this.ReadStatement());
+
+            return block;
         }
 
         private StatementNode ReadStatement() => this.ReadAssignment();

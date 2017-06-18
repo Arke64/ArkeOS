@@ -48,7 +48,9 @@ namespace ArkeOS.Tools.KohlCompiler {
         private void Emit(InstructionDefinition def, params Parameter[] parameters) => this.instructions.Add(new Instruction(def, parameters));
         private void Emit(InstructionDefinition def, Parameter conditional, InstructionConditionalType conditionalType, params Parameter[] parameters) => this.instructions.Add(new Instruction(def, parameters, conditional, conditionalType));
 
-        private void Visit(ProgramNode n) {
+        private void Visit(ProgramNode n) => this.Visit(n.Block);
+
+        private void Visit(StatementBlockNode n) {
             foreach (var s in n.Statements)
                 this.Visit(s);
         }
