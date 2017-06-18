@@ -1,7 +1,5 @@
 ﻿namespace ArkeOS.Tools.KohlCompiler.Nodes {
-    public class IdentifierNode : ExpressionNode {
-        public string Identifier { get; }
+    public abstract class IdentifierNode : ExpressionNode {
 
-        public IdentifierNode(Token token) => this.Identifier = token.Value;
     }
 }

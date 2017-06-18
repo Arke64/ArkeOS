@@ -1,7 +1,6 @@
 ﻿using ArkeOS.Hardware.Architecture;
 using ArkeOS.Tools.KohlCompiler.Exceptions;
 using ArkeOS.Tools.KohlCompiler.Nodes;
-using ArkeOS.Utilities.Extensions;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -49,8 +48,12 @@ namespace ArkeOS.Tools.KohlCompiler {
         }
 
         private Parameter ExtractLValue(ExpressionNode expr) {
-            if (expr is IdentifierNode n)
-                return Parameter.CreateRegister(n.Identifier.ToEnum<Register>());
+            if (expr is IdentifierNode i) {
+                switch (i) {
+                    case RegisterNode n: return Parameter.CreateRegister(n.Register);
+                    default: throw new NotImplementedException();
+                }
+            }
 
             throw new ExceptedLValueException();
         }
@@ -74,8 +77,8 @@ namespace ArkeOS.Tools.KohlCompiler {
                 case AssignmentStatementNode n:
                     var target = this.ExtractLValue(n.Target);
 
-                    if (n.Expression is IdentifierNode inode) {
-                        this.Emit(InstructionDefinition.SET, target, Parameter.CreateRegister(inode.Identifier.ToEnum<Register>()));
+                    if (n.Expression is RegisterNode rnode) {
+                        this.Emit(InstructionDefinition.SET, target, Parameter.CreateRegister(rnode.Register));
                     }
                     else if (n.Expression is NumberNode nnode) {
                         this.Emit(InstructionDefinition.SET, target, Parameter.CreateLiteral((ulong)nnode.Number));
@@ -171,7 +174,19 @@ namespace ArkeOS.Tools.KohlCompiler {
                     break;
 
                 case IdentifierNode n:
-                    this.Emit(InstructionDefinition.SET, Emitter.StackParam, Parameter.CreateRegister(n.Identifier.ToEnum<Register>()));
+                    this.Visit(n);
+
+                    break;
+
+                default:
+                    throw new NotImplementedException();
+            }
+        }
+
+        private void Visit(IdentifierNode e) {
+            switch (e) {
+                case RegisterNode n:
+                    this.Emit(InstructionDefinition.SET, Emitter.StackParam, Parameter.CreateRegister(n.Register));
 
                     break;
 

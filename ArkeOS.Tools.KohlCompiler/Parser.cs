@@ -226,7 +226,7 @@ namespace ArkeOS.Tools.KohlCompiler {
         }
 
         private NumberNode ReadNumber() => this.lexer.Read(TokenType.Number, out var token) ? new NumberNode(token) : throw this.GetExpectedTokenExceptionAtCurrent(TokenType.Number);
-        private IdentifierNode ReadIdentifier() => this.lexer.Read(TokenType.Identifier, out var token) ? new IdentifierNode(token) : throw this.GetExpectedTokenExceptionAtCurrent(TokenType.Identifier);
+        private IdentifierNode ReadIdentifier() => this.lexer.Read(TokenType.Identifier, out var token) ? new RegisterNode(token) : throw this.GetExpectedTokenExceptionAtCurrent(TokenType.Identifier);
 
         private OperatorNode ReadOperator(bool unary) {
             if (!this.lexer.Read(t => t.IsOperator(), out var token))
