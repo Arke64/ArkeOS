@@ -101,7 +101,7 @@ namespace ArkeOS.Tools.KohlCompiler {
                 case IntStatementNode n: this.Visit(n.ArgumentList); this.Emit(InstructionDefinition.INT, Emitter.StackParam, Emitter.StackParam, Emitter.StackParam); break;
 
                 case DbgStatementNode n: {
-                        if (n.ArgumentList.Extract(0, out var arg0) && n.ArgumentList.Extract(1, out var arg1) && n.ArgumentList.Extract(2, out var arg2)) {
+                        if (n.ArgumentList.Extract(out var arg0, out var arg1, out var arg2)) {
                             this.Emit(InstructionDefinition.DBG, this.ExtractLValue(arg0), this.ExtractLValue(arg1), this.ExtractLValue(arg2));
                         }
                         else {
@@ -112,7 +112,7 @@ namespace ArkeOS.Tools.KohlCompiler {
                     break;
 
                 case CasStatementNode n: {
-                        if (n.ArgumentList.Extract(0, out var arg0) && n.ArgumentList.Extract(1, out var arg1) && n.ArgumentList.Extract(2, out var arg2)) {
+                        if (n.ArgumentList.Extract(out var arg0, out var arg1, out var arg2)) {
                             this.Visit(arg2);
                             this.Emit(InstructionDefinition.CAS, this.ExtractLValue(arg0), this.ExtractLValue(arg1), Emitter.StackParam);
                         }
@@ -124,7 +124,7 @@ namespace ArkeOS.Tools.KohlCompiler {
                     break;
 
                 case XchgStatementNode n: {
-                        if (n.ArgumentList.Extract(0, out var arg0) && n.ArgumentList.Extract(1, out var arg1)) {
+                        if (n.ArgumentList.Extract(out var arg0, out var arg1)) {
                             this.Emit(InstructionDefinition.XCHG, this.ExtractLValue(arg0), this.ExtractLValue(arg1));
                         }
                         else {
