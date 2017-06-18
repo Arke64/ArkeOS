@@ -20,7 +20,11 @@ namespace ArkeOS.Hardware.ArkeIndustries {
             this.Type = type;
         }
 
-        public virtual void Reset() {
+        public virtual void Start() {
+
+        }
+
+        public virtual void Stop() {
 
         }
 

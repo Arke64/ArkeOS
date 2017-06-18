@@ -7,7 +7,6 @@ namespace ArkeOS.Hardware.ArkeIndustries {
 
         public RandomAccessMemoryController(int size) : base(ProductIds.Vendor, ProductIds.MEM100, DeviceType.RandomAccessMemory) => this.memory = new ulong[size];
 
-        public override void Reset() => Array.Clear(this.memory, 0, this.memory.Length);
         public override ulong ReadWord(ulong address) => this.memory[address];
         public override void WriteWord(ulong address, ulong data) => this.memory[address] = data;
         public override void Copy(ulong source, ulong destination, ulong length) => Array.Copy(this.memory, (int)source, this.memory, (int)destination, (int)length);

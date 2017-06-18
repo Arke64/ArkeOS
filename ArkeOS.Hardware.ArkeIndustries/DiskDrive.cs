@@ -58,7 +58,7 @@ namespace ArkeOS.Hardware.ArkeIndustries {
             this.stream.Write(buffer, 0, buffer.Length);
         }
 
-        public override void Reset() => this.stream.Flush();
+        public override void Stop() => this.stream.Flush();
 
         protected override void Dispose(bool disposing) {
             if (this.disposed)

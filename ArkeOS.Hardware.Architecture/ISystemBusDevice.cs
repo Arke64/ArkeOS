@@ -10,7 +10,8 @@ namespace ArkeOS.Hardware.Architecture {
         ulong ProductId { get; }
         DeviceType Type { get; }
 
-        void Reset();
+        void Start();
+        void Stop();
 
         void RaiseInterrupt(ulong data);
 

@@ -39,10 +39,11 @@ namespace ArkeOS.Hosts.UWP {
 
             this.Processor.DebugHandler = (a, b, c) => a.Value = (ulong)DateTime.UtcNow.Ticks;
 
-            this.system.Reset();
+            this.system.Start();
         }
 
         public void Dispose() {
+            this.system.Stop();
             this.system.Dispose();
             this.system = null;
         }

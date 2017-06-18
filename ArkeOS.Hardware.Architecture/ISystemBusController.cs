@@ -13,7 +13,8 @@ namespace ArkeOS.Hardware.Architecture {
         ulong MaxAddress { get; }
         ulong MaxId { get; }
 
-        void Reset();
+        void Start();
+        void Stop();
 
         ulong AddDevice(ISystemBusDevice device);
 

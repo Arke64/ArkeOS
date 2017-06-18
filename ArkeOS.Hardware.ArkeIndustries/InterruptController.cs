@@ -36,7 +36,7 @@ namespace ArkeOS.Hardware.ArkeIndustries {
             }
         }
 
-        public override void Reset() {
+        public override void Stop() {
             this.evt.Set();
             this.pending.Clear();
 
@@ -47,11 +47,8 @@ namespace ArkeOS.Hardware.ArkeIndustries {
             if (this.disposed)
                 return;
 
-            if (disposing) {
-                this.Reset();
-
+            if (disposing)
                 this.evt.Dispose();
-            }
 
             this.disposed = true;
 

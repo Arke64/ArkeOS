@@ -35,7 +35,7 @@ namespace ArkeOS.Hardware.ArkeIndustries {
             this.disposed = false;
         }
 
-        public override void Reset() {
+        public override void Start() {
             if (this.running)
                 this.Break();
 

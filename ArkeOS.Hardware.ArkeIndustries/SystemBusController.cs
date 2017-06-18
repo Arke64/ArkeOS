@@ -8,6 +8,7 @@ namespace ArkeOS.Hardware.ArkeIndustries {
         private ISystemBusDevice[] devices;
         private ulong nextDeviceId;
         private bool disposed;
+        private bool started;
 
         private static ulong GetDeviceId(ulong address) => (address & 0xFFF0000000000000UL) >> 52;
         private static ulong GetAddress(ulong address) => address & 0x000FFFFFFFFFFFFFUL;
@@ -26,9 +27,13 @@ namespace ArkeOS.Hardware.ArkeIndustries {
             this.devices[this.MaxId] = new SystemBusControllerDevice();
             this.nextDeviceId = 0;
             this.disposed = false;
+            this.started = false;
         }
 
-        public void Reset() {
+        public void Start() {
+            if (this.started)
+                return;
+
             var count = (ulong)this.Devices.Count();
             var memory = new ulong[count * 4 + 1];
             var index = 0;
@@ -51,7 +56,19 @@ namespace ArkeOS.Hardware.ArkeIndustries {
             this.Processor.StartAddress = bootId << this.AddressBits;
 
             foreach (var d in this.Devices)
-                d.Reset();
+                d.Start();
+
+            this.started = true;
+        }
+
+        public void Stop() {
+            if (!this.started)
+                return;
+
+            foreach (var d in this.Devices)
+                d.Stop();
+
+            this.started = true;
         }
 
         protected virtual void Dispose(bool disposing) {
