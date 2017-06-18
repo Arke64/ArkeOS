@@ -150,11 +150,102 @@ namespace ArkeOS.Tools.KohlCompiler {
                 case ';': res = new Token(TokenType.Semicolon, c); break;
                 case '.': res = new Token(TokenType.Period, c); break;
                 case ',': res = new Token(TokenType.Comma, c); break;
-                case '=': res = new Token(TokenType.EqualsSign, c); break;
                 case '(': res = new Token(TokenType.OpenParenthesis, c); break;
                 case ')': res = new Token(TokenType.CloseParenthesis, c); break;
                 case '{': res = new Token(TokenType.OpenCurlyBrace, c); break;
                 case '}': res = new Token(TokenType.CloseCurlyBrace, c); break;
+                case '&': res = new Token(TokenType.Ampersand, c); break;
+                case '|': res = new Token(TokenType.Pipe, c); break;
+                case '~': res = new Token(TokenType.Tilde, c); break;
+
+                case '=': {
+                        this.Advance();
+
+                        if (this.PeekChar(out var cc) && cc == '=') {
+                            res = new Token(TokenType.DoubleEqualsSign, c, cc);
+                        }
+                        else {
+                            return new Token(TokenType.EqualsSign, c);
+                        }
+                    }
+
+                    break;
+
+                case '!': {
+                        this.Advance();
+
+                        if (this.PeekChar(out var cc)) {
+                            switch (cc) {
+                                case '&': res = new Token(TokenType.ExclamationPointAmpersand, c, cc); break;
+                                case '|': res = new Token(TokenType.ExclamationPointPipe, c, cc); break;
+                                case '~': res = new Token(TokenType.ExclamationPointTilde, c, cc); break;
+                                case '=': res = new Token(TokenType.ExclamationPointEqualsSign, c, cc); break;
+                                default: return new Token(TokenType.ExclamationPoint, c);
+                            }
+                        }
+                        else {
+                            return new Token(TokenType.ExclamationPoint, c);
+                        }
+                    }
+
+                    break;
+
+                case '<': {
+                        this.Advance();
+
+                        if (this.PeekChar(out var cc)) {
+                            switch (cc) {
+                                case '<':
+                                    this.Advance();
+
+                                    if (this.PeekChar(out var ccc) && ccc == '<') {
+                                        res = new Token(TokenType.TripleLessThan, c, cc, ccc);
+                                    }
+                                    else {
+                                        return new Token(TokenType.DoubleLessThan, c, cc);
+                                    }
+
+                                    break;
+
+                                case '=': res = new Token(TokenType.LessThanEqualsSign, c, cc); break;
+                                default: return new Token(TokenType.LessThan, c);
+                            }
+                        }
+                        else {
+                            return new Token(TokenType.LessThan, c);
+                        }
+                    }
+
+                    break;
+
+                case '>': {
+                        this.Advance();
+
+                        if (this.PeekChar(out var cc)) {
+                            switch (cc) {
+                                case '>':
+                                    this.Advance();
+
+                                    if (this.PeekChar(out var ccc) && ccc == '>') {
+                                        res = new Token(TokenType.TripleGreaterThan, c, cc, ccc);
+                                    }
+                                    else {
+                                        return new Token(TokenType.DoubleGreaterThan, c, cc);
+                                    }
+
+                                    break;
+
+                                case '=': res = new Token(TokenType.GreaterThanEqualsSign, c, cc); break;
+                                default: return new Token(TokenType.GreaterThan, c);
+                            }
+                        }
+                        else {
+                            return new Token(TokenType.GreaterThan, c);
+                        }
+                    }
+
+                    break;
+
                 default: throw new UnexpectedCharacterException(this.CurrentPosition, c);
             }
 

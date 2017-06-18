@@ -3,6 +3,24 @@
         Number,
         Identifier,
         Whitespace,
+        EqualsSign,
+        DoubleEqualsSign,
+        ExclamationPoint,
+        Ampersand,
+        Pipe,
+        Tilde,
+        ExclamationPointAmpersand,
+        ExclamationPointPipe,
+        ExclamationPointTilde,
+        ExclamationPointEqualsSign,
+        LessThan,
+        LessThanEqualsSign,
+        DoubleLessThan,
+        TripleLessThan,
+        GreaterThan,
+        GreaterThanEqualsSign,
+        DoubleGreaterThan,
+        TripleGreaterThan,
         Plus,
         Minus,
         Asterisk,
@@ -12,7 +30,6 @@
         Semicolon,
         Comma,
         Period,
-        EqualsSign,
         OpenParenthesis,
         CloseParenthesis,
         OpenCurlyBrace,
@@ -37,6 +54,7 @@
 
         public Token(TokenType type, string value) => (this.Type, this.Value) = (type, value);
         public Token(TokenType type, char value) : this(type, value.ToString()) { }
+        public Token(TokenType type, params char[] value) : this(type, new string(value)) { }
 
         public override string ToString() => $"{this.Type}{(this.Type == TokenType.Number || this.Type == TokenType.Identifier ? ": " + this.Value : string.Empty)}";
 
