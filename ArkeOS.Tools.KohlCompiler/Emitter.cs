@@ -3,6 +3,7 @@ using ArkeOS.Tools.KohlCompiler.Nodes;
 using ArkeOS.Utilities.Extensions;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 
@@ -18,17 +19,17 @@ namespace ArkeOS.Tools.KohlCompiler {
         public void Emit(string outputFile) {
             this.instructions = new List<Instruction>();
 
-            var start = new Parameter { Type = ParameterType.Literal, Literal = 0, IsRIPRelative = true };
-            var len = new Parameter { Type = ParameterType.Literal, Literal = 0 };
+            var start = Parameter.CreateLiteral(false, true, 0);
+            var len = Parameter.CreateLiteral(false, false, 0);
 
-            this.instructions.Add(new Instruction(InstructionDefinition.Find("CPY").Code, new List<Parameter> { new Parameter { Type = ParameterType.Register, Register = Register.RZERO }, start, len }, null, false));
-            this.instructions.Add(new Instruction(InstructionDefinition.Find("SET").Code, new List<Parameter> { new Parameter { Type = ParameterType.Register, Register = Register.RIP }, new Parameter { Type = ParameterType.Register, Register = Register.RZERO } }, null, false));
+            this.Emit(InstructionDefinition.CPY, Parameter.CreateRegister(false, false, Register.RZERO), start, len);
+            this.Emit(InstructionDefinition.SET, Parameter.CreateRegister(false, false, Register.RIP), Parameter.CreateRegister(false, false, Register.RZERO));
 
             start.Literal = (ulong)this.instructions.Sum(i => i.Length);
 
             this.Visit(this.tree);
 
-            this.instructions.Add(new Instruction(InstructionDefinition.Find("HLT").Code, new List<Parameter> { }, null, false));
+            this.Emit(InstructionDefinition.HLT);
 
             len.Literal = (ulong)this.instructions.Sum(i => i.Length) - start.Literal;
 
@@ -44,6 +45,9 @@ namespace ArkeOS.Tools.KohlCompiler {
             }
         }
 
+        private void Emit(InstructionDefinition def, params Parameter[] parameters) => this.instructions.Add(new Instruction(def.Code, parameters, null, false));
+        private void Emit(InstructionDefinition def, Parameter conditional, bool conditionalZero, params Parameter[] parameters) => this.instructions.Add(new Instruction(def.Code, parameters, conditional, conditionalZero));
+
         private void Visit(ProgramNode n) {
             foreach (var s in n.Statements)
                 this.Visit(s);
@@ -54,7 +58,7 @@ namespace ArkeOS.Tools.KohlCompiler {
                 case AssignmentNode n:
                     this.Visit(n.Expression);
 
-                    this.instructions.Add(new Instruction(InstructionDefinition.Find("SET").Code, new List<Parameter> { new Parameter { Type = ParameterType.Register, Register = n.Target.Identifier.ToEnum<Register>() }, Emitter.StackParam }, null, false));
+                    this.Emit(InstructionDefinition.SET, Parameter.CreateRegister(false, false, n.Target.Identifier.ToEnum<Register>()), Emitter.StackParam);
 
                     break;
 
@@ -69,18 +73,15 @@ namespace ArkeOS.Tools.KohlCompiler {
                     this.Visit(n.Left);
                     this.Visit(n.Right);
 
-                    var inst = "";
-
                     switch (n.Op.Operator) {
-                        case Operator.Addition: inst = "ADD"; break;
-                        case Operator.Subtraction: inst = "SUB"; break;
-                        case Operator.Multiplication: inst = "MUL"; break;
-                        case Operator.Division: inst = "DIV"; break;
-                        case Operator.Exponentiation: inst = "POW"; break;
-                        case Operator.Remainder: inst = "MOD"; break;
+                        case Operator.Addition: this.Emit(InstructionDefinition.ADD, Emitter.StackParam, Emitter.StackParam, Emitter.StackParam); break;
+                        case Operator.Subtraction: this.Emit(InstructionDefinition.SUB, Emitter.StackParam, Emitter.StackParam, Emitter.StackParam); break;
+                        case Operator.Multiplication: this.Emit(InstructionDefinition.MUL, Emitter.StackParam, Emitter.StackParam, Emitter.StackParam); break;
+                        case Operator.Division: this.Emit(InstructionDefinition.DIV, Emitter.StackParam, Emitter.StackParam, Emitter.StackParam); break;
+                        case Operator.Exponentiation: this.Emit(InstructionDefinition.POW, Emitter.StackParam, Emitter.StackParam, Emitter.StackParam); break;
+                        case Operator.Remainder: this.Emit(InstructionDefinition.MOD, Emitter.StackParam, Emitter.StackParam, Emitter.StackParam); break;
+                        default: Debug.Assert(false); break;
                     }
-
-                    this.instructions.Add(new Instruction(InstructionDefinition.Find(inst).Code, new List<Parameter> { Emitter.StackParam, Emitter.StackParam, Emitter.StackParam }, null, false));
 
                     break;
 
@@ -89,19 +90,19 @@ namespace ArkeOS.Tools.KohlCompiler {
 
                     switch (n.Op.Operator) {
                         case Operator.UnaryPlus: break;
-                        case Operator.UnaryMinus: this.instructions.Add(new Instruction(InstructionDefinition.Find("MUL").Code, new List<Parameter> { Emitter.StackParam, Emitter.StackParam, new Parameter { Type = ParameterType.Literal, Literal = unchecked((ulong)(-1)) } }, null, false)); break;
-                        default: throw new InvalidOperationException("Unexpected operator.");
+                        case Operator.UnaryMinus: this.Emit(InstructionDefinition.MUL, Emitter.StackParam, Emitter.StackParam, Parameter.CreateLiteral(false, false, ulong.MaxValue)); break;
+                        default: Debug.Assert(false); break;
                     }
 
                     break;
 
                 case NumberNode n:
-                    this.instructions.Add(new Instruction(InstructionDefinition.Find("SET").Code, new List<Parameter> { Emitter.StackParam, new Parameter { Type = ParameterType.Literal, Literal = (ulong)n.Number } }, null, false));
+                    this.Emit(InstructionDefinition.SET, Emitter.StackParam, Parameter.CreateLiteral(false, false, (ulong)n.Number));
 
                     break;
 
                 case IdentifierNode n:
-                    this.instructions.Add(new Instruction(InstructionDefinition.Find("SET").Code, new List<Parameter> { Emitter.StackParam, new Parameter { Type = ParameterType.Register, Register = n.Identifier.ToEnum<Register>() } }, null, false));
+                    this.Emit(InstructionDefinition.SET, Emitter.StackParam, Parameter.CreateRegister(false, false, n.Identifier.ToEnum<Register>()));
 
                     break;
 
