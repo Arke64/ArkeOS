@@ -1,12 +1,22 @@
-﻿namespace ArkeOS.Tools.KohlCompiler {
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+
+namespace ArkeOS.Tools.KohlCompiler {
     public static class Program {
         public static void Main(string[] args) {
-            args = new[] { @"..\Images\Kohl.k" };
+            var a = new Queue<string>(args);
 
-            var compiler = new Compiler { OutputName = @"..\Images\Kohl.bin" };
+            if (a.Count < 2) {
+                Console.WriteLine("Usage: [output file] [source files...]");
 
-            foreach (var a in args)
-                compiler.AddSource(a);
+                return;
+            }
+
+            var compiler = new Compiler { OutputName = a.Dequeue() };
+
+            while (a.Any())
+                compiler.AddSource(a.Dequeue());
 
             compiler.Compile();
         }
