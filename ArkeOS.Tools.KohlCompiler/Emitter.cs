@@ -97,8 +97,36 @@ namespace ArkeOS.Tools.KohlCompiler {
                 case IntdStatementNode n: this.Emit(InstructionDefinition.INTD); break;
                 case InteStatementNode n: this.Emit(InstructionDefinition.INTE); break;
                 case NopStatementNode n: this.Emit(InstructionDefinition.NOP); break;
-                case CpyStatementNode n: this.Visit(n.ArgumentList); this.Emit(InstructionDefinition.CPY, Emitter.StackParam, Emitter.StackParam, Emitter.StackParam); break;
-                case IntStatementNode n: this.Visit(n.ArgumentList); this.Emit(InstructionDefinition.INT, Emitter.StackParam, Emitter.StackParam, Emitter.StackParam); break;
+
+                case CpyStatementNode n: {
+                        if (n.ArgumentList.Extract(out var arg0, out var arg1, out var arg2)) {
+                            this.Visit(arg0);
+                            this.Visit(arg1);
+                            this.Visit(arg2);
+
+                            this.Emit(InstructionDefinition.CPY, Emitter.StackParam, Emitter.StackParam, Emitter.StackParam);
+                        }
+                        else {
+                            throw new TooFewArgumentsException();
+                        }
+                    }
+
+                    break;
+
+                case IntStatementNode n: {
+                        if (n.ArgumentList.Extract(out var arg0, out var arg1, out var arg2)) {
+                            this.Visit(arg0);
+                            this.Visit(arg1);
+                            this.Visit(arg2);
+
+                            this.Emit(InstructionDefinition.INT, Emitter.StackParam, Emitter.StackParam, Emitter.StackParam);
+                        }
+                        else {
+                            throw new TooFewArgumentsException();
+                        }
+                    }
+
+                    break;
 
                 case DbgStatementNode n: {
                         if (n.ArgumentList.Extract(out var arg0, out var arg1, out var arg2)) {
@@ -193,11 +221,6 @@ namespace ArkeOS.Tools.KohlCompiler {
                 default:
                     throw new NotImplementedException();
             }
-        }
-
-        private void Visit(ArgumentListNode argumentList) {
-            foreach (var a in argumentList.Arguments)
-                this.Visit(a);
         }
     }
 }
