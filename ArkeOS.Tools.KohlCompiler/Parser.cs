@@ -77,7 +77,7 @@ namespace ArkeOS.Tools.KohlCompiler {
             this.Read(TokenType.OpenParenthesis);
             var a = this.ReadIdentifier();
             var b = this.ReadIdentifier();
-            var c = this.ReadValue();
+            var c = this.ReadExpression();
             this.Read(TokenType.CloseParenthesis);
             this.Read(TokenType.Semicolon);
 
@@ -87,9 +87,9 @@ namespace ArkeOS.Tools.KohlCompiler {
         private CpyStatementNode ReadCpyStatement() {
             this.Read(TokenType.CpyKeyword);
             this.Read(TokenType.OpenParenthesis);
-            var a = this.ReadValue();
-            var b = this.ReadValue();
-            var c = this.ReadValue();
+            var a = this.ReadExpression();
+            var b = this.ReadExpression();
+            var c = this.ReadExpression();
             this.Read(TokenType.CloseParenthesis);
             this.Read(TokenType.Semicolon);
 
@@ -99,9 +99,9 @@ namespace ArkeOS.Tools.KohlCompiler {
         private DbgStatementNode ReadDbgStatement() {
             this.Read(TokenType.DbgKeyword);
             this.Read(TokenType.OpenParenthesis);
-            var a = this.ReadValue();
-            var b = this.ReadValue();
-            var c = this.ReadValue();
+            var a = this.ReadExpression();
+            var b = this.ReadExpression();
+            var c = this.ReadExpression();
             this.Read(TokenType.CloseParenthesis);
             this.Read(TokenType.Semicolon);
 
@@ -139,9 +139,9 @@ namespace ArkeOS.Tools.KohlCompiler {
         private IntStatementNode ReadIntStatement() {
             this.Read(TokenType.IntKeyword);
             this.Read(TokenType.OpenParenthesis);
-            var a = this.ReadValue();
-            var b = this.ReadValue();
-            var c = this.ReadValue();
+            var a = this.ReadExpression();
+            var b = this.ReadExpression();
+            var c = this.ReadExpression();
             this.Read(TokenType.CloseParenthesis);
             this.Read(TokenType.Semicolon);
 
@@ -218,17 +218,6 @@ namespace ArkeOS.Tools.KohlCompiler {
             }
 
             return stack.ToNode();
-        }
-
-        private ValueNode ReadValue() {
-            if (this.lexer.Peek(out var t)) {
-                switch (t.Type) {
-                    case TokenType.Number: return this.ReadNumber();
-                    case TokenType.Identifier: return this.ReadIdentifier();
-                }
-            }
-
-            throw this.GetExpectedTokenExceptionAtCurrent("value");
         }
 
         private NumberNode ReadNumber() => this.lexer.Read(TokenType.Number, out var token) ? new NumberNode(token) : throw this.GetExpectedTokenExceptionAtCurrent(TokenType.Number);

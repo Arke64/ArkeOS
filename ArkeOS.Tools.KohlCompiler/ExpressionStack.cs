@@ -13,7 +13,7 @@ namespace ArkeOS.Tools.KohlCompiler {
 
         private Operator PeekOperator() => this.operatorStack.Peek().Item1.Operator;
 
-        public void Push(ValueNode node) => this.outputStack.Push(node);
+        public void Push(ExpressionNode node) => this.outputStack.Push(node);
 
         public void Push(OperatorNode node, PositionInfo position) {
             var op = node.Operator;

@@ -1,9 +1,9 @@
 ﻿namespace ArkeOS.Tools.KohlCompiler.Nodes {
     public class CpyStatementNode : StatementNode {
-        public ValueNode A { get; }
-        public ValueNode B { get; }
-        public ValueNode C { get; }
+        public ExpressionNode A { get; }
+        public ExpressionNode B { get; }
+        public ExpressionNode C { get; }
 
-        public CpyStatementNode(ValueNode a, ValueNode b, ValueNode c) => (this.A, this.B, this.C) = (a, b, c);
+        public CpyStatementNode(ExpressionNode a, ExpressionNode b, ExpressionNode c) => (this.A, this.B, this.C) = (a, b, c);
     }
 }

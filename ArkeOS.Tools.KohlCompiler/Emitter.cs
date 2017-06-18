@@ -124,18 +124,6 @@ namespace ArkeOS.Tools.KohlCompiler {
 
                     break;
 
-                case ValueNode n:
-                    this.Visit(n);
-
-                    break;
-
-                default:
-                    throw new NotImplementedException();
-            }
-        }
-
-        private void Visit(ValueNode v) {
-            switch (v) {
                 case NumberNode n:
                     this.Emit(InstructionDefinition.SET, Emitter.StackParam, Parameter.CreateLiteral((ulong)n.Number));
 
