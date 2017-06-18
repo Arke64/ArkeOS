@@ -1,7 +1,7 @@
 ﻿namespace ArkeOS.Tools.KohlCompiler.Nodes {
     public class ProgramNode : Node {
-        public StatementBlockNode Block { get; }
+        public StatementBlockNode StatementBlock { get; }
 
-        public ProgramNode(StatementBlockNode block) => this.Block = block;
+        public ProgramNode(StatementBlockNode statementBlock) => this.StatementBlock = statementBlock;
     }
 }

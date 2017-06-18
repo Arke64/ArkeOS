@@ -42,26 +42,45 @@ namespace ArkeOS.Tools.KohlCompiler {
         }
 
         private StatementNode ReadStatement() {
-            var res = this.ReadAssignment();
+            var res = default(StatementNode);
 
-            this.Read(TokenType.Semicolon);
+            if (this.lexer.Peek(out var t)) {
+                switch (t.Type) {
+                    case TokenType.IfKeyword: res = this.ReadIfStatement(); break;
+                    case TokenType.Identifier: res = this.ReadAssignmentStatement(); break;
+                }
+            }
 
             return res;
         }
 
-        private AssignmentNode ReadAssignment() {
+        private IfStatementNode ReadIfStatement() {
+            this.Read(TokenType.IfKeyword);
+            this.Read(TokenType.OpenParenthesis);
+            var exp = this.ReadExpression();
+            this.Read(TokenType.CloseParenthesis);
+            var stmt = this.ReadStatement();
+
+            return new IfStatementNode(exp, stmt);
+        }
+
+        private AssignmentStatementNode ReadAssignmentStatement() {
             var ident = this.ReadIdentifier();
             this.Read(TokenType.EqualsSign);
             var exp = this.ReadExpression();
+            this.Read(TokenType.Semicolon);
 
-            return new AssignmentNode(ident, exp);
+            return new AssignmentStatementNode(ident, exp);
         }
 
         private ExpressionNode ReadExpression() {
             var stack = new ExpressionStack();
             var start = true;
+            var seenOpenParens = 0;
 
             while (this.lexer.Peek(out var token)) {
+                if (token.Type == TokenType.OpenParenthesis) seenOpenParens++;
+
                 if (start && token.Type == TokenType.Number) {
                     stack.Push(this.ReadNumber());
                     start = false;
@@ -71,6 +90,9 @@ namespace ArkeOS.Tools.KohlCompiler {
                     start = false;
                 }
                 else if (!start && token.Type == TokenType.CloseParenthesis) {
+                    if (--seenOpenParens < 0)
+                        break;
+
                     stack.Push(this.ReadOperator(false), this.lexer.CurrentPosition);
                     start = false;
                 }

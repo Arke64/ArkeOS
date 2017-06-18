@@ -15,6 +15,7 @@
         Whitespace,
         OpenCurlyBrace,
         CloseCurlyBrace,
+        IfKeyword,
     }
 
     public struct Token {
