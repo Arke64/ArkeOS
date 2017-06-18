@@ -7,7 +7,14 @@ namespace ArkeOS.Tools.KohlCompiler {
 
         public Parser(Lexer lexer) => this.lexer = lexer;
 
-        public ProgramNode Parse() => new ProgramNode(this.ReadStatementBlock());
+        public ProgramNode Parse() {
+            var res = new ProgramNode(this.ReadStatementBlock());
+
+            if (this.lexer.Peek(out var t))
+                throw this.GetUnexpectedTokenExceptionAtCurrent(t.Type);
+
+            return res;
+        }
 
         private void Read(TokenType t) {
             if (!this.lexer.Read(t))
@@ -17,12 +24,19 @@ namespace ArkeOS.Tools.KohlCompiler {
         private StatementBlockNode ReadStatementBlock() {
             var block = new StatementBlockNode();
 
-            this.Read(TokenType.OpenCurlyBrace);
+            if (this.lexer.Peek(out var t)) {
+                if (t.Type == TokenType.OpenCurlyBrace) {
+                    this.Read(TokenType.OpenCurlyBrace);
 
-            while (this.lexer.Peek(out var t) && t.Type != TokenType.CloseCurlyBrace)
-                block.Add(this.ReadStatement());
+                    while (this.lexer.Peek(out t) && t.Type != TokenType.CloseCurlyBrace)
+                        block.Add(this.ReadStatement());
 
-            this.Read(TokenType.CloseCurlyBrace);
+                    this.Read(TokenType.CloseCurlyBrace);
+                }
+                else {
+                    block.Add(this.ReadStatement());
+                }
+            }
 
             return block;
         }
