@@ -147,10 +147,12 @@ namespace ArkeOS.Tools.KohlCompiler {
                 case '/': res = new Token(TokenType.ForwardSlash, c); break;
                 case '^': res = new Token(TokenType.Caret, c); break;
                 case '%': res = new Token(TokenType.Percent, c); break;
+                case ';': res = new Token(TokenType.Semicolon, c); break;
+                case '.': res = new Token(TokenType.Period, c); break;
+                case ',': res = new Token(TokenType.Comma, c); break;
+                case '=': res = new Token(TokenType.EqualsSign, c); break;
                 case '(': res = new Token(TokenType.OpenParenthesis, c); break;
                 case ')': res = new Token(TokenType.CloseParenthesis, c); break;
-                case '=': res = new Token(TokenType.EqualsSign, c); break;
-                case ';': res = new Token(TokenType.Semicolon, c); break;
                 case '{': res = new Token(TokenType.OpenCurlyBrace, c); break;
                 case '}': res = new Token(TokenType.CloseCurlyBrace, c); break;
                 default: throw new UnexpectedCharacterException(this.CurrentPosition, c);
