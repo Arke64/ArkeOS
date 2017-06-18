@@ -19,16 +19,7 @@ namespace ArkeOS.Tools.KohlCompiler {
         public void Emit(string outputFile) {
             this.instructions = new List<Instruction>();
 
-            var start = Parameter.CreateLiteral(0, ParameterFlags.RIPRelative);
-            var len = Parameter.CreateLiteral(0);
-
-            this.Emit(InstructionDefinition.CPY, Parameter.CreateRegister(Register.RZERO), start, len);
-
-            start.Literal = (ulong)this.instructions.Sum(i => i.Length);
-
             this.Visit(this.tree);
-
-            len.Literal = (ulong)this.instructions.Sum(i => i.Length) - start.Literal;
 
             using (var stream = new MemoryStream()) {
                 using (var writer = new BinaryWriter(stream)) {

@@ -1,7 +1,8 @@
 {
-	RIP = RONE;
 	brk;
 	RSP = 0x10000;
+	dbg R0 R0 R0;
+	cpy RZERO RONE 0d1;
 	nop;
 	R12 = 1;
 	R13 = 2;
