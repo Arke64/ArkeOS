@@ -70,17 +70,16 @@ namespace ArkeOS.Tools.KohlCompiler {
 
         private readonly Queue<FileInfo> files;
         private FileInfo file;
+        private bool eof;
         private Token currentToken;
 
-        public bool AtEnd { get; private set; }
-        public PositionInfo CurrentPosition { get; private set; }
+        public PositionInfo CurrentPosition => this.file != null ? new PositionInfo(this.file.Path, this.file.Line, this.file.Column) : default(PositionInfo);
 
         public Lexer(IReadOnlyList<string> filePaths) {
             this.files = new Queue<FileInfo>(filePaths.Select(f => new FileInfo(f)));
             this.file = this.files.Dequeue();
+            this.eof = false;
             this.currentToken = this.LexNextToken();
-
-            this.AtEnd = false;
         }
 
         private void Advance() {
@@ -306,12 +305,10 @@ namespace ArkeOS.Tools.KohlCompiler {
 
         private Token LexNextToken() {
             if (!this.PeekChar(out var c)) {
-                this.AtEnd = true;
+                this.eof = true;
 
                 return default(Token);
             }
-
-            this.CurrentPosition = new PositionInfo(this.file.Path, this.file.Line, this.file.Column);
 
             if (char.IsLetter(c)) {
                 return this.ReadIdentifier();
@@ -332,34 +329,36 @@ namespace ArkeOS.Tools.KohlCompiler {
         public List<Token> ToList() {
             var res = new List<Token>();
 
-            while (this.Read(out var t))
+            while (this.TryRead(out var t))
                 res.Add(t);
 
             return res;
         }
 
-        public bool Peek(out Token token) {
+        public bool TryPeek(out Token token) {
             token = this.currentToken;
 
-            return !this.AtEnd;
+            return !this.eof;
         }
 
-        public bool Read(out Token token) {
+        public bool TryRead(out Token token) {
             token = this.currentToken;
 
-            var res = this.AtEnd;
+            var res = !this.eof;
 
             this.currentToken = this.LexNextToken();
 
-            return !res;
+            return res;
         }
 
-        public bool Peek(TokenType type) => this.Peek(type, out _);
-        public bool Peek(TokenType type, out Token token) => this.Peek(t => t.Type == type, out token);
-        public bool Peek(Func<Token, bool> validator, out Token token) => this.Peek(out token) && validator(token);
+        public Token Read(TokenType type) => this.TryRead(type, out var token) ? token : throw new ExpectedTokenException(this.CurrentPosition, type);
+        public bool TryRead(TokenType type) => this.TryRead(type, out _);
+        public bool TryRead(TokenType type, out Token token) => this.TryRead(t => t.Type == type, out token);
+        public bool TryRead(Func<Token, bool> validator, out Token token) => this.TryPeek(validator, out token) && this.TryRead(out _);
 
-        public bool Read(TokenType type) => this.Read(type, out _);
-        public bool Read(TokenType type, out Token token) => this.Read(t => t.Type == type, out token);
-        public bool Read(Func<Token, bool> validator, out Token token) => this.Peek(out token) && validator(token) && this.Read(out _);
+        public Token Peek(TokenType type) => this.TryPeek(type, out var token) ? token : throw new ExpectedTokenException(this.CurrentPosition, type);
+        public bool TryPeek(TokenType type) => this.TryPeek(type, out _);
+        public bool TryPeek(TokenType type, out Token token) => this.TryPeek(t => t.Type == type, out token);
+        public bool TryPeek(Func<Token, bool> validator, out Token token) => this.TryPeek(out token) && validator(token);
     }
 }

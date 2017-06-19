@@ -10,36 +10,23 @@ namespace ArkeOS.Tools.KohlCompiler {
         public ProgramNode Parse() {
             var res = new ProgramNode(this.ReadStatementBlock());
 
-            if (this.lexer.Peek(out var t))
+            if (this.lexer.TryPeek(out var t))
                 throw this.GetUnexpectedTokenExceptionAtCurrent(t.Type);
 
             return res;
         }
 
-        private void Read(TokenType t) {
-            if (!this.lexer.Read(t))
-                throw this.GetExpectedTokenExceptionAtCurrent(t);
-        }
-
-        private void Peek(TokenType t) {
-            if (!this.lexer.Read(t))
-                throw this.GetExpectedTokenExceptionAtCurrent(t);
-        }
-
-        private bool TryRead(TokenType t) => this.lexer.Read(t);
-        private bool TryPeek(TokenType t) => this.lexer.Peek(t);
-
         private StatementBlockNode ReadStatementBlock() {
             var block = new StatementBlockNode();
 
-            if (this.lexer.Peek(out var t)) {
+            if (this.lexer.TryPeek(out var t)) {
                 if (t.Type == TokenType.OpenCurlyBrace) {
-                    this.Read(TokenType.OpenCurlyBrace);
+                    this.lexer.Read(TokenType.OpenCurlyBrace);
 
-                    while (this.lexer.Peek(out t) && t.Type != TokenType.CloseCurlyBrace)
+                    while (this.lexer.TryPeek(out t) && t.Type != TokenType.CloseCurlyBrace)
                         block.Add(this.ReadStatement());
 
-                    this.Read(TokenType.CloseCurlyBrace);
+                    this.lexer.Read(TokenType.CloseCurlyBrace);
                 }
                 else {
                     block.Add(this.ReadStatement());
@@ -52,7 +39,7 @@ namespace ArkeOS.Tools.KohlCompiler {
         private StatementNode ReadStatement() {
             var res = default(StatementNode);
 
-            if (this.lexer.Peek(out var t)) {
+            if (this.lexer.TryPeek(out var t)) {
                 switch (t.Type) {
                     case TokenType.BrkKeyword: res = this.ReadBrkStatement(); break;
                     case TokenType.CasKeyword: res = this.ReadCasStatement(); break;
@@ -76,106 +63,106 @@ namespace ArkeOS.Tools.KohlCompiler {
         private ArgumentListNode ReadArgumentList() {
             var list = new ArgumentListNode();
 
-            this.Read(TokenType.OpenParenthesis);
+            this.lexer.Read(TokenType.OpenParenthesis);
 
-            if (!this.TryPeek(TokenType.CloseParenthesis)) {
+            if (!this.lexer.TryPeek(TokenType.CloseParenthesis)) {
                 do {
                     list.Add(this.ReadExpression());
-                } while (this.TryRead(TokenType.Comma));
+                } while (this.lexer.TryRead(TokenType.Comma));
             }
 
-            this.Read(TokenType.CloseParenthesis);
+            this.lexer.Read(TokenType.CloseParenthesis);
 
             return list;
         }
 
         private BrkStatementNode ReadBrkStatement() {
-            this.Read(TokenType.BrkKeyword);
-            this.Read(TokenType.Semicolon);
+            this.lexer.Read(TokenType.BrkKeyword);
+            this.lexer.Read(TokenType.Semicolon);
 
             return new BrkStatementNode();
         }
 
         private CasStatementNode ReadCasStatement() {
-            this.Read(TokenType.CasKeyword);
+            this.lexer.Read(TokenType.CasKeyword);
             var args = this.ReadArgumentList();
-            this.Read(TokenType.Semicolon);
+            this.lexer.Read(TokenType.Semicolon);
 
             return new CasStatementNode(args);
         }
 
         private CpyStatementNode ReadCpyStatement() {
-            this.Read(TokenType.CpyKeyword);
+            this.lexer.Read(TokenType.CpyKeyword);
             var args = this.ReadArgumentList();
-            this.Read(TokenType.Semicolon);
+            this.lexer.Read(TokenType.Semicolon);
 
             return new CpyStatementNode(args);
         }
 
         private DbgStatementNode ReadDbgStatement() {
-            this.Read(TokenType.DbgKeyword);
+            this.lexer.Read(TokenType.DbgKeyword);
             var args = this.ReadArgumentList();
-            this.Read(TokenType.Semicolon);
+            this.lexer.Read(TokenType.Semicolon);
 
             return new DbgStatementNode(args);
         }
 
         private EintStatementNode ReadEintStatement() {
-            this.Read(TokenType.EintKeyword);
-            this.Read(TokenType.Semicolon);
+            this.lexer.Read(TokenType.EintKeyword);
+            this.lexer.Read(TokenType.Semicolon);
 
             return new EintStatementNode();
         }
 
         private HltStatementNode ReadHltStatement() {
-            this.Read(TokenType.HltKeyword);
-            this.Read(TokenType.Semicolon);
+            this.lexer.Read(TokenType.HltKeyword);
+            this.lexer.Read(TokenType.Semicolon);
 
             return new HltStatementNode();
         }
 
         private IntdStatementNode ReadIntdStatement() {
-            this.Read(TokenType.IntdKeyword);
-            this.Read(TokenType.Semicolon);
+            this.lexer.Read(TokenType.IntdKeyword);
+            this.lexer.Read(TokenType.Semicolon);
 
             return new IntdStatementNode();
         }
 
         private InteStatementNode ReadInteStatement() {
-            this.Read(TokenType.InteKeyword);
-            this.Read(TokenType.Semicolon);
+            this.lexer.Read(TokenType.InteKeyword);
+            this.lexer.Read(TokenType.Semicolon);
 
             return new InteStatementNode();
         }
 
         private IntStatementNode ReadIntStatement() {
-            this.Read(TokenType.IntKeyword);
+            this.lexer.Read(TokenType.IntKeyword);
             var args = this.ReadArgumentList();
-            this.Read(TokenType.Semicolon);
+            this.lexer.Read(TokenType.Semicolon);
 
             return new IntStatementNode(args);
         }
 
         private NopStatementNode ReadNopStatement() {
-            this.Read(TokenType.NopKeyword);
-            this.Read(TokenType.Semicolon);
+            this.lexer.Read(TokenType.NopKeyword);
+            this.lexer.Read(TokenType.Semicolon);
 
             return new NopStatementNode();
         }
 
         private XchgStatementNode ReadXchgStatement() {
-            this.Read(TokenType.XchgKeyword);
+            this.lexer.Read(TokenType.XchgKeyword);
             var args = this.ReadArgumentList();
-            this.Read(TokenType.Semicolon);
+            this.lexer.Read(TokenType.Semicolon);
 
             return new XchgStatementNode(args);
         }
 
         private IfStatementNode ReadIfStatement() {
-            this.Read(TokenType.IfKeyword);
-            this.Read(TokenType.OpenParenthesis);
+            this.lexer.Read(TokenType.IfKeyword);
+            this.lexer.Read(TokenType.OpenParenthesis);
             var exp = this.ReadExpression();
-            this.Read(TokenType.CloseParenthesis);
+            this.lexer.Read(TokenType.CloseParenthesis);
             var block = this.ReadStatementBlock();
 
             return new IfStatementNode(exp, block);
@@ -185,7 +172,7 @@ namespace ArkeOS.Tools.KohlCompiler {
             var ident = this.ReadIdentifier();
             var op = default(Operator);
 
-            if (this.lexer.Peek(out var t)) {
+            if (this.lexer.TryPeek(out var t)) {
                 switch (t.Type) {
                     case TokenType.PlusEqual: op = Operator.Addition; break;
                     case TokenType.MinusEqual: op = Operator.Subtraction; break;
@@ -205,9 +192,9 @@ namespace ArkeOS.Tools.KohlCompiler {
                     case TokenType.ExclamationPointTildeEqual: op = Operator.NotXor; break;
 
                     case TokenType.Equal:
-                        this.Read(TokenType.Equal);
+                        this.lexer.Read(TokenType.Equal);
                         var exp = this.ReadExpression();
-                        this.Read(TokenType.Semicolon);
+                        this.lexer.Read(TokenType.Semicolon);
 
                         return new AssignmentStatementNode(ident, exp);
 
@@ -219,10 +206,10 @@ namespace ArkeOS.Tools.KohlCompiler {
                 throw this.GetExpectedTokenExceptionAtCurrent(TokenType.Equal);
             }
 
-            this.lexer.Read(out _);
+            this.lexer.TryRead(out _);
 
             var res = new AssignmentStatementNode(ident, new BinaryExpressionNode(ident, new OperatorNode(op), this.ReadExpression()));
-            this.Read(TokenType.Semicolon);
+            this.lexer.Read(TokenType.Semicolon);
             return res;
         }
 
@@ -231,7 +218,7 @@ namespace ArkeOS.Tools.KohlCompiler {
             var start = true;
             var seenOpenParens = 0;
 
-            while (this.lexer.Peek(out var token)) {
+            while (this.lexer.TryPeek(out var token)) {
                 if (token.Type == TokenType.OpenParenthesis) seenOpenParens++;
 
                 if (start && token.Type == TokenType.Number) {
@@ -265,12 +252,12 @@ namespace ArkeOS.Tools.KohlCompiler {
             return stack.ToNode();
         }
 
-        private LiteralNode ReadNumberLiteral() => this.lexer.Read(TokenType.Number, out var token) ? new NumberLiteralNode(token) : throw this.GetExpectedTokenExceptionAtCurrent(TokenType.Number);
-        private LiteralNode ReadBooleanLiteral() => this.lexer.Read(t => t.Type == TokenType.TrueKeyword || t.Type == TokenType.FalseKeyword, out var token) ? new BooleanLiteralNode(token) : throw this.GetExpectedTokenExceptionAtCurrent("bool");
-        private IdentifierNode ReadIdentifier() => this.lexer.Read(TokenType.Identifier, out var token) ? new RegisterNode(token) : throw this.GetExpectedTokenExceptionAtCurrent(TokenType.Identifier);
+        private LiteralNode ReadNumberLiteral() => this.lexer.TryRead(TokenType.Number, out var token) ? new NumberLiteralNode(token) : throw this.GetExpectedTokenExceptionAtCurrent(TokenType.Number);
+        private LiteralNode ReadBooleanLiteral() => this.lexer.TryRead(t => t.Type == TokenType.TrueKeyword || t.Type == TokenType.FalseKeyword, out var token) ? new BooleanLiteralNode(token) : throw this.GetExpectedTokenExceptionAtCurrent("bool");
+        private IdentifierNode ReadIdentifier() => this.lexer.TryRead(TokenType.Identifier, out var token) ? new RegisterNode(token) : throw this.GetExpectedTokenExceptionAtCurrent(TokenType.Identifier);
 
         private OperatorNode ReadOperator(bool unary) {
-            if (!this.lexer.Read(t => t.IsOperator(), out var token))
+            if (!this.lexer.TryRead(t => t.IsOperator(), out var token))
                 throw this.GetExpectedTokenExceptionAtCurrent("operator");
 
             var res = default(Operator);
