@@ -183,11 +183,47 @@ namespace ArkeOS.Tools.KohlCompiler {
 
         private AssignmentStatementNode ReadAssignmentStatement() {
             var ident = this.ReadIdentifier();
-            this.Read(TokenType.EqualsSign);
-            var exp = this.ReadExpression();
-            this.Read(TokenType.Semicolon);
+            var op = default(Operator);
 
-            return new AssignmentStatementNode(ident, exp);
+            if (this.lexer.Peek(out var t)) {
+                switch (t.Type) {
+                    case TokenType.PlusEqualsSign: op = Operator.Addition; break;
+                    case TokenType.MinusEqualsSign: op = Operator.Subtraction; break;
+                    case TokenType.AsteriskEqualsSign: op = Operator.Multiplication; break;
+                    case TokenType.ForwardSlashEqualsSign: op = Operator.Division; break;
+                    case TokenType.PercentEqualsSign: op = Operator.Remainder; break;
+                    case TokenType.CaretEqualsSign: op = Operator.Exponentiation; break;
+                    case TokenType.DoubleLessThanEqualsSign: op = Operator.ShiftLeft; break;
+                    case TokenType.DoubleGreaterThanEqualsSign: op = Operator.ShiftRight; break;
+                    case TokenType.TripleLessThanEqualsSign: op = Operator.RotateLeft; break;
+                    case TokenType.TripleGreaterThanEqualsSign: op = Operator.RotateRight; break;
+                    case TokenType.AmpersandEqualsSign: op = Operator.And; break;
+                    case TokenType.PipeEqualsSign: op = Operator.Or; break;
+                    case TokenType.TildeEqualsSign: op = Operator.Xor; break;
+                    case TokenType.ExclamationPointAmpersandEqualsSign: op = Operator.NotAnd; break;
+                    case TokenType.ExclamationPointPipeEqualsSign: op = Operator.NotOr; break;
+                    case TokenType.ExclamationPointTildeEqualsSign: op = Operator.NotXor; break;
+
+                    case TokenType.EqualsSign:
+                        this.Read(TokenType.EqualsSign);
+                        var exp = this.ReadExpression();
+                        this.Read(TokenType.Semicolon);
+
+                        return new AssignmentStatementNode(ident, exp);
+
+                    default:
+                        throw this.GetUnexpectedTokenExceptionAtCurrent(t.Type);
+                }
+            }
+            else {
+                throw this.GetExpectedTokenExceptionAtCurrent(TokenType.EqualsSign);
+            }
+
+            this.lexer.Read(out _);
+
+            var res = new AssignmentStatementNode(ident, new BinaryExpressionNode(ident, new OperatorNode(op), this.ReadExpression()));
+            this.Read(TokenType.Semicolon);
+            return res;
         }
 
         private ExpressionNode ReadExpression() {
