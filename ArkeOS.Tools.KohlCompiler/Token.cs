@@ -3,46 +3,46 @@
         Number,
         Identifier,
         Whitespace,
-        EqualsSign,
-        DoubleEqualsSign,
+        Equal,
+        DoubleEqual,
         ExclamationPoint,
         Ampersand,
         Pipe,
         Tilde,
-        AmpersandEqualsSign,
-        PipeEqualsSign,
-        TildeEqualsSign,
+        AmpersandEqual,
+        PipeEqual,
+        TildeEqual,
         ExclamationPointAmpersand,
         ExclamationPointPipe,
         ExclamationPointTilde,
-        ExclamationPointAmpersandEqualsSign,
-        ExclamationPointPipeEqualsSign,
-        ExclamationPointTildeEqualsSign,
-        ExclamationPointEqualsSign,
+        ExclamationPointAmpersandEqual,
+        ExclamationPointPipeEqual,
+        ExclamationPointTildeEqual,
+        ExclamationPointEqual,
         LessThan,
-        LessThanEqualsSign,
+        LessThanEqual,
         DoubleLessThan,
-        DoubleLessThanEqualsSign,
+        DoubleLessThanEqual,
         TripleLessThan,
-        TripleLessThanEqualsSign,
+        TripleLessThanEqual,
         GreaterThan,
-        GreaterThanEqualsSign,
+        GreaterThanEqual,
         DoubleGreaterThan,
-        DoubleGreaterThanEqualsSign,
+        DoubleGreaterThanEqual,
         TripleGreaterThan,
-        TripleGreaterThanEqualsSign,
+        TripleGreaterThanEqual,
         Plus,
         Minus,
         Asterisk,
         ForwardSlash,
         Caret,
         Percent,
-        PlusEqualsSign,
-        MinusEqualsSign,
-        AsteriskEqualsSign,
-        ForwardSlashEqualsSign,
-        CaretEqualsSign,
-        PercentEqualsSign,
+        PlusEqual,
+        MinusEqual,
+        AsteriskEqual,
+        ForwardSlashEqual,
+        CaretEqual,
+        PercentEqual,
         Semicolon,
         Comma,
         Period,
@@ -78,8 +78,8 @@
 
         public bool IsOperator() {
             switch (this.Type) {
-                case TokenType.EqualsSign:
-                case TokenType.DoubleEqualsSign:
+                case TokenType.Equal:
+                case TokenType.DoubleEqual:
                 case TokenType.ExclamationPoint:
                 case TokenType.Ampersand:
                 case TokenType.Pipe:
@@ -87,13 +87,13 @@
                 case TokenType.ExclamationPointAmpersand:
                 case TokenType.ExclamationPointPipe:
                 case TokenType.ExclamationPointTilde:
-                case TokenType.ExclamationPointEqualsSign:
+                case TokenType.ExclamationPointEqual:
                 case TokenType.LessThan:
-                case TokenType.LessThanEqualsSign:
+                case TokenType.LessThanEqual:
                 case TokenType.DoubleLessThan:
                 case TokenType.TripleLessThan:
                 case TokenType.GreaterThan:
-                case TokenType.GreaterThanEqualsSign:
+                case TokenType.GreaterThanEqual:
                 case TokenType.DoubleGreaterThan:
                 case TokenType.TripleGreaterThan:
                 case TokenType.Plus:

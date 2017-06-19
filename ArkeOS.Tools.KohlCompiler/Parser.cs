@@ -187,25 +187,25 @@ namespace ArkeOS.Tools.KohlCompiler {
 
             if (this.lexer.Peek(out var t)) {
                 switch (t.Type) {
-                    case TokenType.PlusEqualsSign: op = Operator.Addition; break;
-                    case TokenType.MinusEqualsSign: op = Operator.Subtraction; break;
-                    case TokenType.AsteriskEqualsSign: op = Operator.Multiplication; break;
-                    case TokenType.ForwardSlashEqualsSign: op = Operator.Division; break;
-                    case TokenType.PercentEqualsSign: op = Operator.Remainder; break;
-                    case TokenType.CaretEqualsSign: op = Operator.Exponentiation; break;
-                    case TokenType.DoubleLessThanEqualsSign: op = Operator.ShiftLeft; break;
-                    case TokenType.DoubleGreaterThanEqualsSign: op = Operator.ShiftRight; break;
-                    case TokenType.TripleLessThanEqualsSign: op = Operator.RotateLeft; break;
-                    case TokenType.TripleGreaterThanEqualsSign: op = Operator.RotateRight; break;
-                    case TokenType.AmpersandEqualsSign: op = Operator.And; break;
-                    case TokenType.PipeEqualsSign: op = Operator.Or; break;
-                    case TokenType.TildeEqualsSign: op = Operator.Xor; break;
-                    case TokenType.ExclamationPointAmpersandEqualsSign: op = Operator.NotAnd; break;
-                    case TokenType.ExclamationPointPipeEqualsSign: op = Operator.NotOr; break;
-                    case TokenType.ExclamationPointTildeEqualsSign: op = Operator.NotXor; break;
+                    case TokenType.PlusEqual: op = Operator.Addition; break;
+                    case TokenType.MinusEqual: op = Operator.Subtraction; break;
+                    case TokenType.AsteriskEqual: op = Operator.Multiplication; break;
+                    case TokenType.ForwardSlashEqual: op = Operator.Division; break;
+                    case TokenType.PercentEqual: op = Operator.Remainder; break;
+                    case TokenType.CaretEqual: op = Operator.Exponentiation; break;
+                    case TokenType.DoubleLessThanEqual: op = Operator.ShiftLeft; break;
+                    case TokenType.DoubleGreaterThanEqual: op = Operator.ShiftRight; break;
+                    case TokenType.TripleLessThanEqual: op = Operator.RotateLeft; break;
+                    case TokenType.TripleGreaterThanEqual: op = Operator.RotateRight; break;
+                    case TokenType.AmpersandEqual: op = Operator.And; break;
+                    case TokenType.PipeEqual: op = Operator.Or; break;
+                    case TokenType.TildeEqual: op = Operator.Xor; break;
+                    case TokenType.ExclamationPointAmpersandEqual: op = Operator.NotAnd; break;
+                    case TokenType.ExclamationPointPipeEqual: op = Operator.NotOr; break;
+                    case TokenType.ExclamationPointTildeEqual: op = Operator.NotXor; break;
 
-                    case TokenType.EqualsSign:
-                        this.Read(TokenType.EqualsSign);
+                    case TokenType.Equal:
+                        this.Read(TokenType.Equal);
                         var exp = this.ReadExpression();
                         this.Read(TokenType.Semicolon);
 
@@ -216,7 +216,7 @@ namespace ArkeOS.Tools.KohlCompiler {
                 }
             }
             else {
-                throw this.GetExpectedTokenExceptionAtCurrent(TokenType.EqualsSign);
+                throw this.GetExpectedTokenExceptionAtCurrent(TokenType.Equal);
             }
 
             this.lexer.Read(out _);
@@ -293,12 +293,12 @@ namespace ArkeOS.Tools.KohlCompiler {
                     case TokenType.ExclamationPointAmpersand: res = Operator.NotAnd; break;
                     case TokenType.ExclamationPointPipe: res = Operator.NotOr; break;
                     case TokenType.ExclamationPointTilde: res = Operator.NotXor; break;
-                    case TokenType.DoubleEqualsSign: res = Operator.Equals; break;
-                    case TokenType.ExclamationPointEqualsSign: res = Operator.NotEquals; break;
+                    case TokenType.DoubleEqual: res = Operator.Equals; break;
+                    case TokenType.ExclamationPointEqual: res = Operator.NotEquals; break;
                     case TokenType.LessThan: res = Operator.LessThan; break;
-                    case TokenType.LessThanEqualsSign: res = Operator.LessThanOrEqual; break;
+                    case TokenType.LessThanEqual: res = Operator.LessThanOrEqual; break;
                     case TokenType.GreaterThan: res = Operator.GreaterThan; break;
-                    case TokenType.GreaterThanEqualsSign: res = Operator.GreaterThanOrEqual; break;
+                    case TokenType.GreaterThanEqual: res = Operator.GreaterThanOrEqual; break;
                     case TokenType.OpenParenthesis: res = Operator.OpenParenthesis; break;
                     case TokenType.CloseParenthesis: res = Operator.CloseParenthesis; break;
                     default: throw this.GetUnexpectedTokenExceptionAtCurrent(token.Type);

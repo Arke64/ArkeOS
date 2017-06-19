@@ -165,25 +165,25 @@ namespace ArkeOS.Tools.KohlCompiler {
                 case '{': res = new Token(TokenType.OpenCurlyBrace, c); break;
                 case '}': res = new Token(TokenType.CloseCurlyBrace, c); break;
 
-                case '+': { this.Advance(); if (this.PeekChar(out var cc) && cc == '=') { res = new Token(TokenType.PlusEqualsSign, c, cc); } else { return new Token(TokenType.Plus, c); } } break;
-                case '-': { this.Advance(); if (this.PeekChar(out var cc) && cc == '=') { res = new Token(TokenType.MinusEqualsSign, c, cc); } else { return new Token(TokenType.Minus, c); } } break;
-                case '*': { this.Advance(); if (this.PeekChar(out var cc) && cc == '=') { res = new Token(TokenType.AsteriskEqualsSign, c, cc); } else { return new Token(TokenType.Asterisk, c); } } break;
-                case '/': { this.Advance(); if (this.PeekChar(out var cc) && cc == '=') { res = new Token(TokenType.ForwardSlashEqualsSign, c, cc); } else { return new Token(TokenType.ForwardSlash, c); } } break;
-                case '^': { this.Advance(); if (this.PeekChar(out var cc) && cc == '=') { res = new Token(TokenType.CaretEqualsSign, c, cc); } else { return new Token(TokenType.Caret, c); } } break;
-                case '%': { this.Advance(); if (this.PeekChar(out var cc) && cc == '=') { res = new Token(TokenType.PercentEqualsSign, c, cc); } else { return new Token(TokenType.Percent, c); } } break;
+                case '+': { this.Advance(); if (this.PeekChar(out var cc) && cc == '=') { res = new Token(TokenType.PlusEqual, c, cc); } else { return new Token(TokenType.Plus, c); } } break;
+                case '-': { this.Advance(); if (this.PeekChar(out var cc) && cc == '=') { res = new Token(TokenType.MinusEqual, c, cc); } else { return new Token(TokenType.Minus, c); } } break;
+                case '*': { this.Advance(); if (this.PeekChar(out var cc) && cc == '=') { res = new Token(TokenType.AsteriskEqual, c, cc); } else { return new Token(TokenType.Asterisk, c); } } break;
+                case '/': { this.Advance(); if (this.PeekChar(out var cc) && cc == '=') { res = new Token(TokenType.ForwardSlashEqual, c, cc); } else { return new Token(TokenType.ForwardSlash, c); } } break;
+                case '^': { this.Advance(); if (this.PeekChar(out var cc) && cc == '=') { res = new Token(TokenType.CaretEqual, c, cc); } else { return new Token(TokenType.Caret, c); } } break;
+                case '%': { this.Advance(); if (this.PeekChar(out var cc) && cc == '=') { res = new Token(TokenType.PercentEqual, c, cc); } else { return new Token(TokenType.Percent, c); } } break;
 
-                case '&': { this.Advance(); if (this.PeekChar(out var cc) && cc == '=') { res = new Token(TokenType.AmpersandEqualsSign, c, cc); } else { return new Token(TokenType.Ampersand, c); } } break;
-                case '|': { this.Advance(); if (this.PeekChar(out var cc) && cc == '=') { res = new Token(TokenType.PipeEqualsSign, c, cc); } else { return new Token(TokenType.Pipe, c); } } break;
-                case '~': { this.Advance(); if (this.PeekChar(out var cc) && cc == '=') { res = new Token(TokenType.TildeEqualsSign, c, cc); } else { return new Token(TokenType.Tilde, c); } } break;
+                case '&': { this.Advance(); if (this.PeekChar(out var cc) && cc == '=') { res = new Token(TokenType.AmpersandEqual, c, cc); } else { return new Token(TokenType.Ampersand, c); } } break;
+                case '|': { this.Advance(); if (this.PeekChar(out var cc) && cc == '=') { res = new Token(TokenType.PipeEqual, c, cc); } else { return new Token(TokenType.Pipe, c); } } break;
+                case '~': { this.Advance(); if (this.PeekChar(out var cc) && cc == '=') { res = new Token(TokenType.TildeEqual, c, cc); } else { return new Token(TokenType.Tilde, c); } } break;
 
                 case '=': {
                         this.Advance();
 
                         if (this.PeekChar(out var cc) && cc == '=') {
-                            res = new Token(TokenType.DoubleEqualsSign, c, cc);
+                            res = new Token(TokenType.DoubleEqual, c, cc);
                         }
                         else {
-                            return new Token(TokenType.EqualsSign, c);
+                            return new Token(TokenType.Equal, c);
                         }
                     }
 
@@ -194,10 +194,10 @@ namespace ArkeOS.Tools.KohlCompiler {
 
                         if (this.PeekChar(out var cc)) {
                             switch (cc) {
-                                case '&': { if (this.PeekChar(out var ccc) && ccc == '=') { this.Advance(); res = new Token(TokenType.ExclamationPointAmpersandEqualsSign, c, cc, ccc); } else { res = new Token(TokenType.ExclamationPointAmpersand, c, cc); } } break;
-                                case '|': { if (this.PeekChar(out var ccc) && ccc == '=') { this.Advance(); res = new Token(TokenType.ExclamationPointPipeEqualsSign, c, cc, ccc); } else { res = new Token(TokenType.ExclamationPointPipe, c, cc); } } break;
-                                case '~': { if (this.PeekChar(out var ccc) && ccc == '=') { this.Advance(); res = new Token(TokenType.ExclamationPointTildeEqualsSign, c, cc, ccc); } else { res = new Token(TokenType.ExclamationPointTilde, c, cc); } } break;
-                                case '=': res = new Token(TokenType.ExclamationPointEqualsSign, c, cc); break;
+                                case '&': { if (this.PeekChar(out var ccc) && ccc == '=') { this.Advance(); res = new Token(TokenType.ExclamationPointAmpersandEqual, c, cc, ccc); } else { res = new Token(TokenType.ExclamationPointAmpersand, c, cc); } } break;
+                                case '|': { if (this.PeekChar(out var ccc) && ccc == '=') { this.Advance(); res = new Token(TokenType.ExclamationPointPipeEqual, c, cc, ccc); } else { res = new Token(TokenType.ExclamationPointPipe, c, cc); } } break;
+                                case '~': { if (this.PeekChar(out var ccc) && ccc == '=') { this.Advance(); res = new Token(TokenType.ExclamationPointTildeEqual, c, cc, ccc); } else { res = new Token(TokenType.ExclamationPointTilde, c, cc); } } break;
+                                case '=': res = new Token(TokenType.ExclamationPointEqual, c, cc); break;
                                 default: return new Token(TokenType.ExclamationPoint, c);
                             }
                         }
@@ -222,7 +222,7 @@ namespace ArkeOS.Tools.KohlCompiler {
                                         if (this.PeekChar(out var cccc) && cccc == '=') {
                                             this.Advance();
 
-                                            res = new Token(TokenType.TripleLessThanEqualsSign, c, cc, ccc, cccc);
+                                            res = new Token(TokenType.TripleLessThanEqual, c, cc, ccc, cccc);
                                         }
                                         else {
                                             return new Token(TokenType.TripleLessThan, c, cc);
@@ -232,7 +232,7 @@ namespace ArkeOS.Tools.KohlCompiler {
                                         if (this.PeekChar(out var cccc) && cccc == '=') {
                                             this.Advance();
 
-                                            res = new Token(TokenType.DoubleLessThanEqualsSign, c, cc, ccc, cccc);
+                                            res = new Token(TokenType.DoubleLessThanEqual, c, cc, ccc, cccc);
                                         }
                                         else {
                                             return new Token(TokenType.DoubleLessThan, c, cc);
@@ -241,7 +241,7 @@ namespace ArkeOS.Tools.KohlCompiler {
 
                                     break;
 
-                                case '=': res = new Token(TokenType.LessThanEqualsSign, c, cc); break;
+                                case '=': res = new Token(TokenType.LessThanEqual, c, cc); break;
                                 default: return new Token(TokenType.LessThan, c);
                             }
                         }
@@ -266,7 +266,7 @@ namespace ArkeOS.Tools.KohlCompiler {
                                         if (this.PeekChar(out var cccc) && cccc == '=') {
                                             this.Advance();
 
-                                            res = new Token(TokenType.TripleGreaterThanEqualsSign, c, cc, ccc, cccc);
+                                            res = new Token(TokenType.TripleGreaterThanEqual, c, cc, ccc, cccc);
                                         }
                                         else {
                                             return new Token(TokenType.TripleGreaterThan, c, cc);
@@ -276,7 +276,7 @@ namespace ArkeOS.Tools.KohlCompiler {
                                         if (this.PeekChar(out var cccc) && cccc == '=') {
                                             this.Advance();
 
-                                            res = new Token(TokenType.DoubleGreaterThanEqualsSign, c, cc, ccc, cccc);
+                                            res = new Token(TokenType.DoubleGreaterThanEqual, c, cc, ccc, cccc);
                                         }
                                         else {
                                             return new Token(TokenType.DoubleGreaterThan, c, cc);
@@ -285,7 +285,7 @@ namespace ArkeOS.Tools.KohlCompiler {
 
                                     break;
 
-                                case '=': res = new Token(TokenType.GreaterThanEqualsSign, c, cc); break;
+                                case '=': res = new Token(TokenType.GreaterThanEqual, c, cc); break;
                                 default: return new Token(TokenType.GreaterThan, c);
                             }
                         }
