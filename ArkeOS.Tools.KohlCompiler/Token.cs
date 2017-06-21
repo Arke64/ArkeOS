@@ -73,7 +73,7 @@
         public Token(TokenType type) : this(type, string.Empty) { }
         public Token(TokenType type, string value) => (this.Type, this.Value) = (type, value);
 
-        public override string ToString() => $"{this.Type}{(this.Type == TokenType.Number || this.Type == TokenType.Identifier ? ": " + this.Value : string.Empty)}";
+        public override string ToString() => $"{this.Type}{(this.Value != string.Empty ? ": " + this.Value : string.Empty)}";
 
         public bool IsOperator() {
             switch (this.Type) {
