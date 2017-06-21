@@ -96,16 +96,20 @@ namespace ArkeOS.Tools.KohlCompiler {
         public bool TryReadChar(out char chr) {
             var res = this.TryPeekChar(out chr);
 
-            if (this.file.Advance())
+            if (res && this.file.Advance())
                 this.file = this.files.Any() ? this.files.Dequeue() : null;
 
             return res;
         }
 
+        public char ReadChar() => this.TryReadChar(out var c) ? c : throw new ExpectedCharacterException(this.CurrentPosition);
+        public char ReadChar(out char c) => c = this.ReadChar();
         public char ReadChar(char chr) => this.TryReadChar(chr) ? chr : throw new ExpectedCharacterException(this.CurrentPosition, chr);
         public bool TryReadChar(char chr) => this.TryReadChar(c => c == chr, out _);
         public bool TryReadChar(Predicate<char> predicate, out char chr) => this.TryPeekChar(predicate, out chr) && this.TryReadChar(out _);
 
+        public char PeekChar() => this.TryPeekChar(out var c) ? c : throw new ExpectedCharacterException(this.CurrentPosition);
+        public char PeekChar(out char c) => c = this.PeekChar();
         public char PeekChar(char chr) => this.TryPeekChar(chr) ? chr : throw new ExpectedCharacterException(this.CurrentPosition, chr);
         public bool TryPeekChar(char chr) => this.TryPeekChar(c => c == chr, out _);
         public bool TryPeekChar(Predicate<char> predicate, out char chr) => this.TryPeekChar(out chr) && predicate(chr);
@@ -152,93 +156,63 @@ namespace ArkeOS.Tools.KohlCompiler {
         }
 
         private Token ReadSymbol() {
-            if (this.TryReadChar(out var c)) {
-                switch (c) {
-                    case ';': return new Token(TokenType.Semicolon, c);
-                    case '.': return new Token(TokenType.Period, c);
-                    case ',': return new Token(TokenType.Comma, c);
-                    case '(': return new Token(TokenType.OpenParenthesis, c);
-                    case ')': return new Token(TokenType.CloseParenthesis, c);
-                    case '{': return new Token(TokenType.OpenCurlyBrace, c);
-                    case '}': return new Token(TokenType.CloseCurlyBrace, c);
+            switch (this.ReadChar(out var c)) {
+                case ';': return new Token(TokenType.Semicolon, ";");
+                case '.': return new Token(TokenType.Period, ".");
+                case ',': return new Token(TokenType.Comma, ",");
+                case '(': return new Token(TokenType.OpenParenthesis, "(");
+                case ')': return new Token(TokenType.CloseParenthesis, ")");
+                case '{': return new Token(TokenType.OpenCurlyBrace, "{");
+                case '}': return new Token(TokenType.CloseCurlyBrace, "}");
 
-                    case '+': return this.TryReadChar('=') ? new Token(TokenType.PlusEqual, c, '=') : new Token(TokenType.Plus, c);
-                    case '-': return this.TryReadChar('=') ? new Token(TokenType.MinusEqual, c, '=') : new Token(TokenType.Minus, c);
-                    case '*': return this.TryReadChar('=') ? new Token(TokenType.AsteriskEqual, c, '=') : new Token(TokenType.Asterisk, c);
-                    case '/': return this.TryReadChar('=') ? new Token(TokenType.ForwardSlashEqual, c, '=') : new Token(TokenType.ForwardSlash, c);
-                    case '^': return this.TryReadChar('=') ? new Token(TokenType.CaretEqual, c, '=') : new Token(TokenType.Caret, c);
-                    case '%': return this.TryReadChar('=') ? new Token(TokenType.PercentEqual, c, '=') : new Token(TokenType.Percent, c);
+                case '+': return this.TryReadChar('=') ? new Token(TokenType.PlusEqual, "+=") : new Token(TokenType.Plus, "+");
+                case '-': return this.TryReadChar('=') ? new Token(TokenType.MinusEqual, "-=") : new Token(TokenType.Minus, "-");
+                case '*': return this.TryReadChar('=') ? new Token(TokenType.AsteriskEqual, "*=") : new Token(TokenType.Asterisk, "*");
+                case '/': return this.TryReadChar('=') ? new Token(TokenType.ForwardSlashEqual, "/=") : new Token(TokenType.ForwardSlash, "/");
+                case '^': return this.TryReadChar('=') ? new Token(TokenType.CaretEqual, "^=") : new Token(TokenType.Caret, "^");
+                case '%': return this.TryReadChar('=') ? new Token(TokenType.PercentEqual, "%=") : new Token(TokenType.Percent, "%");
 
-                    case '&': return this.TryReadChar('=') ? new Token(TokenType.AmpersandEqual, c, '=') : new Token(TokenType.Ampersand, c);
-                    case '|': return this.TryReadChar('=') ? new Token(TokenType.PipeEqual, c, '=') : new Token(TokenType.Pipe, c);
-                    case '~': return this.TryReadChar('=') ? new Token(TokenType.TildeEqual, c, '=') : new Token(TokenType.Tilde, c);
+                case '&': return this.TryReadChar('=') ? new Token(TokenType.AmpersandEqual, "&=") : new Token(TokenType.Ampersand, "&");
+                case '|': return this.TryReadChar('=') ? new Token(TokenType.PipeEqual, "|=") : new Token(TokenType.Pipe, "|");
+                case '~': return this.TryReadChar('=') ? new Token(TokenType.TildeEqual, "~=") : new Token(TokenType.Tilde, "~");
 
-                    case '=': return this.TryReadChar('=') ? new Token(TokenType.DoubleEqual, c, '=') : new Token(TokenType.Equal, c);
+                case '=': return this.TryReadChar('=') ? new Token(TokenType.DoubleEqual, "==") : new Token(TokenType.Equal, "=");
 
-                    case '!':
-                        if (this.TryReadChar('&')) return this.TryReadChar('=') ? new Token(TokenType.ExclamationPointAmpersandEqual, "!&=") : new Token(TokenType.ExclamationPointAmpersand, "!&");
-                        else if (this.TryReadChar('|')) return this.TryReadChar('=') ? new Token(TokenType.ExclamationPointPipeEqual, "!|=") : new Token(TokenType.ExclamationPointPipe, "!|");
-                        else if (this.TryReadChar('~')) return this.TryReadChar('=') ? new Token(TokenType.ExclamationPointTildeEqual, "!~=") : new Token(TokenType.ExclamationPointTilde, "!~");
-                        else if (this.TryReadChar('=')) return new Token(TokenType.ExclamationPointEqual, "!=");
-                        else return new Token(TokenType.ExclamationPoint, "=");
+                case '!':
+                    if (this.TryReadChar('&')) return this.TryReadChar('=') ? new Token(TokenType.ExclamationPointAmpersandEqual, "!&=") : new Token(TokenType.ExclamationPointAmpersand, "!&");
+                    else if (this.TryReadChar('|')) return this.TryReadChar('=') ? new Token(TokenType.ExclamationPointPipeEqual, "!|=") : new Token(TokenType.ExclamationPointPipe, "!|");
+                    else if (this.TryReadChar('~')) return this.TryReadChar('=') ? new Token(TokenType.ExclamationPointTildeEqual, "!~=") : new Token(TokenType.ExclamationPointTilde, "!~");
+                    else if (this.TryReadChar('=')) return new Token(TokenType.ExclamationPointEqual, "!=");
+                    else return new Token(TokenType.ExclamationPoint, "!");
 
-                    case '<':
+                case '<':
+                    if (this.TryReadChar('<')) {
                         if (this.TryReadChar('<')) {
-                            if (this.TryReadChar('<')) {
-                                if (this.TryReadChar('=')) {
-                                    return new Token(TokenType.TripleLessThanEqual, "<<<=");
-                                }
-                                else {
-                                    return new Token(TokenType.TripleLessThan, "<<<");
-                                }
-                            }
-                            else {
-                                if (this.TryReadChar('=')) {
-                                    return new Token(TokenType.DoubleLessThanEqual, "<<=");
-                                }
-                                else {
-                                    return new Token(TokenType.DoubleLessThan, "<<");
-                                }
-                            }
-                        }
-                        else if (this.TryReadChar('=')) {
-                            return new Token(TokenType.LessThanEqual, "<=");
+                            return this.TryReadChar('=') ? new Token(TokenType.TripleLessThanEqual, "<<<=") : new Token(TokenType.TripleLessThan, "<<<");
                         }
                         else {
-                            return new Token(TokenType.LessThan, "<");
+                            return this.TryReadChar('=') ? new Token(TokenType.DoubleLessThanEqual, "<<=") : new Token(TokenType.DoubleLessThan, "<<");
                         }
+                    }
+                    else {
+                        return this.TryReadChar('=') ? new Token(TokenType.LessThanEqual, "<=") : new Token(TokenType.LessThan, "<");
+                    }
 
-                    case '>':
+                case '>':
+                    if (this.TryReadChar('>')) {
                         if (this.TryReadChar('>')) {
-                            if (this.TryReadChar('>')) {
-                                if (this.TryReadChar('=')) {
-                                    return new Token(TokenType.TripleGreaterThanEqual, ">>>=");
-                                }
-                                else {
-                                    return new Token(TokenType.TripleGreaterThan, ">>>");
-                                }
-                            }
-                            else {
-                                if (this.TryReadChar('=')) {
-                                    return new Token(TokenType.DoubleGreaterThanEqual, ">>=");
-                                }
-                                else {
-                                    return new Token(TokenType.DoubleGreaterThan, ">>");
-                                }
-                            }
-                        }
-                        else if (this.TryReadChar('=')) {
-                            return new Token(TokenType.GreaterThanEqual, ">=");
+                            return this.TryReadChar('=') ? new Token(TokenType.TripleGreaterThanEqual, ">>>=") : new Token(TokenType.TripleGreaterThan, ">>>");
                         }
                         else {
-                            return new Token(TokenType.GreaterThan, ">");
+                            return this.TryReadChar('=') ? new Token(TokenType.DoubleGreaterThanEqual, ">>=") : new Token(TokenType.DoubleGreaterThan, ">>");
                         }
-                }
-
-                throw new UnexpectedCharacterException(this.CurrentPosition, c);
+                    }
+                    else {
+                        return this.TryReadChar('=') ? new Token(TokenType.GreaterThanEqual, ">=") : new Token(TokenType.GreaterThan, ">");
+                    }
             }
 
-            throw new InvalidOperationException();
+            throw new UnexpectedCharacterException(this.CurrentPosition, c);
         }
 
         private Token LexNextToken() {
