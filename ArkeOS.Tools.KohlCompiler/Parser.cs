@@ -65,13 +65,13 @@ namespace ArkeOS.Tools.KohlCompiler {
 
             this.lexer.Read(TokenType.OpenParenthesis);
 
-            if (!this.lexer.TryPeek(TokenType.CloseParenthesis)) {
+            if (!this.lexer.TryRead(TokenType.CloseParenthesis)) {
                 do {
                     list.Add(this.ReadExpression());
                 } while (this.lexer.TryRead(TokenType.Comma));
-            }
 
-            this.lexer.Read(TokenType.CloseParenthesis);
+                this.lexer.Read(TokenType.CloseParenthesis);
+            }
 
             return list;
         }
@@ -229,8 +229,12 @@ namespace ArkeOS.Tools.KohlCompiler {
                     stack.Push(this.ReadIdentifier());
                     start = false;
                 }
-                else if (start && (token.Type == TokenType.TrueKeyword || token.Type == TokenType.FalseKeyword)) {
-                    stack.Push(this.ReadBooleanLiteral());
+                else if (start && token.Type == TokenType.TrueKeyword) {
+                    stack.Push(this.ReadTrueLiteral());
+                    start = false;
+                }
+                else if (start && token.Type == TokenType.FalseKeyword) {
+                    stack.Push(this.ReadFalseLiteral());
                     start = false;
                 }
                 else if (!start && token.Type == TokenType.CloseParenthesis) {
@@ -252,9 +256,10 @@ namespace ArkeOS.Tools.KohlCompiler {
             return stack.ToNode();
         }
 
-        private LiteralNode ReadNumberLiteral() => this.lexer.TryRead(TokenType.Number, out var token) ? new NumberLiteralNode(token) : throw this.GetExpectedTokenExceptionAtCurrent(TokenType.Number);
-        private LiteralNode ReadBooleanLiteral() => this.lexer.TryRead(t => t.Type == TokenType.TrueKeyword || t.Type == TokenType.FalseKeyword, out var token) ? new BooleanLiteralNode(token) : throw this.GetExpectedTokenExceptionAtCurrent("bool");
-        private IdentifierNode ReadIdentifier() => this.lexer.TryRead(TokenType.Identifier, out var token) ? new RegisterNode(token) : throw this.GetExpectedTokenExceptionAtCurrent(TokenType.Identifier);
+        private IdentifierNode ReadIdentifier() => new RegisterNode(this.lexer.Read(TokenType.Identifier));
+        private LiteralNode ReadNumberLiteral() => new NumberLiteralNode(this.lexer.Read(TokenType.Number));
+        private LiteralNode ReadTrueLiteral() => new BooleanLiteralNode(this.lexer.Read(TokenType.TrueKeyword));
+        private LiteralNode ReadFalseLiteral() => new BooleanLiteralNode(this.lexer.Read(TokenType.FalseKeyword));
 
         private OperatorNode ReadOperator(bool unary) {
             if (!this.lexer.TryRead(t => t.IsOperator(), out var token))
