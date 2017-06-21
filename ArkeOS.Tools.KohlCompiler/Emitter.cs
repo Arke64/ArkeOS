@@ -55,7 +55,7 @@ namespace ArkeOS.Tools.KohlCompiler {
                 }
             }
 
-            throw new ExceptedLValueException();
+            throw new ExceptedLValueException(default(PositionInfo));
         }
 
         private void Visit(ProgramNode n) => this.Visit(n.StatementBlock);
@@ -110,7 +110,7 @@ namespace ArkeOS.Tools.KohlCompiler {
                             this.Emit(InstructionDefinition.CPY, Emitter.StackParam, Emitter.StackParam, Emitter.StackParam);
                         }
                         else {
-                            throw new TooFewArgumentsException();
+                            throw new TooFewArgumentsException(default(PositionInfo));
                         }
                     }
 
@@ -125,7 +125,7 @@ namespace ArkeOS.Tools.KohlCompiler {
                             this.Emit(InstructionDefinition.INT, Emitter.StackParam, Emitter.StackParam, Emitter.StackParam);
                         }
                         else {
-                            throw new TooFewArgumentsException();
+                            throw new TooFewArgumentsException(default(PositionInfo));
                         }
                     }
 
@@ -136,7 +136,7 @@ namespace ArkeOS.Tools.KohlCompiler {
                             this.Emit(InstructionDefinition.DBG, this.ExtractLValue(arg0), this.ExtractLValue(arg1), this.ExtractLValue(arg2));
                         }
                         else {
-                            throw new TooFewArgumentsException();
+                            throw new TooFewArgumentsException(default(PositionInfo));
                         }
                     }
 
@@ -148,7 +148,7 @@ namespace ArkeOS.Tools.KohlCompiler {
                             this.Emit(InstructionDefinition.CAS, this.ExtractLValue(arg0), this.ExtractLValue(arg1), Emitter.StackParam);
                         }
                         else {
-                            throw new TooFewArgumentsException();
+                            throw new TooFewArgumentsException(default(PositionInfo));
                         }
                     }
 
@@ -159,7 +159,7 @@ namespace ArkeOS.Tools.KohlCompiler {
                             this.Emit(InstructionDefinition.XCHG, this.ExtractLValue(arg0), this.ExtractLValue(arg1));
                         }
                         else {
-                            throw new TooFewArgumentsException();
+                            throw new TooFewArgumentsException(default(PositionInfo));
                         }
                     }
 

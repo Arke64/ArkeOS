@@ -1,8 +1,6 @@
-﻿using System;
-
-namespace ArkeOS.Tools.KohlCompiler.Exceptions {
-    public class TooFewArgumentsException : Exception {
-        public TooFewArgumentsException() { }
-        public TooFewArgumentsException(string message) : base(message) { }
+﻿namespace ArkeOS.Tools.KohlCompiler.Exceptions {
+    public class TooFewArgumentsException : CompilationException {
+        public TooFewArgumentsException(PositionInfo position) : base(position) { }
+        public TooFewArgumentsException(PositionInfo position, string message) : base(position, message) { }
     }
 }

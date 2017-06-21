@@ -1,8 +1,6 @@
-﻿using System;
-
-namespace ArkeOS.Tools.KohlCompiler.Exceptions {
-    public class ExceptedLValueException : Exception {
-        public ExceptedLValueException() { }
-        public ExceptedLValueException(string message) : base(message) { }
+﻿namespace ArkeOS.Tools.KohlCompiler.Exceptions {
+    public class ExceptedLValueException : CompilationException {
+        public ExceptedLValueException(PositionInfo position) : base(position) { }
+        public ExceptedLValueException(PositionInfo position, string message) : base(position, message) { }
     }
 }
