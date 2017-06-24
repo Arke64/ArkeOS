@@ -147,48 +147,55 @@ namespace ArkeOS.Tools.KohlCompiler {
         }
 
         private Token ReadSymbol() {
+            var tok = default(TokenType);
+
             this.TryReadChar(out var c);
 
             switch (c) {
-                case ';': return new Token(TokenType.Semicolon);
-                case '.': return new Token(TokenType.Period);
-                case ',': return new Token(TokenType.Comma);
-                case '(': return new Token(TokenType.OpenParenthesis);
-                case ')': return new Token(TokenType.CloseParenthesis);
-                case '{': return new Token(TokenType.OpenCurlyBrace);
-                case '}': return new Token(TokenType.CloseCurlyBrace);
+                case ';': tok = TokenType.Semicolon; break;
+                case '.': tok = TokenType.Period; break;
+                case ',': tok = TokenType.Comma; break;
+                case '(': tok = TokenType.OpenParenthesis; break;
+                case ')': tok = TokenType.CloseParenthesis; break;
+                case '{': tok = TokenType.OpenCurlyBrace; break;
+                case '}': tok = TokenType.CloseCurlyBrace; break;
 
-                case '+': return new Token(this.TryReadChar('=') ? TokenType.PlusEqual : TokenType.Plus);
-                case '-': return new Token(this.TryReadChar('=') ? TokenType.MinusEqual : TokenType.Minus);
-                case '*': return new Token(this.TryReadChar('=') ? TokenType.AsteriskEqual : TokenType.Asterisk);
-                case '/': return new Token(this.TryReadChar('=') ? TokenType.ForwardSlashEqual : TokenType.ForwardSlash);
-                case '^': return new Token(this.TryReadChar('=') ? TokenType.CaretEqual : TokenType.Caret);
-                case '%': return new Token(this.TryReadChar('=') ? TokenType.PercentEqual : TokenType.Percent);
-                case '&': return new Token(this.TryReadChar('=') ? TokenType.AmpersandEqual : TokenType.Ampersand);
-                case '|': return new Token(this.TryReadChar('=') ? TokenType.PipeEqual : TokenType.Pipe);
-                case '~': return new Token(this.TryReadChar('=') ? TokenType.TildeEqual : TokenType.Tilde);
-                case '=': return new Token(this.TryReadChar('=') ? TokenType.DoubleEqual : TokenType.Equal);
+                case '+': tok = this.TryReadChar('=') ? TokenType.PlusEqual : TokenType.Plus; break;
+                case '-': tok = this.TryReadChar('=') ? TokenType.MinusEqual : TokenType.Minus; break;
+                case '*': tok = this.TryReadChar('=') ? TokenType.AsteriskEqual : TokenType.Asterisk; break;
+                case '/': tok = this.TryReadChar('=') ? TokenType.ForwardSlashEqual : TokenType.ForwardSlash; break;
+                case '^': tok = this.TryReadChar('=') ? TokenType.CaretEqual : TokenType.Caret; break;
+                case '%': tok = this.TryReadChar('=') ? TokenType.PercentEqual : TokenType.Percent; break;
+                case '&': tok = this.TryReadChar('=') ? TokenType.AmpersandEqual : TokenType.Ampersand; break;
+                case '|': tok = this.TryReadChar('=') ? TokenType.PipeEqual : TokenType.Pipe; break;
+                case '~': tok = this.TryReadChar('=') ? TokenType.TildeEqual : TokenType.Tilde; break;
+                case '=': tok = this.TryReadChar('=') ? TokenType.DoubleEqual : TokenType.Equal; break;
 
                 case '!':
-                    if (this.TryReadChar('&')) return new Token(this.TryReadChar('=') ? TokenType.ExclamationPointAmpersandEqual : TokenType.ExclamationPointAmpersand);
-                    if (this.TryReadChar('|')) return new Token(this.TryReadChar('=') ? TokenType.ExclamationPointPipeEqual : TokenType.ExclamationPointPipe);
-                    if (this.TryReadChar('~')) return new Token(this.TryReadChar('=') ? TokenType.ExclamationPointTildeEqual : TokenType.ExclamationPointTilde);
-                    return new Token(this.TryReadChar('=') ? TokenType.ExclamationPointEqual : TokenType.ExclamationPoint);
+                    if (this.TryReadChar('&')) tok = this.TryReadChar('=') ? TokenType.ExclamationPointAmpersandEqual : TokenType.ExclamationPointAmpersand;
+                    else if (this.TryReadChar('|')) tok = this.TryReadChar('=') ? TokenType.ExclamationPointPipeEqual : TokenType.ExclamationPointPipe;
+                    else if (this.TryReadChar('~')) tok = this.TryReadChar('=') ? TokenType.ExclamationPointTildeEqual : TokenType.ExclamationPointTilde;
+                    else tok = this.TryReadChar('=') ? TokenType.ExclamationPointEqual : TokenType.ExclamationPoint;
+                    break;
 
                 case '<':
-                    return this.TryReadChar('<') ? (this.TryReadChar('<') ?
-                  new Token(this.TryReadChar('=') ? TokenType.TripleLessThanEqual : TokenType.TripleLessThan) :
-                  new Token(this.TryReadChar('=') ? TokenType.DoubleLessThanEqual : TokenType.DoubleLessThan)) :
-                  new Token(this.TryReadChar('=') ? TokenType.LessThanEqual : TokenType.LessThan);
+                    tok = this.TryReadChar('<') ? (this.TryReadChar('<') ?
+                        (this.TryReadChar('=') ? TokenType.TripleLessThanEqual : TokenType.TripleLessThan) :
+                        (this.TryReadChar('=') ? TokenType.DoubleLessThanEqual : TokenType.DoubleLessThan)) :
+                        (this.TryReadChar('=') ? TokenType.LessThanEqual : TokenType.LessThan);
+                    break;
 
                 case '>':
-                    return this.TryReadChar('>') ? (this.TryReadChar('>') ?
-                  new Token(this.TryReadChar('=') ? TokenType.TripleGreaterThanEqual : TokenType.TripleGreaterThan) :
-                  new Token(this.TryReadChar('=') ? TokenType.DoubleGreaterThanEqual : TokenType.DoubleGreaterThan)) :
-                  new Token(this.TryReadChar('=') ? TokenType.GreaterThanEqual : TokenType.GreaterThan);
+                    tok = this.TryReadChar('>') ? (this.TryReadChar('>') ?
+                        (this.TryReadChar('=') ? TokenType.TripleGreaterThanEqual : TokenType.TripleGreaterThan) :
+                        (this.TryReadChar('=') ? TokenType.DoubleGreaterThanEqual : TokenType.DoubleGreaterThan)) :
+                        (this.TryReadChar('=') ? TokenType.GreaterThanEqual : TokenType.GreaterThan);
+                    break;
 
                 default: throw new UnexpectedCharacterException(this.CurrentPosition, c);
             }
+
+            return new Token(tok);
         }
 
         private Token LexNextToken() {
