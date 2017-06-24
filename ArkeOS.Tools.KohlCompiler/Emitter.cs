@@ -48,8 +48,8 @@ namespace ArkeOS.Tools.KohlCompiler {
         }
 
         private Parameter ExtractLValue(ExpressionNode expr) {
-            if (expr is IdentifierNode i) {
-                switch (i) {
+            if (expr is LValueNode lvalue) {
+                switch (lvalue) {
                     case RegisterNode n: return Parameter.CreateRegister(n.Register);
                     default: throw new NotImplementedException();
                 }
@@ -221,12 +221,7 @@ namespace ArkeOS.Tools.KohlCompiler {
 
                     break;
 
-                case LiteralNode n:
-                    this.Visit(n);
-
-                    break;
-
-                case IdentifierNode n:
+                case RValueNode n:
                     this.Visit(n);
 
                     break;
@@ -236,8 +231,8 @@ namespace ArkeOS.Tools.KohlCompiler {
             }
         }
 
-        private void Visit(LiteralNode e) {
-            switch (e) {
+        private void Visit(RValueNode rvalue) {
+            switch (rvalue) {
                 case IntegerLiteralNode n:
                     this.Emit(InstructionDefinition.SET, Emitter.StackParam, Parameter.CreateLiteral((ulong)n.Literal));
 
@@ -247,13 +242,18 @@ namespace ArkeOS.Tools.KohlCompiler {
                     this.Emit(InstructionDefinition.SET, Emitter.StackParam, Parameter.CreateLiteral(n.Literal ? ulong.MaxValue : 0));
                     break;
 
+                case LValueNode n:
+                    this.Visit(n);
+
+                    break;
+
                 default:
                     throw new NotImplementedException();
             }
         }
 
-        private void Visit(IdentifierNode e) {
-            switch (e) {
+        private void Visit(LValueNode lvalue) {
+            switch (lvalue) {
                 case RegisterNode n:
                     this.Emit(InstructionDefinition.SET, Emitter.StackParam, Parameter.CreateRegister(n.Register));
 

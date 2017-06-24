@@ -1,5 +1,5 @@
 ﻿namespace ArkeOS.Tools.KohlCompiler.Nodes {
-    public class LiteralNode : ExpressionNode {
+    public abstract class RValueNode : ExpressionNode {
 
     }
 }

@@ -169,7 +169,7 @@ namespace ArkeOS.Tools.KohlCompiler {
         }
 
         private AssignmentStatementNode ReadAssignmentStatement() {
-            var ident = this.ReadIdentifier();
+            var target = this.ReadLValue();
             var op = default(Operator);
 
             if (this.lexer.TryPeek(out var t)) {
@@ -196,7 +196,7 @@ namespace ArkeOS.Tools.KohlCompiler {
                         var exp = this.ReadExpression();
                         this.lexer.Read(TokenType.Semicolon);
 
-                        return new AssignmentStatementNode(ident, exp);
+                        return new AssignmentStatementNode(target, exp);
 
                     default:
                         throw this.GetUnexpectedTokenExceptionAtCurrent(t.Type);
@@ -208,7 +208,7 @@ namespace ArkeOS.Tools.KohlCompiler {
 
             this.lexer.TryRead(out _);
 
-            var res = new AssignmentStatementNode(ident, new BinaryExpressionNode(ident, new OperatorNode(op), this.ReadExpression()));
+            var res = new AssignmentStatementNode(target, new BinaryExpressionNode(target, new OperatorNode(op), this.ReadExpression()));
             this.lexer.Read(TokenType.Semicolon);
             return res;
         }
@@ -221,16 +221,8 @@ namespace ArkeOS.Tools.KohlCompiler {
             while (this.lexer.TryPeek(out var token)) {
                 if (token.Type == TokenType.OpenParenthesis) seenOpenParens++;
 
-                if (start && token.Type == TokenType.IntegerLiteral) {
-                    stack.Push(this.ReadIntegerLiteral());
-                    start = false;
-                }
-                else if (start && token.Type == TokenType.BoolLiteral) {
-                    stack.Push(this.RealBoolLiteral());
-                    start = false;
-                }
-                else if (start && token.Type == TokenType.Identifier) {
-                    stack.Push(this.ReadIdentifier());
+                if (start && token.Class == TokenClass.Value) {
+                    stack.Push(this.ReadRValue());
                     start = false;
                 }
                 else if (!start && token.Type == TokenType.CloseParenthesis) {
@@ -240,7 +232,7 @@ namespace ArkeOS.Tools.KohlCompiler {
                     stack.Push(this.ReadOperator(false), this.lexer.CurrentPosition);
                     start = false;
                 }
-                else if (token.IsOperator()) {
+                else if (token.Class == TokenClass.Operator) {
                     stack.Push(this.ReadOperator(start && token.Type != TokenType.OpenParenthesis), this.lexer.CurrentPosition);
                     start = true;
                 }
@@ -252,14 +244,28 @@ namespace ArkeOS.Tools.KohlCompiler {
             return stack.ToNode();
         }
 
-        private IdentifierNode ReadIdentifier() => new RegisterNode(this.lexer.Read(TokenType.Identifier));
-        private LiteralNode ReadIntegerLiteral() => new IntegerLiteralNode(this.lexer.Read(TokenType.IntegerLiteral));
-        private LiteralNode RealBoolLiteral() => new BoolLiteralNode(this.lexer.Read(TokenType.BoolLiteral));
+        private RValueNode ReadRValue() => this.ReadValue(false);
+        private LValueNode ReadLValue() => (LValueNode)this.ReadValue(true);
+
+        private RValueNode ReadValue(bool requireLValue) {
+            var token = this.lexer.Read();
+
+            if (!requireLValue) {
+                switch (token.Type) {
+                    case TokenType.IntegerLiteral: return new IntegerLiteralNode(token);
+                    case TokenType.BoolLiteral: return new BoolLiteralNode(token);
+                    case TokenType.Identifier: return new RegisterNode(token);
+                }
+            }
+            else {
+                return new RegisterNode(token);
+            }
+
+            throw this.GetUnexpectedTokenExceptionAtCurrent(token.Type);
+        }
 
         private OperatorNode ReadOperator(bool unary) {
-            if (!this.lexer.TryRead(t => t.IsOperator(), out var token))
-                throw this.GetExpectedTokenExceptionAtCurrent("operator");
-
+            var token = this.lexer.Read(TokenClass.Operator);
             var res = default(Operator);
 
             if (!unary) {
@@ -304,8 +310,6 @@ namespace ArkeOS.Tools.KohlCompiler {
         }
 
         private UnexpectedTokenException GetUnexpectedTokenExceptionAtCurrent(TokenType t) => new UnexpectedTokenException(this.lexer.CurrentPosition, t);
-        private UnexpectedTokenException GetUnexpectedTokenExceptionAtCurrent(string t) => new UnexpectedTokenException(this.lexer.CurrentPosition, t);
         private ExpectedTokenException GetExpectedTokenExceptionAtCurrent(TokenType t) => new ExpectedTokenException(this.lexer.CurrentPosition, t);
-        private ExpectedTokenException GetExpectedTokenExceptionAtCurrent(string t) => new ExpectedTokenException(this.lexer.CurrentPosition, t);
     }
 }

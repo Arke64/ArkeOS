@@ -247,14 +247,22 @@ namespace ArkeOS.Tools.KohlCompiler {
             return res;
         }
 
+        public Token Read() => this.TryRead(out var token) ? token : throw new ExpectedTokenException(this.CurrentPosition, "token");
         public Token Read(TokenType type) => this.TryRead(type, out var token) ? token : throw new ExpectedTokenException(this.CurrentPosition, type);
+        public Token Read(TokenClass cls) => this.TryRead(cls, out var token) ? token : throw new ExpectedTokenException(this.CurrentPosition, cls);
         public bool TryRead(TokenType type) => this.TryRead(type, out _);
         public bool TryRead(TokenType type, out Token token) => this.TryRead(t => t.Type == type, out token);
+        public bool TryRead(TokenClass cls) => this.TryRead(cls, out _);
+        public bool TryRead(TokenClass cls, out Token token) => this.TryRead(t => t.Class == cls, out token);
         public bool TryRead(Predicate<Token> predicate, out Token token) => this.TryPeek(predicate, out token) && this.TryRead(out _);
 
+        public Token Peek() => this.TryPeek(out var token) ? token : throw new ExpectedTokenException(this.CurrentPosition, "token");
         public Token Peek(TokenType type) => this.TryPeek(type, out var token) ? token : throw new ExpectedTokenException(this.CurrentPosition, type);
+        public Token Peek(TokenClass cls) => this.TryPeek(cls, out var token) ? token : throw new ExpectedTokenException(this.CurrentPosition, cls);
         public bool TryPeek(TokenType type) => this.TryPeek(type, out _);
         public bool TryPeek(TokenType type, out Token token) => this.TryPeek(t => t.Type == type, out token);
+        public bool TryPeek(TokenClass cls) => this.TryPeek(cls, out _);
+        public bool TryPeek(TokenClass cls, out Token token) => this.TryPeek(t => t.Class == cls, out token);
         public bool TryPeek(Predicate<Token> predicate, out Token token) => this.TryPeek(out token) && predicate(token);
     }
 }
