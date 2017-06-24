@@ -35,44 +35,47 @@
 
         Equal,
         DoubleEqual,
+
         ExclamationPoint,
-        Ampersand,
-        Pipe,
-        Tilde,
-        AmpersandEqual,
-        PipeEqual,
-        TildeEqual,
-        ExclamationPointAmpersand,
-        ExclamationPointPipe,
-        ExclamationPointTilde,
-        ExclamationPointAmpersandEqual,
-        ExclamationPointPipeEqual,
-        ExclamationPointTildeEqual,
         ExclamationPointEqual,
-        LessThan,
-        LessThanEqual,
-        DoubleLessThan,
-        DoubleLessThanEqual,
-        TripleLessThan,
-        TripleLessThanEqual,
-        GreaterThan,
-        GreaterThanEqual,
-        DoubleGreaterThan,
-        DoubleGreaterThanEqual,
-        TripleGreaterThan,
-        TripleGreaterThanEqual,
+
         Plus,
         Minus,
         Asterisk,
         ForwardSlash,
         Caret,
         Percent,
+        Ampersand,
+        Pipe,
+        Tilde,
+        ExclamationPointAmpersand,
+        ExclamationPointPipe,
+        ExclamationPointTilde,
+        LessThan,
+        DoubleLessThan,
+        TripleLessThan,
+        GreaterThan,
+        DoubleGreaterThan,
+        TripleGreaterThan,
+
         PlusEqual,
         MinusEqual,
         AsteriskEqual,
         ForwardSlashEqual,
         CaretEqual,
         PercentEqual,
+        AmpersandEqual,
+        PipeEqual,
+        TildeEqual,
+        ExclamationPointAmpersandEqual,
+        ExclamationPointPipeEqual,
+        ExclamationPointTildeEqual,
+        LessThanEqual,
+        DoubleLessThanEqual,
+        TripleLessThanEqual,
+        GreaterThanEqual,
+        DoubleGreaterThanEqual,
+        TripleGreaterThanEqual,
     }
 
     public struct Token {
@@ -86,32 +89,37 @@
 
         public bool IsOperator() {
             switch (this.Type) {
+                case TokenType.OpenParenthesis:
+                case TokenType.CloseParenthesis:
+
                 case TokenType.Equal:
                 case TokenType.DoubleEqual:
+
                 case TokenType.ExclamationPoint:
-                case TokenType.Ampersand:
-                case TokenType.Pipe:
-                case TokenType.Tilde:
-                case TokenType.ExclamationPointAmpersand:
-                case TokenType.ExclamationPointPipe:
-                case TokenType.ExclamationPointTilde:
                 case TokenType.ExclamationPointEqual:
-                case TokenType.LessThan:
-                case TokenType.LessThanEqual:
-                case TokenType.DoubleLessThan:
-                case TokenType.TripleLessThan:
-                case TokenType.GreaterThan:
-                case TokenType.GreaterThanEqual:
-                case TokenType.DoubleGreaterThan:
-                case TokenType.TripleGreaterThan:
+
                 case TokenType.Plus:
                 case TokenType.Minus:
                 case TokenType.Asterisk:
                 case TokenType.ForwardSlash:
                 case TokenType.Caret:
                 case TokenType.Percent:
-                case TokenType.OpenParenthesis:
-                case TokenType.CloseParenthesis:
+                case TokenType.Ampersand:
+                case TokenType.Pipe:
+                case TokenType.Tilde:
+
+                case TokenType.ExclamationPointAmpersand:
+                case TokenType.ExclamationPointPipe:
+                case TokenType.ExclamationPointTilde:
+                case TokenType.LessThan:
+                case TokenType.DoubleLessThan:
+                case TokenType.TripleLessThan:
+                case TokenType.GreaterThan:
+                case TokenType.DoubleGreaterThan:
+                case TokenType.TripleGreaterThan:
+
+                case TokenType.LessThanEqual:
+                case TokenType.GreaterThanEqual:
                     return true;
             }
 
