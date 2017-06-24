@@ -1,8 +1,38 @@
 ﻿namespace ArkeOS.Tools.KohlCompiler {
     public enum TokenType {
-        Number,
+        IntegerLiteral,
+        FloatLiteral,
+        BoolLiteral,
+        NullLiteral,
+
         Identifier,
+
         Whitespace,
+
+        IfKeyword,
+
+        DbgKeyword,
+        BrkKeyword,
+        HltKeyword,
+        NopKeyword,
+        IntKeyword,
+        EintKeyword,
+        InteKeyword,
+        IntdKeyword,
+        XchgKeyword,
+        CasKeyword,
+        CpyKeyword,
+
+        Semicolon,
+        Comma,
+        Period,
+
+        OpenParenthesis,
+        CloseParenthesis,
+
+        OpenCurlyBrace,
+        CloseCurlyBrace,
+
         Equal,
         DoubleEqual,
         ExclamationPoint,
@@ -43,27 +73,6 @@
         ForwardSlashEqual,
         CaretEqual,
         PercentEqual,
-        Semicolon,
-        Comma,
-        Period,
-        OpenParenthesis,
-        CloseParenthesis,
-        OpenCurlyBrace,
-        CloseCurlyBrace,
-        TrueKeyword,
-        FalseKeyword,
-        IfKeyword,
-        DbgKeyword,
-        BrkKeyword,
-        HltKeyword,
-        NopKeyword,
-        IntKeyword,
-        EintKeyword,
-        InteKeyword,
-        IntdKeyword,
-        XchgKeyword,
-        CasKeyword,
-        CpyKeyword,
     }
 
     public struct Token {

@@ -221,20 +221,16 @@ namespace ArkeOS.Tools.KohlCompiler {
             while (this.lexer.TryPeek(out var token)) {
                 if (token.Type == TokenType.OpenParenthesis) seenOpenParens++;
 
-                if (start && token.Type == TokenType.Number) {
-                    stack.Push(this.ReadNumberLiteral());
+                if (start && token.Type == TokenType.IntegerLiteral) {
+                    stack.Push(this.ReadIntegerLiteral());
+                    start = false;
+                }
+                else if (start && token.Type == TokenType.BoolLiteral) {
+                    stack.Push(this.RealBoolLiteral());
                     start = false;
                 }
                 else if (start && token.Type == TokenType.Identifier) {
                     stack.Push(this.ReadIdentifier());
-                    start = false;
-                }
-                else if (start && token.Type == TokenType.TrueKeyword) {
-                    stack.Push(this.ReadTrueLiteral());
-                    start = false;
-                }
-                else if (start && token.Type == TokenType.FalseKeyword) {
-                    stack.Push(this.ReadFalseLiteral());
                     start = false;
                 }
                 else if (!start && token.Type == TokenType.CloseParenthesis) {
@@ -257,9 +253,8 @@ namespace ArkeOS.Tools.KohlCompiler {
         }
 
         private IdentifierNode ReadIdentifier() => new RegisterNode(this.lexer.Read(TokenType.Identifier));
-        private LiteralNode ReadNumberLiteral() => new NumberLiteralNode(this.lexer.Read(TokenType.Number));
-        private LiteralNode ReadTrueLiteral() => new BooleanLiteralNode(this.lexer.Read(TokenType.TrueKeyword));
-        private LiteralNode ReadFalseLiteral() => new BooleanLiteralNode(this.lexer.Read(TokenType.FalseKeyword));
+        private LiteralNode ReadIntegerLiteral() => new IntegerLiteralNode(this.lexer.Read(TokenType.IntegerLiteral));
+        private LiteralNode RealBoolLiteral() => new BoolLiteralNode(this.lexer.Read(TokenType.BoolLiteral));
 
         private OperatorNode ReadOperator(bool unary) {
             if (!this.lexer.TryRead(t => t.IsOperator(), out var token))

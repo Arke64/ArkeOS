@@ -80,10 +80,10 @@ namespace ArkeOS.Tools.KohlCompiler {
                     if (n.Expression is RegisterNode rnode) {
                         this.Emit(InstructionDefinition.SET, target, Parameter.CreateRegister(rnode.Register));
                     }
-                    else if (n.Expression is NumberLiteralNode nnode) {
+                    else if (n.Expression is IntegerLiteralNode nnode) {
                         this.Emit(InstructionDefinition.SET, target, Parameter.CreateLiteral((ulong)nnode.Literal));
                     }
-                    else if (n.Expression is BooleanLiteralNode bnode) {
+                    else if (n.Expression is BoolLiteralNode bnode) {
                         this.Emit(InstructionDefinition.SET, target, Parameter.CreateLiteral(bnode.Literal ? ulong.MaxValue : 0));
                     }
                     else {
@@ -238,12 +238,12 @@ namespace ArkeOS.Tools.KohlCompiler {
 
         private void Visit(LiteralNode e) {
             switch (e) {
-                case NumberLiteralNode n:
+                case IntegerLiteralNode n:
                     this.Emit(InstructionDefinition.SET, Emitter.StackParam, Parameter.CreateLiteral((ulong)n.Literal));
 
                     break;
 
-                case BooleanLiteralNode n:
+                case BoolLiteralNode n:
                     this.Emit(InstructionDefinition.SET, Emitter.StackParam, Parameter.CreateLiteral(n.Literal ? ulong.MaxValue : 0));
                     break;
 

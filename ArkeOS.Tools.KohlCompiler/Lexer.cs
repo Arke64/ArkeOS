@@ -10,9 +10,8 @@ namespace ArkeOS.Tools.KohlCompiler {
         private static IReadOnlyDictionary<int, char[]> ValidDigitsForBase { get; } = new Dictionary<int, char[]> { [2] = new[] { '0', '1' }, [8] = new[] { '0', '1', '2', '3', '4', '5', '6', '7' }, [10] = new[] { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9' }, [16] = new[] { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f', 'A', 'B', 'C', 'D', 'E', 'F' } };
 
         private static IReadOnlyDictionary<string, TokenType> Keywords { get; } = new Dictionary<string, TokenType> {
-            ["true"] = TokenType.TrueKeyword,
-            ["false"] = TokenType.FalseKeyword,
             ["if"] = TokenType.IfKeyword,
+
             ["dbg"] = TokenType.DbgKeyword,
             ["brk"] = TokenType.BrkKeyword,
             ["hlt"] = TokenType.HltKeyword,
@@ -24,6 +23,12 @@ namespace ArkeOS.Tools.KohlCompiler {
             ["xchg"] = TokenType.XchgKeyword,
             ["cas"] = TokenType.CasKeyword,
             ["cpy"] = TokenType.CpyKeyword
+        };
+
+        private static IReadOnlyDictionary<string, TokenType> Literals { get; } = new Dictionary<string, TokenType> {
+            ["true"] = TokenType.BoolLiteral,
+            ["false"] = TokenType.BoolLiteral,
+            ["null"] = TokenType.NullLiteral,
         };
 
         private class FileInfo {
@@ -124,7 +129,10 @@ namespace ArkeOS.Tools.KohlCompiler {
 
             var str = this.builder.ToString();
 
-            return Lexer.Keywords.TryGetValue(str, out var t) ? new Token(t) : new Token(TokenType.Identifier, str);
+            if (Lexer.Keywords.TryGetValue(str, out var t1)) return new Token(t1);
+            if (Lexer.Literals.TryGetValue(str, out var t2)) return new Token(t2, str);
+
+            return new Token(TokenType.Identifier, str);
         }
 
         private Token ReadNumber() {
@@ -146,7 +154,7 @@ namespace ArkeOS.Tools.KohlCompiler {
                 if (c != '_')
                     this.builder.Append(c);
 
-            return new Token(TokenType.Number, Convert.ToUInt64(this.builder.ToString(), radix).ToString());
+            return new Token(TokenType.IntegerLiteral, Convert.ToUInt64(this.builder.ToString(), radix).ToString());
         }
 
         private Token ReadSymbol() {
