@@ -69,6 +69,7 @@ namespace ArkeOS.Tools.KohlCompiler {
         }
 
         private readonly Queue<FileInfo> files;
+        private readonly StringBuilder builder;
         private FileInfo file;
         private bool eof;
         private Token currentToken;
@@ -77,6 +78,7 @@ namespace ArkeOS.Tools.KohlCompiler {
 
         public Lexer(IReadOnlyList<string> filePaths) {
             this.files = new Queue<FileInfo>(filePaths.Select(f => new FileInfo(f)));
+            this.builder = new StringBuilder();
             this.file = this.files.Dequeue();
             this.eof = false;
             this.currentToken = this.LexNextToken();
@@ -106,27 +108,28 @@ namespace ArkeOS.Tools.KohlCompiler {
         private bool TryReadChar(Predicate<char> predicate, out char chr) => this.TryPeekChar(out chr) && predicate(chr) && this.TryReadChar(out _);
 
         private Token ReadWhitespace() {
-            var res = new StringBuilder();
+            this.builder.Clear();
 
             while (this.TryReadChar(char.IsWhiteSpace, out var c))
-                res.Append(c);
+                this.builder.Append(c);
 
-            return new Token(TokenType.Whitespace, res.ToString());
+            return new Token(TokenType.Whitespace, this.builder.ToString());
         }
 
         private Token ReadWord() {
-            var res = new StringBuilder();
+            this.builder.Clear();
 
             while (this.TryReadChar(chr => char.IsLetterOrDigit(chr) || chr == '_', out var c))
-                res.Append(c);
+                this.builder.Append(c);
 
-            var str = res.ToString();
+            var str = this.builder.ToString();
 
             return Lexer.Keywords.TryGetValue(str, out var t) ? new Token(t) : new Token(TokenType.Identifier, str);
         }
 
         private Token ReadNumber() {
-            var res = new StringBuilder();
+            this.builder.Clear();
+
             var radix = 10;
 
             if (this.TryReadChar('0')) {
@@ -134,16 +137,16 @@ namespace ArkeOS.Tools.KohlCompiler {
                 else if (this.TryReadChar('x')) radix = 16;
                 else if (this.TryReadChar('b')) radix = 2;
                 else if (this.TryReadChar('o')) radix = 8;
-                else res.Append('0');
+                else this.builder.Append('0');
             }
 
             var valid = Lexer.ValidDigitsForBase[radix];
 
             while (this.TryReadChar(chr => valid.Contains(chr) || chr == '_', out var c))
                 if (c != '_')
-                    res.Append(c);
+                    this.builder.Append(c);
 
-            return new Token(TokenType.Number, Convert.ToUInt64(res.ToString(), radix).ToString());
+            return new Token(TokenType.Number, Convert.ToUInt64(this.builder.ToString(), radix).ToString());
         }
 
         private Token ReadSymbol() {
