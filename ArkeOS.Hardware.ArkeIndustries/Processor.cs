@@ -4,6 +4,9 @@ using System.Threading.Tasks;
 
 namespace ArkeOS.Hardware.ArkeIndustries {
     public class Processor : SystemBusDevice, IProcessor {
+        private const long InstructionsPerSecond = 2_000_000;
+        private static long TicksPerInstruction { get; } = (long)((1.0 / Processor.InstructionsPerSecond) * TimeSpan.TicksPerSecond);
+
         private ulong[] registers;
         private Instruction[] instructionCache;
         private ulong instructionCacheBaseAddress;
@@ -63,8 +66,16 @@ namespace ArkeOS.Hardware.ArkeIndustries {
             this.running = true;
 
             this.runner = new Task(() => {
-                while (this.running)
+                var nextEnd = DateTime.UtcNow.Ticks;
+
+                while (this.running) {
+                    nextEnd += Processor.TicksPerInstruction;
+
                     this.Tick();
+
+                    while (DateTime.UtcNow.Ticks < nextEnd)
+                        ;
+                }
             }, TaskCreationOptions.LongRunning);
             this.runner.Start();
 
