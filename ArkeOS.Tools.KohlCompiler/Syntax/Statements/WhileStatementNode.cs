@@ -1,8 +1,8 @@
 ﻿namespace ArkeOS.Tools.KohlCompiler.Syntax {
-    public sealed class WhileStatementNode : BlockStatementNode {
-        public ExpressionNode Expression { get; }
+    public sealed class WhileStatementNode : StatementNode {
+        public ExpressionStatementNode Expression { get; }
         public StatementBlockNode StatementBlock { get; }
 
-        public WhileStatementNode(ExpressionNode expression, StatementBlockNode statementBlock) => (this.Expression, this.StatementBlock) = (expression, statementBlock);
+        public WhileStatementNode(ExpressionStatementNode expression, StatementBlockNode statementBlock) => (this.Expression, this.StatementBlock) = (expression, statementBlock);
     }
 }

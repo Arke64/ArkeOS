@@ -11,7 +11,7 @@ namespace ArkeOS.Tools.KohlCompiler {
     public class Emitter {
         private static Parameter StackParam { get; } = new Parameter { Type = ParameterType.Stack };
 
-        private readonly ProgramNode tree;
+        private readonly ProgramDeclarationNode tree;
         private readonly bool emitAssemblyListing;
         private readonly bool emitBootable;
         private readonly string outputFile;
@@ -19,7 +19,7 @@ namespace ArkeOS.Tools.KohlCompiler {
         private Dictionary<string, ulong> functionAddresses;
         private bool throwOnNoFunction;
 
-        public Emitter(ProgramNode tree, bool emitAssemblyListing, bool emitBootable, string outputFile) => (this.tree, this.emitAssemblyListing, this.emitBootable, this.outputFile) = (tree, emitAssemblyListing, emitBootable, outputFile);
+        public Emitter(ProgramDeclarationNode tree, bool emitAssemblyListing, bool emitBootable, string outputFile) => (this.tree, this.emitAssemblyListing, this.emitBootable, this.outputFile) = (tree, emitAssemblyListing, emitBootable, outputFile);
 
         private ulong DistanceFrom(int startInst) => (ulong)this.instructions.Skip(startInst).Sum(i => i.Length);
 
@@ -31,7 +31,7 @@ namespace ArkeOS.Tools.KohlCompiler {
             this.EmitHeader();
             this.DiscoverAddresses(this.tree);
 
-            this.instructions = new List<Instruction>();
+            this.instructions.Clear();
             this.throwOnNoFunction = true;
 
             this.EmitHeader();
@@ -61,12 +61,12 @@ namespace ArkeOS.Tools.KohlCompiler {
             this.Emit(InstructionDefinition.HLT);
         }
 
-        private void DiscoverAddresses(ProgramNode n) {
+        private void DiscoverAddresses(ProgramDeclarationNode n) {
             foreach (var s in n.Items) {
-                if (this.functionAddresses.ContainsKey(s.Identifier.Identifier))
-                    throw new AlreadyDefinedException(default(PositionInfo), s.Identifier.Identifier);
+                if (this.functionAddresses.ContainsKey(s.Identifier))
+                    throw new AlreadyDefinedException(default(PositionInfo), s.Identifier);
 
-                this.functionAddresses[s.Identifier.Identifier] = (ulong)this.instructions.Sum(i => i.Length);
+                this.functionAddresses[s.Identifier] = (ulong)this.instructions.Sum(i => i.Length);
 
                 this.Visit(s);
             }
@@ -82,20 +82,19 @@ namespace ArkeOS.Tools.KohlCompiler {
         private void Emit(InstructionDefinition def, params Parameter[] parameters) => this.instructions.Add(new Instruction(def, parameters));
         private void Emit(InstructionDefinition def, Parameter conditional, InstructionConditionalType conditionalType, params Parameter[] parameters) => this.instructions.Add(new Instruction(def, parameters, conditional, conditionalType));
 
-        private Parameter ExtractLValue(SyntaxNode expr) {
+        private Parameter ExtractLValue(ExpressionStatementNode expr) {
             switch (expr) {
-                case RegisterNode n: return Parameter.CreateRegister(n.Register);
-                case IdentifierNode n: return Parameter.CreateRegister(n.Identifier.ToEnum<Register>());
+                case RegisterIdentifierNode n: return Parameter.CreateRegister(n.Identifier.ToEnum<Register>());
                 default: throw new ExpectedException(default(PositionInfo), "value");
             }
         }
 
-        private void Visit(ProgramNode n) {
+        private void Visit(ProgramDeclarationNode n) {
             foreach (var s in n.Items)
                 this.Visit(s);
         }
 
-        private void Visit(FuncStatementNode n) {
+        private void Visit(FunctionDeclarationNode n) {
             this.Visit(n.StatementBlock);
 
             this.Emit(InstructionDefinition.RET);
@@ -108,71 +107,12 @@ namespace ArkeOS.Tools.KohlCompiler {
 
         private void Visit(StatementNode s) {
             switch (s) {
-                case BlockStatementNode n: this.Visit(n); break;
                 case IntrinsicStatementNode n: this.Visit(n); break;
+                case IfStatementNode n: this.Visit(n); break;
+                case WhileStatementNode n: this.Visit(n); break;
                 case AssignmentStatementNode n: this.Visit(n); break;
-                case FunctionCallStatementNode n: this.Visit(n); break;
-                default: Debug.Assert(false); break;
-            }
-        }
-
-        private void Visit(BlockStatementNode s) {
-            switch (s) {
-                case IfElseStatementNode n: {
-                        this.Visit(n.Expression);
-
-                        var ifStart = this.instructions.Count;
-                        var ifLen = Parameter.CreateLiteral(0, ParameterFlags.RIPRelative);
-                        this.Emit(InstructionDefinition.SET, Emitter.StackParam, InstructionConditionalType.WhenZero, Parameter.CreateRegister(Register.RIP), ifLen);
-
-                        this.Visit(n.StatementBlock);
-
-                        var elseStart = this.instructions.Count;
-                        var elseLen = Parameter.CreateLiteral(0, ParameterFlags.RIPRelative);
-                        this.Emit(InstructionDefinition.SET, Parameter.CreateRegister(Register.RIP), elseLen);
-
-                        ifLen.Literal = this.DistanceFrom(ifStart);
-
-                        this.Visit(n.ElseStatementBlock);
-
-                        elseLen.Literal = this.DistanceFrom(elseStart);
-                    }
-
-                    break;
-
-                case IfStatementNode n: {
-                        this.Visit(n.Expression);
-
-                        var blockStart = this.instructions.Count;
-                        var blockLen = Parameter.CreateLiteral(0, ParameterFlags.RIPRelative);
-                        this.Emit(InstructionDefinition.SET, Emitter.StackParam, InstructionConditionalType.WhenZero, Parameter.CreateRegister(Register.RIP), blockLen);
-
-                        this.Visit(n.StatementBlock);
-
-                        blockLen.Literal = this.DistanceFrom(blockStart);
-                    }
-
-                    break;
-
-                case WhileStatementNode n: {
-                        var nodeStart = this.instructions.Count;
-
-                        this.Visit(n.Expression);
-
-                        var blockStart = this.instructions.Count;
-                        var blockLen = Parameter.CreateLiteral(0, ParameterFlags.RIPRelative);
-                        this.Emit(InstructionDefinition.SET, Emitter.StackParam, InstructionConditionalType.WhenZero, Parameter.CreateRegister(Register.RIP), blockLen);
-
-                        this.Visit(n.StatementBlock);
-
-                        var nodeLen = Parameter.CreateLiteral((ulong)-(long)this.DistanceFrom(nodeStart), ParameterFlags.RIPRelative);
-                        this.Emit(InstructionDefinition.SET, Parameter.CreateRegister(Register.RIP), nodeLen);
-
-                        blockLen.Literal = this.DistanceFrom(blockStart);
-                    }
-
-                    break;
-
+                case ExpressionStatementNode n: this.Visit(n); break;
+                case EmptyStatementNode n: break;
                 default: Debug.Assert(false); break;
             }
         }
@@ -255,17 +195,59 @@ namespace ArkeOS.Tools.KohlCompiler {
             }
         }
 
+        private void Visit(IfStatementNode i) {
+            this.Visit(i.Expression);
+
+            var ifStart = this.instructions.Count;
+            var ifLen = Parameter.CreateLiteral(0, ParameterFlags.RIPRelative);
+            this.Emit(InstructionDefinition.SET, Emitter.StackParam, InstructionConditionalType.WhenZero, Parameter.CreateRegister(Register.RIP), ifLen);
+
+            this.Visit(i.StatementBlock);
+
+            if (i is IfElseStatementNode ie) {
+                var elseStart = this.instructions.Count;
+                var elseLen = Parameter.CreateLiteral(0, ParameterFlags.RIPRelative);
+                this.Emit(InstructionDefinition.SET, Parameter.CreateRegister(Register.RIP), elseLen);
+
+                ifLen.Literal = this.DistanceFrom(ifStart);
+
+                this.Visit(ie.ElseStatementBlock);
+
+                elseLen.Literal = this.DistanceFrom(elseStart);
+            }
+            else {
+                ifLen.Literal = this.DistanceFrom(ifStart);
+            }
+        }
+
+        private void Visit(WhileStatementNode w) {
+            var nodeStart = this.instructions.Count;
+
+            this.Visit(w.Expression);
+
+            var blockStart = this.instructions.Count;
+            var blockLen = Parameter.CreateLiteral(0, ParameterFlags.RIPRelative);
+            this.Emit(InstructionDefinition.SET, Emitter.StackParam, InstructionConditionalType.WhenZero, Parameter.CreateRegister(Register.RIP), blockLen);
+
+            this.Visit(w.StatementBlock);
+
+            var nodeLen = Parameter.CreateLiteral((ulong)-(long)this.DistanceFrom(nodeStart), ParameterFlags.RIPRelative);
+            this.Emit(InstructionDefinition.SET, Parameter.CreateRegister(Register.RIP), nodeLen);
+
+            blockLen.Literal = this.DistanceFrom(blockStart);
+        }
+
         private void Visit(AssignmentStatementNode a) {
             if (a is CompoundAssignmentStatementNode c)
-                a = new AssignmentStatementNode(a.Identifier, new BinaryExpressionNode(c.Identifier, c.Op, c.Expression));
+                a = new AssignmentStatementNode(c.Target, new BinaryExpressionNode(c.Target, c.Op, c.Expression));
 
-            var target = this.ExtractLValue(a.Identifier);
+            var target = this.ExtractLValue(a.Target);
 
-            if (a.Expression is RegisterNode rnode) {
-                this.Emit(InstructionDefinition.SET, target, Parameter.CreateRegister(rnode.Register));
+            if (a.Expression is RegisterIdentifierNode rnode) {
+                this.Emit(InstructionDefinition.SET, target, Parameter.CreateRegister(rnode.Identifier.ToEnum<Register>()));
             }
             else if (a.Expression is IntegerLiteralNode nnode) {
-                this.Emit(InstructionDefinition.SET, target, Parameter.CreateLiteral((ulong)nnode.Literal));
+                this.Emit(InstructionDefinition.SET, target, Parameter.CreateLiteral(nnode.Literal));
             }
             else if (a.Expression is BoolLiteralNode bnode) {
                 this.Emit(InstructionDefinition.SET, target, Parameter.CreateLiteral(bnode.Literal ? ulong.MaxValue : 0));
@@ -277,9 +259,7 @@ namespace ArkeOS.Tools.KohlCompiler {
             }
         }
 
-        private void Visit(FunctionCallStatementNode a) => this.Emit(InstructionDefinition.CALL, this.GetAddress(a.Identifier.Identifier));
-
-        private void Visit(ExpressionNode e) {
+        private void Visit(ExpressionStatementNode e) {
             switch (e) {
                 case BinaryExpressionNode n:
                     this.Visit(n.Left);
@@ -329,28 +309,24 @@ namespace ArkeOS.Tools.KohlCompiler {
 
                     break;
 
-                case RValueNode n:
-                    this.Visit(n);
-
-                    break;
-
+                case IdentifierExpressionNode n: this.Visit(n); break;
+                case LiteralExpressionNode n: this.Visit(n); break;
                 default: Debug.Assert(false); break;
             }
         }
 
-        private void Visit(RValueNode rvalue) {
-            switch (rvalue) {
-                case IntegerLiteralNode n: this.Emit(InstructionDefinition.SET, Emitter.StackParam, Parameter.CreateLiteral((ulong)n.Literal)); break;
+        private void Visit(IdentifierExpressionNode i) {
+            switch (i) {
+                case RegisterIdentifierNode n: this.Emit(InstructionDefinition.SET, Emitter.StackParam, Parameter.CreateRegister(n.Identifier.ToEnum<Register>())); break;
+                case FunctionCallIdentifierNode n: this.Emit(InstructionDefinition.CALL, this.GetAddress(n.Identifier)); break;
+                default: Debug.Assert(false); break;
+            }
+        }
+
+        private void Visit(LiteralExpressionNode l) {
+            switch (l) {
+                case IntegerLiteralNode n: this.Emit(InstructionDefinition.SET, Emitter.StackParam, Parameter.CreateLiteral(n.Literal)); break;
                 case BoolLiteralNode n: this.Emit(InstructionDefinition.SET, Emitter.StackParam, Parameter.CreateLiteral(n.Literal ? ulong.MaxValue : 0)); break;
-                case LValueNode n: this.Visit(n); break;
-                default: Debug.Assert(false); break;
-            }
-        }
-
-        private void Visit(LValueNode lvalue) {
-            switch (lvalue) {
-                case RegisterNode n: this.Emit(InstructionDefinition.SET, Emitter.StackParam, Parameter.CreateRegister(n.Register)); break;
-                case IdentifierNode n: this.Emit(InstructionDefinition.SET, Emitter.StackParam, Parameter.CreateRegister(n.Identifier.ToEnum<Register>())); break;
                 default: Debug.Assert(false); break;
             }
         }

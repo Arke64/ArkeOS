@@ -5,12 +5,12 @@ using System.Linq;
 
 namespace ArkeOS.Tools.KohlCompiler {
     public class ExpressionStack {
-        private readonly Stack<ExpressionNode> outputStack = new Stack<ExpressionNode>();
+        private readonly Stack<ExpressionStatementNode> outputStack = new Stack<ExpressionStatementNode>();
         private readonly Stack<(OperatorNode, PositionInfo)> operatorStack = new Stack<(OperatorNode, PositionInfo)>();
 
         private OperatorNode PeekOperator() => this.operatorStack.Peek().Item1;
 
-        public void Push(ExpressionNode node) => this.outputStack.Push(node);
+        public void Push(ExpressionStatementNode node) => this.outputStack.Push(node);
 
         public void Push(OperatorNode node, PositionInfo position) {
             if (node.Operator == Operator.CloseParenthesis) {
@@ -30,7 +30,7 @@ namespace ArkeOS.Tools.KohlCompiler {
             }
         }
 
-        public ExpressionNode ToNode() {
+        public ExpressionStatementNode ToNode() {
             while (this.operatorStack.Any())
                 this.Reduce();
 

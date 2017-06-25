@@ -2,6 +2,6 @@
     public sealed class IfElseStatementNode : IfStatementNode {
         public StatementBlockNode ElseStatementBlock { get; }
 
-        public IfElseStatementNode(ExpressionNode expression, StatementBlockNode statementBlock, StatementBlockNode elseStatementBlock) : base(expression, statementBlock) => this.ElseStatementBlock = elseStatementBlock;
+        public IfElseStatementNode(ExpressionStatementNode expression, StatementBlockNode statementBlock, StatementBlockNode elseStatementBlock) : base(expression, statementBlock) => this.ElseStatementBlock = elseStatementBlock;
     }
 }

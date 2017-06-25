@@ -1,8 +1,8 @@
 ﻿namespace ArkeOS.Tools.KohlCompiler.Syntax {
-    public class UnaryExpressionNode : ExpressionNode {
+    public class UnaryExpressionNode : ExpressionStatementNode {
         public OperatorNode Op { get; }
-        public ExpressionNode Expression { get; }
+        public ExpressionStatementNode Expression { get; }
 
-        public UnaryExpressionNode(OperatorNode op, ExpressionNode expression) => (this.Expression, this.Op) = (expression, op);
+        public UnaryExpressionNode(OperatorNode op, ExpressionStatementNode expression) => (this.Expression, this.Op) = (expression, op);
     }
 }

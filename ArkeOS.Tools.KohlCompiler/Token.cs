@@ -86,8 +86,8 @@ namespace ArkeOS.Tools.KohlCompiler {
     public enum TokenClass {
         Operator,
         Assignment,
-        LValue,
-        RValue,
+        Literal,
+        Identifier,
         BlockKeyword,
         IntrinsicKeyword,
         Brace,
@@ -169,11 +169,11 @@ namespace ArkeOS.Tools.KohlCompiler {
                         case TokenType.FloatLiteral:
                         case TokenType.BoolLiteral:
                         case TokenType.NullLiteral:
-                            this.tokenClass = TokenClass.RValue;
+                            this.tokenClass = TokenClass.Literal;
                             break;
 
                         case TokenType.Identifier:
-                            this.tokenClass = TokenClass.LValue;
+                            this.tokenClass = TokenClass.Identifier;
                             break;
 
                         case TokenType.IfKeyword:
