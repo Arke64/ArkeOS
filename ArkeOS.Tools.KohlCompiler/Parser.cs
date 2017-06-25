@@ -84,7 +84,12 @@ namespace ArkeOS.Tools.KohlCompiler {
             this.lexer.Read(TokenType.CloseParenthesis);
             var block = this.ReadStatementBlock();
 
-            return new IfStatementNode(exp, block);
+            if (!this.lexer.TryRead(TokenType.ElseKeyword)) {
+                return new IfStatementNode(exp, block);
+            }
+            else {
+                return new IfElseStatementNode(exp, block, this.ReadStatementBlock());
+            }
         }
 
         private WhileStatementNode ReadWhileStatement() {

@@ -12,6 +12,7 @@ namespace ArkeOS.Tools.KohlCompiler {
         Whitespace,
 
         IfKeyword,
+        ElseKeyword,
         WhileKeyword,
 
         DbgKeyword,
@@ -175,6 +176,7 @@ namespace ArkeOS.Tools.KohlCompiler {
                             break;
 
                         case TokenType.IfKeyword:
+                        case TokenType.ElseKeyword:
                         case TokenType.WhileKeyword:
                             this.tokenClass = TokenClass.BlockKeyword;
                             break;

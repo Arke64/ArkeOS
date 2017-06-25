@@ -1,5 +1,5 @@
 ﻿namespace ArkeOS.Tools.KohlCompiler.Syntax {
-    public sealed class IfStatementNode : BlockStatementNode {
+    public class IfStatementNode : BlockStatementNode {
         public ExpressionNode Expression { get; }
         public StatementBlockNode StatementBlock { get; }
 

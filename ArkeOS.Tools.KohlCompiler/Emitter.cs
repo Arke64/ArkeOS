@@ -72,17 +72,38 @@ namespace ArkeOS.Tools.KohlCompiler {
             ulong dist(int startInst) => (ulong)this.instructions.Skip(startInst).Sum(i => i.Length);
 
             switch (s) {
+                case IfElseStatementNode n: {
+                        this.Visit(n.Expression);
+
+                        var ifStart = this.instructions.Count;
+                        var ifLen = Parameter.CreateLiteral(0, ParameterFlags.RIPRelative);
+                        this.Emit(InstructionDefinition.SET, Emitter.StackParam, InstructionConditionalType.WhenZero, Parameter.CreateRegister(Register.RIP), ifLen);
+
+                        this.Visit(n.StatementBlock);
+
+                        var elseStart = this.instructions.Count;
+                        var elseLen = Parameter.CreateLiteral(0, ParameterFlags.RIPRelative);
+                        this.Emit(InstructionDefinition.SET, Parameter.CreateRegister(Register.RIP), elseLen);
+
+                        ifLen.Literal = dist(ifStart);
+
+                        this.Visit(n.ElseStatementBlock);
+
+                        elseLen.Literal = dist(elseStart);
+                    }
+
+                    break;
+
                 case IfStatementNode n: {
                         this.Visit(n.Expression);
 
                         var blockStart = this.instructions.Count;
-                        var len = Parameter.CreateLiteral(0, ParameterFlags.RIPRelative);
-
-                        this.Emit(InstructionDefinition.SET, Emitter.StackParam, InstructionConditionalType.WhenZero, Parameter.CreateRegister(Register.RIP), len);
+                        var blockLen = Parameter.CreateLiteral(0, ParameterFlags.RIPRelative);
+                        this.Emit(InstructionDefinition.SET, Emitter.StackParam, InstructionConditionalType.WhenZero, Parameter.CreateRegister(Register.RIP), blockLen);
 
                         this.Visit(n.StatementBlock);
 
-                        len.Literal = dist(blockStart);
+                        blockLen.Literal = dist(blockStart);
                     }
 
                     break;
@@ -93,7 +114,6 @@ namespace ArkeOS.Tools.KohlCompiler {
                         this.Visit(n.Expression);
 
                         var blockStart = this.instructions.Count;
-
                         var blockLen = Parameter.CreateLiteral(0, ParameterFlags.RIPRelative);
                         this.Emit(InstructionDefinition.SET, Emitter.StackParam, InstructionConditionalType.WhenZero, Parameter.CreateRegister(Register.RIP), blockLen);
 
