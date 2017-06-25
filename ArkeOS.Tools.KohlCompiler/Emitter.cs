@@ -15,24 +15,25 @@ namespace ArkeOS.Tools.KohlCompiler {
         private readonly bool emitBootable;
         private readonly string outputFile;
         private List<Instruction> instructions;
+        private Dictionary<string, ulong> functionAddresses;
+        private bool throwOnNoFunction;
 
         public Emitter(ProgramNode tree, bool emitAssemblyListing, bool emitBootable, string outputFile) => (this.tree, this.emitAssemblyListing, this.emitBootable, this.outputFile) = (tree, emitAssemblyListing, emitBootable, outputFile);
 
         private ulong DistanceFrom(int startInst) => (ulong)this.instructions.Skip(startInst).Sum(i => i.Length);
 
         public void Emit() {
+            this.functionAddresses = new Dictionary<string, ulong>();
             this.instructions = new List<Instruction>();
+            this.throwOnNoFunction = false;
 
-            this.Emit(InstructionDefinition.BRK);
-            this.Emit(InstructionDefinition.SET, Parameter.CreateRegister(Register.RSP), Parameter.CreateLiteral(0x1_0000));
+            this.EmitHeader();
+            this.DiscoverAddresses(this.tree);
 
-            var start = this.instructions.Count;
-            var len = Parameter.CreateLiteral(0, ParameterFlags.RIPRelative);
-            this.Emit(InstructionDefinition.CALL, len);
-            this.Emit(InstructionDefinition.HLT);
+            this.instructions = new List<Instruction>();
+            this.throwOnNoFunction = true;
 
-            len.Literal = this.DistanceFrom(start);
-
+            this.EmitHeader();
             this.Visit(this.tree);
 
             using (var stream = new MemoryStream()) {
@@ -49,6 +50,32 @@ namespace ArkeOS.Tools.KohlCompiler {
                     File.WriteAllBytes(this.outputFile, stream.ToArray());
                 }
             }
+        }
+
+        private void EmitHeader() {
+            this.Emit(InstructionDefinition.BRK);
+            this.Emit(InstructionDefinition.SET, Parameter.CreateRegister(Register.RSP), Parameter.CreateLiteral(0x1_0000));
+
+            this.Emit(InstructionDefinition.CALL, this.GetAddress("main"));
+            this.Emit(InstructionDefinition.HLT);
+        }
+
+        private void DiscoverAddresses(ProgramNode n) {
+            foreach (var s in n.Items) {
+                if (this.functionAddresses.ContainsKey(s.Identifier.Identifier))
+                    throw new AlreadyDefinedException(default(PositionInfo), s.Identifier.Identifier);
+
+                this.functionAddresses[s.Identifier.Identifier] = (ulong)this.instructions.Sum(i => i.Length);
+
+                this.Visit(s);
+            }
+        }
+
+        private Parameter GetAddress(string func) {
+            if (!this.functionAddresses.TryGetValue(func, out var addr) && this.throwOnNoFunction)
+                throw new IdentifierNotFoundException(default(PositionInfo), func);
+
+            return Parameter.CreateLiteral(addr - this.DistanceFrom(0), ParameterFlags.RIPRelative);
         }
 
         private void Emit(InstructionDefinition def, params Parameter[] parameters) => this.instructions.Add(new Instruction(def, parameters));
