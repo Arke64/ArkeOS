@@ -74,6 +74,15 @@ namespace ArkeOS.Tools.KohlCompiler {
 
         private void Visit(StatementNode s) {
             switch (s) {
+                case BlockStatementNode n: this.Visit(n); break;
+                case IntrinsicStatementNode n: this.Visit(n); break;
+                case AssignmentStatementNode n: this.Visit(n); break;
+                default: Debug.Assert(false); break;
+            }
+        }
+
+        private void Visit(BlockStatementNode s) {
+            switch (s) {
                 case IfStatementNode n:
                     this.Visit(n.Expression);
 
@@ -81,37 +90,12 @@ namespace ArkeOS.Tools.KohlCompiler {
 
                     break;
 
-                case CompoundAssignmentStatementNode n: {
-                        var target = this.ExtractLValue(n.Target);
+                default: Debug.Assert(false); break;
+            }
+        }
 
-                        this.Visit(new BinaryExpressionNode(n.Target, n.Op, n.Expression));
-
-                        this.Emit(InstructionDefinition.SET, target, Emitter.StackParam);
-                    }
-
-                    break;
-
-                case AssignmentStatementNode n: {
-                        var target = this.ExtractLValue(n.Target);
-
-                        if (n.Expression is RegisterNode rnode) {
-                            this.Emit(InstructionDefinition.SET, target, Parameter.CreateRegister(rnode.Register));
-                        }
-                        else if (n.Expression is IntegerLiteralNode nnode) {
-                            this.Emit(InstructionDefinition.SET, target, Parameter.CreateLiteral((ulong)nnode.Literal));
-                        }
-                        else if (n.Expression is BoolLiteralNode bnode) {
-                            this.Emit(InstructionDefinition.SET, target, Parameter.CreateLiteral(bnode.Literal ? ulong.MaxValue : 0));
-                        }
-                        else {
-                            this.Visit(n.Expression);
-
-                            this.Emit(InstructionDefinition.SET, target, Emitter.StackParam);
-                        }
-                    }
-
-                    break;
-
+        private void Visit(IntrinsicStatementNode s) {
+            switch (s) {
                 case BrkStatementNode n: this.Emit(InstructionDefinition.BRK); break;
                 case EintStatementNode n: this.Emit(InstructionDefinition.EINT); break;
                 case HltStatementNode n: this.Emit(InstructionDefinition.HLT); break;
@@ -183,8 +167,44 @@ namespace ArkeOS.Tools.KohlCompiler {
 
                     break;
 
-                default:
-                    throw new NotImplementedException();
+                default: Debug.Assert(false); break;
+            }
+        }
+
+        private void Visit(AssignmentStatementNode s) {
+            switch (s) {
+                case CompoundAssignmentStatementNode n: {
+                        var target = this.ExtractLValue(n.Target);
+
+                        this.Visit(new BinaryExpressionNode(n.Target, n.Op, n.Expression));
+
+                        this.Emit(InstructionDefinition.SET, target, Emitter.StackParam);
+                    }
+
+                    break;
+
+                case AssignmentStatementNode n: {
+                        var target = this.ExtractLValue(n.Target);
+
+                        if (n.Expression is RegisterNode rnode) {
+                            this.Emit(InstructionDefinition.SET, target, Parameter.CreateRegister(rnode.Register));
+                        }
+                        else if (n.Expression is IntegerLiteralNode nnode) {
+                            this.Emit(InstructionDefinition.SET, target, Parameter.CreateLiteral((ulong)nnode.Literal));
+                        }
+                        else if (n.Expression is BoolLiteralNode bnode) {
+                            this.Emit(InstructionDefinition.SET, target, Parameter.CreateLiteral(bnode.Literal ? ulong.MaxValue : 0));
+                        }
+                        else {
+                            this.Visit(n.Expression);
+
+                            this.Emit(InstructionDefinition.SET, target, Emitter.StackParam);
+                        }
+                    }
+
+                    break;
+
+                default: Debug.Assert(false); break;
             }
         }
 
@@ -244,8 +264,7 @@ namespace ArkeOS.Tools.KohlCompiler {
 
                     break;
 
-                default:
-                    throw new NotImplementedException();
+                default: Debug.Assert(false); break;
             }
         }
 
@@ -265,8 +284,7 @@ namespace ArkeOS.Tools.KohlCompiler {
 
                     break;
 
-                default:
-                    throw new NotImplementedException();
+                default: Debug.Assert(false); break;
             }
         }
 
@@ -277,8 +295,7 @@ namespace ArkeOS.Tools.KohlCompiler {
 
                     break;
 
-                default:
-                    throw new NotImplementedException();
+                default: Debug.Assert(false); break;
             }
         }
     }
