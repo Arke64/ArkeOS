@@ -1,5 +1,5 @@
 ﻿using ArkeOS.Tools.KohlCompiler.Exceptions;
-using ArkeOS.Tools.KohlCompiler.Nodes;
+using ArkeOS.Tools.KohlCompiler.Syntax;
 using System.Collections.Generic;
 using System.Linq;
 
