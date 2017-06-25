@@ -40,9 +40,9 @@ namespace ArkeOS.Tools.KohlCompiler {
         private void Reduce() {
             var op = this.operatorStack.Pop();
 
-            switch (OperatorNode.GetOperatorClass(op.Item1.Operator)) {
+            switch (op.Item1.Class) {
                 case OperatorClass.Binary:
-                    if (this.outputStack.Count < 2) throw new ExpectedTokenException(op.Item2, "operand");
+                    if (this.outputStack.Count < 2) throw new ExpectedException(op.Item2, "operand");
 
                     var r = this.outputStack.Pop();
                     var l = this.outputStack.Pop();
@@ -52,7 +52,7 @@ namespace ArkeOS.Tools.KohlCompiler {
                     break;
 
                 case OperatorClass.Unary:
-                    if (this.outputStack.Count < 1) throw new ExpectedTokenException(op.Item2, "operand");
+                    if (this.outputStack.Count < 1) throw new ExpectedException(op.Item2, "operand");
 
                     this.outputStack.Push(new UnaryExpressionNode(op.Item1, this.outputStack.Pop()));
 

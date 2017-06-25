@@ -11,7 +11,7 @@ namespace ArkeOS.Tools.KohlCompiler {
             var res = new ProgramNode(this.ReadStatementBlock());
 
             if (this.lexer.TryPeek(out var t))
-                throw this.GetUnexpectedTokenExceptionAtCurrent(t.Type);
+                throw this.GetUnexpectedException(t.Type);
 
             return res;
         }
@@ -19,45 +19,78 @@ namespace ArkeOS.Tools.KohlCompiler {
         private StatementBlockNode ReadStatementBlock() {
             var block = new StatementBlockNode();
 
-            if (this.lexer.TryPeek(out var t)) {
-                if (t.Type == TokenType.OpenCurlyBrace) {
-                    this.lexer.Read(TokenType.OpenCurlyBrace);
-
-                    while (this.lexer.TryPeek(out t) && t.Type != TokenType.CloseCurlyBrace)
-                        block.Add(this.ReadStatement());
-
-                    this.lexer.Read(TokenType.CloseCurlyBrace);
-                }
-                else {
+            if (this.lexer.TryRead(TokenType.OpenCurlyBrace)) {
+                while (!this.lexer.TryRead(TokenType.CloseCurlyBrace))
                     block.Add(this.ReadStatement());
-                }
+            }
+            else {
+                block.Add(this.ReadStatement());
             }
 
             return block;
         }
 
         private StatementNode ReadStatement() {
+            var tok = this.lexer.Peek();
             var res = default(StatementNode);
 
-            if (this.lexer.TryPeek(out var t)) {
-                switch (t.Type) {
-                    case TokenType.BrkKeyword: res = this.ReadBrkStatement(); break;
-                    case TokenType.CasKeyword: res = this.ReadCasStatement(); break;
-                    case TokenType.CpyKeyword: res = this.ReadCpyStatement(); break;
-                    case TokenType.DbgKeyword: res = this.ReadDbgStatement(); break;
-                    case TokenType.EintKeyword: res = this.ReadEintStatement(); break;
-                    case TokenType.HltKeyword: res = this.ReadHltStatement(); break;
-                    case TokenType.IntdKeyword: res = this.ReadIntdStatement(); break;
-                    case TokenType.InteKeyword: res = this.ReadInteStatement(); break;
-                    case TokenType.IntKeyword: res = this.ReadIntStatement(); break;
-                    case TokenType.NopKeyword: res = this.ReadNopStatement(); break;
-                    case TokenType.XchgKeyword: res = this.ReadXchgStatement(); break;
-                    case TokenType.IfKeyword: res = this.ReadIfStatement(); break;
-                    case TokenType.Identifier: res = this.ReadAssignmentStatement(); break;
-                }
+            switch (tok.Class) {
+                case TokenClass.BlockKeyword: return this.ReadBlockStatement();
+                case TokenClass.IntrinsicKeyword: res = this.ReadIntrinsicStatement(); break;
+                case TokenClass.LValue: res = this.ReadAssignmentStatement(); break;
+                case TokenClass.Separator when tok.Type == TokenType.Semicolon: res = new EmptyStatementNode(); break;
+                default: throw this.GetUnexpectedException(tok.Type);
             }
 
+            this.lexer.Read(TokenType.Semicolon);
+
             return res;
+        }
+
+        private StatementNode ReadBlockStatement() {
+            var tok = this.lexer.Peek();
+
+            switch (tok.Type) {
+                case TokenType.IfKeyword: return this.ReadIfStatement();
+                default: throw this.GetUnexpectedException(tok.Type);
+            }
+        }
+
+        private StatementNode ReadIntrinsicStatement() {
+            var tok = this.lexer.Read();
+
+            switch (tok.Type) {
+                case TokenType.BrkKeyword: return new BrkStatementNode();
+                case TokenType.CasKeyword: return new CasStatementNode(this.ReadArgumentList());
+                case TokenType.CpyKeyword: return new CpyStatementNode(this.ReadArgumentList());
+                case TokenType.DbgKeyword: return new DbgStatementNode(this.ReadArgumentList());
+                case TokenType.EintKeyword: return new EintStatementNode();
+                case TokenType.HltKeyword: return new HltStatementNode();
+                case TokenType.IntdKeyword: return new IntdStatementNode();
+                case TokenType.InteKeyword: return new InteStatementNode();
+                case TokenType.IntKeyword: return new IntStatementNode(this.ReadArgumentList());
+                case TokenType.NopKeyword: return new NopStatementNode();
+                case TokenType.XchgKeyword: return new XchgStatementNode(this.ReadArgumentList());
+                default: throw this.GetUnexpectedException(tok.Type);
+            }
+        }
+
+        private AssignmentStatementNode ReadAssignmentStatement() {
+            var target = this.ReadLValue();
+            var op = this.lexer.Read(TokenClass.Assignment);
+            var exp = this.ReadExpression();
+
+            return op.Type == TokenType.Equal ? new AssignmentStatementNode(target, exp) : new CompoundAssignmentStatementNode(target, new OperatorNode(OperatorNode.ConvertCompoundOperator(op.Type) ?? throw this.GetUnexpectedException(op.Type)), exp);
+        }
+
+        private IfStatementNode ReadIfStatement() {
+            this.lexer.Read(TokenType.IfKeyword);
+            this.lexer.Read(TokenType.OpenParenthesis);
+            var exp = this.ReadExpression();
+            this.lexer.Read(TokenType.CloseParenthesis);
+            var block = this.ReadStatementBlock();
+
+            return new IfStatementNode(exp, block);
         }
 
         private ArgumentListNode ReadArgumentList() {
@@ -76,143 +109,6 @@ namespace ArkeOS.Tools.KohlCompiler {
             return list;
         }
 
-        private BrkStatementNode ReadBrkStatement() {
-            this.lexer.Read(TokenType.BrkKeyword);
-            this.lexer.Read(TokenType.Semicolon);
-
-            return new BrkStatementNode();
-        }
-
-        private CasStatementNode ReadCasStatement() {
-            this.lexer.Read(TokenType.CasKeyword);
-            var args = this.ReadArgumentList();
-            this.lexer.Read(TokenType.Semicolon);
-
-            return new CasStatementNode(args);
-        }
-
-        private CpyStatementNode ReadCpyStatement() {
-            this.lexer.Read(TokenType.CpyKeyword);
-            var args = this.ReadArgumentList();
-            this.lexer.Read(TokenType.Semicolon);
-
-            return new CpyStatementNode(args);
-        }
-
-        private DbgStatementNode ReadDbgStatement() {
-            this.lexer.Read(TokenType.DbgKeyword);
-            var args = this.ReadArgumentList();
-            this.lexer.Read(TokenType.Semicolon);
-
-            return new DbgStatementNode(args);
-        }
-
-        private EintStatementNode ReadEintStatement() {
-            this.lexer.Read(TokenType.EintKeyword);
-            this.lexer.Read(TokenType.Semicolon);
-
-            return new EintStatementNode();
-        }
-
-        private HltStatementNode ReadHltStatement() {
-            this.lexer.Read(TokenType.HltKeyword);
-            this.lexer.Read(TokenType.Semicolon);
-
-            return new HltStatementNode();
-        }
-
-        private IntdStatementNode ReadIntdStatement() {
-            this.lexer.Read(TokenType.IntdKeyword);
-            this.lexer.Read(TokenType.Semicolon);
-
-            return new IntdStatementNode();
-        }
-
-        private InteStatementNode ReadInteStatement() {
-            this.lexer.Read(TokenType.InteKeyword);
-            this.lexer.Read(TokenType.Semicolon);
-
-            return new InteStatementNode();
-        }
-
-        private IntStatementNode ReadIntStatement() {
-            this.lexer.Read(TokenType.IntKeyword);
-            var args = this.ReadArgumentList();
-            this.lexer.Read(TokenType.Semicolon);
-
-            return new IntStatementNode(args);
-        }
-
-        private NopStatementNode ReadNopStatement() {
-            this.lexer.Read(TokenType.NopKeyword);
-            this.lexer.Read(TokenType.Semicolon);
-
-            return new NopStatementNode();
-        }
-
-        private XchgStatementNode ReadXchgStatement() {
-            this.lexer.Read(TokenType.XchgKeyword);
-            var args = this.ReadArgumentList();
-            this.lexer.Read(TokenType.Semicolon);
-
-            return new XchgStatementNode(args);
-        }
-
-        private IfStatementNode ReadIfStatement() {
-            this.lexer.Read(TokenType.IfKeyword);
-            this.lexer.Read(TokenType.OpenParenthesis);
-            var exp = this.ReadExpression();
-            this.lexer.Read(TokenType.CloseParenthesis);
-            var block = this.ReadStatementBlock();
-
-            return new IfStatementNode(exp, block);
-        }
-
-        private AssignmentStatementNode ReadAssignmentStatement() {
-            var target = this.ReadLValue();
-            var op = default(Operator);
-
-            if (this.lexer.TryPeek(out var t)) {
-                switch (t.Type) {
-                    case TokenType.PlusEqual: op = Operator.Addition; break;
-                    case TokenType.MinusEqual: op = Operator.Subtraction; break;
-                    case TokenType.AsteriskEqual: op = Operator.Multiplication; break;
-                    case TokenType.ForwardSlashEqual: op = Operator.Division; break;
-                    case TokenType.PercentEqual: op = Operator.Remainder; break;
-                    case TokenType.CaretEqual: op = Operator.Exponentiation; break;
-                    case TokenType.DoubleLessThanEqual: op = Operator.ShiftLeft; break;
-                    case TokenType.DoubleGreaterThanEqual: op = Operator.ShiftRight; break;
-                    case TokenType.TripleLessThanEqual: op = Operator.RotateLeft; break;
-                    case TokenType.TripleGreaterThanEqual: op = Operator.RotateRight; break;
-                    case TokenType.AmpersandEqual: op = Operator.And; break;
-                    case TokenType.PipeEqual: op = Operator.Or; break;
-                    case TokenType.TildeEqual: op = Operator.Xor; break;
-                    case TokenType.ExclamationPointAmpersandEqual: op = Operator.NotAnd; break;
-                    case TokenType.ExclamationPointPipeEqual: op = Operator.NotOr; break;
-                    case TokenType.ExclamationPointTildeEqual: op = Operator.NotXor; break;
-
-                    case TokenType.Equal:
-                        this.lexer.Read(TokenType.Equal);
-                        var exp = this.ReadExpression();
-                        this.lexer.Read(TokenType.Semicolon);
-
-                        return new AssignmentStatementNode(target, exp);
-
-                    default:
-                        throw this.GetUnexpectedTokenExceptionAtCurrent(t.Type);
-                }
-            }
-            else {
-                throw this.GetExpectedTokenExceptionAtCurrent(TokenType.Equal);
-            }
-
-            this.lexer.TryRead(out _);
-
-            var res = new AssignmentStatementNode(target, new BinaryExpressionNode(target, new OperatorNode(op), this.ReadExpression()));
-            this.lexer.Read(TokenType.Semicolon);
-            return res;
-        }
-
         private ExpressionNode ReadExpression() {
             var stack = new ExpressionStack();
             var start = true;
@@ -221,7 +117,7 @@ namespace ArkeOS.Tools.KohlCompiler {
             while (this.lexer.TryPeek(out var token)) {
                 if (token.Type == TokenType.OpenParenthesis) seenOpenParens++;
 
-                if (start && token.Class == TokenClass.Value) {
+                if (start && (token.Class == TokenClass.RValue || token.Class == TokenClass.LValue)) {
                     stack.Push(this.ReadRValue());
                     start = false;
                 }
@@ -241,75 +137,29 @@ namespace ArkeOS.Tools.KohlCompiler {
                 }
             }
 
-            return stack.ToNode();
-        }
-
-        private RValueNode ReadRValue() => this.ReadValue(false);
-        private LValueNode ReadLValue() => (LValueNode)this.ReadValue(true);
-
-        private RValueNode ReadValue(bool requireLValue) {
-            var token = this.lexer.Read();
-
-            if (!requireLValue) {
-                switch (token.Type) {
-                    case TokenType.IntegerLiteral: return new IntegerLiteralNode(token);
-                    case TokenType.BoolLiteral: return new BoolLiteralNode(token);
-                    case TokenType.Identifier: return new RegisterNode(token);
-                }
-            }
-            else {
-                return new RegisterNode(token);
-            }
-
-            throw this.GetUnexpectedTokenExceptionAtCurrent(token.Type);
+            return stack.ToNode() ?? throw this.GetExpectedException("expression");
         }
 
         private OperatorNode ReadOperator(bool unary) {
             var token = this.lexer.Read(TokenClass.Operator);
-            var res = default(Operator);
 
-            if (!unary) {
-                switch (token.Type) {
-                    case TokenType.Plus: res = Operator.Addition; break;
-                    case TokenType.Minus: res = Operator.Subtraction; break;
-                    case TokenType.Asterisk: res = Operator.Multiplication; break;
-                    case TokenType.ForwardSlash: res = Operator.Division; break;
-                    case TokenType.Percent: res = Operator.Remainder; break;
-                    case TokenType.Caret: res = Operator.Exponentiation; break;
-                    case TokenType.DoubleLessThan: res = Operator.ShiftLeft; break;
-                    case TokenType.DoubleGreaterThan: res = Operator.ShiftRight; break;
-                    case TokenType.TripleLessThan: res = Operator.RotateLeft; break;
-                    case TokenType.TripleGreaterThan: res = Operator.RotateRight; break;
-                    case TokenType.Ampersand: res = Operator.And; break;
-                    case TokenType.Pipe: res = Operator.Or; break;
-                    case TokenType.Tilde: res = Operator.Xor; break;
-                    case TokenType.ExclamationPointAmpersand: res = Operator.NotAnd; break;
-                    case TokenType.ExclamationPointPipe: res = Operator.NotOr; break;
-                    case TokenType.ExclamationPointTilde: res = Operator.NotXor; break;
-                    case TokenType.DoubleEqual: res = Operator.Equals; break;
-                    case TokenType.ExclamationPointEqual: res = Operator.NotEquals; break;
-                    case TokenType.LessThan: res = Operator.LessThan; break;
-                    case TokenType.LessThanEqual: res = Operator.LessThanOrEqual; break;
-                    case TokenType.GreaterThan: res = Operator.GreaterThan; break;
-                    case TokenType.GreaterThanEqual: res = Operator.GreaterThanOrEqual; break;
-                    case TokenType.OpenParenthesis: res = Operator.OpenParenthesis; break;
-                    case TokenType.CloseParenthesis: res = Operator.CloseParenthesis; break;
-                    default: throw this.GetUnexpectedTokenExceptionAtCurrent(token.Type);
-                }
-            }
-            else {
-                switch (token.Type) {
-                    case TokenType.Plus: res = Operator.UnaryPlus; break;
-                    case TokenType.Minus: res = Operator.UnaryMinus; break;
-                    case TokenType.ExclamationPoint: res = Operator.Not; break;
-                    default: throw this.GetUnexpectedTokenExceptionAtCurrent(token.Type);
-                }
-            }
-
-            return new OperatorNode(res);
+            return new OperatorNode(OperatorNode.ConvertOperator(token.Type, unary) ?? throw this.GetUnexpectedException(token.Type));
         }
 
-        private UnexpectedTokenException GetUnexpectedTokenExceptionAtCurrent(TokenType t) => new UnexpectedTokenException(this.lexer.CurrentPosition, t);
-        private ExpectedTokenException GetExpectedTokenExceptionAtCurrent(TokenType t) => new ExpectedTokenException(this.lexer.CurrentPosition, t);
+        private RValueNode ReadRValue() {
+            var tok = this.lexer.Read();
+
+            switch (tok.Type) {
+                case TokenType.IntegerLiteral: return new IntegerLiteralNode(tok);
+                case TokenType.BoolLiteral: return new BoolLiteralNode(tok);
+                case TokenType.Identifier: return new RegisterNode(tok);
+                default: throw this.GetUnexpectedException(tok.Type);
+            }
+        }
+
+        private LValueNode ReadLValue() => new RegisterNode(this.lexer.Read());
+
+        private UnexpectedException GetUnexpectedException(TokenType t) => new UnexpectedException(this.lexer.CurrentPosition, t);
+        private ExpectedException GetExpectedException(string t) => new ExpectedException(this.lexer.CurrentPosition, t);
     }
 }

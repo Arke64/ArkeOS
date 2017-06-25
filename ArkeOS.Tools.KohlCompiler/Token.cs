@@ -83,8 +83,10 @@ namespace ArkeOS.Tools.KohlCompiler {
     public enum TokenClass {
         Operator,
         Assignment,
-        Value,
-        Keyword,
+        LValue,
+        RValue,
+        BlockKeyword,
+        IntrinsicKeyword,
         Brace,
         Separator,
         Whitespace,
@@ -164,11 +166,17 @@ namespace ArkeOS.Tools.KohlCompiler {
                         case TokenType.FloatLiteral:
                         case TokenType.BoolLiteral:
                         case TokenType.NullLiteral:
+                            this.tokenClass = TokenClass.RValue;
+                            break;
+
                         case TokenType.Identifier:
-                            this.tokenClass = TokenClass.Value;
+                            this.tokenClass = TokenClass.LValue;
                             break;
 
                         case TokenType.IfKeyword:
+                            this.tokenClass = TokenClass.BlockKeyword;
+                            break;
+
                         case TokenType.DbgKeyword:
                         case TokenType.BrkKeyword:
                         case TokenType.HltKeyword:
@@ -180,7 +188,7 @@ namespace ArkeOS.Tools.KohlCompiler {
                         case TokenType.XchgKeyword:
                         case TokenType.CasKeyword:
                         case TokenType.CpyKeyword:
-                            this.tokenClass = TokenClass.Keyword;
+                            this.tokenClass = TokenClass.IntrinsicKeyword;
                             break;
 
                         case TokenType.Semicolon:
