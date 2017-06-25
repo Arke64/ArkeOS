@@ -2,8 +2,8 @@
 
 namespace ArkeOS.Hardware.Architecture {
     public class InstructionDefinition {
-        private static Dictionary<string, InstructionDefinition> mnemonics = new Dictionary<string, InstructionDefinition>();
-        private static InstructionDefinition[] instructions = new InstructionDefinition[256];
+        private static readonly Dictionary<string, InstructionDefinition> mnemonics = new Dictionary<string, InstructionDefinition>();
+        private static readonly InstructionDefinition[] instructions = new InstructionDefinition[256];
 
         public static InstructionDefinition HLT { get; } = new InstructionDefinition(nameof(InstructionDefinition.HLT), 0);
         public static InstructionDefinition NOP { get; } = new InstructionDefinition(nameof(InstructionDefinition.NOP), 1);

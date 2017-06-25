@@ -15,9 +15,9 @@ namespace ArkeOS.Hardware.ArkeIndustries {
         private bool running;
         private bool disposed;
 
-        private Operand operandA;
-        private Operand operandB;
-        private Operand operandC;
+        private readonly Operand operandA;
+        private readonly Operand operandB;
+        private readonly Operand operandC;
         private Task runner;
         private Task systemTimer;
 
@@ -183,17 +183,11 @@ namespace ArkeOS.Hardware.ArkeIndustries {
         private ulong GetValue(Parameter parameter) {
             var value = ulong.MaxValue;
 
-            if (parameter.Type == ParameterType.Register) {
-                value = this.ReadRegister(parameter.Register);
-            }
-            else if (parameter.Type == ParameterType.Stack) {
-                value = this.Pop();
-            }
-            else if (parameter.Type == ParameterType.Literal) {
-                value = parameter.Literal;
-            }
-            else if (parameter.Type == ParameterType.Calculated) {
-                value = this.GetCalculatedValue(parameter);
+            switch (parameter.Type) {
+                case ParameterType.Register: value = this.ReadRegister(parameter.Register); break;
+                case ParameterType.Stack: value = this.Pop(); break;
+                case ParameterType.Literal: value = parameter.Literal; break;
+                case ParameterType.Calculated: value = this.GetCalculatedValue(parameter); break;
             }
 
             if (parameter.IsRIPRelative)
@@ -219,17 +213,11 @@ namespace ArkeOS.Hardware.ArkeIndustries {
             else {
                 var address = ulong.MaxValue;
 
-                if (parameter.Type == ParameterType.Register) {
-                    address = this.ReadRegister(parameter.Register);
-                }
-                else if (parameter.Type == ParameterType.Stack) {
-                    address = this.Pop();
-                }
-                else if (parameter.Type == ParameterType.Literal) {
-                    address = parameter.Literal;
-                }
-                else if (parameter.Type == ParameterType.Calculated) {
-                    address = this.GetCalculatedValue(parameter);
+                switch (parameter.Type) {
+                    case ParameterType.Register: address = this.ReadRegister(parameter.Register); break;
+                    case ParameterType.Stack: address = this.Pop(); break;
+                    case ParameterType.Literal: address = parameter.Literal; break;
+                    case ParameterType.Calculated: address = this.GetCalculatedValue(parameter); break;
                 }
 
                 if (parameter.IsRIPRelative)

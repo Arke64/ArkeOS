@@ -48,15 +48,6 @@ namespace ArkeOS.Hosts.UWP {
             this.RefreshDebug();
         }
 
-        private void Shutdown() {
-            this.refreshTimer.Stop();
-
-            this.BreakButton.IsEnabled = false;
-            this.ContinueButton.IsEnabled = false;
-            this.StepButton.IsEnabled = false;
-            this.RefreshButton.IsEnabled = false;
-        }
-
         private void BreakButton_Click(object sender, RoutedEventArgs e) {
             this.refreshTimer.Stop();
 

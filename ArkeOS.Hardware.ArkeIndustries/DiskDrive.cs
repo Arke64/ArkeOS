@@ -5,9 +5,9 @@ using System.IO;
 
 namespace ArkeOS.Hardware.ArkeIndustries {
     public class DiskDrive : SystemBusDevice {
-        private Stream stream;
-        private byte[] buffer;
-        private ulong length;
+        private readonly Stream stream;
+        private readonly byte[] buffer;
+        private readonly ulong length;
         private bool disposed;
 
         public DiskDrive(Stream stream) : base(ProductIds.Vendor, ProductIds.HDD100, DeviceType.DiskDrive) {

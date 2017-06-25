@@ -9,12 +9,12 @@ namespace ArkeOS.Hardware.ArkeIndustries {
         public ulong Height { get; }
         public ulong Width { get; }
 
-        private ulong rows;
-        private ulong columns;
-        private char[] characterBuffer;
-        private char[] decodeBuffer;
-        private byte[] encodeBuffer;
-        private uint[][] fontData;
+        private readonly ulong rows;
+        private readonly ulong columns;
+        private readonly char[] characterBuffer;
+        private readonly char[] decodeBuffer;
+        private readonly byte[] encodeBuffer;
+        private readonly uint[][] fontData;
 
         public byte[] RawBuffer { get; private set; }
 

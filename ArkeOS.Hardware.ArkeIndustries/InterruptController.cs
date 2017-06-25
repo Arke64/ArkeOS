@@ -5,9 +5,9 @@ using System.Threading;
 
 namespace ArkeOS.Hardware.ArkeIndustries {
     public class InterruptController : SystemBusDevice, IInterruptController {
-        private Queue<InterruptRecord> pending;
-        private ManualResetEvent evt;
-        private ulong[] vectors;
+        private readonly Queue<InterruptRecord> pending;
+        private readonly ManualResetEvent evt;
+        private readonly ulong[] vectors;
         private bool disposed;
 
         public int PendingCount => this.pending.Count;

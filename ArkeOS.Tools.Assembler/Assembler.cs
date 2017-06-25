@@ -9,10 +9,10 @@ using System.Text.RegularExpressions;
 
 namespace ArkeOS.Tools.Assembler {
     public class Assembler {
-        private Dictionary<string, ulong> labels;
-        private Dictionary<string, ulong> defines;
-        private Dictionary<string, ulong> variables;
-        private Dictionary<string, ulong> strings;
+        private readonly Dictionary<string, ulong> labels;
+        private readonly Dictionary<string, ulong> defines;
+        private readonly Dictionary<string, ulong> variables;
+        private readonly Dictionary<string, ulong> strings;
         private ulong currentOffset;
 
         public Assembler() {
@@ -28,8 +28,9 @@ namespace ArkeOS.Tools.Assembler {
         public byte[] Assemble(string sourceFolder, string[] inputLines) {
             IEnumerable<string> lines = inputLines.ToList();
 
-            while (this.ProcessIncludes(sourceFolder, ref lines))
-                ;
+            while (this.ProcessIncludes(sourceFolder, ref lines)) {
+
+            }
 
             lines = lines.Select(l => l.Split(new string[] { "//" }, StringSplitOptions.None)[0].Trim()).Where(l => !string.IsNullOrWhiteSpace(l)).Select(l => Assembler.Sanitize(l));
 
@@ -42,33 +43,43 @@ namespace ArkeOS.Tools.Assembler {
                         var parts = line.Split(' ');
 
                         this.currentOffset = (ulong)stream.Position / 8;
+                        switch (parts[0]) {
+                            case "OFFSET":
+                                stream.Seek((long)this.ParseParameter(parts[1], true).Literal * 8, SeekOrigin.Begin);
 
-                        if (parts[0] == "OFFSET") {
-                            stream.Seek((long)this.ParseParameter(parts[1], true).Literal * 8, SeekOrigin.Begin);
-                        }
-                        else if (parts[0] == "LABEL") {
+                                break;
 
-                        }
-                        else if (parts[0] == "DEFINE") {
+                            case "LABEL":
+                                break;
 
-                        }
-                        else if (parts[0] == "VAR") {
-                            writer.Write(this.ParseParameter(parts[2], true).Literal);
-                        }
-                        else if (parts[0] == "CONST") {
-                            writer.Write(this.ParseParameter(parts[1], true).Literal);
-                        }
-                        else if (parts[0] == "STR") {
-                            var start = line.IndexOf("\"") + 1;
-                            var end = line.LastIndexOf("\"");
-                            var str = line.Substring(start, end - start);
+                            case "DEFINE":
+                                break;
 
-                            str.PadRight(str.Length + str.Length % 8, '\0');
+                            case "VAR":
+                                writer.Write(this.ParseParameter(parts[2], true).Literal);
 
-                            writer.Write(Encoding.UTF8.GetBytes(str));
-                        }
-                        else {
-                            this.ParseInstruction(parts, true).Encode(writer);
+                                break;
+
+                            case "CONST":
+                                writer.Write(this.ParseParameter(parts[1], true).Literal);
+
+                                break;
+
+                            case "STR":
+                                var start = line.IndexOf("\"") + 1;
+                                var end = line.LastIndexOf("\"");
+                                var str = line.Substring(start, end - start);
+
+                                str = str.PadRight(str.Length + str.Length % 8, '\0');
+
+                                writer.Write(Encoding.UTF8.GetBytes(str));
+
+                                break;
+
+                            default:
+                                this.ParseInstruction(parts, true).Encode(writer);
+
+                                break;
                         }
                     }
 
@@ -147,35 +158,46 @@ namespace ArkeOS.Tools.Assembler {
 
             foreach (var line in lines) {
                 var parts = line.Split(' ');
+                switch (parts[0]) {
+                    case "OFFSET":
+                        this.currentOffset = this.ParseParameter(parts[1], false).Literal;
 
-                if (parts[0] == "OFFSET") {
-                    this.currentOffset = this.ParseParameter(parts[1], false).Literal;
-                }
-                else if (parts[0] == "LABEL") {
-                    this.labels.Add(parts[1], this.currentOffset);
-                }
-                else if (parts[0] == "DEFINE") {
+                        break;
 
-                }
-                else if (parts[0] == "VAR") {
-                    this.variables.Add(parts[1], this.currentOffset);
+                    case "LABEL":
+                        this.labels.Add(parts[1], this.currentOffset);
 
-                    this.currentOffset += 1;
-                }
-                else if (parts[0] == "CONST") {
-                    this.currentOffset += 1;
-                }
-                else if (parts[0] == "STR") {
-                    var start = line.IndexOf("\"") + 1;
-                    var end = line.LastIndexOf("\"");
-                    var len = end - start;
+                        break;
 
-                    this.strings.Add(parts[1], this.currentOffset);
+                    case "DEFINE":
+                        break;
 
-                    this.currentOffset += (ulong)(len + len % 8);
-                }
-                else {
-                    this.currentOffset += this.ParseInstruction(parts, false).Length;
+                    case "VAR":
+                        this.variables.Add(parts[1], this.currentOffset);
+
+                        this.currentOffset += 1;
+
+                        break;
+                    case "CONST":
+                        this.currentOffset += 1;
+
+                        break;
+
+                    case "STR":
+                        var start = line.IndexOf("\"") + 1;
+                        var end = line.LastIndexOf("\"");
+                        var len = end - start;
+
+                        this.strings.Add(parts[1], this.currentOffset);
+
+                        this.currentOffset += (ulong)(len + len % 8);
+
+                        break;
+
+                    default:
+                        this.currentOffset += this.ParseInstruction(parts, false).Length;
+
+                        break;
                 }
             }
         }

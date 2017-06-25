@@ -54,11 +54,5 @@ namespace ArkeOS.Hosts.UWP {
                 this.host.Keyboard.TriggerKeyDown(scanCode);
             }
         }
-
-        private void Shutdown() {
-            this.refreshTimer.Stop();
-            this.displayBitmap.Clear();
-            this.currentPressedKeys.Clear();
-        }
     }
 }

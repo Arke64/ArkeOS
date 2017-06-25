@@ -3,7 +3,7 @@ using System.IO;
 
 namespace ArkeOS.Hardware.ArkeIndustries {
     public class BootManager : SystemBusDevice {
-        private BinaryReader image;
+        private readonly BinaryReader image;
         private bool disposed;
 
         public BootManager(Stream bootImage) : base(ProductIds.Vendor, ProductIds.MB100, DeviceType.BootManager) {

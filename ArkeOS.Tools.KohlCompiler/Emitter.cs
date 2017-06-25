@@ -1,7 +1,6 @@
 ﻿using ArkeOS.Hardware.Architecture;
 using ArkeOS.Tools.KohlCompiler.Exceptions;
 using ArkeOS.Tools.KohlCompiler.Nodes;
-using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -58,7 +57,6 @@ namespace ArkeOS.Tools.KohlCompiler {
             if (expr is LValueNode lvalue) {
                 switch (lvalue) {
                     case RegisterNode n: return Parameter.CreateRegister(n.Register);
-                    default: throw new NotImplementedException();
                 }
             }
 
