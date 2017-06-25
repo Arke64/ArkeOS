@@ -68,7 +68,7 @@ namespace ArkeOS.Tools.KohlCompiler {
         private void Visit(ProgramNode n) => this.Visit(n.StatementBlock);
 
         private void Visit(StatementBlockNode n) {
-            foreach (var s in n.Statements)
+            foreach (var s in n.Items)
                 this.Visit(s);
         }
 

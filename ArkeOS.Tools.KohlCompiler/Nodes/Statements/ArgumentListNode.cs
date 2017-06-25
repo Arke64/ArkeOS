@@ -1,16 +1,8 @@
-﻿using System.Collections.Generic;
-
-namespace ArkeOS.Tools.KohlCompiler.Nodes {
-    public class ArgumentListNode : Node {
-        private List<ExpressionNode> arguments = new List<ExpressionNode>();
-
-        public IReadOnlyList<ExpressionNode> Arguments => this.arguments;
-
-        public void Add(ExpressionNode node) => this.arguments.Add(node);
-
+﻿namespace ArkeOS.Tools.KohlCompiler.Nodes {
+    public class ArgumentListNode : ListNode<ExpressionNode> {
         public bool Extract(int index, out ExpressionNode arg) {
-            if (index < this.arguments.Count) {
-                arg = this.arguments[index];
+            if (index < this.Items.Count) {
+                arg = this.Items[index];
                 return true;
             }
             else {
