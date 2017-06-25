@@ -1,5 +1,7 @@
-﻿using ArkeOS.Tools.KohlCompiler.Exceptions;
+﻿using ArkeOS.Hardware.Architecture;
+using ArkeOS.Tools.KohlCompiler.Exceptions;
 using ArkeOS.Tools.KohlCompiler.Syntax;
+using ArkeOS.Utilities.Extensions;
 
 namespace ArkeOS.Tools.KohlCompiler {
     public class Parser {
@@ -89,6 +91,9 @@ namespace ArkeOS.Tools.KohlCompiler {
                 return new FunctionCallIdentifierNode(tok);
             }
             else {
+                if (!tok.Value.IsValidEnum<Register>())
+                    throw new IdentifierNotFoundException(this.lexer.CurrentPosition, "Invalid register.");
+
                 return new RegisterIdentifierNode(tok);
             }
         }

@@ -34,5 +34,6 @@ namespace ArkeOS.Utilities.Extensions {
 
     public static class StringExtensions {
         public static T ToEnum<T>(this string self) where T : struct => (T)Enum.Parse(typeof(T), self);
+        public static bool IsValidEnum<T>(this string self) where T : struct => Enum.TryParse(self, out T _);
     }
 }

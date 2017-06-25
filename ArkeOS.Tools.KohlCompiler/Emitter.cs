@@ -1,7 +1,6 @@
 ﻿using ArkeOS.Hardware.Architecture;
 using ArkeOS.Tools.KohlCompiler.Exceptions;
 using ArkeOS.Tools.KohlCompiler.Syntax;
-using ArkeOS.Utilities.Extensions;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -84,7 +83,7 @@ namespace ArkeOS.Tools.KohlCompiler {
 
         private Parameter ExtractLValue(ExpressionStatementNode expr) {
             switch (expr) {
-                case RegisterIdentifierNode n: return Parameter.CreateRegister(n.Identifier.ToEnum<Register>());
+                case RegisterIdentifierNode n: return Parameter.CreateRegister(n.Register);
                 default: throw new ExpectedException(default(PositionInfo), "value");
             }
         }
@@ -244,7 +243,7 @@ namespace ArkeOS.Tools.KohlCompiler {
             var target = this.ExtractLValue(a.Target);
 
             if (a.Expression is RegisterIdentifierNode rnode) {
-                this.Emit(InstructionDefinition.SET, target, Parameter.CreateRegister(rnode.Identifier.ToEnum<Register>()));
+                this.Emit(InstructionDefinition.SET, target, Parameter.CreateRegister(rnode.Register));
             }
             else if (a.Expression is IntegerLiteralNode nnode) {
                 this.Emit(InstructionDefinition.SET, target, Parameter.CreateLiteral(nnode.Literal));
@@ -317,7 +316,7 @@ namespace ArkeOS.Tools.KohlCompiler {
 
         private void Visit(IdentifierExpressionNode i) {
             switch (i) {
-                case RegisterIdentifierNode n: this.Emit(InstructionDefinition.SET, Emitter.StackParam, Parameter.CreateRegister(n.Identifier.ToEnum<Register>())); break;
+                case RegisterIdentifierNode n: this.Emit(InstructionDefinition.SET, Emitter.StackParam, Parameter.CreateRegister(n.Register)); break;
                 case FunctionCallIdentifierNode n: this.Emit(InstructionDefinition.CALL, this.GetAddress(n.Identifier)); break;
                 default: Debug.Assert(false); break;
             }
