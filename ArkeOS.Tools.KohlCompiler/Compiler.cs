@@ -18,7 +18,7 @@ namespace ArkeOS.Tools.KohlCompiler {
 
         public string OutputName { get; set; } = "Kohl.bin";
         public bool Optimize { get; set; } = true;
-        public bool EmitAssemblyListing { get; set; } = false;
+        public bool EmitAssemblyListing { get; set; } = true;
         public bool EmitBootable { get; set; } = true;
 
         public void AddSource(string file) => this.sources.Add(file);
@@ -29,9 +29,9 @@ namespace ArkeOS.Tools.KohlCompiler {
             try {
                 var lexer = new Lexer(this.sources);
                 var parser = new Parser(lexer);
-                var emitter = new Emitter(parser.Parse());
+                var emitter = new Emitter(parser.Parse(), this.EmitAssemblyListing, this.EmitBootable, this.OutputName);
 
-                emitter.Emit(this.OutputName);
+                emitter.Emit();
             }
             catch (CompilationException e) {
                 errors.Add(new CompilationError(e.Message, e.Position));

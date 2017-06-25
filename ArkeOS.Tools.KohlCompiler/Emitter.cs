@@ -12,23 +12,30 @@ namespace ArkeOS.Tools.KohlCompiler {
         private static Parameter StackParam { get; } = new Parameter { Type = ParameterType.Stack };
 
         private readonly ProgramNode tree;
+        private readonly bool emitAssemblyListing;
+        private readonly bool emitBootable;
+        private readonly string outputFile;
         private List<Instruction> instructions;
 
-        public Emitter(ProgramNode tree) => this.tree = tree;
+        public Emitter(ProgramNode tree, bool emitAssemblyListing, bool emitBootable, string outputFile) => (this.tree, this.emitAssemblyListing, this.emitBootable, this.outputFile) = (tree, emitAssemblyListing, emitBootable, outputFile);
 
-        public void Emit(string outputFile) {
+        public void Emit() {
             this.instructions = new List<Instruction>();
 
             this.Visit(this.tree);
 
             using (var stream = new MemoryStream()) {
                 using (var writer = new BinaryWriter(stream)) {
-                    writer.Write(0x00000000454B5241UL);
+                    if (this.emitBootable)
+                        writer.Write(0x00000000454B5241UL);
+
+                    if (this.emitAssemblyListing)
+                        File.WriteAllLines(Path.ChangeExtension(this.outputFile, "lst"), this.instructions.Select(i => i.ToString()));
 
                     foreach (var inst in this.instructions)
                         inst.Encode(writer);
 
-                    File.WriteAllBytes(outputFile, stream.ToArray());
+                    File.WriteAllBytes(this.outputFile, stream.ToArray());
                 }
             }
         }

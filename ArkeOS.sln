@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
-VisualStudioVersion = 15.0.26430.13
+VisualStudioVersion = 15.0.26430.14
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ArkeOS.Tools.Assembler", "ArkeOS.Tools.Assembler\ArkeOS.Tools.Assembler.csproj", "{E9776C8D-E3AD-4BCA-AA37-0C4883463480}"
 EndProject
@@ -21,6 +21,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Images", "Images", "{0608B5
 		Images\FindDevice.asm = Images\FindDevice.asm
 		Images\Kohl.bin = Images\Kohl.bin
 		Images\Kohl.k = Images\Kohl.k
+		Images\Kohl.lst = Images\Kohl.lst
 		Images\TimedLoop.asm = Images\TimedLoop.asm
 		Images\TimedLoop.bin = Images\TimedLoop.bin
 		Images\Typer.asm = Images\Typer.asm
