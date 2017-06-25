@@ -13,6 +13,7 @@ namespace ArkeOS.Tools.KohlCompiler {
             ["if"] = TokenType.IfKeyword,
             ["else"] = TokenType.ElseKeyword,
             ["while"] = TokenType.WhileKeyword,
+            ["func"] = TokenType.FuncKeyword,
 
             ["dbg"] = TokenType.DbgKeyword,
             ["brk"] = TokenType.BrkKeyword,

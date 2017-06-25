@@ -1,7 +1,5 @@
 ﻿namespace ArkeOS.Tools.KohlCompiler.Syntax {
-    public sealed class ProgramNode : SyntaxNode {
-        public StatementBlockNode StatementBlock { get; }
+    public sealed class ProgramNode : ListNode<FuncStatementNode> {
 
-        public ProgramNode(StatementBlockNode statementBlock) => this.StatementBlock = statementBlock;
     }
 }

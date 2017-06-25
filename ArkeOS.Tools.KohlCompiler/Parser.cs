@@ -7,7 +7,14 @@ namespace ArkeOS.Tools.KohlCompiler {
 
         public Parser(Lexer lexer) => this.lexer = lexer;
 
-        public ProgramNode Parse() => new ProgramNode(this.ReadStatementBlock());
+        public ProgramNode Parse() {
+            var prog = new ProgramNode();
+
+            while (this.lexer.TryPeek(out _))
+                prog.Add(this.ReadFuncStatement());
+
+            return prog;
+        }
 
         private StatementBlockNode ReadStatementBlock() {
             var block = new StatementBlockNode();
@@ -102,6 +109,16 @@ namespace ArkeOS.Tools.KohlCompiler {
             return new WhileStatementNode(exp, block);
         }
 
+        private FuncStatementNode ReadFuncStatement() {
+            this.lexer.Read(TokenType.FuncKeyword);
+            var ident = this.ReadIdentifier();
+            this.lexer.Read(TokenType.OpenParenthesis);
+            this.lexer.Read(TokenType.CloseParenthesis);
+            var block = this.ReadStatementBlock();
+
+            return new FuncStatementNode(ident, block);
+        }
+
         private ArgumentListNode ReadArgumentList() {
             var list = new ArgumentListNode();
 
@@ -168,7 +185,8 @@ namespace ArkeOS.Tools.KohlCompiler {
             }
         }
 
-        private LValueNode ReadLValue() => new RegisterNode(this.lexer.Read());
+        private LValueNode ReadLValue() => new RegisterNode(this.lexer.Read(TokenType.Identifier));
+        private IdentifierNode ReadIdentifier() => new IdentifierNode(this.lexer.Read(TokenType.Identifier));
 
         private UnexpectedException GetUnexpectedException(TokenType t) => new UnexpectedException(this.lexer.CurrentPosition, t);
         private ExpectedException GetExpectedException(string t) => new ExpectedException(this.lexer.CurrentPosition, t);

@@ -1,4 +1,4 @@
-{
+func main() {
 	brk;
 	RSP = 0x10000;
 

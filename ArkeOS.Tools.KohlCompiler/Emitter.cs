@@ -52,7 +52,12 @@ namespace ArkeOS.Tools.KohlCompiler {
             throw new ExpectedException(default(PositionInfo), "value");
         }
 
-        private void Visit(ProgramNode n) => this.Visit(n.StatementBlock);
+        private void Visit(ProgramNode n) {
+            foreach (var s in n.Items)
+                this.Visit(s);
+        }
+
+        private void Visit(FuncStatementNode n) => this.Visit(n.StatementBlock);
 
         private void Visit(StatementBlockNode n) {
             foreach (var s in n.Items)
