@@ -7,14 +7,7 @@ namespace ArkeOS.Tools.KohlCompiler {
 
         public Parser(Lexer lexer) => this.lexer = lexer;
 
-        public ProgramNode Parse() {
-            var res = new ProgramNode(this.ReadStatementBlock());
-
-            if (this.lexer.TryPeek(out var t))
-                throw this.GetUnexpectedException(t.Type);
-
-            return res;
-        }
+        public ProgramNode Parse() => new ProgramNode(this.ReadStatementBlock());
 
         private StatementBlockNode ReadStatementBlock() {
             var block = new StatementBlockNode();
@@ -114,22 +107,24 @@ namespace ArkeOS.Tools.KohlCompiler {
             var start = true;
             var seenOpenParens = 0;
 
-            while (this.lexer.TryPeek(out var token)) {
-                if (token.Type == TokenType.OpenParenthesis) seenOpenParens++;
+            while (true) {
+                var tok = this.lexer.Peek();
 
-                if (start && (token.Class == TokenClass.RValue || token.Class == TokenClass.LValue)) {
+                if (tok.Type == TokenType.OpenParenthesis) seenOpenParens++;
+
+                if (start && (tok.Class == TokenClass.RValue || tok.Class == TokenClass.LValue)) {
                     stack.Push(this.ReadRValue());
                     start = false;
                 }
-                else if (!start && token.Type == TokenType.CloseParenthesis) {
+                else if (!start && tok.Type == TokenType.CloseParenthesis) {
                     if (--seenOpenParens < 0)
                         break;
 
                     stack.Push(this.ReadOperator(false), this.lexer.CurrentPosition);
                     start = false;
                 }
-                else if (token.Class == TokenClass.Operator) {
-                    stack.Push(this.ReadOperator(start && token.Type != TokenType.OpenParenthesis), this.lexer.CurrentPosition);
+                else if (tok.Class == TokenClass.Operator) {
+                    stack.Push(this.ReadOperator(start && tok.Type != TokenType.OpenParenthesis), this.lexer.CurrentPosition);
                     start = true;
                 }
                 else {
