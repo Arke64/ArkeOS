@@ -18,15 +18,22 @@ namespace ArkeOS.Tools.KohlCompiler {
 
         public Emitter(ProgramNode tree, bool emitAssemblyListing, bool emitBootable, string outputFile) => (this.tree, this.emitAssemblyListing, this.emitBootable, this.outputFile) = (tree, emitAssemblyListing, emitBootable, outputFile);
 
+        private ulong DistanceFrom(int startInst) => (ulong)this.instructions.Skip(startInst).Sum(i => i.Length);
+
         public void Emit() {
             this.instructions = new List<Instruction>();
 
             this.Emit(InstructionDefinition.BRK);
             this.Emit(InstructionDefinition.SET, Parameter.CreateRegister(Register.RSP), Parameter.CreateLiteral(0x1_0000));
 
-            this.Visit(this.tree);
-
+            var start = this.instructions.Count;
+            var len = Parameter.CreateLiteral(0, ParameterFlags.RIPRelative);
+            this.Emit(InstructionDefinition.CALL, len);
             this.Emit(InstructionDefinition.HLT);
+
+            len.Literal = this.DistanceFrom(start);
+
+            this.Visit(this.tree);
 
             using (var stream = new MemoryStream()) {
                 using (var writer = new BinaryWriter(stream)) {
@@ -62,7 +69,11 @@ namespace ArkeOS.Tools.KohlCompiler {
                 this.Visit(s);
         }
 
-        private void Visit(FuncStatementNode n) => this.Visit(n.StatementBlock);
+        private void Visit(FuncStatementNode n) {
+            this.Visit(n.StatementBlock);
+
+            this.Emit(InstructionDefinition.RET);
+        }
 
         private void Visit(StatementBlockNode n) {
             foreach (var s in n.Items)
@@ -79,8 +90,6 @@ namespace ArkeOS.Tools.KohlCompiler {
         }
 
         private void Visit(BlockStatementNode s) {
-            ulong dist(int startInst) => (ulong)this.instructions.Skip(startInst).Sum(i => i.Length);
-
             switch (s) {
                 case IfElseStatementNode n: {
                         this.Visit(n.Expression);
@@ -95,11 +104,11 @@ namespace ArkeOS.Tools.KohlCompiler {
                         var elseLen = Parameter.CreateLiteral(0, ParameterFlags.RIPRelative);
                         this.Emit(InstructionDefinition.SET, Parameter.CreateRegister(Register.RIP), elseLen);
 
-                        ifLen.Literal = dist(ifStart);
+                        ifLen.Literal = this.DistanceFrom(ifStart);
 
                         this.Visit(n.ElseStatementBlock);
 
-                        elseLen.Literal = dist(elseStart);
+                        elseLen.Literal = this.DistanceFrom(elseStart);
                     }
 
                     break;
@@ -113,7 +122,7 @@ namespace ArkeOS.Tools.KohlCompiler {
 
                         this.Visit(n.StatementBlock);
 
-                        blockLen.Literal = dist(blockStart);
+                        blockLen.Literal = this.DistanceFrom(blockStart);
                     }
 
                     break;
@@ -129,10 +138,10 @@ namespace ArkeOS.Tools.KohlCompiler {
 
                         this.Visit(n.StatementBlock);
 
-                        var nodeLen = Parameter.CreateLiteral((ulong)-(long)dist(nodeStart), ParameterFlags.RIPRelative);
+                        var nodeLen = Parameter.CreateLiteral((ulong)-(long)this.DistanceFrom(nodeStart), ParameterFlags.RIPRelative);
                         this.Emit(InstructionDefinition.SET, Parameter.CreateRegister(Register.RIP), nodeLen);
 
-                        blockLen.Literal = dist(blockStart);
+                        blockLen.Literal = this.DistanceFrom(blockStart);
                     }
 
                     break;
