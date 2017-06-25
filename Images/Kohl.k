@@ -1,6 +1,16 @@
 {
 	brk;
 	RSP = 0x10000;
+
+	R0 = 0d5;
+	R1 = 0d0;
+
+	while (R0) {
+		R1 += 0d1;
+		R0 -= 0d1;
+	}
+
+	brk;
 	dbg (R0, R0, R0);
 	cpy (RZERO, RONE, 0d1);
 	nop;

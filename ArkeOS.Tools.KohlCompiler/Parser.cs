@@ -45,6 +45,7 @@ namespace ArkeOS.Tools.KohlCompiler {
 
             switch (tok.Type) {
                 case TokenType.IfKeyword: return this.ReadIfStatement();
+                case TokenType.WhileKeyword: return this.ReadWhileStatement();
                 default: throw this.GetUnexpectedException(tok.Type);
             }
         }
@@ -84,6 +85,16 @@ namespace ArkeOS.Tools.KohlCompiler {
             var block = this.ReadStatementBlock();
 
             return new IfStatementNode(exp, block);
+        }
+
+        private WhileStatementNode ReadWhileStatement() {
+            this.lexer.Read(TokenType.WhileKeyword);
+            this.lexer.Read(TokenType.OpenParenthesis);
+            var exp = this.ReadExpression();
+            this.lexer.Read(TokenType.CloseParenthesis);
+            var block = this.ReadStatementBlock();
+
+            return new WhileStatementNode(exp, block);
         }
 
         private ArgumentListNode ReadArgumentList() {

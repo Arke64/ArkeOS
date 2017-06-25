@@ -87,6 +87,26 @@ namespace ArkeOS.Tools.KohlCompiler {
 
                     break;
 
+                case WhileStatementNode n: {
+                        var nodeStart = this.instructions.Count;
+
+                        this.Visit(n.Expression);
+
+                        var blockStart = this.instructions.Count;
+
+                        var blockLen = Parameter.CreateLiteral(0, ParameterFlags.RIPRelative);
+                        this.Emit(InstructionDefinition.SET, Emitter.StackParam, InstructionConditionalType.WhenZero, Parameter.CreateRegister(Register.RIP), blockLen);
+
+                        this.Visit(n.StatementBlock);
+
+                        var nodeLen = Parameter.CreateLiteral((ulong)-(long)dist(nodeStart), ParameterFlags.RIPRelative);
+                        this.Emit(InstructionDefinition.SET, Parameter.CreateRegister(Register.RIP), nodeLen);
+
+                        blockLen.Literal = dist(blockStart);
+                    }
+
+                    break;
+
                 default: Debug.Assert(false); break;
             }
         }

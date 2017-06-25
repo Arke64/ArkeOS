@@ -11,6 +11,7 @@ namespace ArkeOS.Tools.KohlCompiler {
 
         private static IReadOnlyDictionary<string, TokenType> Keywords { get; } = new Dictionary<string, TokenType> {
             ["if"] = TokenType.IfKeyword,
+            ["while"] = TokenType.WhileKeyword,
 
             ["dbg"] = TokenType.DbgKeyword,
             ["brk"] = TokenType.BrkKeyword,
