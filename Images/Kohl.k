@@ -1,7 +1,4 @@
 func main() {
-	brk;
-	RSP = 0x10000;
-
 	R0 = 0d0;
 
 	if (R0) {
@@ -74,6 +71,4 @@ func main() {
 		R5 = 78;
 		R6 = 90;
 	}
-
-	hlt;
 }

@@ -21,7 +21,12 @@ namespace ArkeOS.Tools.KohlCompiler {
         public void Emit() {
             this.instructions = new List<Instruction>();
 
+            this.Emit(InstructionDefinition.BRK);
+            this.Emit(InstructionDefinition.SET, Parameter.CreateRegister(Register.RSP), Parameter.CreateLiteral(0x1_0000));
+
             this.Visit(this.tree);
+
+            this.Emit(InstructionDefinition.HLT);
 
             using (var stream = new MemoryStream()) {
                 using (var writer = new BinaryWriter(stream)) {
