@@ -1,6 +1,7 @@
 ﻿using ArkeOS.Hardware.Architecture;
 using ArkeOS.Tools.KohlCompiler.Exceptions;
 using ArkeOS.Tools.KohlCompiler.Syntax;
+using ArkeOS.Utilities.Extensions;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -81,14 +82,12 @@ namespace ArkeOS.Tools.KohlCompiler {
         private void Emit(InstructionDefinition def, params Parameter[] parameters) => this.instructions.Add(new Instruction(def, parameters));
         private void Emit(InstructionDefinition def, Parameter conditional, InstructionConditionalType conditionalType, params Parameter[] parameters) => this.instructions.Add(new Instruction(def, parameters, conditional, conditionalType));
 
-        private Parameter ExtractLValue(ExpressionNode expr) {
-            if (expr is LValueNode lvalue) {
-                switch (lvalue) {
-                    case RegisterNode n: return Parameter.CreateRegister(n.Register);
-                }
+        private Parameter ExtractLValue(SyntaxNode expr) {
+            switch (expr) {
+                case RegisterNode n: return Parameter.CreateRegister(n.Register);
+                case IdentifierNode n: return Parameter.CreateRegister(n.Identifier.ToEnum<Register>());
+                default: throw new ExpectedException(default(PositionInfo), "value");
             }
-
-            throw new ExpectedException(default(PositionInfo), "value");
         }
 
         private void Visit(ProgramNode n) {
@@ -112,6 +111,7 @@ namespace ArkeOS.Tools.KohlCompiler {
                 case BlockStatementNode n: this.Visit(n); break;
                 case IntrinsicStatementNode n: this.Visit(n); break;
                 case AssignmentStatementNode n: this.Visit(n); break;
+                case FunctionCallStatementNode n: this.Visit(n); break;
                 default: Debug.Assert(false); break;
             }
         }
@@ -257,9 +257,9 @@ namespace ArkeOS.Tools.KohlCompiler {
 
         private void Visit(AssignmentStatementNode a) {
             if (a is CompoundAssignmentStatementNode c)
-                a = new AssignmentStatementNode(a.Target, new BinaryExpressionNode(c.Target, c.Op, c.Expression));
+                a = new AssignmentStatementNode(a.Identifier, new BinaryExpressionNode(c.Identifier, c.Op, c.Expression));
 
-            var target = this.ExtractLValue(a.Target);
+            var target = this.ExtractLValue(a.Identifier);
 
             if (a.Expression is RegisterNode rnode) {
                 this.Emit(InstructionDefinition.SET, target, Parameter.CreateRegister(rnode.Register));
@@ -276,6 +276,8 @@ namespace ArkeOS.Tools.KohlCompiler {
                 this.Emit(InstructionDefinition.SET, target, Emitter.StackParam);
             }
         }
+
+        private void Visit(FunctionCallStatementNode a) => this.Emit(InstructionDefinition.CALL, this.GetAddress(a.Identifier.Identifier));
 
         private void Visit(ExpressionNode e) {
             switch (e) {
@@ -348,6 +350,7 @@ namespace ArkeOS.Tools.KohlCompiler {
         private void Visit(LValueNode lvalue) {
             switch (lvalue) {
                 case RegisterNode n: this.Emit(InstructionDefinition.SET, Emitter.StackParam, Parameter.CreateRegister(n.Register)); break;
+                case IdentifierNode n: this.Emit(InstructionDefinition.SET, Emitter.StackParam, Parameter.CreateRegister(n.Identifier.ToEnum<Register>())); break;
                 default: Debug.Assert(false); break;
             }
         }

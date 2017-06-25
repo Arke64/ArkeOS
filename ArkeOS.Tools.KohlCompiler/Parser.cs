@@ -37,7 +37,7 @@ namespace ArkeOS.Tools.KohlCompiler {
             switch (tok.Class) {
                 case TokenClass.BlockKeyword: return this.ReadBlockStatement();
                 case TokenClass.IntrinsicKeyword: res = this.ReadIntrinsicStatement(); break;
-                case TokenClass.LValue: res = this.ReadAssignmentStatement(); break;
+                case TokenClass.LValue: res = this.ReadLValueStatement(); break;
                 case TokenClass.Separator when tok.Type == TokenType.Semicolon: res = new EmptyStatementNode(); break;
                 default: throw this.GetUnexpectedException(tok.Type);
             }
@@ -76,12 +76,21 @@ namespace ArkeOS.Tools.KohlCompiler {
             }
         }
 
-        private AssignmentStatementNode ReadAssignmentStatement() {
-            var target = this.ReadLValue();
-            var op = this.lexer.Read(TokenClass.Assignment);
-            var exp = this.ReadExpression();
+        private StatementNode ReadLValueStatement() {
+            var target = this.ReadIdentifier();
 
-            return op.Type == TokenType.Equal ? new AssignmentStatementNode(target, exp) : new CompoundAssignmentStatementNode(target, OperatorNode.FromCompoundToken(op) ?? throw this.GetUnexpectedException(op.Type), exp);
+            if (this.lexer.TryPeek(TokenType.OpenParenthesis)) {
+                this.lexer.Read(TokenType.OpenParenthesis);
+                this.lexer.Read(TokenType.CloseParenthesis);
+
+                return new FunctionCallStatementNode(target);
+            }
+            else {
+                var op = this.lexer.Read(TokenClass.Assignment);
+                var exp = this.ReadExpression();
+
+                return op.Type == TokenType.Equal ? new AssignmentStatementNode(target, exp) : new CompoundAssignmentStatementNode(target, OperatorNode.FromCompoundToken(op) ?? throw this.GetUnexpectedException(op.Type), exp);
+            }
         }
 
         private IfStatementNode ReadIfStatement() {
@@ -185,7 +194,6 @@ namespace ArkeOS.Tools.KohlCompiler {
             }
         }
 
-        private LValueNode ReadLValue() => new RegisterNode(this.lexer.Read(TokenType.Identifier));
         private IdentifierNode ReadIdentifier() => new IdentifierNode(this.lexer.Read(TokenType.Identifier));
 
         private UnexpectedException GetUnexpectedException(TokenType t) => new UnexpectedException(this.lexer.CurrentPosition, t);

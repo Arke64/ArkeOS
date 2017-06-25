@@ -1,5 +1,5 @@
 ﻿namespace ArkeOS.Tools.KohlCompiler.Syntax {
-    public abstract class StatementNode : SyntaxNode {
+    public abstract class StatementNode : ExpressionNode {
 
     }
 }

@@ -1,4 +1,8 @@
 func main() {
+	foo();
+
+	brk;
+
 	R0 = 0d0;
 
 	if (R0) {
@@ -73,4 +77,8 @@ func main() {
 	}
 
 	brk;
+}
+
+func foo() {
+	R15 = 0d1234;
 }
