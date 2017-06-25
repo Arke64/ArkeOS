@@ -36,7 +36,7 @@ namespace ArkeOS.Tools.KohlCompiler.Nodes {
         Binary,
     }
 
-    public class OperatorNode : Node {
+    public sealed class OperatorNode : Node {
         private static IReadOnlyDictionary<Operator, (int, bool)> Defs { get; } = new Dictionary<Operator, (int, bool)> {
             [Operator.OpenParenthesis] = (0, true),
             [Operator.CloseParenthesis] = (0, true),

@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
+
 namespace ArkeOS.Tools.KohlCompiler.Nodes {
-    public class StatementBlockNode : Node {
+    public sealed class StatementBlockNode : Node {
         private List<StatementNode> statements = new List<StatementNode>();
 
         public IReadOnlyList<StatementNode> Statements => this.statements;

@@ -1,5 +1,5 @@
 ﻿namespace ArkeOS.Tools.KohlCompiler.Nodes {
-    public class IntdStatementNode : IntrinsicStatementNode {
+    public sealed class IntdStatementNode : IntrinsicStatementNode {
 
     }
 }
