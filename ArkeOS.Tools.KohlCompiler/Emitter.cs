@@ -147,6 +147,7 @@ namespace ArkeOS.Tools.KohlCompiler {
                 case CasStatementNode n: {
                         if (n.ArgumentList.Extract(out var arg0, out var arg1, out var arg2)) {
                             this.Visit(arg2);
+
                             this.Emit(InstructionDefinition.CAS, this.ExtractLValue(arg0), this.ExtractLValue(arg1), Emitter.StackParam);
                         }
                         else {
@@ -171,40 +172,25 @@ namespace ArkeOS.Tools.KohlCompiler {
             }
         }
 
-        private void Visit(AssignmentStatementNode s) {
-            switch (s) {
-                case CompoundAssignmentStatementNode n: {
-                        var target = this.ExtractLValue(n.Target);
+        private void Visit(AssignmentStatementNode a) {
+            if (a is CompoundAssignmentStatementNode c)
+                a = new AssignmentStatementNode(a.Target, new BinaryExpressionNode(c.Target, c.Op, c.Expression));
 
-                        this.Visit(new BinaryExpressionNode(n.Target, n.Op, n.Expression));
+            var target = this.ExtractLValue(a.Target);
 
-                        this.Emit(InstructionDefinition.SET, target, Emitter.StackParam);
-                    }
+            if (a.Expression is RegisterNode rnode) {
+                this.Emit(InstructionDefinition.SET, target, Parameter.CreateRegister(rnode.Register));
+            }
+            else if (a.Expression is IntegerLiteralNode nnode) {
+                this.Emit(InstructionDefinition.SET, target, Parameter.CreateLiteral((ulong)nnode.Literal));
+            }
+            else if (a.Expression is BoolLiteralNode bnode) {
+                this.Emit(InstructionDefinition.SET, target, Parameter.CreateLiteral(bnode.Literal ? ulong.MaxValue : 0));
+            }
+            else {
+                this.Visit(a.Expression);
 
-                    break;
-
-                case AssignmentStatementNode n: {
-                        var target = this.ExtractLValue(n.Target);
-
-                        if (n.Expression is RegisterNode rnode) {
-                            this.Emit(InstructionDefinition.SET, target, Parameter.CreateRegister(rnode.Register));
-                        }
-                        else if (n.Expression is IntegerLiteralNode nnode) {
-                            this.Emit(InstructionDefinition.SET, target, Parameter.CreateLiteral((ulong)nnode.Literal));
-                        }
-                        else if (n.Expression is BoolLiteralNode bnode) {
-                            this.Emit(InstructionDefinition.SET, target, Parameter.CreateLiteral(bnode.Literal ? ulong.MaxValue : 0));
-                        }
-                        else {
-                            this.Visit(n.Expression);
-
-                            this.Emit(InstructionDefinition.SET, target, Emitter.StackParam);
-                        }
-                    }
-
-                    break;
-
-                default: Debug.Assert(false); break;
+                this.Emit(InstructionDefinition.SET, target, Emitter.StackParam);
             }
         }
 
@@ -239,7 +225,6 @@ namespace ArkeOS.Tools.KohlCompiler {
                         case Operator.LessThanOrEqual: def = InstructionDefinition.LTE; break;
                         case Operator.GreaterThan: def = InstructionDefinition.GT; break;
                         case Operator.GreaterThanOrEqual: def = InstructionDefinition.GTE; break;
-
                         default: Debug.Assert(false); break;
                     }
 
@@ -270,31 +255,16 @@ namespace ArkeOS.Tools.KohlCompiler {
 
         private void Visit(RValueNode rvalue) {
             switch (rvalue) {
-                case IntegerLiteralNode n:
-                    this.Emit(InstructionDefinition.SET, Emitter.StackParam, Parameter.CreateLiteral((ulong)n.Literal));
-
-                    break;
-
-                case BoolLiteralNode n:
-                    this.Emit(InstructionDefinition.SET, Emitter.StackParam, Parameter.CreateLiteral(n.Literal ? ulong.MaxValue : 0));
-                    break;
-
-                case LValueNode n:
-                    this.Visit(n);
-
-                    break;
-
+                case IntegerLiteralNode n: this.Emit(InstructionDefinition.SET, Emitter.StackParam, Parameter.CreateLiteral((ulong)n.Literal)); break;
+                case BoolLiteralNode n: this.Emit(InstructionDefinition.SET, Emitter.StackParam, Parameter.CreateLiteral(n.Literal ? ulong.MaxValue : 0)); break;
+                case LValueNode n: this.Visit(n); break;
                 default: Debug.Assert(false); break;
             }
         }
 
         private void Visit(LValueNode lvalue) {
             switch (lvalue) {
-                case RegisterNode n:
-                    this.Emit(InstructionDefinition.SET, Emitter.StackParam, Parameter.CreateRegister(n.Register));
-
-                    break;
-
+                case RegisterNode n: this.Emit(InstructionDefinition.SET, Emitter.StackParam, Parameter.CreateRegister(n.Register)); break;
                 default: Debug.Assert(false); break;
             }
         }
