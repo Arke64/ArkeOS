@@ -78,73 +78,80 @@ namespace ArkeOS.Tools.KohlCompiler.Nodes {
         };
 
         public Operator Operator { get; }
+        public OperatorClass Class { get; }
         public int Precedence { get; }
         public bool IsLeftAssociative { get; }
 
-        public OperatorNode(Operator op) => (this.Operator, (this.Precedence, this.IsLeftAssociative)) = (op, OperatorNode.Defs[op]);
+        private OperatorNode(Operator op, OperatorClass cls) => (this.Operator, this.Class, (this.Precedence, this.IsLeftAssociative)) = (op, cls, OperatorNode.Defs[op]);
 
-        public OperatorClass Class => (this.Operator == Operator.UnaryMinus || this.Operator == Operator.UnaryPlus || this.Operator == Operator.Not) ? OperatorClass.Unary : OperatorClass.Binary;
+        public static OperatorNode FromToken(Token token, OperatorClass cls) {
+            var op = default(Operator);
 
-        public static Operator? ConvertOperator(TokenType token, bool unary) {
-            if (!unary) {
-                switch (token) {
-                    case TokenType.Plus: return Operator.Addition;
-                    case TokenType.Minus: return Operator.Subtraction;
-                    case TokenType.Asterisk: return Operator.Multiplication;
-                    case TokenType.ForwardSlash: return Operator.Division;
-                    case TokenType.Percent: return Operator.Remainder;
-                    case TokenType.Caret: return Operator.Exponentiation;
-                    case TokenType.DoubleLessThan: return Operator.ShiftLeft;
-                    case TokenType.DoubleGreaterThan: return Operator.ShiftRight;
-                    case TokenType.TripleLessThan: return Operator.RotateLeft;
-                    case TokenType.TripleGreaterThan: return Operator.RotateRight;
-                    case TokenType.Ampersand: return Operator.And;
-                    case TokenType.Pipe: return Operator.Or;
-                    case TokenType.Tilde: return Operator.Xor;
-                    case TokenType.ExclamationPointAmpersand: return Operator.NotAnd;
-                    case TokenType.ExclamationPointPipe: return Operator.NotOr;
-                    case TokenType.ExclamationPointTilde: return Operator.NotXor;
-                    case TokenType.DoubleEqual: return Operator.Equals;
-                    case TokenType.ExclamationPointEqual: return Operator.NotEquals;
-                    case TokenType.LessThan: return Operator.LessThan;
-                    case TokenType.LessThanEqual: return Operator.LessThanOrEqual;
-                    case TokenType.GreaterThan: return Operator.GreaterThan;
-                    case TokenType.GreaterThanEqual: return Operator.GreaterThanOrEqual;
-                    case TokenType.OpenParenthesis: return Operator.OpenParenthesis;
-                    case TokenType.CloseParenthesis: return Operator.CloseParenthesis;
+            if (cls == OperatorClass.Binary) {
+                switch (token.Type) {
+                    case TokenType.Plus: op = Operator.Addition; break;
+                    case TokenType.Minus: op = Operator.Subtraction; break;
+                    case TokenType.Asterisk: op = Operator.Multiplication; break;
+                    case TokenType.ForwardSlash: op = Operator.Division; break;
+                    case TokenType.Percent: op = Operator.Remainder; break;
+                    case TokenType.Caret: op = Operator.Exponentiation; break;
+                    case TokenType.DoubleLessThan: op = Operator.ShiftLeft; break;
+                    case TokenType.DoubleGreaterThan: op = Operator.ShiftRight; break;
+                    case TokenType.TripleLessThan: op = Operator.RotateLeft; break;
+                    case TokenType.TripleGreaterThan: op = Operator.RotateRight; break;
+                    case TokenType.Ampersand: op = Operator.And; break;
+                    case TokenType.Pipe: op = Operator.Or; break;
+                    case TokenType.Tilde: op = Operator.Xor; break;
+                    case TokenType.ExclamationPointAmpersand: op = Operator.NotAnd; break;
+                    case TokenType.ExclamationPointPipe: op = Operator.NotOr; break;
+                    case TokenType.ExclamationPointTilde: op = Operator.NotXor; break;
+                    case TokenType.DoubleEqual: op = Operator.Equals; break;
+                    case TokenType.ExclamationPointEqual: op = Operator.NotEquals; break;
+                    case TokenType.LessThan: op = Operator.LessThan; break;
+                    case TokenType.LessThanEqual: op = Operator.LessThanOrEqual; break;
+                    case TokenType.GreaterThan: op = Operator.GreaterThan; break;
+                    case TokenType.GreaterThanEqual: op = Operator.GreaterThanOrEqual; break;
+                    case TokenType.OpenParenthesis: op = Operator.OpenParenthesis; break;
+                    case TokenType.CloseParenthesis: op = Operator.CloseParenthesis; break;
                     default: return null;
                 }
             }
             else {
-                switch (token) {
-                    case TokenType.Plus: return Operator.UnaryPlus;
-                    case TokenType.Minus: return Operator.UnaryMinus;
-                    case TokenType.ExclamationPoint: return Operator.Not;
+                switch (token.Type) {
+                    case TokenType.Plus: op = Operator.UnaryPlus; break;
+                    case TokenType.Minus: op = Operator.UnaryMinus; break;
+                    case TokenType.ExclamationPoint: op = Operator.Not; break;
                     default: return null;
                 }
             }
+
+            return new OperatorNode(op, cls);
         }
 
-        public static Operator? ConvertCompoundOperator(TokenType token) {
-            switch (token) {
-                case TokenType.PlusEqual: return Operator.Addition;
-                case TokenType.MinusEqual: return Operator.Subtraction;
-                case TokenType.AsteriskEqual: return Operator.Multiplication;
-                case TokenType.ForwardSlashEqual: return Operator.Division;
-                case TokenType.PercentEqual: return Operator.Remainder;
-                case TokenType.CaretEqual: return Operator.Exponentiation;
-                case TokenType.DoubleLessThanEqual: return Operator.ShiftLeft;
-                case TokenType.DoubleGreaterThanEqual: return Operator.ShiftRight;
-                case TokenType.TripleLessThanEqual: return Operator.RotateLeft;
-                case TokenType.TripleGreaterThanEqual: return Operator.RotateRight;
-                case TokenType.AmpersandEqual: return Operator.And;
-                case TokenType.PipeEqual: return Operator.Or;
-                case TokenType.TildeEqual: return Operator.Xor;
-                case TokenType.ExclamationPointAmpersandEqual: return Operator.NotAnd;
-                case TokenType.ExclamationPointPipeEqual: return Operator.NotOr;
-                case TokenType.ExclamationPointTildeEqual: return Operator.NotXor;
+        public static OperatorNode FromCompoundToken(Token token) {
+            var op = default(Operator);
+
+            switch (token.Type) {
+                case TokenType.PlusEqual: op = Operator.Addition; break;
+                case TokenType.MinusEqual: op = Operator.Subtraction; break;
+                case TokenType.AsteriskEqual: op = Operator.Multiplication; break;
+                case TokenType.ForwardSlashEqual: op = Operator.Division; break;
+                case TokenType.PercentEqual: op = Operator.Remainder; break;
+                case TokenType.CaretEqual: op = Operator.Exponentiation; break;
+                case TokenType.DoubleLessThanEqual: op = Operator.ShiftLeft; break;
+                case TokenType.DoubleGreaterThanEqual: op = Operator.ShiftRight; break;
+                case TokenType.TripleLessThanEqual: op = Operator.RotateLeft; break;
+                case TokenType.TripleGreaterThanEqual: op = Operator.RotateRight; break;
+                case TokenType.AmpersandEqual: op = Operator.And; break;
+                case TokenType.PipeEqual: op = Operator.Or; break;
+                case TokenType.TildeEqual: op = Operator.Xor; break;
+                case TokenType.ExclamationPointAmpersandEqual: op = Operator.NotAnd; break;
+                case TokenType.ExclamationPointPipeEqual: op = Operator.NotOr; break;
+                case TokenType.ExclamationPointTildeEqual: op = Operator.NotXor; break;
                 default: return null;
             }
+
+            return new OperatorNode(op, OperatorClass.Binary);
         }
     }
 }

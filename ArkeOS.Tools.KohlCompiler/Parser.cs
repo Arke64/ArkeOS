@@ -73,7 +73,7 @@ namespace ArkeOS.Tools.KohlCompiler {
             var op = this.lexer.Read(TokenClass.Assignment);
             var exp = this.ReadExpression();
 
-            return op.Type == TokenType.Equal ? new AssignmentStatementNode(target, exp) : new CompoundAssignmentStatementNode(target, new OperatorNode(OperatorNode.ConvertCompoundOperator(op.Type) ?? throw this.GetUnexpectedException(op.Type)), exp);
+            return op.Type == TokenType.Equal ? new AssignmentStatementNode(target, exp) : new CompoundAssignmentStatementNode(target, OperatorNode.FromCompoundToken(op) ?? throw this.GetUnexpectedException(op.Type), exp);
         }
 
         private IfStatementNode ReadIfStatement() {
@@ -120,11 +120,11 @@ namespace ArkeOS.Tools.KohlCompiler {
                     if (--seenOpenParens < 0)
                         break;
 
-                    stack.Push(this.ReadOperator(false), this.lexer.CurrentPosition);
+                    stack.Push(this.ReadOperator(OperatorClass.Binary), this.lexer.CurrentPosition);
                     start = false;
                 }
                 else if (tok.Class == TokenClass.Operator) {
-                    stack.Push(this.ReadOperator(start && tok.Type != TokenType.OpenParenthesis), this.lexer.CurrentPosition);
+                    stack.Push(this.ReadOperator(start && tok.Type != TokenType.OpenParenthesis ? OperatorClass.Unary : OperatorClass.Binary), this.lexer.CurrentPosition);
                     start = true;
                 }
                 else {
@@ -135,10 +135,10 @@ namespace ArkeOS.Tools.KohlCompiler {
             return stack.ToNode() ?? throw this.GetExpectedException("expression");
         }
 
-        private OperatorNode ReadOperator(bool unary) {
+        private OperatorNode ReadOperator(OperatorClass cls) {
             var token = this.lexer.Read(TokenClass.Operator);
 
-            return new OperatorNode(OperatorNode.ConvertOperator(token.Type, unary) ?? throw this.GetUnexpectedException(token.Type));
+            return OperatorNode.FromToken(token, cls) ?? throw this.GetUnexpectedException(token.Type);
         }
 
         private RValueNode ReadRValue() {
