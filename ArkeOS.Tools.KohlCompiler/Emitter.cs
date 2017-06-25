@@ -42,17 +42,6 @@ namespace ArkeOS.Tools.KohlCompiler {
         private void Emit(InstructionDefinition def, params Parameter[] parameters) => this.instructions.Add(new Instruction(def, parameters));
         private void Emit(InstructionDefinition def, Parameter conditional, InstructionConditionalType conditionalType, params Parameter[] parameters) => this.instructions.Add(new Instruction(def, parameters, conditional, conditionalType));
 
-        private void EmitConditional(StatementBlockNode block) {
-            var start = this.instructions.Count;
-            var len = Parameter.CreateLiteral(0, ParameterFlags.RIPRelative);
-
-            this.Emit(InstructionDefinition.SET, Emitter.StackParam, InstructionConditionalType.WhenZero, Parameter.CreateRegister(Register.RIP), len);
-
-            this.Visit(block);
-
-            len.Literal = (ulong)this.instructions.Skip(start).Sum(i => i.Length);
-        }
-
         private Parameter ExtractLValue(ExpressionNode expr) {
             if (expr is LValueNode lvalue) {
                 switch (lvalue) {
@@ -80,11 +69,21 @@ namespace ArkeOS.Tools.KohlCompiler {
         }
 
         private void Visit(BlockStatementNode s) {
-            switch (s) {
-                case IfStatementNode n:
-                    this.Visit(n.Expression);
+            ulong dist(int startInst) => (ulong)this.instructions.Skip(startInst).Sum(i => i.Length);
 
-                    this.EmitConditional(n.StatementBlock);
+            switch (s) {
+                case IfStatementNode n: {
+                        this.Visit(n.Expression);
+
+                        var blockStart = this.instructions.Count;
+                        var len = Parameter.CreateLiteral(0, ParameterFlags.RIPRelative);
+
+                        this.Emit(InstructionDefinition.SET, Emitter.StackParam, InstructionConditionalType.WhenZero, Parameter.CreateRegister(Register.RIP), len);
+
+                        this.Visit(n.StatementBlock);
+
+                        len.Literal = dist(blockStart);
+                    }
 
                     break;
 
