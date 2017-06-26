@@ -66,13 +66,16 @@ namespace ArkeOS.Tools.KohlCompiler {
             this.Emit(InstructionDefinition.HLT);
         }
 
-        private void DiscoverVariableAddresses(ProgramDeclarationNode n) {
-            foreach (var s in n.VariableDeclarations.Items) {
-                if (this.variableAddresses.ContainsKey(s.Identifier))
-                    throw new AlreadyDefinedException(default(PositionInfo), s.Identifier);
+        private void SetVariableAddress(VariableDeclarationNode v) {
+            if (this.variableAddresses.ContainsKey(v.Identifier))
+                throw new AlreadyDefinedException(default(PositionInfo), v.Identifier);
 
-                this.variableAddresses[s.Identifier] = this.nextVariableAddress++;
-            }
+            this.variableAddresses[v.Identifier] = this.nextVariableAddress++;
+        }
+
+        private void DiscoverVariableAddresses(ProgramDeclarationNode n) {
+            foreach (var s in n.VariableDeclarations.Items)
+                this.SetVariableAddress(s);
         }
 
         private void DiscoverFunctionAddresses(ProgramDeclarationNode n) {
@@ -123,8 +126,12 @@ namespace ArkeOS.Tools.KohlCompiler {
         }
 
         private void Visit(StatementBlockNode n) {
-            foreach (var s in n.Items)
+            foreach (var s in n.Statements.Items)
                 this.Visit(s);
+
+            if (!this.throwOnNoFunction)
+                foreach (var s in n.VariableDeclarations.Items)
+                    this.SetVariableAddress(s);
         }
 
         private void Visit(StatementNode s) {

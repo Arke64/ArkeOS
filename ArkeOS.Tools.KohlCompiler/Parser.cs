@@ -45,11 +45,17 @@ namespace ArkeOS.Tools.KohlCompiler {
             var block = new StatementBlockNode();
 
             if (this.lexer.TryRead(TokenType.OpenCurlyBrace)) {
-                while (!this.lexer.TryRead(TokenType.CloseCurlyBrace))
-                    block.Add(this.ReadStatement());
+                while (!this.lexer.TryRead(TokenType.CloseCurlyBrace)) {
+                    if (this.lexer.TryPeek(TokenType.VarKeyword)) {
+                        block.VariableDeclarations.Add(this.ReadVariableDeclaration());
+                    }
+                    else {
+                        block.Statements.Add(this.ReadStatement());
+                    }
+                }
             }
             else {
-                block.Add(this.ReadStatement());
+                block.Statements.Add(this.ReadStatement());
             }
 
             return block;

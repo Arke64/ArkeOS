@@ -2,9 +2,29 @@ var var1;
 var var2;
 
 func main() {
+	var lvar1;
+	var lvar2;
+
+	lvar1 = 0d987;
+	lvar2 = lvar1;
+	R0 = lvar2;
+
+	brk;
+
 	var1 = 0d5678;
 	var2 = var1;
 	R0 = var2;
+
+	brk;
+
+	if (true) {
+		var ivar1;
+		var ivar2;
+
+		ivar1 = 0d222;
+		ivar2 = ivar1;
+		R0 = ivar2;
+	}
 
 	brk;
 
