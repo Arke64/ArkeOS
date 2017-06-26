@@ -12,8 +12,13 @@ namespace ArkeOS.Tools.KohlCompiler {
         public ProgramDeclarationNode Parse() {
             var prog = new ProgramDeclarationNode();
 
-            while (this.lexer.TryPeek(out _))
-                prog.Add(this.ReadFunctionDeclaration());
+            while (this.lexer.TryPeek(out var tok)) {
+                switch (tok.Type) {
+                    case TokenType.FuncKeyword: prog.FunctionDeclarations.Add(this.ReadFunctionDeclaration()); break;
+                    case TokenType.VarKeyword: prog.VariableDeclarations.Add(this.ReadVariableDeclaration()); break;
+                    default: throw this.GetUnexpectedException(tok.Type);
+                }
+            }
 
             return prog;
         }
@@ -26,6 +31,14 @@ namespace ArkeOS.Tools.KohlCompiler {
             var block = this.ReadStatementBlock();
 
             return new FunctionDeclarationNode(ident, block);
+        }
+
+        private VariableDeclarationNode ReadVariableDeclaration() {
+            this.lexer.Read(TokenType.VarKeyword);
+            var ident = this.lexer.Read(TokenType.Identifier);
+            this.lexer.Read(TokenType.Semicolon);
+
+            return new VariableDeclarationNode(ident);
         }
 
         private StatementBlockNode ReadStatementBlock() {
@@ -91,10 +104,7 @@ namespace ArkeOS.Tools.KohlCompiler {
                 return new FunctionCallIdentifierNode(tok);
             }
             else {
-                if (!tok.Value.IsValidEnum<Register>())
-                    throw new IdentifierNotFoundException(this.lexer.CurrentPosition, "Invalid register.");
-
-                return new RegisterIdentifierNode(tok);
+                return tok.Value.IsValidEnum<Register>() ? new RegisterIdentifierNode(tok) : (IdentifierExpressionNode)new VariableIdentifierNode(tok);
             }
         }
 

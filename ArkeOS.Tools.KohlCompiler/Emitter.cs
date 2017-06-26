@@ -14,8 +14,10 @@ namespace ArkeOS.Tools.KohlCompiler {
         private readonly bool emitAssemblyListing;
         private readonly bool emitBootable;
         private readonly string outputFile;
-        private List<Instruction> instructions;
+        private ulong nextVariableAddress;
         private Dictionary<string, ulong> functionAddresses;
+        private Dictionary<string, ulong> variableAddresses;
+        private List<Instruction> instructions;
         private bool throwOnNoFunction;
 
         public Emitter(ProgramDeclarationNode tree, bool emitAssemblyListing, bool emitBootable, string outputFile) => (this.tree, this.emitAssemblyListing, this.emitBootable, this.outputFile) = (tree, emitAssemblyListing, emitBootable, outputFile);
@@ -24,11 +26,15 @@ namespace ArkeOS.Tools.KohlCompiler {
 
         public void Emit() {
             this.functionAddresses = new Dictionary<string, ulong>();
+            this.variableAddresses = new Dictionary<string, ulong>();
+            this.nextVariableAddress = 0UL;
+
             this.instructions = new List<Instruction>();
             this.throwOnNoFunction = false;
 
+            this.DiscoverVariableAddresses(this.tree);
             this.EmitHeader();
-            this.DiscoverAddresses(this.tree);
+            this.DiscoverFunctionAddresses(this.tree);
 
             this.instructions.Clear();
             this.throwOnNoFunction = true;
@@ -56,12 +62,21 @@ namespace ArkeOS.Tools.KohlCompiler {
             this.Emit(InstructionDefinition.BRK);
             this.Emit(InstructionDefinition.SET, Parameter.CreateRegister(Register.RSP), Parameter.CreateLiteral(0x1_0000));
 
-            this.Emit(InstructionDefinition.CALL, this.GetAddress("main"));
+            this.Emit(InstructionDefinition.CALL, this.GetFunctionAddress("main"));
             this.Emit(InstructionDefinition.HLT);
         }
 
-        private void DiscoverAddresses(ProgramDeclarationNode n) {
-            foreach (var s in n.Items) {
+        private void DiscoverVariableAddresses(ProgramDeclarationNode n) {
+            foreach (var s in n.VariableDeclarations.Items) {
+                if (this.variableAddresses.ContainsKey(s.Identifier))
+                    throw new AlreadyDefinedException(default(PositionInfo), s.Identifier);
+
+                this.variableAddresses[s.Identifier] = this.nextVariableAddress++;
+            }
+        }
+
+        private void DiscoverFunctionAddresses(ProgramDeclarationNode n) {
+            foreach (var s in n.FunctionDeclarations.Items) {
                 if (this.functionAddresses.ContainsKey(s.Identifier))
                     throw new AlreadyDefinedException(default(PositionInfo), s.Identifier);
 
@@ -71,7 +86,14 @@ namespace ArkeOS.Tools.KohlCompiler {
             }
         }
 
-        private Parameter GetAddress(string func) {
+        private Parameter GetVariableAddress(string func) {
+            if (!this.variableAddresses.TryGetValue(func, out var addr) && this.throwOnNoFunction)
+                throw new IdentifierNotFoundException(default(PositionInfo), func);
+
+            return Parameter.CreateLiteral(addr, ParameterFlags.Indirect);
+        }
+
+        private Parameter GetFunctionAddress(string func) {
             if (!this.functionAddresses.TryGetValue(func, out var addr) && this.throwOnNoFunction)
                 throw new IdentifierNotFoundException(default(PositionInfo), func);
 
@@ -84,12 +106,13 @@ namespace ArkeOS.Tools.KohlCompiler {
         private Parameter ExtractLValue(ExpressionStatementNode expr) {
             switch (expr) {
                 case RegisterIdentifierNode n: return Parameter.CreateRegister(n.Register);
+                case VariableIdentifierNode n: return this.GetVariableAddress(n.Identifier);
                 default: throw new ExpectedException(default(PositionInfo), "value");
             }
         }
 
         private void Visit(ProgramDeclarationNode n) {
-            foreach (var s in n.Items)
+            foreach (var s in n.FunctionDeclarations.Items)
                 this.Visit(s);
         }
 
@@ -245,6 +268,9 @@ namespace ArkeOS.Tools.KohlCompiler {
             if (a.Expression is RegisterIdentifierNode rnode) {
                 this.Emit(InstructionDefinition.SET, target, Parameter.CreateRegister(rnode.Register));
             }
+            else if (a.Expression is VariableIdentifierNode vnode) {
+                this.Emit(InstructionDefinition.SET, target, this.GetVariableAddress(vnode.Identifier));
+            }
             else if (a.Expression is IntegerLiteralNode nnode) {
                 this.Emit(InstructionDefinition.SET, target, Parameter.CreateLiteral(nnode.Literal));
             }
@@ -317,7 +343,8 @@ namespace ArkeOS.Tools.KohlCompiler {
         private void Visit(IdentifierExpressionNode i) {
             switch (i) {
                 case RegisterIdentifierNode n: this.Emit(InstructionDefinition.SET, Emitter.StackParam, Parameter.CreateRegister(n.Register)); break;
-                case FunctionCallIdentifierNode n: this.Emit(InstructionDefinition.CALL, this.GetAddress(n.Identifier)); break;
+                case VariableIdentifierNode n: this.Emit(InstructionDefinition.SET, Emitter.StackParam, this.GetVariableAddress(n.Identifier)); break;
+                case FunctionCallIdentifierNode n: this.Emit(InstructionDefinition.CALL, this.GetFunctionAddress(n.Identifier)); break;
                 default: Debug.Assert(false); break;
             }
         }

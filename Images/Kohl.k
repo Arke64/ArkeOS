@@ -1,4 +1,13 @@
+var var1;
+var var2;
+
 func main() {
+	var1 = 0d5678;
+	var2 = var1;
+	R0 = var2;
+
+	brk;
+
 	foo();
 
 	brk;

@@ -15,6 +15,7 @@ namespace ArkeOS.Tools.KohlCompiler {
         ElseKeyword,
         WhileKeyword,
         FuncKeyword,
+        VarKeyword,
 
         DbgKeyword,
         BrkKeyword,
@@ -180,6 +181,7 @@ namespace ArkeOS.Tools.KohlCompiler {
                         case TokenType.ElseKeyword:
                         case TokenType.WhileKeyword:
                         case TokenType.FuncKeyword:
+                        case TokenType.VarKeyword:
                             this.tokenClass = TokenClass.BlockKeyword;
                             break;
 
