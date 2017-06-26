@@ -239,45 +239,63 @@ namespace ArkeOS.Tools.Assembler {
                 var scale = parts.Length > 2 ? new Parameter.Calculated(parts[2][0] != '-', this.ParseParameter(parts[2].TrimStart('-'), resolveNames)) : null;
                 var offset = parts.Length > 3 ? new Parameter.Calculated(parts[3][0] != '-', this.ParseParameter(parts[3].TrimStart('-'), resolveNames)) : null;
 
-                return this.ReduceCalculated(Parameter.CreateCalculated(@base, index, scale, offset, isIndirect, false));
+                return this.ReduceCalculated(Parameter.CreateCalculated(@base, index, scale, offset, isIndirect, ParameterRelativeTo.None));
+            }
+            else if (value[0] == '{') {
+                value = value.Substring(1, value.Length - 2);
+                var res = this.ParseParameter(value, resolveNames);
+                res.RelativeTo = ParameterRelativeTo.RIP;
+                return res;
+            }
+            else if (value[0] == '<') {
+                value = value.Substring(1, value.Length - 2);
+                var res = this.ParseParameter(value, resolveNames);
+                res.RelativeTo = ParameterRelativeTo.RSP;
+                return res;
+            }
+            else if (value[0] == '\\') {
+                value = value.Substring(1, value.Length - 2);
+                var res = this.ParseParameter(value, resolveNames);
+                res.RelativeTo = ParameterRelativeTo.R0;
+                return res;
             }
             else if (value[0] == '0') {
-                return Parameter.CreateLiteral(Helpers.ParseLiteral(value), isIndirect, false);
+                return Parameter.CreateLiteral(Helpers.ParseLiteral(value), isIndirect, ParameterRelativeTo.None);
             }
             else if (value[0] == 'R') {
-                return Parameter.CreateRegister(Helpers.ParseEnum<Register>(value), isIndirect, false);
+                return Parameter.CreateRegister(Helpers.ParseEnum<Register>(value), isIndirect, ParameterRelativeTo.None);
             }
             else if (value == "S") {
-                return Parameter.CreateStack(isIndirect, false);
+                return Parameter.CreateStack(isIndirect, ParameterRelativeTo.None);
             }
             else if (value[0] == '$') {
                 value = value.Substring(1);
 
                 if (value == "Offset") {
-                    return Parameter.CreateLiteral(this.currentOffset, isIndirect, false);
+                    return Parameter.CreateLiteral(this.currentOffset, isIndirect, ParameterRelativeTo.None);
                 }
                 else if (this.defines.ContainsKey(value)) {
                     var literal = this.defines[value];
 
                     if (literal > 1 && literal != ulong.MaxValue) {
-                        return Parameter.CreateLiteral(literal, isIndirect, false);
+                        return Parameter.CreateLiteral(literal, isIndirect, ParameterRelativeTo.None);
                     }
                     else {
-                        return Parameter.CreateRegister(literal == 0 ? Register.RZERO : (literal == 1 ? Register.RONE : Register.RMAX), isIndirect, false);
+                        return Parameter.CreateRegister(literal == 0 ? Register.RZERO : (literal == 1 ? Register.RONE : Register.RMAX), isIndirect, ParameterRelativeTo.None);
                     }
                 }
 
                 if (!resolveNames)
-                    return Parameter.CreateLiteral(0, isIndirect, false);
+                    return Parameter.CreateLiteral(0, isIndirect, ParameterRelativeTo.None);
 
                 if (this.variables.ContainsKey(value)) {
-                    return Parameter.CreateLiteral(unchecked(this.variables[value] - this.currentOffset), isIndirect, true);
+                    return Parameter.CreateLiteral(unchecked(this.variables[value] - this.currentOffset), isIndirect, ParameterRelativeTo.RIP);
                 }
                 else if (this.strings.ContainsKey(value)) {
-                    return Parameter.CreateLiteral(unchecked(this.strings[value] - this.currentOffset), isIndirect, true);
+                    return Parameter.CreateLiteral(unchecked(this.strings[value] - this.currentOffset), isIndirect, ParameterRelativeTo.RIP);
                 }
                 else if (this.labels.ContainsKey(value)) {
-                    return Parameter.CreateLiteral(unchecked(this.labels[value] - this.currentOffset), isIndirect, true);
+                    return Parameter.CreateLiteral(unchecked(this.labels[value] - this.currentOffset), isIndirect, ParameterRelativeTo.RIP);
                 }
 
                 throw new VariableNotFoundException(value);
@@ -320,7 +338,7 @@ namespace ArkeOS.Tools.Assembler {
                 }
             }
 
-            return Parameter.CreateLiteral(value, calculated.IsIndirect, calculated.IsRIPRelative);
+            return Parameter.CreateLiteral(value, calculated.IsIndirect, calculated.RelativeTo);
         }
     }
 }

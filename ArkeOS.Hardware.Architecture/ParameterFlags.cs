@@ -3,8 +3,10 @@
 namespace ArkeOS.Hardware.Architecture {
     [Flags]
     public enum ParameterFlags {
-        None = 0b00,
-        Indirect = 0b01,
-        RIPRelative = 0b10,
+        None = 0b000,
+        Indirect = 0b001,
+        RelativeToRIP = 1 << 1,
+        RelativeToRSP = 2 << 1,
+        RelativeToR0 = 3 << 1,
     }
 }

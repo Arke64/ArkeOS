@@ -81,8 +81,8 @@ namespace ArkeOS.Hardware.Architecture {
 
         private Parameter DecodeParameter(IWordStream stream, ref ulong address, BitStream bits) {
             var para = new Parameter() {
-                IsRIPRelative = bits.ReadU1(),
                 IsIndirect = bits.ReadU1(),
+                RelativeTo = (ParameterRelativeTo)bits.ReadU8(2),
                 Type = (ParameterType)bits.ReadU8(2),
                 Register = (Register)bits.ReadU8(5)
             };
@@ -136,8 +136,8 @@ namespace ArkeOS.Hardware.Architecture {
         }
 
         private void EncodeParameter(BinaryWriter writer, BitStream bits, Parameter parameter) {
-            bits.Write(parameter.IsRIPRelative);
             bits.Write(parameter.IsIndirect);
+            bits.Write((byte)parameter.RelativeTo, 2);
             bits.Write((byte)parameter.Type, 2);
             bits.Write((byte)parameter.Register, 5);
 

@@ -38,19 +38,19 @@ Each instruction begins with one word. Calculated and literal values are embedde
 Base
 ----
 - 8b Code
-- 27b Parameters (3x9b parameter info)
-- 11b Conditional (1b is enabled, 1b when non-zero, 9b parameter info)
-- 18b Reserved
+- 30b Parameters (3x10b parameter info)
+- 12b Conditional (1b is enabled, 1b when non-zero, 10b parameter info)
+- 14b Reserved
 
 Calculated Parameter
 --------------------
-- 40b Parameters (4x10b: 1b is positive, 9b parameter info; format of [base + index * scale + offset])
-- 24b Reserved
+- 44b Parameters (4x10b: 1b is positive, 10b parameter info; format of [base + index * scale + offset])
+- 20b Reserved
 
 Parameter Info
 --------------
-- 1b is RIP relative (before indirection)
 - 1b is indirect
+- 2b relative (0 = none, 1 = RIP, 2 = RSP, 3 = R0; before indirection)
 - 2b type (0 = calculated, 1 = register, 2 = literal, 3 = stack)
 - 5b register
 

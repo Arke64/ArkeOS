@@ -201,8 +201,11 @@ namespace ArkeOS.Hardware.ArkeIndustries {
                 case ParameterType.Calculated: value = this.GetCalculatedValue(parameter); break;
             }
 
-            if (parameter.IsRIPRelative)
-                value += this.executingAddress;
+            switch (parameter.RelativeTo) {
+                case ParameterRelativeTo.RIP: value += this.executingAddress; break;
+                case ParameterRelativeTo.RSP: value += this.ReadRegister(Register.RSP); break;
+                case ParameterRelativeTo.R0: value += this.ReadRegister(Register.R0); break;
+            }
 
             if (parameter.IsIndirect)
                 value = this.BusController.ReadWord(value);
@@ -231,8 +234,11 @@ namespace ArkeOS.Hardware.ArkeIndustries {
                     case ParameterType.Calculated: address = this.GetCalculatedValue(parameter); break;
                 }
 
-                if (parameter.IsRIPRelative)
-                    address += this.executingAddress;
+                switch (parameter.RelativeTo) {
+                    case ParameterRelativeTo.RIP: address += this.executingAddress; break;
+                    case ParameterRelativeTo.RSP: address += this.ReadRegister(Register.RSP); break;
+                    case ParameterRelativeTo.R0: address += this.ReadRegister(Register.R0); break;
+                }
 
                 this.BusController.WriteWord(address, value);
             }

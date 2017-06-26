@@ -16,7 +16,7 @@ namespace ArkeOS.Hardware.Architecture {
         public Register Register { get; set; }
         public ulong Literal { get; set; }
         public bool IsIndirect { get; set; }
-        public bool IsRIPRelative { get; set; }
+        public ParameterRelativeTo RelativeTo { get; set; }
 
         public Calculated Base { get; set; }
         public Calculated Index { get; set; }
@@ -42,39 +42,39 @@ namespace ArkeOS.Hardware.Architecture {
         public static Parameter CreateLiteral(ulong literal) => Parameter.CreateLiteral(literal, ParameterFlags.None);
         public static Parameter CreateCalculated(Calculated @base, Calculated index, Calculated scale, Calculated offset) => Parameter.CreateCalculated(@base, index, scale, offset, ParameterFlags.None);
 
-        public static Parameter CreateStack(ParameterFlags flags) => Parameter.CreateStack((flags & ParameterFlags.Indirect) != 0, (flags & ParameterFlags.RIPRelative) != 0);
-        public static Parameter CreateRegister(Register register, ParameterFlags flags) => Parameter.CreateRegister(register, (flags & ParameterFlags.Indirect) != 0, (flags & ParameterFlags.RIPRelative) != 0);
-        public static Parameter CreateLiteral(ulong literal, ParameterFlags flags) => Parameter.CreateLiteral(literal, (flags & ParameterFlags.Indirect) != 0, (flags & ParameterFlags.RIPRelative) != 0);
-        public static Parameter CreateCalculated(Calculated @base, Calculated index, Calculated scale, Calculated offset, ParameterFlags flags) => Parameter.CreateCalculated(@base, index, scale, offset, (flags & ParameterFlags.Indirect) != 0, (flags & ParameterFlags.RIPRelative) != 0);
+        public static Parameter CreateStack(ParameterFlags flags) => Parameter.CreateStack((flags & ParameterFlags.Indirect) != 0, (ParameterRelativeTo)((byte)flags >> 1));
+        public static Parameter CreateRegister(Register register, ParameterFlags flags) => Parameter.CreateRegister(register, (flags & ParameterFlags.Indirect) != 0, (ParameterRelativeTo)((byte)flags >> 1));
+        public static Parameter CreateLiteral(ulong literal, ParameterFlags flags) => Parameter.CreateLiteral(literal, (flags & ParameterFlags.Indirect) != 0, (ParameterRelativeTo)((byte)flags >> 1));
+        public static Parameter CreateCalculated(Calculated @base, Calculated index, Calculated scale, Calculated offset, ParameterFlags flags) => Parameter.CreateCalculated(@base, index, scale, offset, (flags & ParameterFlags.Indirect) != 0, (ParameterRelativeTo)((byte)flags >> 1));
 
-        public static Parameter CreateStack(bool isIndirect, bool isRIPRelative) => new Parameter() {
+        public static Parameter CreateStack(bool isIndirect, ParameterRelativeTo relativeTo) => new Parameter() {
             IsIndirect = isIndirect,
-            IsRIPRelative = isRIPRelative,
+            RelativeTo = relativeTo,
             Type = ParameterType.Stack,
         };
 
-        public static Parameter CreateRegister(Register register, bool isIndirect, bool isRIPRelative) => new Parameter() {
+        public static Parameter CreateRegister(Register register, bool isIndirect, ParameterRelativeTo relativeTo) => new Parameter() {
             IsIndirect = isIndirect,
-            IsRIPRelative = isRIPRelative,
+            RelativeTo = relativeTo,
             Type = ParameterType.Register,
             Register = register,
         };
 
-        public static Parameter CreateLiteral(ulong literal, bool isIndirect, bool isRIPRelative) => new Parameter() {
+        public static Parameter CreateLiteral(ulong literal, bool isIndirect, ParameterRelativeTo relativeTo) => new Parameter() {
             IsIndirect = isIndirect,
-            IsRIPRelative = isRIPRelative,
+            RelativeTo = relativeTo,
             Type = ParameterType.Literal,
             Literal = literal,
         };
 
-        public static Parameter CreateCalculated(Calculated @base, Calculated index, Calculated scale, Calculated offset, bool isIndirect, bool isRIPRelative) => new Parameter() {
+        public static Parameter CreateCalculated(Calculated @base, Calculated index, Calculated scale, Calculated offset, bool isIndirect, ParameterRelativeTo relativeTo) => new Parameter() {
             Base = @base,
             Index = index,
             Scale = scale,
             Offset = offset,
 
             IsIndirect = isIndirect,
-            IsRIPRelative = isRIPRelative,
+            RelativeTo = relativeTo,
             Type = ParameterType.Calculated,
         };
 
@@ -99,7 +99,11 @@ namespace ArkeOS.Hardware.Architecture {
                     break;
             }
 
-            str = this.IsRIPRelative ? "{" + str + "}" : str;
+            switch (this.RelativeTo) {
+                case ParameterRelativeTo.RIP: str = "{" + str + "}"; break;
+                case ParameterRelativeTo.RSP: str = "<" + str + ">"; break;
+                case ParameterRelativeTo.R0: str = "\\" + str + "/"; break;
+            }
 
             return this.IsIndirect ? "[" + str + "]" : str;
         }

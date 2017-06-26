@@ -75,7 +75,7 @@ namespace ArkeOS.Tools.KohlCompiler {
             if (!this.functionAddresses.TryGetValue(func, out var addr) && this.throwOnNoFunction)
                 throw new IdentifierNotFoundException(default(PositionInfo), func);
 
-            return Parameter.CreateLiteral(addr - this.DistanceFrom(0), ParameterFlags.RIPRelative);
+            return Parameter.CreateLiteral(addr - this.DistanceFrom(0), ParameterFlags.RelativeToRIP);
         }
 
         private void Emit(InstructionDefinition def, params Parameter[] parameters) => this.instructions.Add(new Instruction(def, parameters));
@@ -198,14 +198,14 @@ namespace ArkeOS.Tools.KohlCompiler {
             this.Visit(i.Expression);
 
             var ifStart = this.instructions.Count;
-            var ifLen = Parameter.CreateLiteral(0, ParameterFlags.RIPRelative);
+            var ifLen = Parameter.CreateLiteral(0, ParameterFlags.RelativeToRIP);
             this.Emit(InstructionDefinition.SET, Emitter.StackParam, InstructionConditionalType.WhenZero, Parameter.CreateRegister(Register.RIP), ifLen);
 
             this.Visit(i.StatementBlock);
 
             if (i is IfElseStatementNode ie) {
                 var elseStart = this.instructions.Count;
-                var elseLen = Parameter.CreateLiteral(0, ParameterFlags.RIPRelative);
+                var elseLen = Parameter.CreateLiteral(0, ParameterFlags.RelativeToRIP);
                 this.Emit(InstructionDefinition.SET, Parameter.CreateRegister(Register.RIP), elseLen);
 
                 ifLen.Literal = this.DistanceFrom(ifStart);
@@ -225,12 +225,12 @@ namespace ArkeOS.Tools.KohlCompiler {
             this.Visit(w.Expression);
 
             var blockStart = this.instructions.Count;
-            var blockLen = Parameter.CreateLiteral(0, ParameterFlags.RIPRelative);
+            var blockLen = Parameter.CreateLiteral(0, ParameterFlags.RelativeToRIP);
             this.Emit(InstructionDefinition.SET, Emitter.StackParam, InstructionConditionalType.WhenZero, Parameter.CreateRegister(Register.RIP), blockLen);
 
             this.Visit(w.StatementBlock);
 
-            var nodeLen = Parameter.CreateLiteral((ulong)-(long)this.DistanceFrom(nodeStart), ParameterFlags.RIPRelative);
+            var nodeLen = Parameter.CreateLiteral((ulong)-(long)this.DistanceFrom(nodeStart), ParameterFlags.RelativeToRIP);
             this.Emit(InstructionDefinition.SET, Parameter.CreateRegister(Register.RIP), nodeLen);
 
             blockLen.Literal = this.DistanceFrom(blockStart);
