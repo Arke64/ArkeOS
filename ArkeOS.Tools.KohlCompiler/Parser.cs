@@ -107,8 +107,11 @@ namespace ArkeOS.Tools.KohlCompiler {
 
                     res = op.Type == TokenType.Equal ? new AssignmentStatementNode(lhs, rhs) : new CompoundAssignmentStatementNode(lhs, OperatorNode.FromCompoundToken(op) ?? throw this.GetUnexpectedException(op.Type), rhs);
                 }
-                else {
+                else if (lhs is FunctionCallIdentifierNode) {
                     res = lhs;
+                }
+                else {
+                    throw this.GetExpectedException("statement");
                 }
 
                 this.lexer.Read(TokenType.Semicolon);

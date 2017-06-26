@@ -148,6 +148,7 @@ namespace ArkeOS.Tools.KohlCompiler {
                 case AssignmentStatementNode n: this.Visit(n); break;
                 case FunctionCallIdentifierNode n: this.Visit(n); break;
                 case EmptyStatementNode n: break;
+                case ExpressionStatementNode n: throw new ExpectedException(default(PositionInfo), "statement");
                 default: Debug.Assert(false); break;
             }
         }
