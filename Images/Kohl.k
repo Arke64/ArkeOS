@@ -28,7 +28,7 @@ func main() {
 
 	brk;
 
-	foo();
+	foo1(5, 3);
 
 	brk;
 
@@ -108,6 +108,10 @@ func main() {
 	brk;
 }
 
-func foo() {
-	R15 = 0d1234;
+func foo1(param1, param2) {
+	foo2(param1 + 2, param2 * 3);
+}
+
+func foo2(param1, param2) {
+	R15 = 0d1 + param1 + param2;
 }

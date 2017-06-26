@@ -7,6 +7,6 @@ namespace ArkeOS.Hardware.Architecture {
         Indirect = 0b001,
         RelativeToRIP = 1 << 1,
         RelativeToRSP = 2 << 1,
-        RelativeToR0 = 3 << 1,
+        RelativeToRBP = 3 << 1,
     }
 }

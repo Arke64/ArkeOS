@@ -256,7 +256,7 @@ namespace ArkeOS.Tools.Assembler {
             else if (value[0] == '\\') {
                 value = value.Substring(1, value.Length - 2);
                 var res = this.ParseParameter(value, resolveNames);
-                res.RelativeTo = ParameterRelativeTo.R0;
+                res.RelativeTo = ParameterRelativeTo.RBP;
                 return res;
             }
             else if (value[0] == '0') {

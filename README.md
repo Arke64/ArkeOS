@@ -9,6 +9,7 @@ Registers
 - RZERO: 0x0 register
 - RONE: 0x1 register
 - RMAX: 0xFF.. register
+- RBP: Current base address used for calculating relative to offsets
 - RSP: Address of the current stack position
 - RIP: Address of the current instruction
 - RSIP: Address of the instruction executing when an interrupt fires

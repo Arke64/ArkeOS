@@ -96,8 +96,8 @@
                 <TextBox Name="RI6TextBox" />
             </StackPanel>
             <StackPanel Grid.Column="3" Grid.Row="4">
-                <TextBlock>RI7</TextBlock>
-                <TextBox Name="RI7TextBox" />
+                <TextBlock>RBP</TextBlock>
+                <TextBox Name="RBPTextBox" />
             </StackPanel>
 
             <StackPanel Grid.Column="0" Grid.Row="5">

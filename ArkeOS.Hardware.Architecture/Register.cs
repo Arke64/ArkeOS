@@ -23,7 +23,7 @@
         RI4,
         RI5,
         RI6,
-        RI7,
+        RBP,
         RZERO,
         RONE,
         RMAX,

@@ -102,7 +102,7 @@ namespace ArkeOS.Hardware.Architecture {
             switch (this.RelativeTo) {
                 case ParameterRelativeTo.RIP: str = "{" + str + "}"; break;
                 case ParameterRelativeTo.RSP: str = "<" + str + ">"; break;
-                case ParameterRelativeTo.R0: str = "\\" + str + "/"; break;
+                case ParameterRelativeTo.RBP: str = "\\" + str + "/"; break;
             }
 
             return this.IsIndirect ? "[" + str + "]" : str;

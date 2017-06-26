@@ -204,7 +204,7 @@ namespace ArkeOS.Hardware.ArkeIndustries {
             switch (parameter.RelativeTo) {
                 case ParameterRelativeTo.RIP: value += this.executingAddress; break;
                 case ParameterRelativeTo.RSP: value += this.ReadRegister(Register.RSP); break;
-                case ParameterRelativeTo.R0: value += this.ReadRegister(Register.R0); break;
+                case ParameterRelativeTo.RBP: value += this.ReadRegister(Register.RBP); break;
             }
 
             if (parameter.IsIndirect)
@@ -237,7 +237,7 @@ namespace ArkeOS.Hardware.ArkeIndustries {
                 switch (parameter.RelativeTo) {
                     case ParameterRelativeTo.RIP: address += this.executingAddress; break;
                     case ParameterRelativeTo.RSP: address += this.ReadRegister(Register.RSP); break;
-                    case ParameterRelativeTo.R0: address += this.ReadRegister(Register.R0); break;
+                    case ParameterRelativeTo.RBP: address += this.ReadRegister(Register.RBP); break;
                 }
 
                 this.BusController.WriteWord(address, value);
@@ -269,11 +269,11 @@ namespace ArkeOS.Hardware.ArkeIndustries {
         public void Push(ulong value) {
             this.BusController.WriteWord(this.ReadRegister(Register.RSP), value);
 
-            this.WriteRegister(Register.RSP, this.ReadRegister(Register.RSP) - 1);
+            this.WriteRegister(Register.RSP, this.ReadRegister(Register.RSP) + 1);
         }
 
         public ulong Pop() {
-            this.WriteRegister(Register.RSP, this.ReadRegister(Register.RSP) + 1);
+            this.WriteRegister(Register.RSP, this.ReadRegister(Register.RSP) - 1);
 
             return this.BusController.ReadWord(this.ReadRegister(Register.RSP));
         }
@@ -407,7 +407,6 @@ namespace ArkeOS.Hardware.ArkeIndustries {
             this.WriteRegister(Register.RI4, 0);
             this.WriteRegister(Register.RI5, 0);
             this.WriteRegister(Register.RI6, 0);
-            this.WriteRegister(Register.RI7, 0);
             this.WriteRegister(Register.RINT1, 0);
             this.WriteRegister(Register.RINT2, 0);
             this.WriteRegister(Register.RSIP, 0);

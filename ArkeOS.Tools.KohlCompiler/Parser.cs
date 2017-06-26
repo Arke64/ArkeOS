@@ -26,12 +26,29 @@ namespace ArkeOS.Tools.KohlCompiler {
         private FunctionDeclarationNode ReadFunctionDeclaration() {
             this.lexer.Read(TokenType.FuncKeyword);
             var ident = this.lexer.Read(TokenType.Identifier);
-            this.lexer.Read(TokenType.OpenParenthesis);
-            this.lexer.Read(TokenType.CloseParenthesis);
+            var args = this.ReadArgumentListDeclaration();
             var block = this.ReadStatementBlock();
 
-            return new FunctionDeclarationNode(ident, block);
+            return new FunctionDeclarationNode(ident, args, block);
         }
+
+        private ArgumentListDeclarationNode ReadArgumentListDeclaration() {
+            var list = new ArgumentListDeclarationNode();
+
+            this.lexer.Read(TokenType.OpenParenthesis);
+
+            if (!this.lexer.TryRead(TokenType.CloseParenthesis)) {
+                do {
+                    list.Add(this.ReadArgumentDeclaration());
+                } while (this.lexer.TryRead(TokenType.Comma));
+
+                this.lexer.Read(TokenType.CloseParenthesis);
+            }
+
+            return list;
+        }
+
+        private ArgumentDeclarationNode ReadArgumentDeclaration() => new ArgumentDeclarationNode(this.lexer.Read(TokenType.Identifier));
 
         private VariableDeclarationNode ReadVariableDeclaration() {
             this.lexer.Read(TokenType.VarKeyword);
@@ -104,10 +121,7 @@ namespace ArkeOS.Tools.KohlCompiler {
             var tok = this.lexer.Read(TokenType.Identifier);
 
             if (this.lexer.TryPeek(TokenType.OpenParenthesis)) {
-                this.lexer.Read(TokenType.OpenParenthesis);
-                this.lexer.Read(TokenType.CloseParenthesis);
-
-                return new FunctionCallIdentifierNode(tok);
+                return new FunctionCallIdentifierNode(tok, this.ReadArgumentList());
             }
             else {
                 return tok.Value.IsValidEnum<Register>() ? new RegisterIdentifierNode(tok) : (IdentifierExpressionNode)new VariableIdentifierNode(tok);
