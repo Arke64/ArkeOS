@@ -146,7 +146,7 @@ namespace ArkeOS.Tools.KohlCompiler {
                 case IfStatementNode n: this.Visit(n); break;
                 case WhileStatementNode n: this.Visit(n); break;
                 case AssignmentStatementNode n: this.Visit(n); break;
-                case ExpressionStatementNode n: this.Visit(n); break;
+                case FunctionCallIdentifierNode n: this.Visit(n); break;
                 case EmptyStatementNode n: break;
                 default: Debug.Assert(false); break;
             }
