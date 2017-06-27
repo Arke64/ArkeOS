@@ -15,18 +15,6 @@ EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ArkeOS.Hardware.Architecture", "ArkeOS.Hardware.Architecture\ArkeOS.Hardware.Architecture.csproj", "{F983D92B-E6A3-490F-9177-D578DA2EFB80}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Images", "Images", "{0608B53C-37C0-4F65-8900-4DC59D208C3A}"
-	ProjectSection(SolutionItems) = preProject
-		Images\Boot.asm = Images\Boot.asm
-		Images\Boot.bin = Images\Boot.bin
-		Images\FindDevice.asm = Images\FindDevice.asm
-		Images\Kohl.bin = Images\Kohl.bin
-		Images\Kohl.k = Images\Kohl.k
-		Images\Kohl.lst = Images\Kohl.lst
-		Images\TimedLoop.asm = Images\TimedLoop.asm
-		Images\TimedLoop.bin = Images\TimedLoop.bin
-		Images\Typer.asm = Images\Typer.asm
-		Images\Typer.bin = Images\Typer.bin
-	EndProjectSection
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ArkeOS.Utilities", "ArkeOS.Utilities\ArkeOS.Utilities.csproj", "{2E225CED-2308-4336-84A4-4D053581BBD0}"
 EndProject
@@ -35,6 +23,27 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ArkeOS.Hosts.UWP", "ArkeOS.Hosts.UWP\ArkeOS.Hosts.UWP.csproj", "{34989760-80B2-4A55-931F-46D623CE774D}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ArkeOS.Tools.KohlCompiler", "ArkeOS.Tools.KohlCompiler\ArkeOS.Tools.KohlCompiler.csproj", "{CADE7C38-BF79-436F-9313-237E3D256B83}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Kohl", "Kohl", "{63DFA5BC-89C0-47B4-AC74-DE15321C2619}"
+	ProjectSection(SolutionItems) = preProject
+		Images\Fib.bin = Images\Fib.bin
+		Images\Fib.k = Images\Fib.k
+		Images\Fib.lst = Images\Fib.lst
+		Images\Kohl.bin = Images\Kohl.bin
+		Images\Kohl.k = Images\Kohl.k
+		Images\Kohl.lst = Images\Kohl.lst
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Asm", "Asm", "{E4898220-49F7-45DC-8B09-2E9C652F9721}"
+	ProjectSection(SolutionItems) = preProject
+		Images\Boot.asm = Images\Boot.asm
+		Images\Boot.bin = Images\Boot.bin
+		Images\FindDevice.asm = Images\FindDevice.asm
+		Images\TimedLoop.asm = Images\TimedLoop.asm
+		Images\TimedLoop.bin = Images\TimedLoop.bin
+		Images\Typer.asm = Images\Typer.asm
+		Images\Typer.bin = Images\Typer.bin
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -78,5 +87,7 @@ Global
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{0608B53C-37C0-4F65-8900-4DC59D208C3A} = {A8A09D5A-380E-4C15-8DDD-1837F84F41C6}
+		{63DFA5BC-89C0-47B4-AC74-DE15321C2619} = {0608B53C-37C0-4F65-8900-4DC59D208C3A}
+		{E4898220-49F7-45DC-8B09-2E9C652F9721} = {0608B53C-37C0-4F65-8900-4DC59D208C3A}
 	EndGlobalSection
 EndGlobal
