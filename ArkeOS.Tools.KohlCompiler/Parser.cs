@@ -93,6 +93,11 @@ namespace ArkeOS.Tools.KohlCompiler {
             else if (tok.Type == TokenType.WhileKeyword) {
                 res = this.ReadWhileStatement();
             }
+            else if (tok.Type == TokenType.ReturnKeyword) {
+                res = this.ReadReturnStatement();
+
+                this.lexer.Read(TokenType.Semicolon);
+            }
             else if (tok.Type == TokenType.Semicolon) {
                 res = new EmptyStatementNode();
 
@@ -194,6 +199,12 @@ namespace ArkeOS.Tools.KohlCompiler {
             var block = this.ReadStatementBlock();
 
             return new WhileStatementNode(exp, block);
+        }
+
+        private ReturnStatementNode ReadReturnStatement() {
+            this.lexer.Read(TokenType.ReturnKeyword);
+
+            return new ReturnStatementNode(this.ReadExpression());
         }
 
         private ExpressionStatementNode ReadExpression() {

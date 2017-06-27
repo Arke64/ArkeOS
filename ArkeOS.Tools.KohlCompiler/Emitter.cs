@@ -128,6 +128,8 @@ namespace ArkeOS.Tools.KohlCompiler {
 
             this.Visit(n.StatementBlock);
 
+            this.Emit(InstructionDefinition.SET, Parameter.CreateRegister(Register.R0), Parameter.CreateRegister(Register.RZERO));
+
             this.Emit(InstructionDefinition.RET);
         }
 
@@ -142,12 +144,18 @@ namespace ArkeOS.Tools.KohlCompiler {
 
         private void Visit(StatementNode s) {
             switch (s) {
+                case EmptyStatementNode n: break;
                 case IntrinsicStatementNode n: this.Visit(n); break;
                 case IfStatementNode n: this.Visit(n); break;
                 case WhileStatementNode n: this.Visit(n); break;
+                case ReturnStatementNode n: this.Visit(n); break;
                 case AssignmentStatementNode n: this.Visit(n); break;
-                case FunctionCallIdentifierNode n: this.Visit(n); break;
-                case EmptyStatementNode n: break;
+                case FunctionCallIdentifierNode n:
+                    this.Visit(n);
+                    this.Emit(InstructionDefinition.SUB, Parameter.CreateRegister(Register.RSP), Parameter.CreateRegister(Register.RSP), Parameter.CreateRegister(Register.RONE));
+
+                    break;
+
                 case ExpressionStatementNode n: throw new ExpectedException(default(PositionInfo), "statement");
                 default: Debug.Assert(false); break;
             }
@@ -273,6 +281,14 @@ namespace ArkeOS.Tools.KohlCompiler {
             blockLen.Literal = this.DistanceFrom(blockStart);
         }
 
+        private void Visit(ReturnStatementNode r) {
+            this.Visit(r.Expression);
+
+            this.Emit(InstructionDefinition.SET, Parameter.CreateRegister(Register.R0), Emitter.StackParam);
+
+            this.Emit(InstructionDefinition.RET);
+        }
+
         private void Visit(AssignmentStatementNode a) {
             if (a is CompoundAssignmentStatementNode c)
                 a = new AssignmentStatementNode(c.Target, new BinaryExpressionNode(c.Target, c.Op, c.Expression));
@@ -368,10 +384,11 @@ namespace ArkeOS.Tools.KohlCompiler {
 
                     this.Emit(InstructionDefinition.CALL, this.GetFunctionAccessParameter(n.Identifier));
 
-                    foreach (var a in n.ArgumentList.Items)
-                        this.Emit(InstructionDefinition.SET, Parameter.CreateRegister(Register.RBP), Emitter.StackParam);
+                    this.Emit(InstructionDefinition.SUB, Parameter.CreateRegister(Register.RSP), Parameter.CreateRegister(Register.RSP), Parameter.CreateLiteral((ulong)n.ArgumentList.Items.Count));
 
                     this.Emit(InstructionDefinition.SET, Parameter.CreateRegister(Register.RBP), Emitter.StackParam);
+
+                    this.Emit(InstructionDefinition.SET, Emitter.StackParam, Parameter.CreateRegister(Register.R0));
 
                     break;
 

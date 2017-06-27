@@ -28,11 +28,13 @@ func main() {
 
 	brk;
 
-	foo1(5, 3);
+	R1 = foo1(5, 3);
+	foo1(1, 1);
 
 	brk;
 
 	R0 = 0d0;
+	R1 = 0d0;
 
 	if (R0) {
 		R1 = 0d1;
@@ -109,9 +111,9 @@ func main() {
 }
 
 func foo1(param1, param2) {
-	foo2(param1 + 2, param2 * 3);
+	return foo2(param1 + 2, param2 * 3);
 }
 
 func foo2(param1, param2) {
-	R15 = 0d1 + param1 + param2;
+	return 0d1 + param1 + param2;
 }
