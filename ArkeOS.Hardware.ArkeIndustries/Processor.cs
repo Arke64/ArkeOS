@@ -225,19 +225,19 @@ namespace ArkeOS.Hardware.ArkeIndustries {
                 }
             }
             else {
-                var address = ulong.MaxValue;
-
-                switch (parameter.Type) {
-                    case ParameterType.Register: address = this.ReadRegister(parameter.Register); break;
-                    case ParameterType.Stack: address = this.Pop(); break;
-                    case ParameterType.Literal: address = parameter.Literal; break;
-                    case ParameterType.Calculated: address = this.GetCalculatedValue(parameter); break;
-                }
+                var address = 0UL;
 
                 switch (parameter.RelativeTo) {
-                    case ParameterRelativeTo.RIP: address += this.executingAddress; break;
-                    case ParameterRelativeTo.RSP: address += this.ReadRegister(Register.RSP); break;
-                    case ParameterRelativeTo.RBP: address += this.ReadRegister(Register.RBP); break;
+                    case ParameterRelativeTo.RIP: address = this.executingAddress; break;
+                    case ParameterRelativeTo.RSP: address = this.ReadRegister(Register.RSP); break;
+                    case ParameterRelativeTo.RBP: address = this.ReadRegister(Register.RBP); break;
+                }
+
+                switch (parameter.Type) {
+                    case ParameterType.Register: address += this.ReadRegister(parameter.Register); break;
+                    case ParameterType.Stack: address += this.Pop(); break;
+                    case ParameterType.Literal: address += parameter.Literal; break;
+                    case ParameterType.Calculated: address += this.GetCalculatedValue(parameter); break;
                 }
 
                 this.BusController.WriteWord(address, value);
