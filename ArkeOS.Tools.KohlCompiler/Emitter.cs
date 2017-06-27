@@ -90,14 +90,14 @@ namespace ArkeOS.Tools.KohlCompiler {
             }
         }
 
-        private Parameter GetVariableAccessParameter(string variable) {
+        private Parameter GetVariableAccessParameter(string variable, bool indirect) {
             if (this.currentFunction.ArgumentListDeclaration.TryGetIndex(a => a.Identifier == variable, out var idx))
-                return Parameter.CreateLiteral(idx, ParameterFlags.RelativeToRBP | ParameterFlags.Indirect);
+                return Parameter.CreateLiteral(idx, ParameterFlags.RelativeToRBP | (indirect ? ParameterFlags.Indirect : 0));
 
             if (!this.variableAddresses.TryGetValue(variable, out var addr) && this.throwOnNoFunction)
                 throw new IdentifierNotFoundException(default(PositionInfo), variable);
 
-            return Parameter.CreateLiteral(addr, ParameterFlags.Indirect);
+            return Parameter.CreateLiteral(addr, indirect ? ParameterFlags.Indirect : 0);
         }
 
         private Parameter GetFunctionAccessParameter(string func) {
@@ -113,7 +113,7 @@ namespace ArkeOS.Tools.KohlCompiler {
         private Parameter ExtractLValue(ExpressionStatementNode expr) {
             switch (expr) {
                 case RegisterIdentifierNode n: return Parameter.CreateRegister(n.Register);
-                case VariableIdentifierNode n: return this.GetVariableAccessParameter(n.Identifier);
+                case VariableIdentifierNode n: return this.GetVariableAccessParameter(n.Identifier, true);
                 default: throw new ExpectedException(default(PositionInfo), "value");
             }
         }
@@ -299,7 +299,7 @@ namespace ArkeOS.Tools.KohlCompiler {
                 this.Emit(InstructionDefinition.SET, target, Parameter.CreateRegister(rnode.Register));
             }
             else if (a.Expression is VariableIdentifierNode vnode) {
-                this.Emit(InstructionDefinition.SET, target, this.GetVariableAccessParameter(vnode.Identifier));
+                this.Emit(InstructionDefinition.SET, target, this.GetVariableAccessParameter(vnode.Identifier, true));
             }
             else if (a.Expression is IntegerLiteralNode nnode) {
                 this.Emit(InstructionDefinition.SET, target, Parameter.CreateLiteral(nnode.Literal));
@@ -352,6 +352,11 @@ namespace ArkeOS.Tools.KohlCompiler {
 
                     break;
 
+                case UnaryExpressionNode n when n.Op.Operator == Operator.AddressOf && n.Expression is VariableIdentifierNode v:
+                    this.Emit(InstructionDefinition.SET, Emitter.StackParam, this.GetVariableAccessParameter(v.Identifier, false));
+
+                    break;
+
                 case UnaryExpressionNode n:
                     this.Visit(n.Expression);
 
@@ -359,6 +364,8 @@ namespace ArkeOS.Tools.KohlCompiler {
                         case Operator.UnaryPlus: break;
                         case Operator.UnaryMinus: this.Emit(InstructionDefinition.MUL, Emitter.StackParam, Emitter.StackParam, Parameter.CreateLiteral(ulong.MaxValue)); break;
                         case Operator.Not: this.Emit(InstructionDefinition.NOT, Emitter.StackParam, Emitter.StackParam); break;
+                        case Operator.Dereference: this.Emit(InstructionDefinition.SET, Emitter.StackParam, Parameter.CreateStack(ParameterFlags.Indirect)); break;
+                        case Operator.AddressOf: throw new ExpectedException(default(PositionInfo), "identifier");
                         default: Debug.Assert(false); break;
                     }
 
@@ -373,7 +380,7 @@ namespace ArkeOS.Tools.KohlCompiler {
         private void Visit(IdentifierExpressionNode i) {
             switch (i) {
                 case RegisterIdentifierNode n: this.Emit(InstructionDefinition.SET, Emitter.StackParam, Parameter.CreateRegister(n.Register)); break;
-                case VariableIdentifierNode n: this.Emit(InstructionDefinition.SET, Emitter.StackParam, this.GetVariableAccessParameter(n.Identifier)); break;
+                case VariableIdentifierNode n: this.Emit(InstructionDefinition.SET, Emitter.StackParam, this.GetVariableAccessParameter(n.Identifier, true)); break;
                 case FunctionCallIdentifierNode n:
                     this.Emit(InstructionDefinition.SET, Emitter.StackParam, Parameter.CreateRegister(Register.RBP));
 

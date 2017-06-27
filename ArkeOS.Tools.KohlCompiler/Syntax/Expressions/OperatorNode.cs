@@ -27,6 +27,8 @@ namespace ArkeOS.Tools.KohlCompiler.Syntax {
         GreaterThan,
         GreaterThanOrEqual,
         Not,
+        AddressOf,
+        Dereference,
         OpenParenthesis,
         CloseParenthesis,
     }
@@ -75,6 +77,8 @@ namespace ArkeOS.Tools.KohlCompiler.Syntax {
             [Operator.UnaryMinus] = (100, false),
             [Operator.UnaryPlus] = (100, false),
             [Operator.Not] = (100, false),
+            [Operator.AddressOf] = (100, false),
+            [Operator.Dereference] = (100, false),
         };
 
         public Operator Operator { get; }
@@ -121,6 +125,8 @@ namespace ArkeOS.Tools.KohlCompiler.Syntax {
                     case TokenType.Plus: op = Operator.UnaryPlus; break;
                     case TokenType.Minus: op = Operator.UnaryMinus; break;
                     case TokenType.ExclamationPoint: op = Operator.Not; break;
+                    case TokenType.Ampersand: op = Operator.AddressOf; break;
+                    case TokenType.Asterisk: op = Operator.Dereference; break;
                     default: return null;
                 }
             }
