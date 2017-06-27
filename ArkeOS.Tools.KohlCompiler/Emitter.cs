@@ -114,6 +114,11 @@ namespace ArkeOS.Tools.KohlCompiler {
             switch (expr) {
                 case RegisterIdentifierNode n: return Parameter.CreateRegister(n.Register);
                 case VariableIdentifierNode n: return this.GetVariableAccessParameter(n.Identifier, true);
+                case UnaryExpressionNode n when n.Op.Operator == Operator.Dereference && n.Expression is VariableIdentifierNode v:
+                    this.Emit(InstructionDefinition.SET, Emitter.StackParam, this.GetVariableAccessParameter(v.Identifier, true));
+
+                    return Parameter.CreateStack(ParameterFlags.Indirect);
+
                 default: throw new ExpectedException(default(PositionInfo), "value");
             }
         }

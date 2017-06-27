@@ -5,6 +5,29 @@ func main() {
 	var lvar1;
 	var lvar2;
 
+	lvar2 = &lvar1;
+	lvar1 = 1234;
+	*lvar2 *= 2;
+	R4 = *lvar2;
+
+	var2 = &var1;
+	var1 = 5678;
+	R5 = *var2;
+
+	R6 = foo11(1, 0);
+
+	foo22(&var1);
+	R7 = var1;
+
+	brk;
+
+	var1 = 0;
+	var2 = 0;
+	lvar1 = 0;
+	lvar2 = 0;
+
+	brk;
+
 	lvar1 = 0d987;
 	lvar2 = lvar1;
 	R0 = lvar2;
@@ -116,4 +139,14 @@ func foo1(param1, param2) {
 
 func foo2(param1, param2) {
 	return 0d1 + param1 + param2;
+}
+
+func foo11(param1, param2) {
+	param2 = &param1;
+	param1 += 3;
+	return *param2;
+}
+
+func foo22(param1) {
+	*param1 += 25;
 }
