@@ -111,16 +111,22 @@ namespace ArkeOS.Tools.KohlCompiler {
         private void Emit(InstructionDefinition def, Parameter conditional, InstructionConditionalType conditionalType, params Parameter[] parameters) => this.instructions.Add(new Instruction(def, parameters, conditional, conditionalType));
 
         private Parameter ExtractLValue(ExpressionStatementNode expr) {
-            switch (expr) {
-                case RegisterIdentifierNode n: return Parameter.CreateRegister(n.Register);
-                case VariableIdentifierNode n: return this.GetVariableAccessParameter(n.Identifier, true);
-                case UnaryExpressionNode n when n.Op.Operator == Operator.Dereference && n.Expression is VariableIdentifierNode v:
-                    this.Emit(InstructionDefinition.SET, Emitter.StackParam, this.GetVariableAccessParameter(v.Identifier, true));
+            Parameter extract(ExpressionStatementNode ex, bool allowLiteral)
+            {
+                switch (ex) {
+                    case RegisterIdentifierNode n: return Parameter.CreateRegister(n.Register);
+                    case VariableIdentifierNode n: return this.GetVariableAccessParameter(n.Identifier, true);
+                    case IntegerLiteralNode n when allowLiteral: return Parameter.CreateLiteral(n.Literal);
+                    case UnaryExpressionNode n when n.Op.Operator == Operator.Dereference:
+                        this.Emit(InstructionDefinition.SET, Emitter.StackParam, extract(n.Expression, true));
 
-                    return Parameter.CreateStack(ParameterFlags.Indirect);
+                        return Parameter.CreateStack(ParameterFlags.Indirect);
 
-                default: throw new ExpectedException(default(PositionInfo), "value");
+                    default: throw new ExpectedException(default(PositionInfo), "value");
+                }
             }
+
+            return extract(expr, false);
         }
 
         private void Visit(ProgramDeclarationNode n) {
