@@ -16,6 +16,7 @@ namespace ArkeOS.Tools.KohlCompiler {
                 switch (tok.Type) {
                     case TokenType.FuncKeyword: prog.FunctionDeclarations.Add(this.ReadFunctionDeclaration()); break;
                     case TokenType.VarKeyword: prog.VariableDeclarations.Add(this.ReadVariableDeclaration()); break;
+                    case TokenType.ConstKeyword: prog.ConstDeclarations.Add(this.ReadConstDeclaration()); break;
                     default: throw this.GetUnexpectedException(tok.Type);
                 }
             }
@@ -56,6 +57,16 @@ namespace ArkeOS.Tools.KohlCompiler {
             this.lexer.Read(TokenType.Semicolon);
 
             return new VariableDeclarationNode(ident);
+        }
+
+        private ConstDeclarationNode ReadConstDeclaration() {
+            this.lexer.Read(TokenType.ConstKeyword);
+            var ident = this.lexer.Read(TokenType.Identifier);
+            this.lexer.Read(TokenType.Equal);
+            var tok = this.lexer.Read(TokenType.IntegerLiteral);
+            this.lexer.Read(TokenType.Semicolon);
+
+            return new ConstDeclarationNode(ident, new IntegerLiteralNode(tok));
         }
 
         private StatementBlockNode ReadStatementBlock() {

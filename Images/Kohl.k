@@ -1,12 +1,13 @@
 var var1;
 var var2;
+const c1 = 1232;
 
 func main() {
 	var lvar1;
 	var lvar2;
 
 	lvar2 = &lvar1;
-	lvar1 = 1234;
+	lvar1 = c1 + 2;
 	*lvar2 *= 2;
 	R4 = *lvar2;
 

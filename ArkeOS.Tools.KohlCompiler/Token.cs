@@ -16,6 +16,7 @@ namespace ArkeOS.Tools.KohlCompiler {
         WhileKeyword,
         FuncKeyword,
         VarKeyword,
+        ConstKeyword,
         ReturnKeyword,
 
         DbgKeyword,
@@ -187,6 +188,7 @@ namespace ArkeOS.Tools.KohlCompiler {
                             break;
 
                         case TokenType.VarKeyword:
+                        case TokenType.ConstKeyword:
                         case TokenType.ReturnKeyword:
                             this.tokenClass = TokenClass.StatementKeyword;
                             break;

@@ -15,6 +15,7 @@ namespace ArkeOS.Tools.KohlCompiler {
             ["while"] = TokenType.WhileKeyword,
             ["func"] = TokenType.FuncKeyword,
             ["var"] = TokenType.VarKeyword,
+            ["const"] = TokenType.ConstKeyword,
             ["return"] = TokenType.ReturnKeyword,
 
             ["dbg"] = TokenType.DbgKeyword,
