@@ -19,7 +19,7 @@ namespace ArkeOS.Tools.KohlCompiler {
         public string OutputName { get; set; } = "Kohl.bin";
         public bool Optimize { get; set; } = true;
         public bool EmitAssemblyListing { get; set; } = true;
-        public bool EmitBootable { get; set; } = true;
+        public bool EmitBootable { get; set; } = false;
 
         public void AddSource(string file) => this.sources.Add(file);
 
@@ -43,16 +43,22 @@ namespace ArkeOS.Tools.KohlCompiler {
             return errors;
         }
 
-        public static string Usage { get; } = "[output file] [source files...]";
+        public static string Usage { get; } = "[optional options] [output file] [source files...]";
 
         public static Compiler FromArgs(string[] args) {
             var a = new Queue<string>(args);
+            var c = new Compiler();
 
             if (a.Count < 2) return null;
 
-            var c = new Compiler() {
-                OutputName = a.Dequeue()
-            };
+            while (a.Peek().StartsWith("--")) {
+                switch (a.Dequeue().Substring(2)) {
+                    case "bootable": c.EmitBootable = true; break;
+                    default: return null;
+                }
+            }
+
+            c.OutputName = a.Dequeue();
 
             while (a.Any())
                 c.AddSource(a.Dequeue());

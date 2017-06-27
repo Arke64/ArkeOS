@@ -6,8 +6,10 @@ SET ScriptRoot=%~dp0
 
 PUSHD "%ScriptRoot%"
 
-SET Disk=%~n1
-SET Extension=%~x1
+SET BootDisk=%~n1
+SET BootExtension=%~x1
+SET AppDisk=%~n2
+SET AppExtension=%~x2
 SET PackageId=fc7d35ed-c3ad-4862-946c-a21d4fde227c
 SET Assembler=%ScriptRoot%..\ArkeOS.Tools.Assembler\bin\Debug\netcoreapp1.1\ArkeOS.Tools.Assembler.dll
 SET KohlCompiler=%ScriptRoot%..\ArkeOS.Tools.KohlCompiler\bin\Debug\netcoreapp1.1\ArkeOS.Tools.KohlCompiler.dll
@@ -21,7 +23,7 @@ IF "%PackageFolder" == "" (
     GOTO :EOF
 )
 
-IF "%Disk%" == ""  (
+IF "%AppDisk%" == ""  (
     ECHO Must provide a disk to run.
     GOTO :EOF
 )
@@ -31,21 +33,25 @@ IF NOT EXIST "%Assembler%" (
     GOTO :EOF
 )
 
-IF "%Extension%" == ".k" (
-    IF NOT EXIST "%KohlCompiler%" (
-        ECHO Cannot find kohl compiler.
-        GOTO :EOF
-    )
+IF NOT EXIST "%KohlCompiler%" (
+    ECHO Cannot find kohl compiler.
+    GOTO :EOF
+)
 
-    dotnet "%KohlCompiler%" "%ScriptRoot%..\Images\%Disk%.bin" "%ScriptRoot%..\Images\%Disk%.k"
-) ELSE (IF "%Extension%" == ".asm" (
-    dotnet "%Assembler%" "%ScriptRoot%..\Images\%Disk%.asm"
+IF "%BootExtension%" == ".k" (
+    dotnet "%KohlCompiler%" "%ScriptRoot%..\Images\%BootDisk%.bin" "%ScriptRoot%..\Images\%BootDisk%.k"
+) ELSE (IF "%BootExtension%" == ".asm" (
+    dotnet "%Assembler%" "%ScriptRoot%..\Images\%BootDisk%.asm"
 ))
 
-dotnet "%Assembler%" "%ScriptRoot%..\Images\Boot.asm"
+IF "%AppExtension%" == ".k" (
+    dotnet "%KohlCompiler%" --bootable "%ScriptRoot%..\Images\%AppDisk%.bin" "%ScriptRoot%..\Images\%AppDisk%.k"
+) ELSE (IF "%AppExtension%" == ".asm" (
+    dotnet "%Assembler%" "%ScriptRoot%..\Images\%AppDisk%.asm"
+))
 
-COPY /Y "%ScriptRoot%..\Images\Boot.bin" "%PackageFolder%\LocalState\Boot.bin"
-COPY /Y "%ScriptRoot%..\Images\%Disk%.bin" "%PackageFolder%\LocalState\Disk 0.bin"
+COPY /Y "%ScriptRoot%..\Images\%BootDisk%.bin" "%PackageFolder%\LocalState\Boot.bin"
+COPY /Y "%ScriptRoot%..\Images\%AppDisk%.bin" "%PackageFolder%\LocalState\Disk 0.bin"
 
 POPD
 

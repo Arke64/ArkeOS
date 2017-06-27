@@ -1,5 +1,5 @@
 func main() {
-	R1 = fib(30);
+	R1 = fib(10);
 }
 
 func fib(n) {
