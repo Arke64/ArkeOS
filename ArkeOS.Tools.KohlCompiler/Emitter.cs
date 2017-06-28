@@ -62,7 +62,6 @@ namespace ArkeOS.Tools.KohlCompiler {
         }
 
         private void EmitHeader() {
-            this.Emit(InstructionDefinition.BRK);
             this.Emit(InstructionDefinition.SET, Parameter.CreateRegister(Register.RSP), Parameter.CreateLiteral(0x1_0000));
             this.Emit(InstructionDefinition.SET, Parameter.CreateRegister(Register.RBP), Parameter.CreateRegister(Register.RSP));
             this.Emit(InstructionDefinition.CALL, this.GetFunctionAccessParameter("main"));

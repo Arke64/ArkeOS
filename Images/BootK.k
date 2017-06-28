@@ -5,40 +5,36 @@ const BootDeviceSignature = 0x00000000454B5241;
 const BootDeviceSignatureOffset = 0x0;
 const BootDeviceEntryPointOffset = 0x1;
 
-const BusDeviceId = 0xFFF;
-const BusDeviceEntryCountOffset = 0d0;
-const BusDeviceEntriesOffset = 0d1;
+const BusControllerId = 0xFFF;
+const BusControllerDeviceCountOffset = 0d0;
+const BusControllerDeviceListOffset = 0d1;
+
 const BusDeviceEntryLength = 0d4;
 const BusDeviceEntryIdOffset = 0d0;
 const BusDeviceEntryTypeOffset = 0d1;
 
 func main() {
-	var busDevice;
+	var currentDevice;
 	var deviceCount;
 
-	busDevice = BusDeviceId << DeviceAddressBitSize;
-	deviceCount = *(busDevice + BusDeviceEntryCountOffset);
+	currentDevice = BusControllerId << DeviceAddressBitSize;
+	deviceCount = *(currentDevice + BusControllerDeviceCountOffset);
 
-	busDevice += BusDeviceEntriesOffset;
+	currentDevice += BusControllerDeviceListOffset;
 
 	while (deviceCount) {
-		if (*(busDevice + BusDeviceEntryTypeOffset) == BootDeviceType) {
-			var addr;
+		if (*(currentDevice + BusDeviceEntryTypeOffset) == BootDeviceType) {
+			var deviceAddress;
 
-			addr = *(busDevice + BusDeviceEntryIdOffset) << DeviceAddressBitSize;
+			deviceAddress = *(currentDevice + BusDeviceEntryIdOffset) << DeviceAddressBitSize;
 
-			if (*(addr + BootDeviceSignatureOffset) == BootDeviceSignature) {
-				var entry;
-
-				entry = addr + BootDeviceEntryPointOffset;
-
-				R0 = addr;
-				RIP = entry;
+			if (*(deviceAddress + BootDeviceSignatureOffset) == BootDeviceSignature) {
+				RIP = deviceAddress + BootDeviceEntryPointOffset;
 			}
 		}
 		else {
 			deviceCount -= 1;
-			busDevice += BusDeviceEntryLength;
+			currentDevice += BusDeviceEntryLength;
 		}
 	}
 }
