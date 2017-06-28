@@ -26,6 +26,7 @@
                 <RowDefinition />
                 <RowDefinition />
                 <RowDefinition />
+                <RowDefinition />
             </Grid.RowDefinitions>
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="200" />
@@ -164,6 +165,12 @@
             <StackPanel Grid.Column="3" Grid.Row="8">
                 <TextBlock>R15</TextBlock>
                 <TextBox Name="R15TextBox" />
+            </StackPanel>
+
+            <StackPanel Grid.Column="0" Grid.Row="9">
+                <TextBlock>Memory</TextBlock>
+                <TextBox Name="MemoryAddressTextBox" />
+                <TextBox Name="MemoryValueTextBox" />
             </StackPanel>
         </Grid>
     </StackPanel>

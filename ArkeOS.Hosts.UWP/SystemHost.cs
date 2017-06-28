@@ -4,8 +4,7 @@ using Hdw = ArkeOS.Hardware.ArkeIndustries;
 
 namespace ArkeOS.Hosts.UWP {
     public sealed class SystemHost : IDisposable {
-        private Hdw.SystemBusController system;
-
+        public Hdw.SystemBusController SystemBusController { get; private set; }
         public Hdw.Processor Processor { get; }
         public Hdw.Display Display { get; }
         public Hdw.Keyboard Keyboard { get; }
@@ -17,35 +16,35 @@ namespace ArkeOS.Hosts.UWP {
 
             this.Processor = new Hdw.Processor();
 
-            this.system = new Hdw.SystemBusController() {
+            this.SystemBusController = new Hdw.SystemBusController() {
                 Processor = this.Processor,
                 InterruptController = interruptController
             };
 
-            this.system.AddDevice(ram);
-            this.system.AddDevice(bootManager);
-            this.system.AddDevice(this.Processor);
-            this.system.AddDevice(interruptController);
+            this.SystemBusController.AddDevice(ram);
+            this.SystemBusController.AddDevice(bootManager);
+            this.SystemBusController.AddDevice(this.Processor);
+            this.SystemBusController.AddDevice(interruptController);
 
             applicationImage.SetLength(8 * 1024 * 1024);
 
-            this.system.AddDevice(new Hdw.DiskDrive(applicationImage));
+            this.SystemBusController.AddDevice(new Hdw.DiskDrive(applicationImage));
 
             this.Keyboard = new Hdw.Keyboard();
-            this.system.AddDevice(this.Keyboard);
+            this.SystemBusController.AddDevice(this.Keyboard);
 
             this.Display = new Hdw.Display(displayWidth, displayHeight);
-            this.system.AddDevice(this.Display);
+            this.SystemBusController.AddDevice(this.Display);
 
             this.Processor.DebugHandler = (a, b, c) => a.Value = (ulong)DateTime.UtcNow.Ticks;
 
-            this.system.Start();
+            this.SystemBusController.Start();
         }
 
         public void Dispose() {
-            this.system.Stop();
-            this.system.Dispose();
-            this.system = null;
+            this.SystemBusController.Stop();
+            this.SystemBusController.Dispose();
+            this.SystemBusController = null;
         }
     }
 }

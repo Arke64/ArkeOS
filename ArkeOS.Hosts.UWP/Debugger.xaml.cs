@@ -103,6 +103,15 @@ namespace ArkeOS.Hosts.UWP {
             }
 
             this.CurrentInstructionLabel.Text = this.host.Processor.CurrentInstruction.ToString(displayBase);
+
+            try {
+                var addr = (ulong)Convert.ToInt64(this.MemoryAddressTextBox.Text.Replace("_", "").Replace(",", "").Replace("0b", "").Replace("0x", "").Replace("0d", ""), displayBase);
+
+                this.MemoryValueTextBox.Text = this.host.SystemBusController.ReadWord(addr).ToString(displayBase);
+            }
+            catch {
+                this.MemoryValueTextBox.Text = 0UL.ToString(displayBase);
+            }
         }
 
         private void FormatRadioButton_Checked(object sender, RoutedEventArgs e) => this.RefreshDebug();
