@@ -6,6 +6,11 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 
+//TODO Things to lower:
+//Compound assignment
+//Variable initializers
+//Bool literals
+
 namespace ArkeOS.Tools.KohlCompiler {
     public class Emitter {
         private static Parameter StackParam { get; } = new Parameter { Type = ParameterType.Stack };
@@ -170,6 +175,7 @@ namespace ArkeOS.Tools.KohlCompiler {
                 case WhileStatementNode n: this.Visit(n); break;
                 case ReturnStatementNode n: this.Visit(n); break;
                 case AssignmentStatementNode n: this.Visit(n); break;
+                case VariableDeclarationWithInitializerNode n: this.Visit(new AssignmentStatementNode(new VariableIdentifierNode(n.Identifier), n.Initializer)); break;
                 case FunctionCallIdentifierNode n:
                     this.Visit(n);
                     this.Emit(InstructionDefinition.SUB, Parameter.CreateRegister(Register.RSP), Parameter.CreateRegister(Register.RSP), Parameter.CreateRegister(Register.RONE));

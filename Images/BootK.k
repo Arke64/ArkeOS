@@ -14,19 +14,14 @@ const BusDeviceEntryIdOffset = 0d0;
 const BusDeviceEntryTypeOffset = 0d1;
 
 func main() {
-	var currentDevice;
-	var deviceCount;
-
-	currentDevice = BusControllerId << DeviceAddressBitSize;
-	deviceCount = *(currentDevice + BusControllerDeviceCountOffset);
+	var currentDevice = BusControllerId << DeviceAddressBitSize;
+	var deviceCount = *(currentDevice + BusControllerDeviceCountOffset);
 
 	currentDevice += BusControllerDeviceListOffset;
 
 	while (deviceCount) {
 		if (*(currentDevice + BusDeviceEntryTypeOffset) == BootDeviceType) {
-			var deviceAddress;
-
-			deviceAddress = *(currentDevice + BusDeviceEntryIdOffset) << DeviceAddressBitSize;
+			var deviceAddress = *(currentDevice + BusDeviceEntryIdOffset) << DeviceAddressBitSize;
 
 			if (*(deviceAddress + BootDeviceSignatureOffset) == BootDeviceSignature) {
 				RIP = deviceAddress + BootDeviceEntryPointOffset;

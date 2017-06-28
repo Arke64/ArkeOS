@@ -15,7 +15,7 @@ namespace ArkeOS.Tools.KohlCompiler {
             while (this.lexer.TryPeek(out var tok)) {
                 switch (tok.Type) {
                     case TokenType.FuncKeyword: prog.FunctionDeclarations.Add(this.ReadFunctionDeclaration()); break;
-                    case TokenType.VarKeyword: prog.VariableDeclarations.Add(this.ReadVariableDeclaration()); break;
+                    case TokenType.VarKeyword: prog.VariableDeclarations.Add(this.ReadGlobalVariableDeclaration()); break;
                     case TokenType.ConstKeyword: prog.ConstDeclarations.Add(this.ReadConstDeclaration()); break;
                     default: throw this.GetUnexpectedException(tok.Type);
                 }
@@ -51,12 +51,21 @@ namespace ArkeOS.Tools.KohlCompiler {
 
         private ArgumentDeclarationNode ReadArgumentDeclaration() => new ArgumentDeclarationNode(this.lexer.Read(TokenType.Identifier));
 
-        private VariableDeclarationNode ReadVariableDeclaration() {
+        private VariableDeclarationNode ReadGlobalVariableDeclaration() {
             this.lexer.Read(TokenType.VarKeyword);
             var ident = this.lexer.Read(TokenType.Identifier);
             this.lexer.Read(TokenType.Semicolon);
 
             return new VariableDeclarationNode(ident);
+        }
+
+        private VariableDeclarationNode ReadLocalVariableDeclaration() {
+            this.lexer.Read(TokenType.VarKeyword);
+            var ident = this.lexer.Read(TokenType.Identifier);
+            var res = this.lexer.TryRead(TokenType.Equal) ? new VariableDeclarationWithInitializerNode(ident, this.ReadExpression()) : new VariableDeclarationNode(ident);
+            this.lexer.Read(TokenType.Semicolon);
+
+            return res;
         }
 
         private ConstDeclarationNode ReadConstDeclaration() {
@@ -75,7 +84,12 @@ namespace ArkeOS.Tools.KohlCompiler {
             if (this.lexer.TryRead(TokenType.OpenCurlyBrace)) {
                 while (!this.lexer.TryRead(TokenType.CloseCurlyBrace)) {
                     if (this.lexer.TryPeek(TokenType.VarKeyword)) {
-                        block.VariableDeclarations.Add(this.ReadVariableDeclaration());
+                        var res = this.ReadLocalVariableDeclaration();
+
+                        if (res is VariableDeclarationWithInitializerNode)
+                            block.Statements.Add(res);
+
+                        block.VariableDeclarations.Add(res);
                     }
                     else {
                         block.Statements.Add(this.ReadStatement());

@@ -2,6 +2,7 @@
     public abstract class IdentifierExpressionNode : ExpressionStatementNode {
         public string Identifier { get; }
 
-        protected IdentifierExpressionNode(Token token) => this.Identifier = token.Value;
+        protected IdentifierExpressionNode(Token token) : this(token.Value) { }
+        protected IdentifierExpressionNode(string identifier) => this.Identifier = identifier;
     }
 }
