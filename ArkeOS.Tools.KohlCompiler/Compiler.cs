@@ -1,5 +1,4 @@
 ﻿using ArkeOS.Tools.KohlCompiler.Exceptions;
-using ArkeOS.Tools.KohlCompiler.IR;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -31,8 +30,9 @@ namespace ArkeOS.Tools.KohlCompiler {
                 var lexer = new Lexer(this.sources);
                 var parser = new Parser(lexer);
                 var ast = parser.Parse();
-                var ir = new IrGenerator(ast);
-                var cfg = ir.Generate();
+                //var lowered = Lowerer.Lower(ast);
+                //var ir = new IrGenerator(ast);
+                //var cfg = ir.Generate();
                 var emitter = new Emitter(ast, this.EmitAssemblyListing, this.EmitBootable, this.OutputName);
 
                 emitter.Emit();

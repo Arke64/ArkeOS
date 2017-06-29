@@ -2,6 +2,7 @@
 using ArkeOS.Tools.KohlCompiler.Syntax;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 
 namespace ArkeOS.Tools.KohlCompiler.IR {
     public enum SymbolType {
@@ -15,6 +16,105 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
     public class SymbolTable {
         public bool TryGet(string name, SymbolType type, int scope, out object result) {
             throw null;
+        }
+    }
+
+    public class Lowerer {
+        private ulong nextId = 0;
+
+        private Lowerer() { }
+
+        public static ProgramDeclarationNode Lower(ProgramDeclarationNode root) => new Lowerer().Visit(root);
+
+        private string GenerateId() => "_" + this.nextId++.ToString();
+
+        private ProgramDeclarationNode Visit(ProgramDeclarationNode orig) {
+            var root = new ProgramDeclarationNode();
+
+            foreach (var i in orig.ConstDeclarations.Items)
+                root.ConstDeclarations.Add(i);
+
+            foreach (var i in orig.VariableDeclarations.Items)
+                root.VariableDeclarations.Add(i);
+
+            foreach (var i in orig.FunctionDeclarations.Items)
+                root.FunctionDeclarations.Add(this.Visit(i));
+
+            return root;
+        }
+
+        private FunctionDeclarationNode Visit(FunctionDeclarationNode orig) => new FunctionDeclarationNode(orig.Token, orig.ArgumentListDeclaration, this.Visit(orig.StatementBlock));
+
+        private StatementBlockNode Visit(StatementBlockNode orig) {
+            var blk = new StatementBlockNode();
+
+            foreach (var i in orig.VariableDeclarations.Items)
+                blk.VariableDeclarations.Add(i);
+
+            foreach (var b in orig.Statements.Items) {
+                var (vars, stmts) = this.Visit(b);
+
+                foreach (var v in vars)
+                    blk.VariableDeclarations.Add(v);
+
+                foreach (var s in stmts)
+                    blk.Statements.Add(s);
+            }
+
+            return blk;
+        }
+
+        private List<VariableDeclarationNode> newVars = new List<VariableDeclarationNode>();
+        private List<AssignmentStatementNode> newStmts = new List<AssignmentStatementNode>();
+
+        private (IList<VariableDeclarationNode>, IList<StatementNode>) Visit(StatementNode node) {
+            switch (node) {
+                case AssignmentStatementNode n:
+                    var rhs = n.Target is RegisterIdentifierNode ? n.Target : this.Visit(n.Target);
+                    var lhs = this.Visit(n.Expression);
+
+                    this.newStmts.Add(new AssignmentStatementNode(rhs, lhs));
+
+                    var res = (new List<VariableDeclarationNode>(newVars), new List<StatementNode>(newStmts));
+
+                    this.newVars.Clear();
+                    this.newStmts.Clear();
+
+                    return res;
+            }
+
+            return default((IList<VariableDeclarationNode>, IList<StatementNode>));
+        }
+
+        private VariableIdentifierNode Visit(ExpressionStatementNode node) {
+            switch (node) {
+                case BinaryExpressionNode n: return this.Visit(n);
+                case IntegerLiteralNode n:
+                    var id = this.GenerateId();
+                    var v = new VariableDeclarationNode(new Token(TokenType.Identifier, id));
+                    var ident = new VariableIdentifierNode(id);
+
+                    this.newVars.Add(v);
+                    this.newStmts.Add(new AssignmentStatementNode(ident, n));
+
+                    return ident;
+                case VariableIdentifierNode n: return n;
+            }
+            throw null;
+        }
+
+        private VariableIdentifierNode Visit(BinaryExpressionNode node) {
+            var l = this.Visit(node.Left);
+            var r = this.Visit(node.Right);
+
+            var id = this.GenerateId();
+            var v = new VariableDeclarationNode(new Token(TokenType.Identifier, id));
+            var ident = new VariableIdentifierNode(id);
+
+            this.newVars.Add(v);
+            this.newStmts.Add(new AssignmentStatementNode(ident, new BinaryExpressionNode(l, node.Op, r)));
+
+            return ident;
         }
     }
 
@@ -87,20 +187,42 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
             foreach (var s in sbn.Statements.Items) {
                 switch (s) {
                     case AssignmentStatementNode n:
-                        if (n.Target is RegisterIdentifierNode r && n.Expression is IntegerLiteralNode i) {
-                            this.Push(new BasicBlockAssignmentInstruction(new RegisterVariable(r.Register), new UnsignedIntegerConstant(i.Literal)));
-                        }
+                        var (blk, res) = this.Flatten(n.Expression);
+
+                        if (blk != null)
+                            this.Visit(blk);
+
+                        this.Push(new BasicBlockAssignmentInstruction(this.ExtractLValue(n.Target), res));
 
                         break;
+
+                    case FunctionCallIdentifierNode n:
+
+                        break;
+
+                    default: Debug.Assert(false); break;
                 }
             }
         }
 
-        private RValue Visit(ExpressionStatementNode esn) {
+        private LValue ExtractLValue(ExpressionStatementNode e) {
+            switch (e) {
+                case RegisterIdentifierNode n: return new RegisterVariable(n.Register);
+                default: Debug.Assert(false); return null;
+            }
+        }
+
+        private (StatementBlockNode, RValue) Flatten(ExpressionStatementNode esn) {
+            var insts = new List<AssignmentStatementNode>();
+
             switch (esn) {
-                case IntegerLiteralNode n: return new UnsignedIntegerConstant(n.Literal);
+                case IntegerLiteralNode n: return (null, new UnsignedIntegerConstant(n.Literal));
                 default: throw new NotImplementedException();
             }
+        }
+
+        private void Visit(ExpressionStatementNode expr, List<AssignmentStatementNode> instructions) {
+
         }
     }
 
