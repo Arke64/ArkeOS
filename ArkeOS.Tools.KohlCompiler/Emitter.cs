@@ -10,6 +10,7 @@ using System.Linq;
 //Compound assignment
 //Variable initializers
 //Bool literals
+//Consts
 
 namespace ArkeOS.Tools.KohlCompiler {
     public class Emitter {
