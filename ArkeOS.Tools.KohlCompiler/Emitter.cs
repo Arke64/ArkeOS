@@ -57,7 +57,7 @@ namespace ArkeOS.Tools.KohlCompiler {
                         writer.Write(0x00000000454B5241UL);
 
                     if (this.emitAssemblyListing)
-                        File.WriteAllLines(Path.ChangeExtension(this.outputFile, "lst"), this.variableAddresses.Select(i => $"{i.Key}: 0x{i.Value:X16}").Union(this.instructions.Select(i => i.ToString())));
+                        File.WriteAllLines(Path.ChangeExtension(this.outputFile, "lst"), this.variableAddresses.Select(i => $"{i.Key}: 0x{i.Value:X16}").Concat(this.instructions.Select(i => i.ToString())));
 
                     foreach (var inst in this.instructions)
                         inst.Encode(writer);
