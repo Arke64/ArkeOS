@@ -20,119 +20,98 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
     }
 
     public class Lowerer {
-        private ulong nextId = 0;
-
         private Lowerer() { }
 
-        public static ProgramDeclarationNode Lower(ProgramDeclarationNode root) => new Lowerer().Visit(root);
+        public static ProgramDeclarationNode Lower(ProgramDeclarationNode root) {
+            var nameGenerator = new NameGenerator();
+            var result = new ProgramDeclarationNode();
 
-        private string GenerateId() => "_" + this.nextId++.ToString();
+            foreach (var i in root.ConstDeclarations.Items)
+                result.ConstDeclarations.Add(i);
 
-        private ProgramDeclarationNode Visit(ProgramDeclarationNode orig) {
-            var root = new ProgramDeclarationNode();
+            foreach (var i in root.VariableDeclarations.Items)
+                result.VariableDeclarations.Add(i);
 
-            foreach (var i in orig.ConstDeclarations.Items)
-                root.ConstDeclarations.Add(i);
+            foreach (var i in root.FunctionDeclarations.Items)
+                result.FunctionDeclarations.Add(FunctionDeclarationVisitor.Visit(nameGenerator, i));
 
-            foreach (var i in orig.VariableDeclarations.Items)
-                root.VariableDeclarations.Add(i);
-
-            foreach (var i in orig.FunctionDeclarations.Items)
-                root.FunctionDeclarations.Add(this.Visit(i));
-
-            return root;
+            return result;
         }
 
-        private FunctionDeclarationNode Visit(FunctionDeclarationNode orig) => new FunctionDeclarationNode(orig.Token, orig.ArgumentListDeclaration, this.Visit(orig.StatementBlock));
+        private class NameGenerator {
+            private ulong nextId = 0;
 
-        private StatementBlockNode Visit(StatementBlockNode orig) {
-            var blk = new StatementBlockNode();
+            public string Next() => "_" + this.nextId++.ToString();
+        }
 
-            foreach (var i in orig.VariableDeclarations.Items)
-                blk.VariableDeclarations.Add(i);
+        private class FunctionDeclarationVisitor {
+            private NameGenerator nameGenerator;
+            private StatementBlockNode result;
 
-            foreach (var b in orig.Statements.Items) {
-                var (vars, stmts) = this.Visit(b);
+            private FunctionDeclarationVisitor(NameGenerator nameGenerator) => (this.nameGenerator, this.result) = (nameGenerator, new StatementBlockNode());
 
-                foreach (var v in vars)
-                    blk.VariableDeclarations.Add(v);
+            public static FunctionDeclarationNode Visit(NameGenerator nameGenerator, FunctionDeclarationNode orig) {
+                var v = new FunctionDeclarationVisitor(nameGenerator);
 
-                foreach (var s in stmts)
-                    blk.Statements.Add(s);
+                v.Visit(orig.StatementBlock);
+
+                return new FunctionDeclarationNode(orig.Token, orig.ArgumentListDeclaration, v.result);
             }
 
-            return blk;
-        }
+            private VariableIdentifierNode CreateAssignment(ExpressionStatementNode rhs) {
+                var id = this.nameGenerator.Next();
+                var ident = new VariableIdentifierNode(id);
 
-        private List<VariableDeclarationNode> newVars = new List<VariableDeclarationNode>();
-        private List<AssignmentStatementNode> newStmts = new List<AssignmentStatementNode>();
+                this.result.VariableDeclarations.Add(new VariableDeclarationNode(id));
+                this.result.Statements.Add(new AssignmentStatementNode(ident, rhs));
 
-        private (IList<VariableDeclarationNode>, IList<StatementNode>) Visit(StatementNode node) {
-            switch (node) {
-                case AssignmentStatementNode n:
-                    var rhs = n.Target is RegisterIdentifierNode ? n.Target : this.Visit(n.Target);
-                    var lhs = this.Visit(n.Expression);
-
-                    this.newStmts.Add(new AssignmentStatementNode(rhs, lhs));
-
-                    var res = (new List<VariableDeclarationNode>(newVars), new List<StatementNode>(newStmts));
-
-                    this.newVars.Clear();
-                    this.newStmts.Clear();
-
-                    return res;
+                return ident;
             }
 
-            return default((IList<VariableDeclarationNode>, IList<StatementNode>));
-        }
+            private void Visit(StatementBlockNode node) {
+                foreach (var i in node.VariableDeclarations.Items)
+                    this.result.VariableDeclarations.Add(i);
 
-        private VariableIdentifierNode Visit(ExpressionStatementNode node) {
-            switch (node) {
-                case BinaryExpressionNode n: return this.Visit(n);
-                case IntegerLiteralNode n:
-                    var id = this.GenerateId();
-                    var v = new VariableDeclarationNode(new Token(TokenType.Identifier, id));
-                    var ident = new VariableIdentifierNode(id);
-
-                    this.newVars.Add(v);
-                    this.newStmts.Add(new AssignmentStatementNode(ident, n));
-
-                    return ident;
-                case VariableIdentifierNode n: return n;
+                foreach (var b in node.Statements.Items)
+                    this.Visit(b);
             }
-            throw null;
+
+            private void Visit(StatementNode node) {
+                switch (node) {
+                    case AssignmentStatementNode n:
+                        var rhs = this.Visit(n.Target);
+                        var lhs = this.Visit(n.Expression);
+
+                        this.result.Statements.Add(new AssignmentStatementNode(rhs, lhs));
+
+                        break;
+                }
+            }
+
+            private IdentifierExpressionNode Visit(ExpressionStatementNode node) {
+                switch (node) {
+                    case VariableIdentifierNode n: return n;
+                    case RegisterIdentifierNode n: return n;
+                    case IntegerLiteralNode n: return this.CreateAssignment(n);
+                    case BoolLiteralNode n: return this.CreateAssignment(n);
+
+                    case BinaryExpressionNode n:
+                        var l = this.Visit(n.Left);
+                        var r = this.Visit(n.Right);
+
+                        return this.CreateAssignment(new BinaryExpressionNode(l, n.Op, r));
+
+                    case UnaryExpressionNode n:
+                        var e = this.Visit(n.Expression);
+
+                        return this.CreateAssignment(new UnaryExpressionNode(n.Op, e));
+                }
+
+                Debug.Assert(false);
+
+                return null;
+            }
         }
-
-        private VariableIdentifierNode Visit(BinaryExpressionNode node) {
-            var l = this.Visit(node.Left);
-            var r = this.Visit(node.Right);
-
-            var id = this.GenerateId();
-            var v = new VariableDeclarationNode(new Token(TokenType.Identifier, id));
-            var ident = new VariableIdentifierNode(id);
-
-            this.newVars.Add(v);
-            this.newStmts.Add(new AssignmentStatementNode(ident, new BinaryExpressionNode(l, node.Op, r)));
-
-            return ident;
-        }
-    }
-
-    public class IrGenerator {
-        private readonly ProgramDeclarationNode root;
-        private readonly Dictionary<string, Function> functions = new Dictionary<string, Function>();
-        private readonly Dictionary<string, GlobalVariable> globalVariables = new Dictionary<string, GlobalVariable>();
-
-        public IrGenerator(ProgramDeclarationNode root) => this.root = root;
-
-        public Compiliation Generate() {
-            foreach (var f in this.root.FunctionDeclarations.Items)
-                this.functions[f.Identifier] = this.Visit(f);
-
-            return new Compiliation(this.functions.Values, this.globalVariables.Values);
-        }
-
-        private Function Visit(FunctionDeclarationNode n) => FunctionVisitor.Visit(n);
     }
 
     public class FunctionVisitor {
