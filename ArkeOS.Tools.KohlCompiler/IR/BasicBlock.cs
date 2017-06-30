@@ -4,239 +4,148 @@ using System.Collections.Generic;
 using System.Diagnostics;
 
 namespace ArkeOS.Tools.KohlCompiler.IR {
-    public enum SymbolType {
-        GlobalVariable,
-        Constant,
-        LocalVariable,
-        FunctionArgument,
-        Function
+    public class NameGenerator {
+        private ulong nextId = 0;
+
+        public string Next() => "_" + this.nextId++.ToString();
     }
 
-    public class SymbolTable {
-        public bool TryGet(string name, SymbolType type, int scope, out object result) {
-            throw null;
-        }
-    }
-
-    public class Lowerer {
-        private Lowerer() { }
-
-        public static ProgramDeclarationNode Lower(ProgramDeclarationNode root) {
-            var nameGenerator = new NameGenerator();
-            var result = new ProgramDeclarationNode();
-
-            foreach (var i in root.ConstDeclarations.Items)
-                result.ConstDeclarations.Add(i);
-
-            foreach (var i in root.VariableDeclarations.Items)
-                result.VariableDeclarations.Add(i);
-
-            foreach (var i in root.FunctionDeclarations.Items)
-                result.FunctionDeclarations.Add(FunctionDeclarationVisitor.Visit(nameGenerator, i));
-
-            return result;
-        }
+    public class IrGenerator {
+        private IrGenerator() { }
 
         public static Compiliation LowerIr(ProgramDeclarationNode root) {
             var nameGenerator = new NameGenerator();
-            var result = new Compiliation();
-
-            foreach (var i in root.ConstDeclarations.Items)
-                ; //result.ConstDeclarations.Add(i);
+            var functions = new List<Function>();
+            var globalVars = new List<GlobalVariable>();
 
             foreach (var i in root.VariableDeclarations.Items)
-                result.GlobalVariables.Add(new GlobalVariable(i.Identifier));
+                globalVars.Add(new GlobalVariable(i.Identifier));
 
             foreach (var i in root.FunctionDeclarations.Items)
-                result.Functions.Add(FunctionDeclarationVisitor.Visit1(nameGenerator, i));
+                functions.Add(FunctionDeclarationVisitor.Visit(nameGenerator, i));
 
-            return result;
+            return new Compiliation(functions, globalVars);
+        }
+    }
+
+    public class FunctionDeclarationVisitor {
+        private NameGenerator nameGenerator;
+        private StatementBlockNode result;
+
+        private FunctionDeclarationVisitor(NameGenerator nameGenerator) => (this.nameGenerator, this.result) = (nameGenerator, new StatementBlockNode());
+
+        private List<BasicBlockInstruction> currentInstructions = new List<BasicBlockInstruction>();
+        private List<LocalVariable> localVariables = new List<LocalVariable>();
+        private BasicBlock entry;
+        private BasicBlock parent;
+        private BasicBlock current;
+
+        public static Function Visit(NameGenerator nameGenerator, FunctionDeclarationNode node) {
+            var v = new FunctionDeclarationVisitor(nameGenerator);
+
+            v.Visit(node.StatementBlock);
+
+            v.Push(new ReturnTerminator());
+
+            return new Function(v.entry, v.localVariables);
         }
 
-        private class NameGenerator {
-            private ulong nextId = 0;
+        private LValue CreateAssignment(RValue rhs) {
+            var id = this.nameGenerator.Next();
+            var ident = new LocalVariable(id);
 
-            public string Next() => "_" + this.nextId++.ToString();
+            this.localVariables.Add(ident);
+
+            this.Push(new BasicBlockAssignmentInstruction(ident, rhs));
+
+            return ident;
         }
 
-        private class FunctionDeclarationVisitor {
-            private NameGenerator nameGenerator;
-            private StatementBlockNode result;
+        private LValue Visit(ExpressionStatementNode node) {
+            switch (node) {
+                case VariableIdentifierNode n: return this.ExtractLValue(n);
+                case RegisterIdentifierNode n: return this.ExtractLValue(n);
+                case IntegerLiteralNode n: return this.CreateAssignment(this.ExtractRValue(n));
+                case BoolLiteralNode n: return this.CreateAssignment(this.ExtractRValue(n));
 
-            private FunctionDeclarationVisitor(NameGenerator nameGenerator) => (this.nameGenerator, this.result) = (nameGenerator, new StatementBlockNode());
+                case BinaryExpressionNode n:
+                    var l = this.Visit(n.Left);
+                    var r = this.Visit(n.Right);
 
-            public static FunctionDeclarationNode Visit(NameGenerator nameGenerator, FunctionDeclarationNode orig) {
-                var v = new FunctionDeclarationVisitor(nameGenerator);
-
-                v.Visit(orig.StatementBlock);
-
-                return new FunctionDeclarationNode(orig.Token, orig.ArgumentListDeclaration, v.result);
+                    return this.CreateAssignment(new BinaryOperation(l, (BinaryOperationType)n.Op.Operator, r));
             }
 
-            private VariableIdentifierNode CreateAssignment(ExpressionStatementNode rhs) {
-                var id = this.nameGenerator.Next();
-                var ident = new VariableIdentifierNode(id);
+            Debug.Assert(false);
 
-                this.result.VariableDeclarations.Add(new VariableDeclarationNode(id));
-                this.result.Statements.Add(new AssignmentStatementNode(ident, rhs));
+            return null;
+        }
 
-                return ident;
+        private void Visit(StatementBlockNode node) {
+            foreach (var v in node.VariableDeclarations.Items)
+                this.localVariables.Add(new LocalVariable(v.Identifier));
+
+            foreach (var b in node.Statements.Items)
+                this.Visit(b);
+        }
+
+        private void Visit(StatementNode node) {
+            switch (node) {
+                case AssignmentStatementNode n:
+                    var lhs = this.Visit(n.Target);
+                    var rhs = this.Visit(n.Expression);
+
+                    this.Push(new BasicBlockAssignmentInstruction(lhs, new ReadLValue(rhs)));
+
+                    break;
+
+                default: Debug.Assert(false); break;
             }
+        }
 
-            private void Visit(StatementBlockNode node) {
-                foreach (var i in node.VariableDeclarations.Items)
-                    this.result.VariableDeclarations.Add(i);
+        private void Push(Terminator terminator) {
+            this.current = new BasicBlock(this.currentInstructions, terminator);
 
-                foreach (var b in node.Statements.Items)
-                    this.Visit(b);
-            }
-
-            private void Visit(StatementNode node) {
-                switch (node) {
-                    case AssignmentStatementNode n:
-                        var l = this.Visit(n.Target);
-                        var r = this.Visit(n.Expression);
-
-                        this.result.Statements.Add(new AssignmentStatementNode(l, r));
-
-                        break;
+            if (this.parent != null) {
+                if (this.parent.Terminator is CallTerminator c) {
+                    c.SetReturn(this.current);
                 }
-            }
-
-            private IdentifierExpressionNode Visit(ExpressionStatementNode node) {
-                switch (node) {
-                    case VariableIdentifierNode n: return n;
-                    case RegisterIdentifierNode n: return n;
-                    case IntegerLiteralNode n: return this.CreateAssignment(n);
-                    case BoolLiteralNode n: return this.CreateAssignment(n);
-
-                    case BinaryExpressionNode n:
-                        var l = this.Visit(n.Left);
-                        var r = this.Visit(n.Right);
-
-                        return this.CreateAssignment(new BinaryExpressionNode(l, n.Op, r));
-
-                    case UnaryExpressionNode n:
-                        var e = this.Visit(n.Expression);
-
-                        return this.CreateAssignment(new UnaryExpressionNode(n.Op, e));
-                }
-
-                Debug.Assert(false);
-
-                return null;
-            }
-
-            private List<BasicBlockInstruction> currentInstructions = new List<BasicBlockInstruction>();
-            private List<LocalVariable> localVariables = new List<LocalVariable>();
-            private BasicBlock entry;
-            private BasicBlock parent;
-            private BasicBlock current;
-
-            public static Function Visit1(NameGenerator nameGenerator, FunctionDeclarationNode node) {
-                var v = new FunctionDeclarationVisitor(nameGenerator);
-
-                v.Visit1(node.StatementBlock);
-
-                v.Push(new ReturnTerminator());
-
-                return new Function(v.entry, v.localVariables);
-            }
-
-            private LValue CreateAssignment1(RValue rhs) {
-                var id = this.nameGenerator.Next();
-                var ident = new LocalVariable(id);
-
-                this.localVariables.Add(ident);
-
-                this.Push(new BasicBlockAssignmentInstruction(ident, rhs));
-
-                return ident;
-            }
-
-            private LValue Visit1(ExpressionStatementNode node) {
-                switch (node) {
-                    case VariableIdentifierNode n: return this.ExtractLValue(n);
-                    case RegisterIdentifierNode n: return this.ExtractLValue(n);
-                    case IntegerLiteralNode n: return this.CreateAssignment1(this.ExtractRValue(n));
-                    case BoolLiteralNode n: return this.CreateAssignment1(this.ExtractRValue(n));
-
-                    case BinaryExpressionNode n:
-                        var l = this.Visit1(n.Left);
-                        var r = this.Visit1(n.Right);
-
-                        return this.CreateAssignment1(new BinaryOperation(l, (BinaryOperationType)n.Op.Operator, r));
-                }
-
-                Debug.Assert(false);
-
-                return null;
-            }
-
-            private void Visit1(StatementBlockNode node) {
-                foreach (var b in node.Statements.Items)
-                    this.Visit1(b);
-            }
-
-            private void Visit1(StatementNode node) {
-                switch (node) {
-                    case AssignmentStatementNode n:
-                        var lhs = this.Visit1(n.Target);
-                        var rhs = this.Visit1(n.Expression);
-
-                        this.Push(new BasicBlockAssignmentInstruction(lhs, new ReadLValue(rhs)));
-
-                        break;
-
-                    default: Debug.Assert(false); break;
-                }
-            }
-
-            private void Push(Terminator terminator) {
-                this.current = new BasicBlock(this.currentInstructions, terminator);
-
-                if (this.parent != null) {
-                    if (this.parent.Terminator is CallTerminator c) {
-                        c.SetReturn(this.current);
+                else if (this.parent.Terminator is IfTerminator i) {
+                    if (i.WhenTrue == null) {
+                        i.SetWhenTrue(this.current);
+                        goto skipSetParent;
                     }
-                    else if (this.parent.Terminator is IfTerminator i) {
-                        if (i.WhenTrue == null) {
-                            i.SetWhenTrue(this.current);
-                            goto skipSetParent;
-                        }
-                        else if (i.WhenFalse == null) {
-                            i.SetWhenFalse(this.current);
-                        }
+                    else if (i.WhenFalse == null) {
+                        i.SetWhenFalse(this.current);
                     }
                 }
-
-                this.parent = this.current;
-
-                skipSetParent:
-                this.currentInstructions = new List<BasicBlockInstruction>();
-
-                if (this.entry == null)
-                    this.entry = this.parent;
             }
 
-            private void Push(BasicBlockInstruction bbi) => this.currentInstructions.Add(bbi);
+            this.parent = this.current;
 
-            private LValue ExtractLValue(ExpressionStatementNode e) {
-                switch (e) {
-                    case RegisterIdentifierNode n: return new RegisterVariable(n.Register);
-                    case VariableIdentifierNode n: return new LocalVariable(n.Identifier);
-                    default: Debug.Assert(false); return null;
-                }
+            skipSetParent:
+            this.currentInstructions = new List<BasicBlockInstruction>();
+
+            if (this.entry == null)
+                this.entry = this.parent;
+        }
+
+        private void Push(BasicBlockInstruction bbi) => this.currentInstructions.Add(bbi);
+
+        private LValue ExtractLValue(ExpressionStatementNode e) {
+            switch (e) {
+                case RegisterIdentifierNode n: return new RegisterVariable(n.Register);
+                case VariableIdentifierNode n: return new LocalVariable(n.Identifier);
+                default: Debug.Assert(false); return null;
             }
+        }
 
-            private RValue ExtractRValue(ExpressionStatementNode e) {
-                switch (e) {
-                    case RegisterIdentifierNode n: return new ReadLValue(new RegisterVariable(n.Register));
-                    case VariableIdentifierNode n: return new ReadLValue(new LocalVariable(n.Identifier));
-                    case IntegerLiteralNode n: return new UnsignedIntegerConstant(n.Literal);
-                    case BoolLiteralNode n: return new UnsignedIntegerConstant(n.Literal ? ulong.MaxValue : 0);
-                    default: Debug.Assert(false); return null;
-                }
+        private RValue ExtractRValue(ExpressionStatementNode e) {
+            switch (e) {
+                case RegisterIdentifierNode n: return new ReadLValue(new RegisterVariable(n.Register));
+                case VariableIdentifierNode n: return new ReadLValue(new LocalVariable(n.Identifier));
+                case IntegerLiteralNode n: return new UnsignedIntegerConstant(n.Literal);
+                case BoolLiteralNode n: return new UnsignedIntegerConstant(n.Literal ? ulong.MaxValue : 0);
+                default: Debug.Assert(false); return null;
             }
         }
     }
@@ -264,10 +173,10 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
     }
 
     public sealed class Compiliation {
-        public ICollection<Function> Functions { get; }
-        public ICollection<GlobalVariable> GlobalVariables { get; }
+        public IReadOnlyCollection<Function> Functions { get; }
+        public IReadOnlyCollection<GlobalVariable> GlobalVariables { get; }
 
-        public Compiliation() => (this.Functions, this.GlobalVariables) = (new List<Function>(), new List<GlobalVariable>());
+        public Compiliation(IReadOnlyCollection<Function> functions, IReadOnlyCollection<GlobalVariable> globalVars) => (this.Functions, this.GlobalVariables) = (functions, globalVars);
     }
 
     public abstract class LValue { }
@@ -371,42 +280,35 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
     }
 
     public enum BinaryOperationType {
-        Addition,
-        Subtraction,
-        Multiplication,
-        Division,
-        Remainder,
-        Exponentiation,
-        UnaryPlus,
-        UnaryMinus,
-        ShiftLeft,
-        ShiftRight,
-        RotateLeft,
-        RotateRight,
-        And,
-        Or,
-        Xor,
-        NotAnd,
-        NotOr,
-        NotXor,
-        Equals,
-        NotEquals,
-        LessThan,
-        LessThanOrEqual,
-        GreaterThan,
-        GreaterThanOrEqual,
-        Not,
-        AddressOf,
-        Dereference,
-        OpenParenthesis,
-        CloseParenthesis,
+        Addition = Operator.Addition,
+        Subtraction = Operator.Subtraction,
+        Multiplication = Operator.Multiplication,
+        Division = Operator.Division,
+        Remainder = Operator.Remainder,
+        Exponentiation = Operator.Exponentiation,
+        ShiftLeft = Operator.ShiftLeft,
+        ShiftRight = Operator.ShiftRight,
+        RotateLeft = Operator.RotateLeft,
+        RotateRight = Operator.RotateRight,
+        And = Operator.And,
+        Or = Operator.Or,
+        Xor = Operator.Xor,
+        NotAnd = Operator.NotAnd,
+        NotOr = Operator.NotOr,
+        NotXor = Operator.NotXor,
+        Equals = Operator.Equals,
+        NotEquals = Operator.NotEquals,
+        LessThan = Operator.LessThan,
+        LessThanOrEqual = Operator.LessThanOrEqual,
+        GreaterThan = Operator.GreaterThan,
+        GreaterThanOrEqual = Operator.GreaterThanOrEqual,
     }
 
     public enum UnaryOperationType {
-        Plus,
-        Minus,
-        Not,
-        AddressOf,
-        Dereference,
+        Plus = Operator.Addition,
+        Minus = Operator.Subtraction,
+        Not = Operator.Not,
+        AddressOf = Operator.AddressOf,
+        Dereference = Operator.Dereference,
     }
 }
