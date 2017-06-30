@@ -1,6 +1,5 @@
 ﻿using ArkeOS.Hardware.Architecture;
 using ArkeOS.Tools.KohlCompiler.Syntax;
-using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 
@@ -34,6 +33,22 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
 
             foreach (var i in root.FunctionDeclarations.Items)
                 result.FunctionDeclarations.Add(FunctionDeclarationVisitor.Visit(nameGenerator, i));
+
+            return result;
+        }
+
+        public static Compiliation LowerIr(ProgramDeclarationNode root) {
+            var nameGenerator = new NameGenerator();
+            var result = new Compiliation();
+
+            foreach (var i in root.ConstDeclarations.Items)
+                ; //result.ConstDeclarations.Add(i);
+
+            foreach (var i in root.VariableDeclarations.Items)
+                result.GlobalVariables.Add(new GlobalVariable(i.Identifier));
+
+            foreach (var i in root.FunctionDeclarations.Items)
+                result.Functions.Add(FunctionDeclarationVisitor.Visit1(nameGenerator, i));
 
             return result;
         }
@@ -79,10 +94,10 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
             private void Visit(StatementNode node) {
                 switch (node) {
                     case AssignmentStatementNode n:
-                        var rhs = this.Visit(n.Target);
-                        var lhs = this.Visit(n.Expression);
+                        var l = this.Visit(n.Target);
+                        var r = this.Visit(n.Expression);
 
-                        this.result.Statements.Add(new AssignmentStatementNode(rhs, lhs));
+                        this.result.Statements.Add(new AssignmentStatementNode(l, r));
 
                         break;
                 }
@@ -111,97 +126,118 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
 
                 return null;
             }
-        }
-    }
 
-    public class FunctionVisitor {
-        private readonly FunctionDeclarationNode func;
-        private List<BasicBlockInstruction> currentInstructions = new List<BasicBlockInstruction>();
-        private BasicBlock entry;
-        private BasicBlock parent;
-        private BasicBlock current;
+            private List<BasicBlockInstruction> currentInstructions = new List<BasicBlockInstruction>();
+            private List<LocalVariable> localVariables = new List<LocalVariable>();
+            private BasicBlock entry;
+            private BasicBlock parent;
+            private BasicBlock current;
 
-        private FunctionVisitor(FunctionDeclarationNode func) => this.func = func;
+            public static Function Visit1(NameGenerator nameGenerator, FunctionDeclarationNode node) {
+                var v = new FunctionDeclarationVisitor(nameGenerator);
 
-        public static Function Visit(FunctionDeclarationNode func) => new FunctionVisitor(func).Visit();
+                v.Visit1(node.StatementBlock);
 
-        private Function Visit() {
-            this.Visit(this.func.StatementBlock);
+                v.Push(new ReturnTerminator());
 
-            this.Push(new ReturnTerminator());
-
-            return new Function(this.entry);
-        }
-
-        private void Push(Terminator terminator) {
-            this.current = new BasicBlock(this.currentInstructions, terminator);
-
-            if (this.parent != null) {
-                if (this.parent.Terminator is CallTerminator c) {
-                    c.SetReturn(this.current);
-                }
-                else if (this.parent.Terminator is IfTerminator i) {
-                    if (i.WhenTrue == null) {
-                        i.SetWhenTrue(this.current);
-                        goto skipSetParent;
-                    }
-                    else if (i.WhenFalse == null) {
-                        i.SetWhenFalse(this.current);
-                    }
-                }
+                return new Function(v.entry, v.localVariables);
             }
 
-            this.parent = this.current;
+            private LValue CreateAssignment1(RValue rhs) {
+                var id = this.nameGenerator.Next();
+                var ident = new LocalVariable(id);
 
-            skipSetParent:
-            this.currentInstructions = new List<BasicBlockInstruction>();
+                this.localVariables.Add(ident);
 
-            if (this.entry == null)
-                this.entry = this.parent;
-        }
+                this.Push(new BasicBlockAssignmentInstruction(ident, rhs));
 
-        private void Push(BasicBlockInstruction bbi) => this.currentInstructions.Add(bbi);
+                return ident;
+            }
 
-        private void Visit(StatementBlockNode sbn) {
-            foreach (var s in sbn.Statements.Items) {
-                switch (s) {
+            private LValue Visit1(ExpressionStatementNode node) {
+                switch (node) {
+                    case VariableIdentifierNode n: return this.ExtractLValue(n);
+                    case RegisterIdentifierNode n: return this.ExtractLValue(n);
+                    case IntegerLiteralNode n: return this.CreateAssignment1(this.ExtractRValue(n));
+                    case BoolLiteralNode n: return this.CreateAssignment1(this.ExtractRValue(n));
+
+                    case BinaryExpressionNode n:
+                        var l = this.Visit1(n.Left);
+                        var r = this.Visit1(n.Right);
+
+                        return this.CreateAssignment1(new BinaryOperation(l, (BinaryOperationType)n.Op.Operator, r));
+                }
+
+                Debug.Assert(false);
+
+                return null;
+            }
+
+            private void Visit1(StatementBlockNode node) {
+                foreach (var b in node.Statements.Items)
+                    this.Visit1(b);
+            }
+
+            private void Visit1(StatementNode node) {
+                switch (node) {
                     case AssignmentStatementNode n:
-                        var (blk, res) = this.Flatten(n.Expression);
+                        var lhs = this.Visit1(n.Target);
+                        var rhs = this.Visit1(n.Expression);
 
-                        if (blk != null)
-                            this.Visit(blk);
-
-                        this.Push(new BasicBlockAssignmentInstruction(this.ExtractLValue(n.Target), res));
-
-                        break;
-
-                    case FunctionCallIdentifierNode n:
+                        this.Push(new BasicBlockAssignmentInstruction(lhs, new ReadLValue(rhs)));
 
                         break;
 
                     default: Debug.Assert(false); break;
                 }
             }
-        }
 
-        private LValue ExtractLValue(ExpressionStatementNode e) {
-            switch (e) {
-                case RegisterIdentifierNode n: return new RegisterVariable(n.Register);
-                default: Debug.Assert(false); return null;
+            private void Push(Terminator terminator) {
+                this.current = new BasicBlock(this.currentInstructions, terminator);
+
+                if (this.parent != null) {
+                    if (this.parent.Terminator is CallTerminator c) {
+                        c.SetReturn(this.current);
+                    }
+                    else if (this.parent.Terminator is IfTerminator i) {
+                        if (i.WhenTrue == null) {
+                            i.SetWhenTrue(this.current);
+                            goto skipSetParent;
+                        }
+                        else if (i.WhenFalse == null) {
+                            i.SetWhenFalse(this.current);
+                        }
+                    }
+                }
+
+                this.parent = this.current;
+
+                skipSetParent:
+                this.currentInstructions = new List<BasicBlockInstruction>();
+
+                if (this.entry == null)
+                    this.entry = this.parent;
             }
-        }
 
-        private (StatementBlockNode, RValue) Flatten(ExpressionStatementNode esn) {
-            var insts = new List<AssignmentStatementNode>();
+            private void Push(BasicBlockInstruction bbi) => this.currentInstructions.Add(bbi);
 
-            switch (esn) {
-                case IntegerLiteralNode n: return (null, new UnsignedIntegerConstant(n.Literal));
-                default: throw new NotImplementedException();
+            private LValue ExtractLValue(ExpressionStatementNode e) {
+                switch (e) {
+                    case RegisterIdentifierNode n: return new RegisterVariable(n.Register);
+                    case VariableIdentifierNode n: return new LocalVariable(n.Identifier);
+                    default: Debug.Assert(false); return null;
+                }
             }
-        }
 
-        private void Visit(ExpressionStatementNode expr, List<AssignmentStatementNode> instructions) {
-
+            private RValue ExtractRValue(ExpressionStatementNode e) {
+                switch (e) {
+                    case RegisterIdentifierNode n: return new ReadLValue(new RegisterVariable(n.Register));
+                    case VariableIdentifierNode n: return new ReadLValue(new LocalVariable(n.Identifier));
+                    case IntegerLiteralNode n: return new UnsignedIntegerConstant(n.Literal);
+                    case BoolLiteralNode n: return new UnsignedIntegerConstant(n.Literal ? ulong.MaxValue : 0);
+                    default: Debug.Assert(false); return null;
+                }
+            }
         }
     }
 
@@ -219,6 +255,8 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
         public RValue Value { get; }
 
         public BasicBlockAssignmentInstruction(LValue target, RValue value) => (this.Target, this.Value) = (target, value);
+
+        public override string ToString() => $"{this.Target} = {this.Value}";
     }
 
     public sealed class BasicBlockIntrinsicInstruction : BasicBlockInstruction {
@@ -226,21 +264,37 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
     }
 
     public sealed class Compiliation {
-        public IReadOnlyCollection<Function> Functions { get; }
-        public IReadOnlyCollection<GlobalVariable> GlobalVariables { get; }
+        public ICollection<Function> Functions { get; }
+        public ICollection<GlobalVariable> GlobalVariables { get; }
 
-        public Compiliation(IReadOnlyCollection<Function> functions, IReadOnlyCollection<GlobalVariable> globalVariables) => (this.Functions, this.GlobalVariables) = (functions, globalVariables);
+        public Compiliation() => (this.Functions, this.GlobalVariables) = (new List<Function>(), new List<GlobalVariable>());
     }
 
     public abstract class LValue { }
-    public sealed class LocalVariable : LValue { }
-    public sealed class GlobalVariable : LValue { }
     public sealed class FunctionArgument : LValue { }
+
+    public sealed class GlobalVariable : LValue {
+        public string Identifier { get; }
+
+        public GlobalVariable(string identifier) => this.Identifier = identifier;
+
+        public override string ToString() => this.Identifier;
+    }
+
+    public sealed class LocalVariable : LValue {
+        public string Identifier { get; }
+
+        public LocalVariable(string identifier) => this.Identifier = identifier;
+
+        public override string ToString() => this.Identifier;
+    }
 
     public sealed class RegisterVariable : LValue {
         public Register Register { get; }
 
         public RegisterVariable(Register register) => this.Register = register;
+
+        public override string ToString() => this.Register.ToString();
     }
 
     public sealed class Pointer : LValue {
@@ -251,7 +305,7 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
         public IReadOnlyCollection<LocalVariable> LocalVariables { get; }
         public BasicBlock Entry { get; }
 
-        public Function(BasicBlock bb) => this.Entry = bb;
+        public Function(BasicBlock bb, IReadOnlyCollection<LocalVariable> variables) => (this.Entry, this.LocalVariables) = (bb, variables);
     }
 
     public abstract class RValue { }
@@ -261,21 +315,33 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
         public ulong Value { get; }
 
         public UnsignedIntegerConstant(ulong value) => this.Value = value;
+
+        public override string ToString() => this.Value.ToString();
     }
 
     public sealed class ReadLValue : RValue {
         public LValue Value { get; }
+
+        public ReadLValue(LValue value) => this.Value = value;
+
+        public override string ToString() => this.Value.ToString();
     }
 
     public sealed class BinaryOperation : RValue {
         public LValue Left { get; }
         public BinaryOperationType Op { get; }
         public LValue Right { get; }
+
+        public BinaryOperation(LValue left, BinaryOperationType op, LValue right) => (this.Left, this.Op, this.Right) = (left, op, right);
+
+        public override string ToString() => $"{this.Left} '{this.Op}' {this.Right}";
     }
 
     public sealed class UnaryOperation : RValue {
         public UnaryOperationType Op { get; }
         public LValue Value { get; }
+
+        public override string ToString() => $"'{this.Op}' {this.Value}";
     }
 
     public abstract class Terminator { }
@@ -311,6 +377,8 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
         Division,
         Remainder,
         Exponentiation,
+        UnaryPlus,
+        UnaryMinus,
         ShiftLeft,
         ShiftRight,
         RotateLeft,
@@ -328,6 +396,10 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
         GreaterThan,
         GreaterThanOrEqual,
         Not,
+        AddressOf,
+        Dereference,
+        OpenParenthesis,
+        CloseParenthesis,
     }
 
     public enum UnaryOperationType {
