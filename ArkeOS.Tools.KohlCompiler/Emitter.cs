@@ -1,49 +1,38 @@
 ﻿using ArkeOS.Hardware.Architecture;
 using ArkeOS.Tools.KohlCompiler.Exceptions;
-using ArkeOS.Tools.KohlCompiler.Syntax;
+using ArkeOS.Tools.KohlCompiler.IR;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
 
-//TODO Things to lower:
-//Compound assignment
-//Variable initializers
-//Bool literals
-//Consts
-
 namespace ArkeOS.Tools.KohlCompiler {
     public class Emitter {
-        private static Parameter StackParam { get; } = new Parameter { Type = ParameterType.Stack };
-
-        private readonly ProgramDeclarationNode tree;
+        private readonly Compiliation tree;
         private readonly bool emitAssemblyListing;
         private readonly bool emitBootable;
         private readonly string outputFile;
         private ulong nextVariableAddress;
         private Dictionary<string, ulong> functionAddresses;
         private Dictionary<string, ulong> variableAddresses;
-        private Dictionary<string, ulong> constValues;
         private List<Instruction> instructions;
-        private FunctionDeclarationNode currentFunction;
+        private Function currentFunction;
         private bool throwOnNoFunction;
 
-        public Emitter(ProgramDeclarationNode tree, bool emitAssemblyListing, bool emitBootable, string outputFile) => (this.tree, this.emitAssemblyListing, this.emitBootable, this.outputFile) = (tree, emitAssemblyListing, emitBootable, outputFile);
+        public Emitter(Compiliation tree, bool emitAssemblyListing, bool emitBootable, string outputFile) => (this.tree, this.emitAssemblyListing, this.emitBootable, this.outputFile) = (tree, emitAssemblyListing, emitBootable, outputFile);
 
         private ulong DistanceFrom(int startInst) => (ulong)this.instructions.Skip(startInst).Sum(i => i.Length);
 
         public void Emit() {
             this.functionAddresses = new Dictionary<string, ulong>();
             this.variableAddresses = new Dictionary<string, ulong>();
-            this.constValues = new Dictionary<string, ulong>();
             this.nextVariableAddress = 0UL;
 
             this.instructions = new List<Instruction>();
             this.throwOnNoFunction = false;
 
-            this.DiscoverGlobalVariables(this.tree);
             this.EmitHeader();
-            this.DiscoverFunctions(this.tree);
+            this.DiscoverAddresses(this.tree);
 
             this.instructions.Clear();
             this.throwOnNoFunction = true;
@@ -74,25 +63,23 @@ namespace ArkeOS.Tools.KohlCompiler {
             this.Emit(InstructionDefinition.HLT);
         }
 
-        private void SetVariableAddress(VariableDeclarationNode v) {
+        private void SetVariableAddress(Variable v) {
             if (this.variableAddresses.ContainsKey(v.Identifier))
                 throw new AlreadyDefinedException(default(PositionInfo), v.Identifier);
 
             this.variableAddresses[v.Identifier] = this.nextVariableAddress++;
         }
 
-        private void DiscoverGlobalVariables(ProgramDeclarationNode n) {
-            foreach (var s in n.VariableDeclarations.Items)
+        private void DiscoverAddresses(Compiliation n) {
+            foreach (var s in n.GlobalVariables)
                 this.SetVariableAddress(s);
 
-            foreach (var s in n.ConstDeclarations.Items)
-                this.constValues[s.Identifier] = s.Value.Literal;
-        }
-
-        private void DiscoverFunctions(ProgramDeclarationNode n) {
-            foreach (var s in n.FunctionDeclarations.Items) {
+            foreach (var s in n.Functions) {
                 if (this.functionAddresses.ContainsKey(s.Identifier))
                     throw new AlreadyDefinedException(default(PositionInfo), s.Identifier);
+
+                foreach (var v in s.LocalVariables)
+                    this.SetVariableAddress(v);
 
                 this.functionAddresses[s.Identifier] = (ulong)this.instructions.Sum(i => i.Length);
 
@@ -100,17 +87,27 @@ namespace ArkeOS.Tools.KohlCompiler {
             }
         }
 
-        private Parameter GetVariableAccessParameter(string variable, bool allowIndirect) => this.GetVariableAccessParameter(variable, allowIndirect, false);
+        private Parameter GetVariableAccessParameter(LValue variable, bool allowIndirect) {
+            //if (this.currentFunction.ArgumentListDeclaration.TryGetIndex(a => a.Identifier == variable, out var idx))
+            //    return Parameter.CreateLiteral(idx, ParameterFlags.RelativeToRBP | (allowIndirect ? ParameterFlags.Indirect : 0));
 
-        private Parameter GetVariableAccessParameter(string variable, bool allowIndirect, bool allowConst) {
-            if (allowConst && this.constValues.TryGetValue(variable, out var c))
-                return Parameter.CreateLiteral(c);
+            var addr = 0UL;
 
-            if (this.currentFunction.ArgumentListDeclaration.TryGetIndex(a => a.Identifier == variable, out var idx))
-                return Parameter.CreateLiteral(idx, ParameterFlags.RelativeToRBP | (allowIndirect ? ParameterFlags.Indirect : 0));
+            switch (variable) {
+                case LocalVariable v:
+                    if (!this.variableAddresses.TryGetValue(v.Identifier, out addr) && this.throwOnNoFunction)
+                        throw new IdentifierNotFoundException(default(PositionInfo), v.Identifier);
 
-            if (!this.variableAddresses.TryGetValue(variable, out var addr) && this.throwOnNoFunction)
-                throw new IdentifierNotFoundException(default(PositionInfo), variable);
+                    break;
+
+                case RegisterVariable v:
+                    return Parameter.CreateRegister(v.Register);
+
+                default:
+                    Debug.Assert(false);
+                    break;
+            }
+
 
             return Parameter.CreateLiteral(addr, allowIndirect ? ParameterFlags.Indirect : 0);
         }
@@ -125,316 +122,107 @@ namespace ArkeOS.Tools.KohlCompiler {
         private void Emit(InstructionDefinition def, params Parameter[] parameters) => this.instructions.Add(new Instruction(def, parameters));
         private void Emit(InstructionDefinition def, Parameter conditional, InstructionConditionalType conditionalType, params Parameter[] parameters) => this.instructions.Add(new Instruction(def, parameters, conditional, conditionalType));
 
-        private Parameter ExtractLValue(ExpressionStatementNode expr) {
-            Parameter extract(ExpressionStatementNode ex, bool allowLiteral)
-            {
-                switch (ex) {
-                    case RegisterIdentifierNode n: return Parameter.CreateRegister(n.Register);
-                    case VariableIdentifierNode n: return this.GetVariableAccessParameter(n.Identifier, true);
-                    case IntegerLiteralNode n when allowLiteral: return Parameter.CreateLiteral(n.Literal);
-                    case UnaryExpressionNode n when n.Op.Operator == Operator.Dereference:
-                        this.Emit(InstructionDefinition.SET, Emitter.StackParam, extract(n.Expression, true));
-
-                        return Parameter.CreateStack(ParameterFlags.Indirect);
-
-                    default: throw new ExpectedException(default(PositionInfo), "value");
-                }
-            }
-
-            return extract(expr, false);
-        }
-
-        private void Visit(ProgramDeclarationNode n) {
-            foreach (var s in n.FunctionDeclarations.Items)
+        private void Visit(Compiliation n) {
+            foreach (var s in n.Functions)
                 this.Visit(s);
         }
 
-        private void Visit(FunctionDeclarationNode n) {
+        private void Visit(Function n) {
             this.currentFunction = n;
 
-            this.Visit(n.StatementBlock);
-
-            this.Emit(InstructionDefinition.SET, Parameter.CreateRegister(Register.R0), Parameter.CreateRegister(Register.RZERO));
-
-            this.Emit(InstructionDefinition.RET);
+            this.Visit(n.Entry);
         }
 
-        private void Visit(StatementBlockNode n) {
-            foreach (var s in n.Statements.Items)
+        private void Visit(BasicBlock n) {
+            foreach (var s in n.Instructions)
                 this.Visit(s);
 
-            if (!this.throwOnNoFunction)
-                foreach (var s in n.VariableDeclarations.Items)
-                    this.SetVariableAddress(s);
+            this.Visit(n.Terminator);
         }
 
-        private void Visit(StatementNode s) {
+        private void Visit(BasicBlockInstruction s) {
             switch (s) {
-                case EmptyStatementNode n: break;
-                case IntrinsicStatementNode n: this.Visit(n); break;
-                case IfStatementNode n: this.Visit(n); break;
-                case WhileStatementNode n: this.Visit(n); break;
-                case ReturnStatementNode n: this.Visit(n); break;
-                case AssignmentStatementNode n: this.Visit(n); break;
-                case VariableDeclarationWithInitializerNode n: this.Visit(new AssignmentStatementNode(new VariableIdentifierNode(n.Identifier), n.Initializer)); break;
-                case FunctionCallIdentifierNode n:
-                    this.Visit(n);
-                    this.Emit(InstructionDefinition.SUB, Parameter.CreateRegister(Register.RSP), Parameter.CreateRegister(Register.RSP), Parameter.CreateRegister(Register.RONE));
-
-                    break;
-
-                case ExpressionStatementNode n: throw new ExpectedException(default(PositionInfo), "statement");
+                case BasicBlockAssignmentInstruction n: this.Visit(n); break;
                 default: Debug.Assert(false); break;
             }
         }
 
-        private void Visit(IntrinsicStatementNode s) {
-            switch (s) {
-                case BrkStatementNode n: this.Emit(InstructionDefinition.BRK); break;
-                case EintStatementNode n: this.Emit(InstructionDefinition.EINT); break;
-                case HltStatementNode n: this.Emit(InstructionDefinition.HLT); break;
-                case IntdStatementNode n: this.Emit(InstructionDefinition.INTD); break;
-                case InteStatementNode n: this.Emit(InstructionDefinition.INTE); break;
-                case NopStatementNode n: this.Emit(InstructionDefinition.NOP); break;
 
-                case CpyStatementNode n: {
-                        if (n.ArgumentList.Extract(out var arg0, out var arg1, out var arg2)) {
-                            this.Visit(arg0);
-                            this.Visit(arg1);
-                            this.Visit(arg2);
-
-                            this.Emit(InstructionDefinition.CPY, Emitter.StackParam, Emitter.StackParam, Emitter.StackParam);
-                        }
-                        else {
-                            throw new TooFewArgumentsException(default(PositionInfo));
-                        }
-                    }
-
-                    break;
-
-                case IntStatementNode n: {
-                        if (n.ArgumentList.Extract(out var arg0, out var arg1, out var arg2)) {
-                            this.Visit(arg0);
-                            this.Visit(arg1);
-                            this.Visit(arg2);
-
-                            this.Emit(InstructionDefinition.INT, Emitter.StackParam, Emitter.StackParam, Emitter.StackParam);
-                        }
-                        else {
-                            throw new TooFewArgumentsException(default(PositionInfo));
-                        }
-                    }
-
-                    break;
-
-                case DbgStatementNode n: {
-                        if (n.ArgumentList.Extract(out var arg0, out var arg1, out var arg2)) {
-                            this.Emit(InstructionDefinition.DBG, this.ExtractLValue(arg0), this.ExtractLValue(arg1), this.ExtractLValue(arg2));
-                        }
-                        else {
-                            throw new TooFewArgumentsException(default(PositionInfo));
-                        }
-                    }
-
-                    break;
-
-                case CasStatementNode n: {
-                        if (n.ArgumentList.Extract(out var arg0, out var arg1, out var arg2)) {
-                            this.Visit(arg2);
-
-                            this.Emit(InstructionDefinition.CAS, this.ExtractLValue(arg0), this.ExtractLValue(arg1), Emitter.StackParam);
-                        }
-                        else {
-                            throw new TooFewArgumentsException(default(PositionInfo));
-                        }
-                    }
-
-                    break;
-
-                case XchgStatementNode n: {
-                        if (n.ArgumentList.Extract(out var arg0, out var arg1)) {
-                            this.Emit(InstructionDefinition.XCHG, this.ExtractLValue(arg0), this.ExtractLValue(arg1));
-                        }
-                        else {
-                            throw new TooFewArgumentsException(default(PositionInfo));
-                        }
-                    }
-
-                    break;
-
-                default: Debug.Assert(false); break;
+        private void Visit(Terminator terminator) {
+            switch (terminator) {
+                case ReturnTerminator n: this.Visit(n); break;
             }
         }
 
-        private void Visit(IfStatementNode i) {
-            this.Visit(i.Expression);
-
-            var ifStart = this.instructions.Count;
-            var ifLen = Parameter.CreateLiteral(0, ParameterFlags.RelativeToRIP);
-            this.Emit(InstructionDefinition.SET, Emitter.StackParam, InstructionConditionalType.WhenZero, Parameter.CreateRegister(Register.RIP), ifLen);
-
-            this.Visit(i.StatementBlock);
-
-            if (i is IfElseStatementNode ie) {
-                var elseStart = this.instructions.Count;
-                var elseLen = Parameter.CreateLiteral(0, ParameterFlags.RelativeToRIP);
-                this.Emit(InstructionDefinition.SET, Parameter.CreateRegister(Register.RIP), elseLen);
-
-                ifLen.Literal = this.DistanceFrom(ifStart);
-
-                this.Visit(ie.ElseStatementBlock);
-
-                elseLen.Literal = this.DistanceFrom(elseStart);
-            }
-            else {
-                ifLen.Literal = this.DistanceFrom(ifStart);
-            }
-        }
-
-        private void Visit(WhileStatementNode w) {
-            var nodeStart = this.instructions.Count;
-
-            this.Visit(w.Expression);
-
-            var blockStart = this.instructions.Count;
-            var blockLen = Parameter.CreateLiteral(0, ParameterFlags.RelativeToRIP);
-            this.Emit(InstructionDefinition.SET, Emitter.StackParam, InstructionConditionalType.WhenZero, Parameter.CreateRegister(Register.RIP), blockLen);
-
-            this.Visit(w.StatementBlock);
-
-            var nodeLen = Parameter.CreateLiteral((ulong)-(long)this.DistanceFrom(nodeStart), ParameterFlags.RelativeToRIP);
-            this.Emit(InstructionDefinition.SET, Parameter.CreateRegister(Register.RIP), nodeLen);
-
-            blockLen.Literal = this.DistanceFrom(blockStart);
-        }
-
-        private void Visit(ReturnStatementNode r) {
-            this.Visit(r.Expression);
-
-            this.Emit(InstructionDefinition.SET, Parameter.CreateRegister(Register.R0), Emitter.StackParam);
-
+        private void Visit(ReturnTerminator r) {
             this.Emit(InstructionDefinition.RET);
         }
 
-        private void Visit(AssignmentStatementNode a) {
-            if (a is CompoundAssignmentStatementNode c)
-                a = new AssignmentStatementNode(c.Target, new BinaryExpressionNode(c.Target, c.Op, c.Expression));
+        private void Visit(BasicBlockAssignmentInstruction a) {
+            var target = this.GetVariableAccessParameter(a.Target, true);
 
-            var target = this.ExtractLValue(a.Target);
-
-            if (a.Expression is RegisterIdentifierNode rnode) {
-                this.Emit(InstructionDefinition.SET, target, Parameter.CreateRegister(rnode.Register));
+            if (a.Value is ReadLValue vnode) {
+                this.Emit(InstructionDefinition.SET, target, this.GetVariableAccessParameter(vnode.Value, true));
             }
-            else if (a.Expression is VariableIdentifierNode vnode) {
-                this.Emit(InstructionDefinition.SET, target, this.GetVariableAccessParameter(vnode.Identifier, true));
+            else if (a.Value is UnsignedIntegerConstant nnode) {
+                this.Emit(InstructionDefinition.SET, target, Parameter.CreateLiteral(nnode.Value));
             }
-            else if (a.Expression is IntegerLiteralNode nnode) {
-                this.Emit(InstructionDefinition.SET, target, Parameter.CreateLiteral(nnode.Literal));
+            else if (a.Value is BinaryOperation bnode) {
+                this.Visit(target, bnode);
             }
-            else if (a.Expression is BoolLiteralNode bnode) {
-                this.Emit(InstructionDefinition.SET, target, Parameter.CreateLiteral(bnode.Literal ? ulong.MaxValue : 0));
+            else if (a.Value is UnaryOperation unode) {
+                this.Visit(target, unode);
             }
             else {
-                this.Visit(a.Expression);
-
-                this.Emit(InstructionDefinition.SET, target, Emitter.StackParam);
+                Debug.Assert(false);
             }
         }
 
-        private void Visit(ExpressionStatementNode e) {
-            switch (e) {
-                case BinaryExpressionNode n:
-                    this.Visit(n.Left);
-                    this.Visit(n.Right);
+        private void Visit(Parameter target, BinaryOperation n) {
+            var def = default(InstructionDefinition);
 
-                    var def = default(InstructionDefinition);
-
-                    switch (n.Op.Operator) {
-                        case Operator.Addition: def = InstructionDefinition.ADD; break;
-                        case Operator.Subtraction: def = InstructionDefinition.SUB; break;
-                        case Operator.Multiplication: def = InstructionDefinition.MUL; break;
-                        case Operator.Division: def = InstructionDefinition.DIV; break;
-                        case Operator.Remainder: def = InstructionDefinition.MOD; break;
-                        case Operator.Exponentiation: def = InstructionDefinition.POW; break;
-                        case Operator.ShiftLeft: def = InstructionDefinition.SL; break;
-                        case Operator.ShiftRight: def = InstructionDefinition.SR; break;
-                        case Operator.RotateLeft: def = InstructionDefinition.RL; break;
-                        case Operator.RotateRight: def = InstructionDefinition.RR; break;
-                        case Operator.And: def = InstructionDefinition.AND; break;
-                        case Operator.Or: def = InstructionDefinition.OR; break;
-                        case Operator.Xor: def = InstructionDefinition.XOR; break;
-                        case Operator.NotAnd: def = InstructionDefinition.NAND; break;
-                        case Operator.NotOr: def = InstructionDefinition.NOR; break;
-                        case Operator.NotXor: def = InstructionDefinition.NXOR; break;
-                        case Operator.Equals: def = InstructionDefinition.EQ; break;
-                        case Operator.NotEquals: def = InstructionDefinition.NEQ; break;
-                        case Operator.LessThan: def = InstructionDefinition.LT; break;
-                        case Operator.LessThanOrEqual: def = InstructionDefinition.LTE; break;
-                        case Operator.GreaterThan: def = InstructionDefinition.GT; break;
-                        case Operator.GreaterThanOrEqual: def = InstructionDefinition.GTE; break;
-                        default: Debug.Assert(false); break;
-                    }
-
-                    this.Emit(def, Emitter.StackParam, Emitter.StackParam, Emitter.StackParam);
-
-                    break;
-
-                case UnaryExpressionNode n when n.Op.Operator == Operator.AddressOf && n.Expression is VariableIdentifierNode v:
-                    this.Emit(InstructionDefinition.SET, Emitter.StackParam, this.GetVariableAccessParameter(v.Identifier, false));
-
-                    break;
-
-                case UnaryExpressionNode n:
-                    this.Visit(n.Expression);
-
-                    switch (n.Op.Operator) {
-                        case Operator.UnaryPlus: break;
-                        case Operator.UnaryMinus: this.Emit(InstructionDefinition.MUL, Emitter.StackParam, Emitter.StackParam, Parameter.CreateLiteral(ulong.MaxValue)); break;
-                        case Operator.Not: this.Emit(InstructionDefinition.NOT, Emitter.StackParam, Emitter.StackParam); break;
-                        case Operator.Dereference: this.Emit(InstructionDefinition.SET, Emitter.StackParam, Parameter.CreateStack(ParameterFlags.Indirect)); break;
-                        case Operator.AddressOf: throw new ExpectedException(default(PositionInfo), "identifier");
-                        default: Debug.Assert(false); break;
-                    }
-
-                    break;
-
-                case IdentifierExpressionNode n: this.Visit(n); break;
-                case LiteralExpressionNode n: this.Visit(n); break;
+            switch (n.Op) {
+                case BinaryOperationType.Addition: def = InstructionDefinition.ADD; break;
+                case BinaryOperationType.Subtraction: def = InstructionDefinition.SUB; break;
+                case BinaryOperationType.Multiplication: def = InstructionDefinition.MUL; break;
+                case BinaryOperationType.Division: def = InstructionDefinition.DIV; break;
+                case BinaryOperationType.Remainder: def = InstructionDefinition.MOD; break;
+                case BinaryOperationType.Exponentiation: def = InstructionDefinition.POW; break;
+                case BinaryOperationType.ShiftLeft: def = InstructionDefinition.SL; break;
+                case BinaryOperationType.ShiftRight: def = InstructionDefinition.SR; break;
+                case BinaryOperationType.RotateLeft: def = InstructionDefinition.RL; break;
+                case BinaryOperationType.RotateRight: def = InstructionDefinition.RR; break;
+                case BinaryOperationType.And: def = InstructionDefinition.AND; break;
+                case BinaryOperationType.Or: def = InstructionDefinition.OR; break;
+                case BinaryOperationType.Xor: def = InstructionDefinition.XOR; break;
+                case BinaryOperationType.NotAnd: def = InstructionDefinition.NAND; break;
+                case BinaryOperationType.NotOr: def = InstructionDefinition.NOR; break;
+                case BinaryOperationType.NotXor: def = InstructionDefinition.NXOR; break;
+                case BinaryOperationType.Equals: def = InstructionDefinition.EQ; break;
+                case BinaryOperationType.NotEquals: def = InstructionDefinition.NEQ; break;
+                case BinaryOperationType.LessThan: def = InstructionDefinition.LT; break;
+                case BinaryOperationType.LessThanOrEqual: def = InstructionDefinition.LTE; break;
+                case BinaryOperationType.GreaterThan: def = InstructionDefinition.GT; break;
+                case BinaryOperationType.GreaterThanOrEqual: def = InstructionDefinition.GTE; break;
                 default: Debug.Assert(false); break;
             }
+
+            this.Emit(def, target, this.GetVariableAccessParameter(n.Left, true), this.GetVariableAccessParameter(n.Right, true));
         }
 
-        private void Visit(IdentifierExpressionNode i) {
-            switch (i) {
-                case RegisterIdentifierNode n: this.Emit(InstructionDefinition.SET, Emitter.StackParam, Parameter.CreateRegister(n.Register)); break;
-                case VariableIdentifierNode n: this.Emit(InstructionDefinition.SET, Emitter.StackParam, this.GetVariableAccessParameter(n.Identifier, true, true)); break;
-                case FunctionCallIdentifierNode n:
-                    this.Emit(InstructionDefinition.SET, Emitter.StackParam, Parameter.CreateRegister(Register.RBP));
-
-                    foreach (var a in n.ArgumentList.Items)
-                        this.Visit(a);
-
-                    this.Emit(InstructionDefinition.SUB, Parameter.CreateRegister(Register.RBP), Parameter.CreateRegister(Register.RSP), Parameter.CreateLiteral((ulong)n.ArgumentList.Items.Count));
-
-                    this.Emit(InstructionDefinition.CALL, this.GetFunctionAccessParameter(n.Identifier));
-
-                    this.Emit(InstructionDefinition.SUB, Parameter.CreateRegister(Register.RSP), Parameter.CreateRegister(Register.RSP), Parameter.CreateLiteral((ulong)n.ArgumentList.Items.Count));
-
-                    this.Emit(InstructionDefinition.SET, Parameter.CreateRegister(Register.RBP), Emitter.StackParam);
-
-                    this.Emit(InstructionDefinition.SET, Emitter.StackParam, Parameter.CreateRegister(Register.R0));
-
-                    break;
-
-                default: Debug.Assert(false); break;
+        private void Visit(Parameter target, UnaryOperation n) {
+            if (n.Op == UnaryOperationType.AddressOf) {
+                this.Emit(InstructionDefinition.SET, target, this.GetVariableAccessParameter(n.Value, false));
             }
-        }
-
-        private void Visit(LiteralExpressionNode l) {
-            switch (l) {
-                case IntegerLiteralNode n: this.Emit(InstructionDefinition.SET, Emitter.StackParam, Parameter.CreateLiteral(n.Literal)); break;
-                case BoolLiteralNode n: this.Emit(InstructionDefinition.SET, Emitter.StackParam, Parameter.CreateLiteral(n.Literal ? ulong.MaxValue : 0)); break;
-                default: Debug.Assert(false); break;
+            else {
+                switch (n.Op) {
+                    case UnaryOperationType.Plus: break;
+                    case UnaryOperationType.Minus: this.Emit(InstructionDefinition.MUL, target, this.GetVariableAccessParameter(n.Value, true), Parameter.CreateLiteral(ulong.MaxValue)); break;
+                    case UnaryOperationType.Not: this.Emit(InstructionDefinition.NOT, target, this.GetVariableAccessParameter(n.Value, true)); break;
+                    case UnaryOperationType.Dereference: this.Emit(InstructionDefinition.SET, target, this.GetVariableAccessParameter(n.Value, true)); break;
+                    case UnaryOperationType.AddressOf: throw new ExpectedException(default(PositionInfo), "identifier");
+                    default: Debug.Assert(false); break;
+                }
             }
         }
     }

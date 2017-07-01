@@ -47,7 +47,7 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
 
             v.Push(new ReturnTerminator());
 
-            return new Function(v.entry, v.localVariables);
+            return new Function(node.Identifier, v.entry, v.localVariables);
         }
 
         private LValue CreateAssignment(RValue rhs) {
@@ -182,20 +182,20 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
     public abstract class LValue { }
     public sealed class FunctionArgument : LValue { }
 
-    public sealed class GlobalVariable : LValue {
+    public abstract class Variable : LValue {
         public string Identifier { get; }
 
-        public GlobalVariable(string identifier) => this.Identifier = identifier;
+        public Variable(string identifier) => this.Identifier = identifier;
 
         public override string ToString() => this.Identifier;
     }
 
-    public sealed class LocalVariable : LValue {
-        public string Identifier { get; }
+    public sealed class GlobalVariable : Variable {
+        public GlobalVariable(string identifier) : base(identifier) { }
+    }
 
-        public LocalVariable(string identifier) => this.Identifier = identifier;
-
-        public override string ToString() => this.Identifier;
+    public sealed class LocalVariable : Variable {
+        public LocalVariable(string identifier) : base(identifier) { }
     }
 
     public sealed class RegisterVariable : LValue {
@@ -213,8 +213,11 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
     public sealed class Function : LValue {
         public IReadOnlyCollection<LocalVariable> LocalVariables { get; }
         public BasicBlock Entry { get; }
+        public string Identifier { get; }
 
-        public Function(BasicBlock bb, IReadOnlyCollection<LocalVariable> variables) => (this.Entry, this.LocalVariables) = (bb, variables);
+        public Function(string identifier, BasicBlock bb, IReadOnlyCollection<LocalVariable> variables) => (this.Entry, this.LocalVariables, this.Identifier) = (bb, variables, identifier);
+
+        public override string ToString() => this.Identifier;
     }
 
     public abstract class RValue { }
