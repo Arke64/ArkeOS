@@ -3,6 +3,7 @@ using ArkeOS.Tools.KohlCompiler.Exceptions;
 using ArkeOS.Tools.KohlCompiler.Syntax;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 
 namespace ArkeOS.Tools.KohlCompiler.IR {
     public class NameGenerator {
@@ -19,10 +20,10 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
         public Compiliation Generate() {
             var visitor = new FunctionDeclarationVisitor();
             var functions = new List<Function>();
-            var globalVars = new List<GlobalVariable>();
+            var globalVars = new List<GlobalVariableLValue>();
 
             foreach (var i in this.ast.VariableDeclarations.Items)
-                globalVars.Add(new GlobalVariable(i.Identifier));
+                globalVars.Add(new GlobalVariableLValue(i.Identifier));
 
             foreach (var i in this.ast.FunctionDeclarations.Items)
                 functions.Add(visitor.Visit(i));
@@ -34,28 +35,28 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
     public class FunctionDeclarationVisitor {
         private readonly NameGenerator nameGenerator = new NameGenerator();
         private List<BasicBlockInstruction> currentInstructions;
-        private List<LocalVariable> localVariables;
+        private List<LocalVariableLValue> localVariables;
         private BasicBlock entry;
         private BasicBlock parent;
         private BasicBlock current;
 
         public Function Visit(FunctionDeclarationNode node) {
             this.currentInstructions = new List<BasicBlockInstruction>();
-            this.localVariables = new List<LocalVariable>();
+            this.localVariables = new List<LocalVariableLValue>();
             this.entry = null;
             this.parent = null;
             this.current = null;
 
             this.Visit(node.StatementBlock);
 
-            this.Push(new ReturnTerminator());
+            this.Push(new ReturnTerminator(this.CreateVariable()));
 
-            return new Function(node.Identifier, this.entry, this.localVariables);
+            return new Function(node.Identifier, this.entry, node.ArgumentListDeclaration.Items.Select(i => i.Identifier).ToList(), this.localVariables);
         }
 
         private void Visit(StatementBlockNode node) {
             foreach (var v in node.VariableDeclarations.Items)
-                this.localVariables.Add(new LocalVariable(v.Identifier));
+                this.localVariables.Add(new LocalVariableLValue(v.Identifier));
 
             foreach (var b in node.Statements.Items)
                 this.Visit(b);
@@ -75,10 +76,16 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
 
                     break;
 
+                case ReturnStatementNode n:
+                    var e = this.Visit(n.Expression);
+
+                    this.Push(new ReturnTerminator(e));
+
+                    break;
+
                 case WhileStatementNode n: Debug.Assert(false); break;
                 case IntrinsicStatementNode n: Debug.Assert(false); break;
                 case IfStatementNode n: Debug.Assert(false); break;
-                case ReturnStatementNode n: Debug.Assert(false); break;
             }
         }
 
@@ -110,10 +117,20 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
 
         private LValue Visit(IdentifierExpressionNode node) {
             switch (node) {
-                case VariableIdentifierNode n: return new LocalVariable(n.Identifier);
-                case RegisterIdentifierNode n: return new RegisterVariable(n.Register);
-                case FunctionCallIdentifierNode n: Debug.Assert(false); return null;
                 default: throw new UnexpectedException(default(PositionInfo), "identifier node");
+                case VariableIdentifierNode n: return new LocalVariableLValue(n.Identifier);
+                case RegisterIdentifierNode n: return new RegisterLValue(n.Register);
+
+                case FunctionCallIdentifierNode n:
+                    var ident = this.CreateVariable();
+                    var args = new List<FunctionArgumentLValue>();
+
+                    foreach (var a in n.ArgumentList.Items)
+                        args.Add(new FunctionArgumentLValue(this.Visit(a)));
+
+                    this.Push(new FunctionCallTerminator(n.Identifier, ident, args));
+
+                    return ident;
             }
         }
 
@@ -126,7 +143,7 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
         }
 
         private LValue CreateVariable() {
-            var ident = new LocalVariable(this.nameGenerator.Next());
+            var ident = new LocalVariableLValue(this.nameGenerator.Next());
 
             this.localVariables.Add(ident);
 
@@ -145,8 +162,8 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
             this.current = new BasicBlock(this.currentInstructions, terminator);
 
             if (this.parent != null) {
-                if (this.parent.Terminator is CallTerminator c) {
-                    //c.SetReturn(this.current);
+                if (this.parent.Terminator is FunctionCallTerminator c) {
+                    c.SetAfterReturn(this.current);
                 }
                 else if (this.parent.Terminator is IfTerminator i) {
                     //if (i.WhenTrue == null) {
@@ -204,9 +221,9 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
 
     public sealed class Compiliation {
         public IReadOnlyCollection<Function> Functions { get; }
-        public IReadOnlyCollection<GlobalVariable> GlobalVariables { get; }
+        public IReadOnlyCollection<GlobalVariableLValue> GlobalVariables { get; }
 
-        public Compiliation(IReadOnlyCollection<Function> functions, IReadOnlyCollection<GlobalVariable> globalVars) => (this.Functions, this.GlobalVariables) = (functions, globalVars);
+        public Compiliation(IReadOnlyCollection<Function> functions, IReadOnlyCollection<GlobalVariableLValue> globalVars) => (this.Functions, this.GlobalVariables) = (functions, globalVars);
     }
 
     public abstract class LValue {
@@ -221,30 +238,34 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
         public override string ToString() => this.Identifier;
     }
 
-    public sealed class FunctionArgument : Variable {
-        public FunctionArgument(string identifier) : base(identifier) { }
+    public sealed class GlobalVariableLValue : Variable {
+        public GlobalVariableLValue(string identifier) : base(identifier) { }
     }
 
-    public sealed class GlobalVariable : Variable {
-        public GlobalVariable(string identifier) : base(identifier) { }
+    public sealed class LocalVariableLValue : Variable {
+        public LocalVariableLValue(string identifier) : base(identifier) { }
     }
 
-    public sealed class LocalVariable : Variable {
-        public LocalVariable(string identifier) : base(identifier) { }
-    }
-
-    public sealed class RegisterVariable : LValue {
+    public sealed class RegisterLValue : LValue {
         public Register Register { get; }
 
-        public RegisterVariable(Register register) => this.Register = register;
+        public RegisterLValue(Register register) => this.Register = register;
 
         public override string ToString() => this.Register.ToString();
     }
 
-    public sealed class Pointer : LValue {
+    public sealed class FunctionArgumentLValue : LValue {
+        public LValue Argument { get; }
+
+        public FunctionArgumentLValue(LValue argument) => this.Argument = argument;
+
+        public override string ToString() => this.Argument.ToString();
+    }
+
+    public sealed class PointerLValue : LValue {
         public LValue Reference { get; }
 
-        public Pointer(LValue reference) => this.Reference = reference;
+        public PointerLValue(LValue reference) => this.Reference = reference;
 
         public override string ToString() => this.Reference.ToString();
     }
@@ -252,9 +273,10 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
     public sealed class Function : LValue {
         public string Identifier { get; }
         public BasicBlock Entry { get; }
-        public IReadOnlyCollection<LocalVariable> LocalVariables { get; }
+        public IReadOnlyCollection<string> Arguments { get; }
+        public IReadOnlyCollection<LocalVariableLValue> LocalVariables { get; }
 
-        public Function(string identifier, BasicBlock bb, IReadOnlyCollection<LocalVariable> variables) => (this.Entry, this.LocalVariables, this.Identifier) = (bb, variables, identifier);
+        public Function(string identifier, BasicBlock bb, IReadOnlyCollection<string> arguments, IReadOnlyCollection<LocalVariableLValue> variables) => (this.Entry, this.Arguments, this.LocalVariables, this.Identifier) = (bb, arguments, variables, identifier);
 
         public override string ToString() => this.Identifier;
     }
@@ -307,30 +329,37 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
     }
 
     public sealed class ReturnTerminator : Terminator {
+        public LValue Value { get; }
 
+        public ReturnTerminator(LValue value) => this.Value = value;
     }
 
     public sealed class GotoTerminator : Terminator {
-        public BasicBlock Target { get; }
+        public BasicBlock Target { get; private set; }
 
-        public GotoTerminator(BasicBlock target) => this.Target = target;
+        public void SetTarget(BasicBlock target) => this.Target = target;
     }
 
     public sealed class IfTerminator : Terminator {
         public LValue Condition { get; }
-        public BasicBlock WhenTrue { get; }
-        public BasicBlock WhenFalse { get; }
+        public BasicBlock WhenTrue { get; private set; }
+        public BasicBlock WhenFalse { get; private set; }
 
-        public IfTerminator(LValue condition, BasicBlock whenTrue, BasicBlock whenFalse) => (this.Condition, this.WhenFalse, this.WhenFalse) = (condition, whenTrue, whenFalse);
+        public IfTerminator(LValue condition) => this.Condition = condition;
+
+        public void SetWhenTrue(BasicBlock whenTrue) => this.WhenTrue = whenTrue;
+        public void SetWhenFalse(BasicBlock whenFalse) => this.WhenFalse = whenFalse;
     }
 
-    public sealed class CallTerminator : Terminator {
-        public Function ToCall { get; }
+    public sealed class FunctionCallTerminator : Terminator {
+        public string ToCall { get; }
         public LValue ReturnTarget { get; }
-        public IReadOnlyCollection<FunctionArgument> Arguments { get; }
-        public BasicBlock AfterReturn { get; }
+        public IReadOnlyCollection<FunctionArgumentLValue> Arguments { get; }
+        public BasicBlock AfterReturn { get; private set; }
 
-        public CallTerminator(Function toCall, LValue returnTarget, IReadOnlyCollection<FunctionArgument> arguments, BasicBlock afterReturn) => (this.ToCall, this.ReturnTarget, this.Arguments, this.AfterReturn) = (toCall, returnTarget, arguments, afterReturn);
+        public void SetAfterReturn(BasicBlock afterReturn) => this.AfterReturn = afterReturn;
+
+        public FunctionCallTerminator(string toCall, LValue returnTarget, IReadOnlyCollection<FunctionArgumentLValue> arguments) => (this.ToCall, this.ReturnTarget, this.Arguments) = (toCall, returnTarget, arguments);
     }
 
     public enum BinaryOperationType {

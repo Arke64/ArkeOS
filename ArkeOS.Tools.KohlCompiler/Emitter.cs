@@ -8,6 +8,8 @@ using System.Linq;
 
 namespace ArkeOS.Tools.KohlCompiler {
     public class Emitter {
+        private static Parameter StackParam { get; } = new Parameter { Type = ParameterType.Stack };
+
         private readonly Compiliation tree;
         private readonly bool emitAssemblyListing;
         private readonly bool emitBootable;
@@ -88,26 +90,29 @@ namespace ArkeOS.Tools.KohlCompiler {
         }
 
         private Parameter GetVariableAccessParameter(LValue variable, bool allowIndirect) {
-            //if (this.currentFunction.ArgumentListDeclaration.TryGetIndex(a => a.Identifier == variable, out var idx))
-            //    return Parameter.CreateLiteral(idx, ParameterFlags.RelativeToRBP | (allowIndirect ? ParameterFlags.Indirect : 0));
-
             var addr = 0UL;
 
             switch (variable) {
-                case LocalVariable v:
+                case LocalVariableLValue v:
+                    var idx = 0UL;
+                    var arg = this.currentFunction.Arguments.SkipWhile(a => { idx++; return a != v.Identifier; }).FirstOrDefault();
+
+                    if (arg != null)
+                        return Parameter.CreateLiteral(idx - 1, ParameterFlags.RelativeToRBP | (allowIndirect ? ParameterFlags.Indirect : 0));
+
                     if (!this.variableAddresses.TryGetValue(v.Identifier, out addr) && this.throwOnNoFunction)
                         throw new IdentifierNotFoundException(default(PositionInfo), v.Identifier);
 
                     break;
 
-                case RegisterVariable v:
+                case RegisterLValue v:
                     return Parameter.CreateRegister(v.Register);
 
                 default:
                     Debug.Assert(false);
+
                     break;
             }
-
 
             return Parameter.CreateLiteral(addr, allowIndirect ? ParameterFlags.Indirect : 0);
         }
@@ -151,12 +156,35 @@ namespace ArkeOS.Tools.KohlCompiler {
         private void Visit(Terminator terminator) {
             switch (terminator) {
                 case ReturnTerminator n: this.Visit(n); break;
+                case FunctionCallTerminator n: this.Visit(n); break;
                 default: Debug.Assert(false); break;
             }
         }
 
         private void Visit(ReturnTerminator r) {
+            this.Emit(InstructionDefinition.SET, Parameter.CreateRegister(Register.R0), this.GetVariableAccessParameter(r.Value, true));
             this.Emit(InstructionDefinition.RET);
+        }
+
+        private void Visit(FunctionCallTerminator r) {
+            this.currentFunction = this.tree.Functions.Single(f => f.Identifier == r.ToCall);
+
+            this.Emit(InstructionDefinition.SET, Emitter.StackParam, Parameter.CreateRegister(Register.RBP));
+
+            foreach (var a in r.Arguments)
+                this.Emit(InstructionDefinition.SET, Emitter.StackParam, this.GetVariableAccessParameter(a.Argument, true));
+
+            this.Emit(InstructionDefinition.SUB, Parameter.CreateRegister(Register.RBP), Parameter.CreateRegister(Register.RSP), Parameter.CreateLiteral((ulong)r.Arguments.Count));
+
+            this.Emit(InstructionDefinition.CALL, this.GetFunctionAccessParameter(r.ToCall));
+
+            this.Emit(InstructionDefinition.SUB, Parameter.CreateRegister(Register.RSP), Parameter.CreateRegister(Register.RSP), Parameter.CreateLiteral((ulong)r.Arguments.Count));
+
+            this.Emit(InstructionDefinition.SET, Parameter.CreateRegister(Register.RBP), Emitter.StackParam);
+
+            this.Emit(InstructionDefinition.SET, this.GetVariableAccessParameter(r.ReturnTarget, true), Parameter.CreateRegister(Register.R0));
+
+            this.Visit(r.AfterReturn);
         }
 
         private void Visit(BasicBlockAssignmentInstruction a) {
