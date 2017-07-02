@@ -91,8 +91,13 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
 
         private void Visit(DeclarationNode node) {
             switch (node) {
-                case VariableDeclarationWithInitializerNode n: Debug.Assert(false); break;
                 default: throw new UnexpectedException(default(PositionInfo), "identifier node");
+                case VariableDeclarationWithInitializerNode n:
+                    var i = this.Visit(n.Initializer);
+
+                    this.Push(new BasicBlockAssignmentInstruction(new LocalVariableLValue(n.Identifier), new ReadLValue(i)));
+
+                    break;
             }
         }
 
