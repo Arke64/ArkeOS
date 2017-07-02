@@ -1,4 +1,5 @@
 ﻿using ArkeOS.Hardware.Architecture;
+using ArkeOS.Tools.KohlCompiler.Exceptions;
 using ArkeOS.Tools.KohlCompiler.Syntax;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -62,6 +63,10 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
 
         private void Visit(StatementNode node) {
             switch (node) {
+                default: throw new UnexpectedException(default(PositionInfo), "statement node");
+                case EmptyStatementNode n: break;
+                case DeclarationNode n: this.Visit(n); break;
+
                 case AssignmentStatementNode n:
                     var lhs = this.Visit(n.Target);
                     var rhs = this.Visit(n.Expression);
@@ -70,16 +75,25 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
 
                     break;
 
-                default: Debug.Assert(false); break;
+                case WhileStatementNode n: Debug.Assert(false); break;
+                case IntrinsicStatementNode n: Debug.Assert(false); break;
+                case IfStatementNode n: Debug.Assert(false); break;
+                case ReturnStatementNode n: Debug.Assert(false); break;
+            }
+        }
+
+        private void Visit(DeclarationNode node) {
+            switch (node) {
+                case VariableDeclarationWithInitializerNode n: Debug.Assert(false); break;
+                default: throw new UnexpectedException(default(PositionInfo), "identifier node");
             }
         }
 
         private LValue Visit(ExpressionStatementNode node) {
             switch (node) {
-                case VariableIdentifierNode n: return new LocalVariable(n.Identifier);
-                case RegisterIdentifierNode n: return new RegisterVariable(n.Register);
-                case IntegerLiteralNode n: return this.CreateVariableAndAssign(new UnsignedIntegerConstant(n.Literal));
-                case BoolLiteralNode n: return this.CreateVariableAndAssign(new UnsignedIntegerConstant(n.Literal ? ulong.MaxValue : 0));
+                default: throw new UnexpectedException(default(PositionInfo), "expression node");
+                case IdentifierExpressionNode n: return this.Visit(n);
+                case LiteralExpressionNode n: return this.Visit(n);
 
                 case BinaryExpressionNode n:
                     var l = this.Visit(n.Left);
@@ -92,10 +106,23 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
 
                     return this.CreateVariableAndAssign(new UnaryOperation((UnaryOperationType)n.Op.Operator, e));
             }
+        }
 
-            Debug.Assert(false);
+        private LValue Visit(IdentifierExpressionNode node) {
+            switch (node) {
+                case VariableIdentifierNode n: return new LocalVariable(n.Identifier);
+                case RegisterIdentifierNode n: return new RegisterVariable(n.Register);
+                case FunctionCallIdentifierNode n: Debug.Assert(false); return null;
+                default: throw new UnexpectedException(default(PositionInfo), "identifier node");
+            }
+        }
 
-            return null;
+        private LValue Visit(LiteralExpressionNode node) {
+            switch (node) {
+                case IntegerLiteralNode n: return this.CreateVariableAndAssign(new UnsignedIntegerConstant(n.Literal));
+                case BoolLiteralNode n: return this.CreateVariableAndAssign(new UnsignedIntegerConstant(n.Literal ? ulong.MaxValue : 0));
+                default: throw new UnexpectedException(default(PositionInfo), "literal node");
+            }
         }
 
         private LValue CreateVariable() {

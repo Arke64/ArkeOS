@@ -151,6 +151,7 @@ namespace ArkeOS.Tools.KohlCompiler {
         private void Visit(Terminator terminator) {
             switch (terminator) {
                 case ReturnTerminator n: this.Visit(n); break;
+                default: Debug.Assert(false); break;
             }
         }
 
