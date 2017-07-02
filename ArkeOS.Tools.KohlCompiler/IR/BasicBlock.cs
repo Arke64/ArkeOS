@@ -52,25 +52,6 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
             return new Function(node.Identifier, this.entry, this.localVariables);
         }
 
-        private LValue Visit(ExpressionStatementNode node) {
-            switch (node) {
-                case VariableIdentifierNode n: return this.ExtractLValue(n);
-                case RegisterIdentifierNode n: return this.ExtractLValue(n);
-                case IntegerLiteralNode n: return this.CreateAssignment(this.ExtractRValue(n));
-                case BoolLiteralNode n: return this.CreateAssignment(this.ExtractRValue(n));
-
-                case BinaryExpressionNode n:
-                    var l = this.Visit(n.Left);
-                    var r = this.Visit(n.Right);
-
-                    return this.CreateAssignment(new BinaryOperation(l, (BinaryOperationType)n.Op.Operator, r));
-            }
-
-            Debug.Assert(false);
-
-            return null;
-        }
-
         private void Visit(StatementBlockNode node) {
             foreach (var v in node.VariableDeclarations.Items)
                 this.localVariables.Add(new LocalVariable(v.Identifier));
@@ -90,6 +71,54 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
                     break;
 
                 default: Debug.Assert(false); break;
+            }
+        }
+
+        private LValue Visit(ExpressionStatementNode node) {
+            switch (node) {
+                case VariableIdentifierNode n: return this.ExtractLValue(n);
+                case RegisterIdentifierNode n: return this.ExtractLValue(n);
+                case IntegerLiteralNode n: return this.CreateAssignment(this.ExtractRValue(n));
+                case BoolLiteralNode n: return this.CreateAssignment(this.ExtractRValue(n));
+
+                case BinaryExpressionNode n:
+                    var l = this.Visit(n.Left);
+                    var r = this.Visit(n.Right);
+
+                    return this.CreateAssignment(new BinaryOperation(l, (BinaryOperationType)n.Op.Operator, r));
+            }
+
+            Debug.Assert(false);
+
+            return null;
+        }
+
+        private LValue CreateAssignment(RValue rhs) {
+            var id = this.nameGenerator.Next();
+            var ident = new LocalVariable(id);
+
+            this.localVariables.Add(ident);
+
+            this.Push(new BasicBlockAssignmentInstruction(ident, rhs));
+
+            return ident;
+        }
+
+        private LValue ExtractLValue(ExpressionStatementNode e) {
+            switch (e) {
+                case RegisterIdentifierNode n: return new RegisterVariable(n.Register);
+                case VariableIdentifierNode n: return new LocalVariable(n.Identifier);
+                default: Debug.Assert(false); return null;
+            }
+        }
+
+        private RValue ExtractRValue(ExpressionStatementNode e) {
+            switch (e) {
+                case RegisterIdentifierNode n: return new ReadLValue(new RegisterVariable(n.Register));
+                case VariableIdentifierNode n: return new ReadLValue(new LocalVariable(n.Identifier));
+                case IntegerLiteralNode n: return new UnsignedIntegerConstant(n.Literal);
+                case BoolLiteralNode n: return new UnsignedIntegerConstant(n.Literal ? ulong.MaxValue : 0);
+                default: Debug.Assert(false); return null;
             }
         }
 
@@ -121,35 +150,6 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
         }
 
         private void Push(BasicBlockInstruction bbi) => this.currentInstructions.Add(bbi);
-
-        private LValue CreateAssignment(RValue rhs) {
-            var id = this.nameGenerator.Next();
-            var ident = new LocalVariable(id);
-
-            this.localVariables.Add(ident);
-
-            this.Push(new BasicBlockAssignmentInstruction(ident, rhs));
-
-            return ident;
-        }
-
-        private LValue ExtractLValue(ExpressionStatementNode e) {
-            switch (e) {
-                case RegisterIdentifierNode n: return new RegisterVariable(n.Register);
-                case VariableIdentifierNode n: return new LocalVariable(n.Identifier);
-                default: Debug.Assert(false); return null;
-            }
-        }
-
-        private RValue ExtractRValue(ExpressionStatementNode e) {
-            switch (e) {
-                case RegisterIdentifierNode n: return new ReadLValue(new RegisterVariable(n.Register));
-                case VariableIdentifierNode n: return new ReadLValue(new LocalVariable(n.Identifier));
-                case IntegerLiteralNode n: return new UnsignedIntegerConstant(n.Literal);
-                case BoolLiteralNode n: return new UnsignedIntegerConstant(n.Literal ? ulong.MaxValue : 0);
-                default: Debug.Assert(false); return null;
-            }
-        }
     }
 
     public sealed class BasicBlock {
