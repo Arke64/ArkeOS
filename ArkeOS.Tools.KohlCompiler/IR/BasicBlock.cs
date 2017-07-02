@@ -16,7 +16,7 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
         public IrGenerator(ProgramDeclarationNode ast) => this.ast = ast;
 
         public Compiliation Generate() {
-            var nameGenerator = new NameGenerator();
+            var visitor = new FunctionDeclarationVisitor();
             var functions = new List<Function>();
             var globalVars = new List<GlobalVariable>();
 
@@ -24,43 +24,32 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
                 globalVars.Add(new GlobalVariable(i.Identifier));
 
             foreach (var i in this.ast.FunctionDeclarations.Items)
-                functions.Add(FunctionDeclarationVisitor.Visit(nameGenerator, i));
+                functions.Add(visitor.Visit(i));
 
             return new Compiliation(functions, globalVars);
         }
     }
 
     public class FunctionDeclarationVisitor {
-        private NameGenerator nameGenerator;
-        private StatementBlockNode result;
-
-        private FunctionDeclarationVisitor(NameGenerator nameGenerator) => (this.nameGenerator, this.result) = (nameGenerator, new StatementBlockNode());
-
-        private List<BasicBlockInstruction> currentInstructions = new List<BasicBlockInstruction>();
-        private List<LocalVariable> localVariables = new List<LocalVariable>();
+        private readonly NameGenerator nameGenerator = new NameGenerator();
+        private List<BasicBlockInstruction> currentInstructions;
+        private List<LocalVariable> localVariables;
         private BasicBlock entry;
         private BasicBlock parent;
         private BasicBlock current;
 
-        public static Function Visit(NameGenerator nameGenerator, FunctionDeclarationNode node) {
-            var v = new FunctionDeclarationVisitor(nameGenerator);
+        public Function Visit(FunctionDeclarationNode node) {
+            this.currentInstructions = new List<BasicBlockInstruction>();
+            this.localVariables = new List<LocalVariable>();
+            this.entry = null;
+            this.parent = null;
+            this.current = null;
 
-            v.Visit(node.StatementBlock);
+            this.Visit(node.StatementBlock);
 
-            v.Push(new ReturnTerminator());
+            this.Push(new ReturnTerminator());
 
-            return new Function(node.Identifier, v.entry, v.localVariables);
-        }
-
-        private LValue CreateAssignment(RValue rhs) {
-            var id = this.nameGenerator.Next();
-            var ident = new LocalVariable(id);
-
-            this.localVariables.Add(ident);
-
-            this.Push(new BasicBlockAssignmentInstruction(ident, rhs));
-
-            return ident;
+            return new Function(node.Identifier, this.entry, this.localVariables);
         }
 
         private LValue Visit(ExpressionStatementNode node) {
@@ -132,6 +121,17 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
         }
 
         private void Push(BasicBlockInstruction bbi) => this.currentInstructions.Add(bbi);
+
+        private LValue CreateAssignment(RValue rhs) {
+            var id = this.nameGenerator.Next();
+            var ident = new LocalVariable(id);
+
+            this.localVariables.Add(ident);
+
+            this.Push(new BasicBlockAssignmentInstruction(ident, rhs));
+
+            return ident;
+        }
 
         private LValue ExtractLValue(ExpressionStatementNode e) {
             switch (e) {
