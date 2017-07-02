@@ -76,16 +76,21 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
 
         private LValue Visit(ExpressionStatementNode node) {
             switch (node) {
-                case VariableIdentifierNode n: return this.ExtractLValue(n);
-                case RegisterIdentifierNode n: return this.ExtractLValue(n);
-                case IntegerLiteralNode n: return this.CreateAssignment(this.ExtractRValue(n));
-                case BoolLiteralNode n: return this.CreateAssignment(this.ExtractRValue(n));
+                case VariableIdentifierNode n: return new LocalVariable(n.Identifier);
+                case RegisterIdentifierNode n: return new RegisterVariable(n.Register);
+                case IntegerLiteralNode n: return this.CreateVariableAndAssign(new UnsignedIntegerConstant(n.Literal));
+                case BoolLiteralNode n: return this.CreateVariableAndAssign(new UnsignedIntegerConstant(n.Literal ? ulong.MaxValue : 0));
 
                 case BinaryExpressionNode n:
                     var l = this.Visit(n.Left);
                     var r = this.Visit(n.Right);
 
-                    return this.CreateAssignment(new BinaryOperation(l, (BinaryOperationType)n.Op.Operator, r));
+                    return this.CreateVariableAndAssign(new BinaryOperation(l, (BinaryOperationType)n.Op.Operator, r));
+
+                case UnaryExpressionNode n:
+                    var e = this.Visit(n.Expression);
+
+                    return this.CreateVariableAndAssign(new UnaryOperation((UnaryOperationType)n.Op.Operator, e));
             }
 
             Debug.Assert(false);
@@ -93,33 +98,20 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
             return null;
         }
 
-        private LValue CreateAssignment(RValue rhs) {
-            var id = this.nameGenerator.Next();
-            var ident = new LocalVariable(id);
+        private LValue CreateVariable() {
+            var ident = new LocalVariable(this.nameGenerator.Next());
 
             this.localVariables.Add(ident);
-
-            this.Push(new BasicBlockAssignmentInstruction(ident, rhs));
 
             return ident;
         }
 
-        private LValue ExtractLValue(ExpressionStatementNode e) {
-            switch (e) {
-                case RegisterIdentifierNode n: return new RegisterVariable(n.Register);
-                case VariableIdentifierNode n: return new LocalVariable(n.Identifier);
-                default: Debug.Assert(false); return null;
-            }
-        }
+        private LValue CreateVariableAndAssign(RValue rhs) {
+            var ident = this.CreateVariable();
 
-        private RValue ExtractRValue(ExpressionStatementNode e) {
-            switch (e) {
-                case RegisterIdentifierNode n: return new ReadLValue(new RegisterVariable(n.Register));
-                case VariableIdentifierNode n: return new ReadLValue(new LocalVariable(n.Identifier));
-                case IntegerLiteralNode n: return new UnsignedIntegerConstant(n.Literal);
-                case BoolLiteralNode n: return new UnsignedIntegerConstant(n.Literal ? ulong.MaxValue : 0);
-                default: Debug.Assert(false); return null;
-            }
+            this.Push(new BasicBlockAssignmentInstruction(ident, rhs));
+
+            return ident;
         }
 
         private void Push(Terminator terminator) {
@@ -277,6 +269,8 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
     public sealed class UnaryOperation : RValue {
         public UnaryOperationType Op { get; }
         public LValue Value { get; }
+
+        public UnaryOperation(UnaryOperationType op, LValue value) => (this.Op, this.Value) = (op, value);
 
         public override string ToString() => $"'{this.Op}' {this.Value}";
     }
