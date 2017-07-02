@@ -15,6 +15,7 @@ namespace ArkeOS.Tools.KohlCompiler {
         private readonly bool emitBootable;
         private readonly string outputFile;
         private ulong nextVariableAddress;
+        private Dictionary<BasicBlock, int> basicBlockAddresses;
         private Dictionary<string, ulong> functionAddresses;
         private Dictionary<string, ulong> variableAddresses;
         private List<Instruction> instructions;
@@ -26,6 +27,7 @@ namespace ArkeOS.Tools.KohlCompiler {
         private ulong DistanceFrom(int startInst) => (ulong)this.instructions.Skip(startInst).Sum(i => i.Length);
 
         public void Emit() {
+            this.basicBlockAddresses = new Dictionary<BasicBlock, int>();
             this.functionAddresses = new Dictionary<string, ulong>();
             this.variableAddresses = new Dictionary<string, ulong>();
             this.nextVariableAddress = 0UL;
@@ -139,6 +141,13 @@ namespace ArkeOS.Tools.KohlCompiler {
         }
 
         private void Visit(BasicBlock n) {
+            if (!this.throwOnNoFunction) {
+                if (this.basicBlockAddresses.ContainsKey(n))
+                    return;
+
+                this.basicBlockAddresses[n] = this.instructions.Count;
+            }
+
             foreach (var s in n.Instructions)
                 this.Visit(s);
 
@@ -157,6 +166,8 @@ namespace ArkeOS.Tools.KohlCompiler {
             switch (terminator) {
                 case ReturnTerminator n: this.Visit(n); break;
                 case FunctionCallTerminator n: this.Visit(n); break;
+                case IfTerminator n: this.Visit(n); break;
+                case GotoTerminator n: this.Visit(n); break;
                 default: Debug.Assert(false); break;
             }
         }
@@ -185,6 +196,30 @@ namespace ArkeOS.Tools.KohlCompiler {
             this.Emit(InstructionDefinition.SET, this.GetVariableAccessParameter(r.ReturnTarget, true), Parameter.CreateRegister(Register.R0));
 
             this.Visit(r.AfterReturn);
+        }
+
+        private void Visit(IfTerminator i) {
+            var ifStart = this.instructions.Count;
+            var ifLen = Parameter.CreateLiteral(0, ParameterFlags.RelativeToRIP);
+            this.Emit(InstructionDefinition.SET, this.GetVariableAccessParameter(i.Condition, true), InstructionConditionalType.WhenZero, Parameter.CreateRegister(Register.RIP), ifLen);
+
+            this.Visit(i.WhenTrue);
+
+            var elseStart = this.instructions.Count;
+            var elseLen = Parameter.CreateLiteral(0, ParameterFlags.RelativeToRIP);
+            this.Emit(InstructionDefinition.SET, Parameter.CreateRegister(Register.RIP), elseLen);
+
+            ifLen.Literal = this.DistanceFrom(ifStart);
+
+            this.Visit(i.WhenFalse);
+
+            elseLen.Literal = this.DistanceFrom(elseStart);
+        }
+
+        private void Visit(GotoTerminator g) {
+            this.Visit(g.Target);
+
+            this.Emit(InstructionDefinition.SET, Parameter.CreateRegister(Register.RIP), Parameter.CreateLiteral(this.throwOnNoFunction ? this.DistanceFrom(this.basicBlockAddresses[g.Target]) : 0, ParameterFlags.RelativeToRIP));
         }
 
         private void Visit(BasicBlockAssignmentInstruction a) {

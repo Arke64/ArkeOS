@@ -67,6 +67,7 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
                 default: throw new UnexpectedException(default(PositionInfo), "statement node");
                 case EmptyStatementNode n: break;
                 case DeclarationNode n: this.Visit(n); break;
+                case ReturnStatementNode n: this.Push(new ReturnTerminator(this.Visit(n.Expression))); break;
 
                 case AssignmentStatementNode n:
                     var lhs = this.Visit(n.Target);
@@ -76,16 +77,37 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
 
                     break;
 
-                case ReturnStatementNode n:
-                    var e = this.Visit(n.Expression);
+                case IfStatementNode n:
+                    var term1 = new GotoTerminator();
+                    var entry = this.entry;
+                    var parent = this.parent;
+                    var insts = this.currentInstructions.Select(i => i).ToList();
 
-                    this.Push(new ReturnTerminator(e));
+                    this.currentInstructions = new List<BasicBlockInstruction>();
+
+                    this.entry = null;
+                    this.parent = null;
+                    this.Visit(n.StatementBlock);
+                    this.Push(term1);
+                    var ifEntry = this.entry;
+
+                    this.entry = null;
+                    this.parent = null;
+                    if (n is IfElseStatementNode ie)
+                        this.Visit(ie.ElseStatementBlock);
+                    this.Push(term1);
+                    var elseEntry = this.entry;
+
+                    this.entry = entry;
+                    this.parent = parent;
+                    this.currentInstructions = insts;
+
+                    this.Push(new IfTerminator(this.Visit(n.Expression), ifEntry, elseEntry));
 
                     break;
 
                 case WhileStatementNode n: Debug.Assert(false); break;
                 case IntrinsicStatementNode n: Debug.Assert(false); break;
-                case IfStatementNode n: Debug.Assert(false); break;
             }
         }
 
@@ -114,9 +136,15 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
                     return this.CreateVariableAndAssign(new BinaryOperation(l, (BinaryOperationType)n.Op.Operator, r));
 
                 case UnaryExpressionNode n:
-                    var e = this.Visit(n.Expression);
+                    if (n.Op.Operator != Operator.Dereference) {
+                        var e = this.Visit(n.Expression);
 
-                    return this.CreateVariableAndAssign(new UnaryOperation((UnaryOperationType)n.Op.Operator, e));
+                        return this.CreateVariableAndAssign(new UnaryOperation((UnaryOperationType)n.Op.Operator, e));
+                    }
+                    else {
+                        Debug.Assert(false);
+                        return null;
+                    }
             }
         }
 
@@ -170,20 +198,21 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
                 if (this.parent.Terminator is FunctionCallTerminator c) {
                     c.SetAfterReturn(this.current);
                 }
+                else if (this.parent.Terminator is GotoTerminator g) {
+                    g.SetTarget(this.current);
+                }
                 else if (this.parent.Terminator is IfTerminator i) {
-                    //if (i.WhenTrue == null) {
-                    //    i.SetWhenTrue(this.current);
-                    //    goto skipSetParent;
-                    //}
-                    //else if (i.WhenFalse == null) {
-                    //    i.SetWhenFalse(this.current);
-                    //}
+                    if (i.WhenTrue.Terminator is GotoTerminator g1) {
+                        g1.SetTarget(this.current);
+                    }
+                    if (i.WhenFalse.Terminator is GotoTerminator g2) {
+                        g2.SetTarget(this.current);
+                    }
                 }
             }
 
             this.parent = this.current;
 
-            skipSetParent:
             this.currentInstructions = new List<BasicBlockInstruction>();
 
             if (this.entry == null)
@@ -347,13 +376,10 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
 
     public sealed class IfTerminator : Terminator {
         public LValue Condition { get; }
-        public BasicBlock WhenTrue { get; private set; }
-        public BasicBlock WhenFalse { get; private set; }
+        public BasicBlock WhenTrue { get; }
+        public BasicBlock WhenFalse { get; }
 
-        public IfTerminator(LValue condition) => this.Condition = condition;
-
-        public void SetWhenTrue(BasicBlock whenTrue) => this.WhenTrue = whenTrue;
-        public void SetWhenFalse(BasicBlock whenFalse) => this.WhenFalse = whenFalse;
+        public IfTerminator(LValue condition, BasicBlock whenTrue, BasicBlock whenFalse) => (this.Condition, this.WhenTrue, this.WhenFalse) = (condition, whenTrue, whenFalse);
     }
 
     public sealed class FunctionCallTerminator : Terminator {
