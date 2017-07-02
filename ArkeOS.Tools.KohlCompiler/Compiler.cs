@@ -31,7 +31,8 @@ namespace ArkeOS.Tools.KohlCompiler {
                 var lexer = new Lexer(this.sources);
                 var parser = new Parser(lexer);
                 var ast = parser.Parse();
-                var ir = IrGenerator.LowerIr(ast);
+                var generator = new IrGenerator(ast);
+                var ir = generator.Generate();
                 var emitter = new Emitter(ir, this.EmitAssemblyListing, this.EmitBootable, this.OutputName);
 
                 emitter.Emit();

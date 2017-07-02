@@ -11,17 +11,19 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
     }
 
     public class IrGenerator {
-        private IrGenerator() { }
+        private readonly ProgramDeclarationNode ast;
 
-        public static Compiliation LowerIr(ProgramDeclarationNode root) {
+        public IrGenerator(ProgramDeclarationNode ast) => this.ast = ast;
+
+        public Compiliation Generate() {
             var nameGenerator = new NameGenerator();
             var functions = new List<Function>();
             var globalVars = new List<GlobalVariable>();
 
-            foreach (var i in root.VariableDeclarations.Items)
+            foreach (var i in this.ast.VariableDeclarations.Items)
                 globalVars.Add(new GlobalVariable(i.Identifier));
 
-            foreach (var i in root.FunctionDeclarations.Items)
+            foreach (var i in this.ast.FunctionDeclarations.Items)
                 functions.Add(FunctionDeclarationVisitor.Visit(nameGenerator, i));
 
             return new Compiliation(functions, globalVars);
@@ -107,16 +109,16 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
 
             if (this.parent != null) {
                 if (this.parent.Terminator is CallTerminator c) {
-                    c.SetReturn(this.current);
+                    //c.SetReturn(this.current);
                 }
                 else if (this.parent.Terminator is IfTerminator i) {
-                    if (i.WhenTrue == null) {
-                        i.SetWhenTrue(this.current);
-                        goto skipSetParent;
-                    }
-                    else if (i.WhenFalse == null) {
-                        i.SetWhenFalse(this.current);
-                    }
+                    //if (i.WhenTrue == null) {
+                    //    i.SetWhenTrue(this.current);
+                    //    goto skipSetParent;
+                    //}
+                    //else if (i.WhenFalse == null) {
+                    //    i.SetWhenFalse(this.current);
+                    //}
                 }
             }
 
@@ -157,7 +159,9 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
         public BasicBlock(IReadOnlyCollection<BasicBlockInstruction> instructions, Terminator terminator) => (this.Instructions, this.Terminator) = (instructions, terminator);
     }
 
-    public abstract class BasicBlockInstruction { }
+    public abstract class BasicBlockInstruction {
+
+    }
 
     public sealed class BasicBlockAssignmentInstruction : BasicBlockInstruction {
         public LValue Target { get; }
@@ -169,7 +173,14 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
     }
 
     public sealed class BasicBlockIntrinsicInstruction : BasicBlockInstruction {
+        public string Identifier { get; }
+        public LValue Argument1 { get; }
+        public LValue Argument2 { get; }
+        public LValue Argument3 { get; }
 
+        public BasicBlockIntrinsicInstruction(string identifier, LValue argument1, LValue argument2, LValue argument3) => (this.Identifier, this.Argument1, this.Argument2, this.Argument3) = (identifier, argument1, argument2, argument3);
+
+        public override string ToString() => $"{this.Identifier} {this.Argument1} {this.Argument2} {this.Argument3}";
     }
 
     public sealed class Compiliation {
@@ -179,8 +190,9 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
         public Compiliation(IReadOnlyCollection<Function> functions, IReadOnlyCollection<GlobalVariable> globalVars) => (this.Functions, this.GlobalVariables) = (functions, globalVars);
     }
 
-    public abstract class LValue { }
-    public sealed class FunctionArgument : LValue { }
+    public abstract class LValue {
+
+    }
 
     public abstract class Variable : LValue {
         public string Identifier { get; }
@@ -188,6 +200,10 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
         public Variable(string identifier) => this.Identifier = identifier;
 
         public override string ToString() => this.Identifier;
+    }
+
+    public sealed class FunctionArgument : Variable {
+        public FunctionArgument(string identifier) : base(identifier) { }
     }
 
     public sealed class GlobalVariable : Variable {
@@ -208,20 +224,29 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
 
     public sealed class Pointer : LValue {
         public LValue Reference { get; }
+
+        public Pointer(LValue reference) => this.Reference = reference;
+
+        public override string ToString() => this.Reference.ToString();
     }
 
     public sealed class Function : LValue {
-        public IReadOnlyCollection<LocalVariable> LocalVariables { get; }
-        public BasicBlock Entry { get; }
         public string Identifier { get; }
+        public BasicBlock Entry { get; }
+        public IReadOnlyCollection<LocalVariable> LocalVariables { get; }
 
         public Function(string identifier, BasicBlock bb, IReadOnlyCollection<LocalVariable> variables) => (this.Entry, this.LocalVariables, this.Identifier) = (bb, variables, identifier);
 
         public override string ToString() => this.Identifier;
     }
 
-    public abstract class RValue { }
-    public abstract class Constant : RValue { }
+    public abstract class RValue {
+
+    }
+
+    public abstract class Constant : RValue {
+
+    }
 
     public sealed class UnsignedIntegerConstant : Constant {
         public ulong Value { get; }
@@ -256,30 +281,35 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
         public override string ToString() => $"'{this.Op}' {this.Value}";
     }
 
-    public abstract class Terminator { }
+    public abstract class Terminator {
 
-    public sealed class ReturnTerminator : Terminator { }
+    }
+
+    public sealed class ReturnTerminator : Terminator {
+
+    }
 
     public sealed class GotoTerminator : Terminator {
         public BasicBlock Target { get; }
+
+        public GotoTerminator(BasicBlock target) => this.Target = target;
     }
 
     public sealed class IfTerminator : Terminator {
         public LValue Condition { get; }
-        public BasicBlock WhenTrue { get; private set; }
-        public BasicBlock WhenFalse { get; private set; }
+        public BasicBlock WhenTrue { get; }
+        public BasicBlock WhenFalse { get; }
 
-        public void SetWhenTrue(BasicBlock whenTrue) => this.WhenTrue = whenTrue;
-        public void SetWhenFalse(BasicBlock whenFalse) => this.WhenFalse = whenFalse;
+        public IfTerminator(LValue condition, BasicBlock whenTrue, BasicBlock whenFalse) => (this.Condition, this.WhenFalse, this.WhenFalse) = (condition, whenTrue, whenFalse);
     }
 
     public sealed class CallTerminator : Terminator {
+        public Function ToCall { get; }
         public LValue ReturnTarget { get; }
-        public LValue ToCall { get; }
-        public IReadOnlyCollection<LValue> Arguments { get; }
-        public BasicBlock OnReturn { get; private set; }
+        public IReadOnlyCollection<FunctionArgument> Arguments { get; }
+        public BasicBlock AfterReturn { get; }
 
-        public void SetReturn(BasicBlock onReturn) => this.OnReturn = onReturn;
+        public CallTerminator(Function toCall, LValue returnTarget, IReadOnlyCollection<FunctionArgument> arguments, BasicBlock afterReturn) => (this.ToCall, this.ReturnTarget, this.Arguments, this.AfterReturn) = (toCall, returnTarget, arguments, afterReturn);
     }
 
     public enum BinaryOperationType {
