@@ -18,7 +18,7 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
         public IrGenerator(ProgramDeclarationNode ast) => this.ast = ast;
 
         public Compiliation Generate() {
-            var visitor = new FunctionDeclarationVisitor();
+            var visitor = new FunctionDeclarationVisitor(this.ast.ConstDeclarations.Items.ToDictionary(c => c.Identifier, c => c.Value.Literal));
             var functions = new List<Function>();
             var globalVars = new List<GlobalVariableLValue>();
 
@@ -34,11 +34,14 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
 
     public class FunctionDeclarationVisitor {
         private readonly NameGenerator nameGenerator = new NameGenerator();
+        private readonly IReadOnlyDictionary<string, ulong> consts;
         private List<BasicBlockInstruction> currentInstructions;
         private List<LocalVariableLValue> localVariables;
         private BasicBlock entry;
         private BasicBlock parent;
         private BasicBlock current;
+
+        public FunctionDeclarationVisitor(IReadOnlyDictionary<string, ulong> consts) => this.consts = consts;
 
         public Function Visit(FunctionDeclarationNode node) {
             this.currentInstructions = new List<BasicBlockInstruction>();
@@ -179,10 +182,10 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
             }
         }
 
-        private LValue Visit(IdentifierExpressionNode node) {
+        private RValue Visit(IdentifierExpressionNode node) {
             switch (node) {
                 default: throw new UnexpectedException(default(PositionInfo), "identifier node");
-                case VariableIdentifierNode n: return new LocalVariableLValue(n.Identifier);
+                case VariableIdentifierNode n: return this.consts.TryGetValue(node.Identifier, out var c) ? new UnsignedIntegerConstant(c) : (RValue)new LocalVariableLValue(n.Identifier);
                 case RegisterIdentifierNode n: return new RegisterLValue(n.Register);
 
                 case FunctionCallIdentifierNode n:
