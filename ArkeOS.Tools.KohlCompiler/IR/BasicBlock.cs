@@ -67,13 +67,13 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
                 default: throw new UnexpectedException(default(PositionInfo), "statement node");
                 case EmptyStatementNode n: break;
                 case DeclarationNode n: this.Visit(n); break;
-                case ReturnStatementNode n: this.Push(new ReturnTerminator(this.Visit(n.Expression))); break;
+                case ReturnStatementNode n: this.Push(new ReturnTerminator(this.Visit(n.Expression, false))); break;
                 case ExpressionStatementNode n: this.Visit(n); break;
                 case IntrinsicStatementNode n: this.Visit(n); break;
 
                 case AssignmentStatementNode n:
                     var lhs = this.VisitEnsureLValue(n.Target);
-                    var rhs = n is CompoundAssignmentStatementNode ca ? this.Visit(new BinaryExpressionNode(ca.Target, ca.Op, ca.Expression)) : this.Visit(n.Expression);
+                    var rhs = n is CompoundAssignmentStatementNode ca ? this.Visit(new BinaryExpressionNode(ca.Target, ca.Op, ca.Expression), true) : this.Visit(n.Expression, true);
 
                     this.Push(new BasicBlockAssignmentInstruction(lhs, rhs));
 
@@ -103,7 +103,7 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
                         this.parent = parent;
                         this.currentInstructions = insts;
 
-                        this.Push(new IfTerminator(this.Visit(n.Expression), ifEntry));
+                        this.Push(new IfTerminator(this.Visit(n.Expression, false), ifEntry));
                     }
 
                     break;
@@ -130,7 +130,7 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
                         var preconditionTerminator = new GotoTerminator();
                         this.Push(preconditionTerminator);
 
-                        this.Push(new IfTerminator(this.Visit(n.Expression), bodyEntry));
+                        this.Push(new IfTerminator(this.Visit(n.Expression, false), bodyEntry));
 
                         preconditionTerminator.SetTarget(this.parent);
                         bodyGoto.SetTarget(this.parent);
@@ -144,7 +144,7 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
             switch (node) {
                 default: throw new UnexpectedException(default(PositionInfo), "identifier node");
                 case VariableDeclarationWithInitializerNode n:
-                    var i = this.Visit(n.Initializer);
+                    var i = this.Visit(n.Initializer, true);
 
                     this.Push(new BasicBlockAssignmentInstruction(new LocalVariableLValue(n.Identifier), i));
 
@@ -152,23 +152,30 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
             }
         }
 
-        private LValue VisitEnsureLValue(ExpressionStatementNode node) => (LValue)this.Visit(node);
+        private LValue VisitEnsureLValue(ExpressionStatementNode node) => (LValue)this.Visit(node, true);
 
-        private RValue Visit(ExpressionStatementNode node) {
+        private RValue Visit(ExpressionStatementNode node, bool allowOps) {
             switch (node) {
                 default: throw new UnexpectedException(default(PositionInfo), "expression node");
                 case IdentifierExpressionNode n: return this.Visit(n);
                 case LiteralExpressionNode n: return this.Visit(n);
 
                 case BinaryExpressionNode n:
-                    var l = this.Visit(n.Left);
-                    var r = this.Visit(n.Right);
+                    var l = this.Visit(n.Left, false);
+                    var r = this.Visit(n.Right, false);
+                    var res = new BinaryOperation(l, (BinaryOperationType)n.Op.Operator, r);
 
-                    return new BinaryOperation(l, (BinaryOperationType)n.Op.Operator, r);
+                    return allowOps ? res : (RValue)this.CreateVariableAndAssign(res);
 
                 case UnaryExpressionNode n:
+                    if (n.Op.Operator != Operator.Dereference) {
+                        var op = new UnaryOperation((UnaryOperationType)n.Op.Operator, this.Visit(n.Expression, false));
 
-                    return n.Op.Operator != Operator.Dereference ? new UnaryOperation((UnaryOperationType)n.Op.Operator, this.Visit(n.Expression)) : (RValue)(new PointerLValue(this.VisitEnsureLValue(n.Expression)));
+                        return allowOps ? op : (RValue)this.CreateVariableAndAssign(op);
+                    }
+                    else {
+                        return new PointerLValue(this.VisitEnsureLValue(n.Expression));
+                    }
             }
         }
 
@@ -183,7 +190,7 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
                     var args = new List<FunctionArgumentLValue>();
 
                     foreach (var a in n.ArgumentList.Items)
-                        args.Add(new FunctionArgumentLValue(this.Visit(a)));
+                        args.Add(new FunctionArgumentLValue(this.Visit(a, false)));
 
                     this.Push(new FunctionCallTerminator(n.Identifier, returnTarget, args));
 
@@ -290,6 +297,14 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
             var ident = new LocalVariableLValue(this.nameGenerator.Next());
 
             this.localVariables.Add(ident);
+
+            return ident;
+        }
+
+        private LValue CreateVariableAndAssign(RValue rhs) {
+            var ident = this.CreateVariable();
+
+            this.Push(new BasicBlockAssignmentInstruction(ident, rhs));
 
             return ident;
         }
