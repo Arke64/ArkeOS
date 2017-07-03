@@ -69,6 +69,7 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
                 case DeclarationNode n: this.Visit(n); break;
                 case ReturnStatementNode n: this.Push(new ReturnTerminator(this.Visit(n.Expression))); break;
                 case ExpressionStatementNode n: this.Visit(n); break;
+                case IntrinsicStatementNode n: this.Visit(n); break;
 
                 case AssignmentStatementNode n:
                     var lhs = this.Visit(n.Target);
@@ -108,7 +109,6 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
                     break;
 
                 case WhileStatementNode n: Debug.Assert(false); break;
-                case IntrinsicStatementNode n: Debug.Assert(false); break;
             }
         }
 
@@ -167,6 +167,93 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
                 case IntegerLiteralNode n: return this.CreateVariableAndAssign(new UnsignedIntegerConstant(n.Literal));
                 case BoolLiteralNode n: return this.CreateVariableAndAssign(new UnsignedIntegerConstant(n.Literal ? ulong.MaxValue : 0));
                 default: throw new UnexpectedException(default(PositionInfo), "literal node");
+            }
+        }
+
+        private void Visit(IntrinsicStatementNode s) {
+            switch (s) {
+                case BrkStatementNode n: this.Push(new BasicBlockIntrinsicInstruction(InstructionDefinition.BRK, null, null, null)); break;
+                case EintStatementNode n: this.Push(new BasicBlockIntrinsicInstruction(InstructionDefinition.EINT, null, null, null)); break;
+                case HltStatementNode n: this.Push(new BasicBlockIntrinsicInstruction(InstructionDefinition.HLT, null, null, null)); break;
+                case IntdStatementNode n: this.Push(new BasicBlockIntrinsicInstruction(InstructionDefinition.INTD, null, null, null)); break;
+                case InteStatementNode n: this.Push(new BasicBlockIntrinsicInstruction(InstructionDefinition.INTE, null, null, null)); break;
+                case NopStatementNode n: this.Push(new BasicBlockIntrinsicInstruction(InstructionDefinition.NOP, null, null, null)); break;
+
+                case CpyStatementNode n: {
+                        if (n.ArgumentList.Extract(out var arg0, out var arg1, out var arg2)) {
+                            var a = this.Visit(arg0);
+                            var b = this.Visit(arg1);
+                            var c = this.Visit(arg2);
+
+                            this.Push(new BasicBlockIntrinsicInstruction(InstructionDefinition.CPY, a, b, c));
+                        }
+                        else {
+                            throw new TooFewArgumentsException(default(PositionInfo));
+                        }
+                    }
+
+                    break;
+
+                case IntStatementNode n: {
+                        if (n.ArgumentList.Extract(out var arg0, out var arg1, out var arg2)) {
+                            var a = this.Visit(arg0);
+                            var b = this.Visit(arg1);
+                            var c = this.Visit(arg2);
+
+                            this.Push(new BasicBlockIntrinsicInstruction(InstructionDefinition.INT, a, b, c));
+                        }
+                        else {
+                            throw new TooFewArgumentsException(default(PositionInfo));
+                        }
+                    }
+
+                    break;
+
+                case DbgStatementNode n: {
+                        if (n.ArgumentList.Extract(out var arg0, out var arg1, out var arg2)) {
+                            var a = this.Visit(arg0);
+                            var b = this.Visit(arg1);
+                            var c = this.Visit(arg2);
+
+                            this.Push(new BasicBlockIntrinsicInstruction(InstructionDefinition.DBG, a, b, c));
+                        }
+                        else {
+                            throw new TooFewArgumentsException(default(PositionInfo));
+                        }
+                    }
+
+                    break;
+
+                case CasStatementNode n: {
+                        if (n.ArgumentList.Extract(out var arg0, out var arg1, out var arg2)) {
+                            var a = this.Visit(arg0);
+                            var b = this.Visit(arg1);
+                            var c = this.Visit(arg2);
+
+                            this.Push(new BasicBlockIntrinsicInstruction(InstructionDefinition.CAS, a, b, c));
+                        }
+                        else {
+                            throw new TooFewArgumentsException(default(PositionInfo));
+                        }
+                    }
+
+                    break;
+
+                case XchgStatementNode n: {
+                        if (n.ArgumentList.Extract(out var arg0, out var arg1)) {
+                            var a = this.Visit(arg0);
+                            var b = this.Visit(arg1);
+
+                            this.Push(new BasicBlockIntrinsicInstruction(InstructionDefinition.XCHG, a, b, null));
+                        }
+                        else {
+                            throw new TooFewArgumentsException(default(PositionInfo));
+                        }
+                    }
+
+                    break;
+
+                default: Debug.Assert(false); break;
             }
         }
 
@@ -238,14 +325,14 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
     }
 
     public sealed class BasicBlockIntrinsicInstruction : BasicBlockInstruction {
-        public string Identifier { get; }
+        public InstructionDefinition Intrinsic { get; }
         public LValue Argument1 { get; }
         public LValue Argument2 { get; }
         public LValue Argument3 { get; }
 
-        public BasicBlockIntrinsicInstruction(string identifier, LValue argument1, LValue argument2, LValue argument3) => (this.Identifier, this.Argument1, this.Argument2, this.Argument3) = (identifier, argument1, argument2, argument3);
+        public BasicBlockIntrinsicInstruction(InstructionDefinition inst, LValue argument1, LValue argument2, LValue argument3) => (this.Intrinsic, this.Argument1, this.Argument2, this.Argument3) = (inst, argument1, argument2, argument3);
 
-        public override string ToString() => $"{this.Identifier} {this.Argument1} {this.Argument2} {this.Argument3}";
+        public override string ToString() => $"{this.Intrinsic.Mnemonic} {this.Argument1} {this.Argument2} {this.Argument3}";
     }
 
     public sealed class Compiliation {

@@ -166,10 +166,18 @@ namespace ArkeOS.Tools.KohlCompiler {
         private void Visit(BasicBlockInstruction s) {
             switch (s) {
                 case BasicBlockAssignmentInstruction n: this.Visit(n); break;
+                case BasicBlockIntrinsicInstruction n: this.Visit(n); break;
                 default: Debug.Assert(false); break;
             }
         }
 
+        private void Visit(BasicBlockIntrinsicInstruction s) {
+            var a = s.Argument1 != null ? this.GetVariableAccessParameter(s.Argument1, true) : null;
+            var b = s.Argument2 != null ? this.GetVariableAccessParameter(s.Argument2, true) : null;
+            var c = s.Argument3 != null ? this.GetVariableAccessParameter(s.Argument3, true) : null;
+
+            this.Emit(s.Intrinsic, a, b, c);
+        }
 
         private void Visit(Terminator terminator) {
             switch (terminator) {
