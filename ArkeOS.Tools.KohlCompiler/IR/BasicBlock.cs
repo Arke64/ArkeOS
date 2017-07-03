@@ -136,15 +136,9 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
                     return this.CreateVariableAndAssign(new BinaryOperation(l, (BinaryOperationType)n.Op.Operator, r));
 
                 case UnaryExpressionNode n:
-                    if (n.Op.Operator != Operator.Dereference) {
-                        var e = this.Visit(n.Expression);
+                    var e = this.Visit(n.Expression);
 
-                        return this.CreateVariableAndAssign(new UnaryOperation((UnaryOperationType)n.Op.Operator, e));
-                    }
-                    else {
-                        Debug.Assert(false);
-                        return null;
-                    }
+                    return n.Op.Operator != Operator.Dereference ? this.CreateVariableAndAssign(new UnaryOperation((UnaryOperationType)n.Op.Operator, e)) : new PointerLValue(e);
             }
         }
 

@@ -110,6 +110,15 @@ namespace ArkeOS.Tools.KohlCompiler {
                 case RegisterLValue v:
                     return Parameter.CreateRegister(v.Register);
 
+                case PointerLValue v:
+                    var r = this.GetVariableAccessParameter(v.Reference, false);
+
+                    r.IsIndirect = true;
+
+                    this.Emit(InstructionDefinition.SET, Emitter.StackParam, r);
+
+                    return Parameter.CreateStack(ParameterFlags.Indirect);
+
                 default:
                     Debug.Assert(false);
 
