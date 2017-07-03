@@ -71,6 +71,8 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
                 case ExpressionStatementNode n: this.Visit(n); break;
                 case IntrinsicStatementNode n: this.Visit(n); break;
 
+                case CompoundAssignmentStatementNode n: Debug.Assert(false); break;
+
                 case AssignmentStatementNode n:
                     var lhs = this.Visit(n.Target);
                     var rhs = this.Visit(n.Expression);
@@ -79,36 +81,70 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
 
                     break;
 
-                case IfStatementNode n:
-                    var term1 = new GotoTerminator();
-                    var entry = this.entry;
-                    var parent = this.parent;
-                    var insts = this.currentInstructions.Select(i => i).ToList();
+                case IfStatementNode n: {
+                        var term1 = new GotoTerminator();
+                        var entry = this.entry;
+                        var parent = this.parent;
+                        var insts = this.currentInstructions.Select(i => i).ToList();
 
-                    this.currentInstructions = new List<BasicBlockInstruction>();
+                        this.currentInstructions = new List<BasicBlockInstruction>();
 
-                    this.entry = null;
-                    this.parent = null;
-                    this.Visit(n.StatementBlock);
-                    this.Push(term1);
-                    var ifEntry = this.entry;
+                        this.entry = null;
+                        this.parent = null;
+                        this.Visit(n.StatementBlock);
+                        this.Push(term1);
+                        var ifEntry = this.entry;
 
-                    this.entry = null;
-                    this.parent = null;
-                    if (n is IfElseStatementNode ie)
-                        this.Visit(ie.ElseStatementBlock);
-                    this.Push(term1);
-                    var elseEntry = this.entry;
+                        this.entry = null;
+                        this.parent = null;
+                        if (n is IfElseStatementNode ie)
+                            this.Visit(ie.ElseStatementBlock);
+                        this.Push(term1);
+                        var elseEntry = this.entry;
 
-                    this.entry = entry;
-                    this.parent = parent;
-                    this.currentInstructions = insts;
+                        this.entry = entry;
+                        this.parent = parent;
+                        this.currentInstructions = insts;
 
-                    this.Push(new IfTerminator(this.Visit(n.Expression), ifEntry, elseEntry));
+                        this.Push(new IfTerminator(this.Visit(n.Expression), ifEntry, elseEntry));
+                    }
 
                     break;
 
-                case WhileStatementNode n: Debug.Assert(false); break;
+                case WhileStatementNode n: {
+                        var bodyGoto = new GotoTerminator();
+                        var endGoto = new GotoTerminator();
+                        var entry = this.entry;
+                        var parent = this.parent;
+                        var insts = this.currentInstructions.Select(i => i).ToList();
+
+                        this.currentInstructions = new List<BasicBlockInstruction>();
+
+                        this.entry = null;
+                        this.parent = null;
+                        this.Visit(n.StatementBlock);
+                        this.Push(bodyGoto);
+                        var bodyEntry = this.entry;
+
+                        this.entry = null;
+                        this.parent = null;
+                        this.Push(endGoto);
+                        var endEntry = this.entry;
+
+                        this.entry = entry;
+                        this.parent = parent;
+                        this.currentInstructions = insts;
+
+                        var preconditionTerminator = new GotoTerminator();
+                        this.Push(preconditionTerminator);
+
+                        this.Push(new IfTerminator(this.Visit(n.Expression), bodyEntry, endEntry));
+
+                        preconditionTerminator.SetTarget(this.parent);
+                        bodyGoto.SetTarget(this.parent);
+                    }
+
+                    break;
             }
         }
 
@@ -284,10 +320,10 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
                     g.SetTarget(this.current);
                 }
                 else if (this.parent.Terminator is IfTerminator i) {
-                    if (i.WhenTrue.Terminator is GotoTerminator g1) {
+                    if (i.WhenTrue.Terminator is GotoTerminator g1 && g1.Target == null) {
                         g1.SetTarget(this.current);
                     }
-                    if (i.WhenFalse.Terminator is GotoTerminator g2) {
+                    if (i.WhenFalse.Terminator is GotoTerminator g2 && g2.Target == null) {
                         g2.SetTarget(this.current);
                     }
                 }

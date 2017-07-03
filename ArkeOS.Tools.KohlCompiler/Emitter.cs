@@ -15,7 +15,8 @@ namespace ArkeOS.Tools.KohlCompiler {
         private readonly bool emitBootable;
         private readonly string outputFile;
         private ulong nextVariableAddress;
-        private Dictionary<BasicBlock, int> basicBlockAddresses;
+        private HashSet<BasicBlock> visitedBasicBlocks;
+        private Dictionary<BasicBlock, ulong> basicBlockAddresses;
         private Dictionary<string, ulong> functionAddresses;
         private Dictionary<string, ulong> variableAddresses;
         private List<Instruction> instructions;
@@ -27,17 +28,19 @@ namespace ArkeOS.Tools.KohlCompiler {
         private ulong DistanceFrom(int startInst) => (ulong)this.instructions.Skip(startInst).Sum(i => i.Length);
 
         public void Emit() {
-            this.basicBlockAddresses = new Dictionary<BasicBlock, int>();
+            this.basicBlockAddresses = new Dictionary<BasicBlock, ulong>();
             this.functionAddresses = new Dictionary<string, ulong>();
             this.variableAddresses = new Dictionary<string, ulong>();
             this.nextVariableAddress = 0UL;
 
+            this.visitedBasicBlocks = new HashSet<BasicBlock>();
             this.instructions = new List<Instruction>();
             this.throwOnNoFunction = false;
 
             this.EmitHeader();
             this.DiscoverAddresses(this.tree);
 
+            this.visitedBasicBlocks.Clear();
             this.instructions.Clear();
             this.throwOnNoFunction = true;
 
@@ -150,11 +153,16 @@ namespace ArkeOS.Tools.KohlCompiler {
         }
 
         private void Visit(BasicBlock n) {
+            if (this.visitedBasicBlocks.Contains(n))
+                return;
+
+            this.visitedBasicBlocks.Add(n);
+
             if (!this.throwOnNoFunction) {
                 if (this.basicBlockAddresses.ContainsKey(n))
                     return;
 
-                this.basicBlockAddresses[n] = this.instructions.Count;
+                this.basicBlockAddresses[n] = (ulong)this.instructions.Sum(i => i.Length);
             }
 
             foreach (var s in n.Instructions)
@@ -236,7 +244,10 @@ namespace ArkeOS.Tools.KohlCompiler {
         private void Visit(GotoTerminator g) {
             this.Visit(g.Target);
 
-            this.Emit(InstructionDefinition.SET, Parameter.CreateRegister(Register.RIP), Parameter.CreateLiteral(this.throwOnNoFunction ? this.DistanceFrom(this.basicBlockAddresses[g.Target]) : 0, ParameterFlags.RelativeToRIP));
+            var targetAddr = this.throwOnNoFunction ? this.basicBlockAddresses[g.Target] : 0;
+            var currentAddr = this.throwOnNoFunction ? this.DistanceFrom(0) : 0;
+
+            this.Emit(InstructionDefinition.SET, Parameter.CreateRegister(Register.RIP), Parameter.CreateLiteral(targetAddr - currentAddr, ParameterFlags.RelativeToRIP));
         }
 
         private void Visit(BasicBlockAssignmentInstruction a) {
