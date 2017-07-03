@@ -71,11 +71,9 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
                 case ExpressionStatementNode n: this.Visit(n); break;
                 case IntrinsicStatementNode n: this.Visit(n); break;
 
-                case CompoundAssignmentStatementNode n: Debug.Assert(false); break;
-
                 case AssignmentStatementNode n:
                     var lhs = this.Visit(n.Target);
-                    var rhs = this.Visit(n.Expression);
+                    var rhs = n is CompoundAssignmentStatementNode ca ? this.Visit(new BinaryExpressionNode(ca.Target, ca.Op, ca.Expression)) : this.Visit(n.Expression);
 
                     this.Push(new BasicBlockAssignmentInstruction(lhs, new ReadLValue(rhs)));
 
