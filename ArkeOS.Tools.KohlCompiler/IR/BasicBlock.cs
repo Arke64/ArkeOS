@@ -68,6 +68,7 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
                 case EmptyStatementNode n: break;
                 case DeclarationNode n: this.Visit(n); break;
                 case ReturnStatementNode n: this.Push(new ReturnTerminator(this.Visit(n.Expression))); break;
+                case ExpressionStatementNode n: this.Visit(n); break;
 
                 case AssignmentStatementNode n:
                     var lhs = this.Visit(n.Target);
