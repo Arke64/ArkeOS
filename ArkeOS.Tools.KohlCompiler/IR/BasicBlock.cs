@@ -93,25 +93,23 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
                         this.Push(term1);
                         var ifEntry = this.entry;
 
-                        this.entry = null;
-                        this.parent = null;
-                        if (n is IfElseStatementNode ie)
+                        if (n is IfElseStatementNode ie) {
+                            this.entry = null;
+                            this.parent = null;
                             this.Visit(ie.ElseStatementBlock);
-                        this.Push(term1);
-                        var elseEntry = this.entry;
+                        }
 
                         this.entry = entry;
                         this.parent = parent;
                         this.currentInstructions = insts;
 
-                        this.Push(new IfTerminator(this.Visit(n.Expression), ifEntry, elseEntry));
+                        this.Push(new IfTerminator(this.Visit(n.Expression), ifEntry));
                     }
 
                     break;
 
                 case WhileStatementNode n: {
                         var bodyGoto = new GotoTerminator();
-                        var endGoto = new GotoTerminator();
                         var entry = this.entry;
                         var parent = this.parent;
                         var insts = this.currentInstructions.Select(i => i).ToList();
@@ -124,10 +122,6 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
                         this.Push(bodyGoto);
                         var bodyEntry = this.entry;
 
-                        this.entry = null;
-                        this.parent = null;
-                        this.Push(endGoto);
-                        var endEntry = this.entry;
 
                         this.entry = entry;
                         this.parent = parent;
@@ -136,7 +130,7 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
                         var preconditionTerminator = new GotoTerminator();
                         this.Push(preconditionTerminator);
 
-                        this.Push(new IfTerminator(this.Visit(n.Expression), bodyEntry, endEntry));
+                        this.Push(new IfTerminator(this.Visit(n.Expression), bodyEntry));
 
                         preconditionTerminator.SetTarget(this.parent);
                         bodyGoto.SetTarget(this.parent);
@@ -314,9 +308,8 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
                     if (i.WhenTrue.Terminator is GotoTerminator g1 && g1.Target == null) {
                         g1.SetTarget(this.current);
                     }
-                    if (i.WhenFalse.Terminator is GotoTerminator g2 && g2.Target == null) {
-                        g2.SetTarget(this.current);
-                    }
+
+                    i.SetWhenFalse(this.current);
                 }
             }
 
@@ -478,9 +471,11 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
     public sealed class IfTerminator : Terminator {
         public RValue Condition { get; }
         public BasicBlock WhenTrue { get; }
-        public BasicBlock WhenFalse { get; }
+        public BasicBlock WhenFalse { get; private set; }
 
-        public IfTerminator(RValue condition, BasicBlock whenTrue, BasicBlock whenFalse) => (this.Condition, this.WhenTrue, this.WhenFalse) = (condition, whenTrue, whenFalse);
+        public void SetWhenFalse(BasicBlock whenFalse) => this.WhenFalse = whenFalse;
+
+        public IfTerminator(RValue condition, BasicBlock whenTrue) => (this.Condition, this.WhenTrue) = (condition, whenTrue);
     }
 
     public sealed class FunctionCallTerminator : Terminator {
