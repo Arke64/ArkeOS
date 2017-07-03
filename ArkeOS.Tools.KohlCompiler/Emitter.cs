@@ -94,6 +94,21 @@ namespace ArkeOS.Tools.KohlCompiler {
             }
         }
 
+        private Parameter GetVariableAccessParameter(RValue variable, bool allowIndirect) {
+            switch (variable) {
+                case UnsignedIntegerConstant v:
+                    return Parameter.CreateLiteral(v.Value);
+
+                case LValue v:
+                    return this.GetVariableAccessParameter(v, allowIndirect);
+
+                default:
+                    Debug.Assert(false);
+
+                    return null;
+            }
+        }
+
         private Parameter GetVariableAccessParameter(LValue variable, bool allowIndirect) {
             var addr = 0UL;
 
@@ -253,8 +268,8 @@ namespace ArkeOS.Tools.KohlCompiler {
         private void Visit(BasicBlockAssignmentInstruction a) {
             var target = this.GetVariableAccessParameter(a.Target, true);
 
-            if (a.Value is ReadLValue vnode) {
-                this.Emit(InstructionDefinition.SET, target, this.GetVariableAccessParameter(vnode.Value, true));
+            if (a.Value is LValue vnode) {
+                this.Emit(InstructionDefinition.SET, target, this.GetVariableAccessParameter(vnode, true));
             }
             else if (a.Value is UnsignedIntegerConstant nnode) {
                 this.Emit(InstructionDefinition.SET, target, Parameter.CreateLiteral(nnode.Value));
