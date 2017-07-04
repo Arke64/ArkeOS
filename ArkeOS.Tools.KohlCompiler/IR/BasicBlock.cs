@@ -1,6 +1,7 @@
 ﻿using ArkeOS.Hardware.Architecture;
 using ArkeOS.Tools.KohlCompiler.Exceptions;
 using ArkeOS.Tools.KohlCompiler.Syntax;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -40,7 +41,7 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
         public BasicBlockCreator() => this.currentBlock = this.Entry;
 
         private BasicBlock SetBlock(BasicBlock block) => this.currentBlock = block;
-        private T SetTerminator<T>(T terminator) where T : Terminator => (T)(this.currentBlock.Terminator = terminator);
+        private T SetTerminator<T>(T terminator) where T : Terminator => this.currentBlock.Terminator == null ? (T)(this.currentBlock.Terminator = terminator) : throw new InvalidOperationException();
 
         public BasicBlock PushNew() => this.SetBlock(new BasicBlock());
         public BasicBlock PushNew(BasicBlock block) => this.SetBlock(block);
@@ -64,7 +65,7 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
         private FunctionLValue Visit(FunctionDeclarationNode node) {
             this.Visit(node.StatementBlock);
 
-            this.block.PushTerminator(new ReturnTerminator(this.CreateVariable()), null);
+            this.block.PushTerminator(new ReturnTerminator(this.CreateTemporaryLocalVariable()), null);
 
             return new FunctionLValue(node.Identifier, this.block.Entry, node.ArgumentListDeclaration.Items.Select(i => i.Identifier).ToList(), this.localVariables);
         }
@@ -117,7 +118,7 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
                     return res;
 
                 default:
-                    var ident = this.CreateVariable();
+                    var ident = this.CreateTemporaryLocalVariable();
 
                     this.block.PushInstuction(new BasicBlockAssignmentInstruction(ident, res));
 
@@ -126,7 +127,7 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
         }
 
         private void Visit(AssignmentStatementNode node) {
-            var lhs = this.VisitEnsureIsLValue(node.Target);
+            var lhs = this.VisitRequireLValue(node.Target);
             var rhs = node is CompoundAssignmentStatementNode ca ? this.VisitAllowRawOp(new BinaryExpressionNode(ca.Target, ca.Op, ca.Expression)) : this.VisitAllowRawOp(node.Expression);
 
             this.block.PushInstuction(new BasicBlockAssignmentInstruction(lhs, rhs));
@@ -139,9 +140,9 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
             ifTerminator.SetNext(endBlock);
 
             var elseBlock = endBlock;
-            if (node is IfElseStatementNode ie) {
+            if (node is IfElseStatementNode elseNode) {
                 elseBlock = this.block.PushNew();
-                this.Visit(ie.ElseStatementBlock);
+                this.Visit(elseNode.ElseStatementBlock);
                 var (elseTerminator, _) = this.block.PushTerminator(new GotoTerminator(), endBlock);
                 elseTerminator.SetNext(endBlock);
             }
@@ -184,20 +185,21 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
 
             RValue a = null, b = null, c = null;
 
-            if (def.ParameterCount > 0) { node.ArgumentList.Extract(0, out var arg); a = def.Parameter1Direction.HasFlag(ParameterDirection.Write) ? this.VisitEnsureIsLValue(arg) : this.Visit(arg); }
-            if (def.ParameterCount > 1) { node.ArgumentList.Extract(1, out var arg); b = def.Parameter2Direction.HasFlag(ParameterDirection.Write) ? this.VisitEnsureIsLValue(arg) : this.Visit(arg); }
-            if (def.ParameterCount > 2) { node.ArgumentList.Extract(2, out var arg); c = def.Parameter3Direction.HasFlag(ParameterDirection.Write) ? this.VisitEnsureIsLValue(arg) : this.Visit(arg); }
+            if (def.ParameterCount > 0) { node.ArgumentList.Extract(0, out var arg); a = def.Parameter1Direction.HasFlag(ParameterDirection.Write) ? this.VisitRequireLValue(arg) : this.Visit(arg); }
+            if (def.ParameterCount > 1) { node.ArgumentList.Extract(1, out var arg); b = def.Parameter2Direction.HasFlag(ParameterDirection.Write) ? this.VisitRequireLValue(arg) : this.Visit(arg); }
+            if (def.ParameterCount > 2) { node.ArgumentList.Extract(2, out var arg); c = def.Parameter3Direction.HasFlag(ParameterDirection.Write) ? this.VisitRequireLValue(arg) : this.Visit(arg); }
 
             this.block.PushInstuction(new BasicBlockIntrinsicInstruction(def, a, b, c));
         }
 
-        private LValue VisitEnsureIsLValue(ExpressionStatementNode node) => this.VisitAllowRawOp(node) is LValue l ? l : throw new ExpectedException(default(PositionInfo), "lvalue");
+        private LValue VisitRequireLValue(ExpressionStatementNode node) => this.VisitAllowRawOp(node) is LValue l ? l : throw new ExpectedException(default(PositionInfo), "lvalue");
 
         private RValue VisitAllowRawOp(ExpressionStatementNode node) {
             switch (node) {
                 default: throw new UnexpectedException(default(PositionInfo), "expression node");
-                case IdentifierExpressionNode n: return this.Visit(n);
-                case LiteralExpressionNode n: return this.Visit(n);
+                case VariableIdentifierNode n when this.consts.TryGetValue(n.Identifier, out var c): return new UnsignedIntegerConstant(c);
+                case IdentifierExpressionNode n: return this.ExtractLValue(n);
+                case LiteralExpressionNode n: return this.ExtractRValue(n);
 
                 case BinaryExpressionNode n:
                     var l = this.Visit(n.Left);
@@ -212,14 +214,14 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
             }
         }
 
-        private RValue Visit(IdentifierExpressionNode node) {
+        private LValue ExtractLValue(IdentifierExpressionNode node) {
             switch (node) {
                 default: throw new UnexpectedException(default(PositionInfo), "identifier node");
-                case VariableIdentifierNode n: return this.consts.TryGetValue(node.Identifier, out var c) ? new UnsignedIntegerConstant(c) : (RValue)new LocalVariableLValue(n.Identifier);
+                case VariableIdentifierNode n: return new LocalVariableLValue(n.Identifier);
                 case RegisterIdentifierNode n: return new RegisterLValue(n.Register);
 
                 case FunctionCallIdentifierNode n:
-                    var returnTarget = this.CreateVariable();
+                    var returnTarget = this.CreateTemporaryLocalVariable();
                     var args = new List<FunctionArgumentLValue>();
 
                     foreach (var a in n.ArgumentList.Items)
@@ -232,7 +234,7 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
             }
         }
 
-        private RValue Visit(LiteralExpressionNode node) {
+        private RValue ExtractRValue(LiteralExpressionNode node) {
             switch (node) {
                 default: throw new UnexpectedException(default(PositionInfo), "literal node");
                 case IntegerLiteralNode n: return new UnsignedIntegerConstant(n.Literal);
@@ -240,7 +242,7 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
             }
         }
 
-        private LocalVariableLValue CreateVariable() {
+        private LocalVariableLValue CreateTemporaryLocalVariable() {
             var ident = new LocalVariableLValue(this.nameGenerator.Next());
 
             this.localVariables.Add(ident);
