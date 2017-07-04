@@ -103,13 +103,7 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
         private void Visit(DeclarationNode node) {
             switch (node) {
                 default: throw new UnexpectedException(default(PositionInfo), "identifier node");
-                case LocalVariableDeclarationWithInitializerNode n:
-                    var lhs = new LocalVariableLValue(n.Identifier);
-                    var rhs = this.ExtractRValueOrOp(n.Initializer);
-
-                    this.block.PushInstuction(new BasicBlockAssignmentInstruction(lhs, rhs));
-
-                    break;
+                case LocalVariableDeclarationWithInitializerNode n: this.block.PushInstuction(new BasicBlockAssignmentInstruction(new LocalVariableLValue(n.Identifier), this.ExtractRValueOrOp(n.Initializer))); break;
             }
         }
 
@@ -119,16 +113,12 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
 
         private void Visit(AssignmentStatementNode node) {
             var lhs = this.ExtractLValue(node.Target);
-            var rhs = default(RValueOrOp);
+            var exp = node.Expression;
 
-            if (node is CompoundAssignmentStatementNode cnode) {
-                rhs = new BinaryOperation(lhs, (BinaryOperationType)cnode.Op.Operator, this.ExtractRValue(node.Expression));
-            }
-            else {
-                rhs = this.ExtractRValueOrOp(node.Expression);
-            }
+            if (node is CompoundAssignmentStatementNode cnode)
+                exp = new BinaryExpressionNode(cnode.Target, cnode.Op, cnode.Expression);
 
-            this.block.PushInstuction(new BasicBlockAssignmentInstruction(lhs, rhs));
+            this.block.PushInstuction(new BasicBlockAssignmentInstruction(lhs, this.ExtractRValueOrOp(exp)));
         }
 
         private void Visit(IfStatementNode node) {
