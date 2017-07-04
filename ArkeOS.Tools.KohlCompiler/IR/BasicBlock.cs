@@ -87,12 +87,14 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
                         if (this.currentBlock.Terminator == null)
                             this.PushTerminator(new GotoTerminator(after));
 
-                        //Similar to while, if not an IfElse, we can probably push `after` instead of `elseEntry`
-                        var elseEntry = this.PushBasicBlock(new BasicBlock());
-                        if (n is IfElseStatementNode ie)
+                        var elseEntry = after;
+                        if (n is IfElseStatementNode ie) {
+                            elseEntry = this.PushBasicBlock(new BasicBlock());
                             this.Visit(ie.ElseStatementBlock);
-                        if (this.currentBlock.Terminator == null)
-                            this.PushTerminator(new GotoTerminator(after));
+
+                            if (this.currentBlock.Terminator == null)
+                                this.PushTerminator(new GotoTerminator(after));
+                        }
 
                         ifTerminator.SetNext(ifEntry, elseEntry);
 
@@ -107,19 +109,13 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
                         this.PushBasicBlock(loopEntry);
 
                         var ifTerminator = this.PushTerminator(new IfTerminator(this.Visit(n.Expression)));
-                        var after = new BasicBlock();
 
                         var ifEntry = this.PushBasicBlock(new BasicBlock());
                         this.Visit(n.StatementBlock);
                         this.PushTerminator(new GotoTerminator(loopEntry));
 
-                        //We can probably elide this entire elseEntry and just push `after` instead of `elseEntry`
-                        var elseEntry = this.PushBasicBlock(new BasicBlock());
-                        this.PushTerminator(new GotoTerminator(after));
-
-                        ifTerminator.SetNext(ifEntry, elseEntry);
-
-                        this.PushBasicBlock(after);
+                        var after = this.PushBasicBlock(new BasicBlock());
+                        ifTerminator.SetNext(ifEntry, after);
                     }
 
                     break;
