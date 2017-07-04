@@ -37,20 +37,28 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
         private List<LocalVariableLValue> localVariables;
         private BasicBlock currentBlock;
 
+        private T PushTerminator<T>(T terminator) where T : Terminator => (T)(this.currentBlock.Terminator = terminator);
+        private BasicBlock PushBlock() => this.currentBlock = new BasicBlock();
+        private (T, BasicBlock) PushNew<T>(T terminator) where T : Terminator => this.PushNew(terminator, new BasicBlock());
+
+        private (T, BasicBlock) PushNew<T>(T terminator, BasicBlock next) where T : Terminator {
+            this.currentBlock.Terminator = terminator;
+            this.currentBlock = next;
+            return (terminator, next);
+        }
+
+        private void PushInstuction(BasicBlockInstruction bbi) => this.currentBlock.Instructions.Add(bbi);
+
         public FunctionDeclarationVisitor(IReadOnlyDictionary<string, ulong> consts) => this.consts = consts;
 
         public FunctionLValue Visit(FunctionDeclarationNode node) {
             this.localVariables = new List<LocalVariableLValue>();
 
-            var entry = this.currentBlock = new BasicBlock();
+            var entry = this.PushBlock();
 
             this.Visit(node.StatementBlock);
 
-            //See if this check can be put inside pushterminator
-            if (this.currentBlock.Terminator != null)
-                ;
-
-            this.PushTerminator(new ReturnTerminator(this.CreateVariable()));
+            this.PushNew(new ReturnTerminator(this.CreateVariable()));
 
             return new FunctionLValue(node.Identifier, entry, node.ArgumentListDeclaration.Items.Select(i => i.Identifier).ToList(), this.localVariables);
         }
@@ -81,47 +89,35 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
                     break;
 
                 case IfStatementNode n: {
-                        var (ifTerminator, ifEntry) = this.PushTerminator(new IfTerminator(this.Visit(n.Expression)));
-
+                        var (startTerminator, ifBlock) = this.PushNew(new IfTerminator(this.Visit(n.Expression)));
                         this.Visit(n.StatementBlock);
-                        if (this.currentBlock.Terminator != null)
-                            ;
+                        var (ifTerminator, endBlock) = this.PushNew(new GotoTerminator());
+                        ifTerminator.SetNext(endBlock);
 
-                        var (term, after) = this.PushTerminator(new GotoTerminator());
-                        term.SetNext(after);
-
-                        var elseEntry = after;
+                        var elseBlock = endBlock;
                         if (n is IfElseStatementNode ie) {
-                            elseEntry = this.currentBlock = new BasicBlock();
+                            elseBlock = this.PushBlock();
                             this.Visit(ie.ElseStatementBlock);
-
-                            if (this.currentBlock.Terminator != null)
-                                ;
-
-                            var (elseTerm, _) = this.PushTerminator(new GotoTerminator());
-                            elseTerm.SetNext(after);
+                            var (elseTerminator, _) = this.PushNew(new GotoTerminator(), endBlock);
+                            elseTerminator.SetNext(endBlock);
                         }
 
-                        ifTerminator.SetNext(ifEntry, elseEntry);
-
-                        this.currentBlock = after;
+                        startTerminator.SetNext(ifBlock, elseBlock);
                     }
 
                     break;
 
                 case WhileStatementNode n: {
-                        var (startTerminator, loopEntry) = this.PushTerminator(new GotoTerminator());
+                        var (startTerminator, conditionBlock) = this.PushNew(new GotoTerminator());
+                        startTerminator.SetNext(conditionBlock);
 
-                        var (ifTerminator, ifEntry) = this.PushTerminator(new IfTerminator(this.Visit(n.Expression)));
-
+                        var (conditionTerminator, loopBlock) = this.PushNew(new IfTerminator(this.Visit(n.Expression)));
                         this.Visit(n.StatementBlock);
 
-                        var (endTerminator, after) = this.PushTerminator(new GotoTerminator());
+                        var (loopTerminator, endBlock) = this.PushNew(new GotoTerminator());
+                        loopTerminator.SetNext(conditionBlock);
 
-                        startTerminator.SetNext(loopEntry);
-                        endTerminator.SetNext(loopEntry);
-
-                        ifTerminator.SetNext(ifEntry, after);
+                        conditionTerminator.SetNext(loopBlock, endBlock);
                     }
 
                     break;
@@ -192,7 +188,7 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
                     foreach (var a in n.ArgumentList.Items)
                         args.Add(new FunctionArgumentLValue(this.Visit(a)));
 
-                    var (terminator, block) = this.PushTerminator(new CallTerminator(n.Identifier, returnTarget, args));
+                    var (terminator, block) = this.PushNew(new CallTerminator(n.Identifier, returnTarget, args));
                     terminator.SetNext(block);
 
                     return returnTarget;
@@ -243,9 +239,6 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
 
             return ident;
         }
-
-        private (T, BasicBlock) PushTerminator<T>(T terminator) where T : Terminator { this.currentBlock.Terminator = terminator; this.currentBlock = new BasicBlock(); return (terminator, this.currentBlock); }
-        private void PushInstuction(BasicBlockInstruction bbi) => this.currentBlock.Instructions.Add(bbi);
     }
 
     public sealed class BasicBlock {
