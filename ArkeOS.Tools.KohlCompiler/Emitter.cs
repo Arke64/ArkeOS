@@ -70,23 +70,20 @@ namespace ArkeOS.Tools.KohlCompiler {
             this.Emit(InstructionDefinition.HLT);
         }
 
-        private void SetVariableAddress(string v) {
-            if (this.variableAddresses.ContainsKey(v))
-                throw new AlreadyDefinedException(default(PositionInfo), v);
+        private void SetVariableAddress(GlobalVariableLValue v) {
+            if (this.variableAddresses.ContainsKey(v.Identifier))
+                throw new AlreadyDefinedException(default(PositionInfo), v.Identifier);
 
-            this.variableAddresses[v] = this.nextVariableAddress++;
+            this.variableAddresses[v.Identifier] = this.nextVariableAddress++;
         }
 
         private void DiscoverAddresses(Compiliation n) {
             foreach (var s in n.GlobalVariables)
-                this.SetVariableAddress(s.Identifier);
+                this.SetVariableAddress(s);
 
             foreach (var s in n.Functions) {
                 if (this.functionAddresses.ContainsKey(s.Identifier))
                     throw new AlreadyDefinedException(default(PositionInfo), s.Identifier);
-
-                foreach (var v in s.LocalVariables)
-                    this.SetVariableAddress(v.Identifier);
 
                 this.functionAddresses[s.Identifier] = (ulong)this.instructions.Sum(i => i.Length);
 
@@ -119,6 +116,12 @@ namespace ArkeOS.Tools.KohlCompiler {
 
                     if (arg != null)
                         return Parameter.CreateLiteral(idx - 1, ParameterFlags.RelativeToRBP | (allowIndirect ? ParameterFlags.Indirect : 0));
+
+                    idx = 0UL;
+                    var localArg = this.currentFunction.LocalVariables.SkipWhile(a => { idx++; return a.Identifier != v.Identifier; }).FirstOrDefault();
+
+                    if (localArg != null)
+                        return Parameter.CreateLiteral((idx + (ulong)this.currentFunction.Arguments.Count) - 1, ParameterFlags.RelativeToRBP | (allowIndirect ? ParameterFlags.Indirect : 0));
 
                     if (!this.variableAddresses.TryGetValue(v.Identifier, out addr) && this.throwOnNoFunction)
                         throw new IdentifierNotFoundException(default(PositionInfo), v.Identifier);
@@ -218,20 +221,25 @@ namespace ArkeOS.Tools.KohlCompiler {
         }
 
         private void Visit(CallTerminator r) {
+            var orig = this.currentFunction;
+
             this.currentFunction = this.tree.Functions.Single(f => f.Identifier == r.Target);
 
             this.Emit(InstructionDefinition.SET, Emitter.StackParam, Parameter.CreateRegister(Register.RBP));
+            this.Emit(InstructionDefinition.SET, Parameter.CreateRegister(Register.RBP), Parameter.CreateRegister(Register.RSP));
 
             foreach (var a in r.Arguments)
                 this.Emit(InstructionDefinition.SET, Emitter.StackParam, this.GetVariableAccessParameter(a.Argument, true));
 
-            this.Emit(InstructionDefinition.SUB, Parameter.CreateRegister(Register.RBP), Parameter.CreateRegister(Register.RSP), Parameter.CreateLiteral((ulong)r.Arguments.Count));
+            this.Emit(InstructionDefinition.ADD, Parameter.CreateRegister(Register.RSP), Parameter.CreateRegister(Register.RSP), Parameter.CreateLiteral((ulong)this.currentFunction.LocalVariables.Count));
 
             this.Emit(InstructionDefinition.CALL, this.GetFunctionAccessParameter(r.Target));
 
-            this.Emit(InstructionDefinition.SUB, Parameter.CreateRegister(Register.RSP), Parameter.CreateRegister(Register.RSP), Parameter.CreateLiteral((ulong)r.Arguments.Count));
+            this.Emit(InstructionDefinition.SUB, Parameter.CreateRegister(Register.RSP), Parameter.CreateRegister(Register.RSP), Parameter.CreateLiteral((ulong)(r.Arguments.Count + this.currentFunction.LocalVariables.Count)));
 
             this.Emit(InstructionDefinition.SET, Parameter.CreateRegister(Register.RBP), Emitter.StackParam);
+
+            this.currentFunction = orig;
 
             this.Emit(InstructionDefinition.SET, this.GetVariableAccessParameter(r.Result, true), Parameter.CreateRegister(Register.R0));
 
