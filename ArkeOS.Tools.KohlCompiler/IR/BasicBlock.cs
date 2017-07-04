@@ -2,17 +2,16 @@
 using ArkeOS.Tools.KohlCompiler.Exceptions;
 using ArkeOS.Tools.KohlCompiler.Syntax;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 
 namespace ArkeOS.Tools.KohlCompiler.IR {
-    public class NameGenerator {
+    public sealed class NameGenerator {
         private ulong nextId = 0;
 
         public string Next() => "$tmp_" + this.nextId++.ToString();
     }
 
-    public class IrGenerator {
+    public sealed class IrGenerator {
         private readonly ProgramDeclarationNode ast;
 
         public IrGenerator(ProgramDeclarationNode ast) => this.ast = ast;
@@ -32,7 +31,7 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
         }
     }
 
-    public class FunctionDeclarationVisitor {
+    public sealed class FunctionDeclarationVisitor {
         private readonly NameGenerator nameGenerator = new NameGenerator();
         private readonly IReadOnlyDictionary<string, ulong> consts;
         private List<BasicBlockInstruction> currentInstructions;
@@ -70,13 +69,13 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
                 default: throw new UnexpectedException(default(PositionInfo), "statement node");
                 case EmptyStatementNode n: break;
                 case DeclarationNode n: this.Visit(n); break;
-                case ReturnStatementNode n: this.Push(new ReturnTerminator(this.Visit(n.Expression, false))); break;
+                case ReturnStatementNode n: this.Push(new ReturnTerminator(this.Visit(n.Expression))); break;
                 case ExpressionStatementNode n: this.Visit(n); break;
                 case IntrinsicStatementNode n: this.Visit(n); break;
 
                 case AssignmentStatementNode n:
-                    var lhs = this.VisitEnsureLValue(n.Target);
-                    var rhs = n is CompoundAssignmentStatementNode ca ? this.Visit(new BinaryExpressionNode(ca.Target, ca.Op, ca.Expression), true) : this.Visit(n.Expression, true);
+                    var lhs = this.VisitEnsureIsLValue(n.Target);
+                    var rhs = n is CompoundAssignmentStatementNode ca ? this.VisitAllowRValue(new BinaryExpressionNode(ca.Target, ca.Op, ca.Expression)) : this.VisitAllowRValue(n.Expression);
 
                     this.Push(new BasicBlockAssignmentInstruction(lhs, rhs));
 
@@ -107,7 +106,7 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
                         this.parent = parent;
                         this.currentInstructions = insts;
 
-                        this.Push(new IfTerminator(this.Visit(n.Expression, false), ifEntry, elseEntry));
+                        this.Push(new IfTerminator(this.Visit(n.Expression), ifEntry, elseEntry));
                     }
 
                     break;
@@ -139,7 +138,7 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
                         var preconditionTerminator = new GotoTerminator();
                         this.Push(preconditionTerminator);
 
-                        this.Push(new IfTerminator(this.Visit(n.Expression, false), bodyEntry, endEntry));
+                        this.Push(new IfTerminator(this.Visit(n.Expression), bodyEntry, endEntry));
 
                         preconditionTerminator.SetTarget(this.parent);
                         bodyGoto.SetTarget(this.parent);
@@ -152,8 +151,8 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
         private void Visit(DeclarationNode node) {
             switch (node) {
                 default: throw new UnexpectedException(default(PositionInfo), "identifier node");
-                case VariableDeclarationWithInitializerNode n:
-                    var i = this.Visit(n.Initializer, true);
+                case LocalVariableDeclarationWithInitializerNode n:
+                    var i = this.VisitAllowRValue(n.Initializer);
 
                     this.Push(new BasicBlockAssignmentInstruction(new LocalVariableLValue(n.Identifier), i));
 
@@ -161,29 +160,39 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
             }
         }
 
-        private LValue VisitEnsureLValue(ExpressionStatementNode node) => (LValue)this.Visit(node, true);
+        private LValue VisitEnsureIsLValue(ExpressionStatementNode node) => this.VisitAllowRValue(node) is LValue l ? l : throw new ExpectedException(default(PositionInfo), "lvalue");
 
-        private RValue Visit(ExpressionStatementNode node, bool allowOps) {
+        private RValue Visit(ExpressionStatementNode node) {
+            var res = this.VisitAllowRValue(node);
+
+            switch (node) {
+                case IdentifierExpressionNode _:
+                case LiteralExpressionNode _:
+                    return res;
+
+                default:
+                    return this.CreateVariableAndAssign(res);
+            }
+        }
+
+        private RValue VisitAllowRValue(ExpressionStatementNode node) {
             switch (node) {
                 default: throw new UnexpectedException(default(PositionInfo), "expression node");
                 case IdentifierExpressionNode n: return this.Visit(n);
                 case LiteralExpressionNode n: return this.Visit(n);
 
                 case BinaryExpressionNode n:
-                    var l = this.Visit(n.Left, false);
-                    var r = this.Visit(n.Right, false);
-                    var res = new BinaryOperation(l, (BinaryOperationType)n.Op.Operator, r);
+                    var l = this.Visit(n.Left);
+                    var r = this.Visit(n.Right);
 
-                    return allowOps ? res : (RValue)this.CreateVariableAndAssign(res);
+                    return new BinaryOperation(l, (BinaryOperationType)n.Op.Operator, r);
 
                 case UnaryExpressionNode n:
                     if (n.Op.Operator != Operator.Dereference) {
-                        var op = new UnaryOperation((UnaryOperationType)n.Op.Operator, this.Visit(n.Expression, false));
-
-                        return allowOps ? op : (RValue)this.CreateVariableAndAssign(op);
+                        return new UnaryOperation((UnaryOperationType)n.Op.Operator, this.Visit(n.Expression));
                     }
                     else {
-                        return new PointerLValue((LValue)this.Visit(n.Expression, false));
+                        return new PointerLValue(this.VisitEnsureIsLValue(n.Expression));
                     }
             }
         }
@@ -199,7 +208,7 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
                     var args = new List<FunctionArgumentLValue>();
 
                     foreach (var a in n.ArgumentList.Items)
-                        args.Add(new FunctionArgumentLValue(this.Visit(a, false)));
+                        args.Add(new FunctionArgumentLValue(this.Visit(a)));
 
                     this.Push(new FunctionCallTerminator(n.Identifier, returnTarget, args));
 
@@ -215,91 +224,33 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
             }
         }
 
-        private void Visit(IntrinsicStatementNode s) {
-            switch (s) {
-                case BrkStatementNode n: this.Push(new BasicBlockIntrinsicInstruction(InstructionDefinition.BRK)); break;
-                case EintStatementNode n: this.Push(new BasicBlockIntrinsicInstruction(InstructionDefinition.EINT)); break;
-                case HltStatementNode n: this.Push(new BasicBlockIntrinsicInstruction(InstructionDefinition.HLT)); break;
-                case IntdStatementNode n: this.Push(new BasicBlockIntrinsicInstruction(InstructionDefinition.INTD)); break;
-                case InteStatementNode n: this.Push(new BasicBlockIntrinsicInstruction(InstructionDefinition.INTE)); break;
-                case NopStatementNode n: this.Push(new BasicBlockIntrinsicInstruction(InstructionDefinition.NOP)); break;
+        private void Visit(IntrinsicStatementNode node) {
+            var def = default(InstructionDefinition);
 
-                case CpyStatementNode n: {
-                        if (n.ArgumentList.Extract(out var arg0, out var arg1, out var arg2)) {
-                            var a = this.VisitEnsureLValue(arg0);
-                            var b = this.VisitEnsureLValue(arg1);
-                            var c = this.VisitEnsureLValue(arg2);
-
-                            this.Push(new BasicBlockIntrinsicInstruction(InstructionDefinition.CPY, a, b, c));
-                        }
-                        else {
-                            throw new TooFewArgumentsException(default(PositionInfo));
-                        }
-                    }
-
-                    break;
-
-                case IntStatementNode n: {
-                        if (n.ArgumentList.Extract(out var arg0, out var arg1, out var arg2)) {
-                            var a = this.VisitEnsureLValue(arg0);
-                            var b = this.VisitEnsureLValue(arg1);
-                            var c = this.VisitEnsureLValue(arg2);
-
-                            this.Push(new BasicBlockIntrinsicInstruction(InstructionDefinition.INT, a, b, c));
-                        }
-                        else {
-                            throw new TooFewArgumentsException(default(PositionInfo));
-                        }
-                    }
-
-                    break;
-
-                case DbgStatementNode n: {
-                        if (n.ArgumentList.Extract(out var arg0, out var arg1, out var arg2)) {
-                            var a = this.VisitEnsureLValue(arg0);
-                            var b = this.VisitEnsureLValue(arg1);
-                            var c = this.VisitEnsureLValue(arg2);
-
-                            this.Push(new BasicBlockIntrinsicInstruction(InstructionDefinition.DBG, a, b, c));
-                        }
-                        else {
-                            throw new TooFewArgumentsException(default(PositionInfo));
-                        }
-                    }
-
-                    break;
-
-                case CasStatementNode n: {
-                        if (n.ArgumentList.Extract(out var arg0, out var arg1, out var arg2)) {
-                            var a = this.VisitEnsureLValue(arg0);
-                            var b = this.VisitEnsureLValue(arg1);
-                            var c = this.VisitEnsureLValue(arg2);
-
-                            this.Push(new BasicBlockIntrinsicInstruction(InstructionDefinition.CAS, a, b, c));
-                        }
-                        else {
-                            throw new TooFewArgumentsException(default(PositionInfo));
-                        }
-                    }
-
-                    break;
-
-                case XchgStatementNode n: {
-                        if (n.ArgumentList.Extract(out var arg0, out var arg1)) {
-                            var a = this.VisitEnsureLValue(arg0);
-                            var b = this.VisitEnsureLValue(arg1);
-
-                            this.Push(new BasicBlockIntrinsicInstruction(InstructionDefinition.XCHG, a, b));
-                        }
-                        else {
-                            throw new TooFewArgumentsException(default(PositionInfo));
-                        }
-                    }
-
-                    break;
-
-                default: Debug.Assert(false); break;
+            switch (node) {
+                case BrkStatementNode n: def = InstructionDefinition.BRK; break;
+                case EintStatementNode n: def = InstructionDefinition.EINT; break;
+                case HltStatementNode n: def = InstructionDefinition.HLT; break;
+                case IntdStatementNode n: def = InstructionDefinition.INTD; break;
+                case InteStatementNode n: def = InstructionDefinition.INTE; break;
+                case NopStatementNode n: def = InstructionDefinition.NOP; break;
+                case CpyStatementNode n: def = InstructionDefinition.CPY; break;
+                case IntStatementNode n: def = InstructionDefinition.INT; break;
+                case DbgStatementNode n: def = InstructionDefinition.DBG; break;
+                case CasStatementNode n: def = InstructionDefinition.CAS; break;
+                case XchgStatementNode n: def = InstructionDefinition.XCHG; break;
+                default: throw new UnexpectedException(default(PositionInfo), "intrinsic node");
             }
+
+            if (def.ParameterCount != node.ArgumentList.Items.Count) throw new TooFewArgumentsException(default(PositionInfo));
+
+            RValue a = null, b = null, c = null;
+
+            if (def.ParameterCount > 0) { node.ArgumentList.Extract(0, out var arg); a = def.Parameter1Direction.HasFlag(ParameterDirection.Write) ? this.VisitEnsureIsLValue(arg) : this.Visit(arg); }
+            if (def.ParameterCount > 1) { node.ArgumentList.Extract(1, out var arg); b = def.Parameter2Direction.HasFlag(ParameterDirection.Write) ? this.VisitEnsureIsLValue(arg) : this.Visit(arg); }
+            if (def.ParameterCount > 2) { node.ArgumentList.Extract(2, out var arg); c = def.Parameter3Direction.HasFlag(ParameterDirection.Write) ? this.VisitEnsureIsLValue(arg) : this.Visit(arg); }
+
+            this.Push(new BasicBlockIntrinsicInstruction(def, a, b, c));
         }
 
         private LValue CreateVariable() {
@@ -372,14 +323,14 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
 
     public sealed class BasicBlockIntrinsicInstruction : BasicBlockInstruction {
         public InstructionDefinition Intrinsic { get; }
-        public LValue Argument1 { get; }
-        public LValue Argument2 { get; }
-        public LValue Argument3 { get; }
+        public RValue Argument1 { get; }
+        public RValue Argument2 { get; }
+        public RValue Argument3 { get; }
 
         public BasicBlockIntrinsicInstruction(InstructionDefinition inst) : this(inst, null, null, null) { }
-        public BasicBlockIntrinsicInstruction(InstructionDefinition inst, LValue argument1) : this(inst, argument1, null, null) { }
-        public BasicBlockIntrinsicInstruction(InstructionDefinition inst, LValue argument1, LValue argument2) : this(inst, argument1, argument2, null) { }
-        public BasicBlockIntrinsicInstruction(InstructionDefinition inst, LValue argument1, LValue argument2, LValue argument3) => (this.Intrinsic, this.Argument1, this.Argument2, this.Argument3) = (inst, argument1, argument2, argument3);
+        public BasicBlockIntrinsicInstruction(InstructionDefinition inst, RValue argument1) : this(inst, argument1, null, null) { }
+        public BasicBlockIntrinsicInstruction(InstructionDefinition inst, RValue argument1, RValue argument2) : this(inst, argument1, argument2, null) { }
+        public BasicBlockIntrinsicInstruction(InstructionDefinition inst, RValue argument1, RValue argument2, RValue argument3) => (this.Intrinsic, this.Argument1, this.Argument2, this.Argument3) = (inst, argument1, argument2, argument3);
 
         public override string ToString() => $"{this.Intrinsic.Mnemonic} {this.Argument1} {this.Argument2} {this.Argument3}";
     }
@@ -550,8 +501,8 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
     }
 
     public enum UnaryOperationType {
-        Plus = Operator.Addition,
-        Minus = Operator.Subtraction,
+        Plus = Operator.UnaryPlus,
+        Minus = Operator.UnaryMinus,
         Not = Operator.Not,
         AddressOf = Operator.AddressOf,
         Dereference = Operator.Dereference,
