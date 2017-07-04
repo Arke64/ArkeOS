@@ -205,7 +205,7 @@ namespace ArkeOS.Tools.KohlCompiler {
         private void Visit(Terminator terminator) {
             switch (terminator) {
                 case ReturnTerminator n: this.Visit(n); break;
-                case FunctionCallTerminator n: this.Visit(n); break;
+                case CallTerminator n: this.Visit(n); break;
                 case IfTerminator n: this.Visit(n); break;
                 case GotoTerminator n: this.Visit(n); break;
                 default: Debug.Assert(false); break;
@@ -217,8 +217,8 @@ namespace ArkeOS.Tools.KohlCompiler {
             this.Emit(InstructionDefinition.RET);
         }
 
-        private void Visit(FunctionCallTerminator r) {
-            this.currentFunction = this.tree.Functions.Single(f => f.Identifier == r.ToCall);
+        private void Visit(CallTerminator r) {
+            this.currentFunction = this.tree.Functions.Single(f => f.Identifier == r.Target);
 
             this.Emit(InstructionDefinition.SET, Emitter.StackParam, Parameter.CreateRegister(Register.RBP));
 
@@ -227,15 +227,15 @@ namespace ArkeOS.Tools.KohlCompiler {
 
             this.Emit(InstructionDefinition.SUB, Parameter.CreateRegister(Register.RBP), Parameter.CreateRegister(Register.RSP), Parameter.CreateLiteral((ulong)r.Arguments.Count));
 
-            this.Emit(InstructionDefinition.CALL, this.GetFunctionAccessParameter(r.ToCall));
+            this.Emit(InstructionDefinition.CALL, this.GetFunctionAccessParameter(r.Target));
 
             this.Emit(InstructionDefinition.SUB, Parameter.CreateRegister(Register.RSP), Parameter.CreateRegister(Register.RSP), Parameter.CreateLiteral((ulong)r.Arguments.Count));
 
             this.Emit(InstructionDefinition.SET, Parameter.CreateRegister(Register.RBP), Emitter.StackParam);
 
-            this.Emit(InstructionDefinition.SET, this.GetVariableAccessParameter(r.ReturnTarget, true), Parameter.CreateRegister(Register.R0));
+            this.Emit(InstructionDefinition.SET, this.GetVariableAccessParameter(r.Result, true), Parameter.CreateRegister(Register.R0));
 
-            this.Visit(r.AfterReturn);
+            this.Visit(r.Next);
         }
 
         private void Visit(IfTerminator i) {
@@ -243,7 +243,7 @@ namespace ArkeOS.Tools.KohlCompiler {
             var ifLen = Parameter.CreateLiteral(0, ParameterFlags.RelativeToRIP);
             this.Emit(InstructionDefinition.SET, this.GetVariableAccessParameter(i.Condition, true), InstructionConditionalType.WhenZero, Parameter.CreateRegister(Register.RIP), ifLen);
 
-            this.Visit(i.WhenTrue);
+            this.Visit(i.NextTrue);
 
             var elseStart = this.instructions.Count;
             var elseLen = Parameter.CreateLiteral(0, ParameterFlags.RelativeToRIP);
@@ -251,15 +251,15 @@ namespace ArkeOS.Tools.KohlCompiler {
 
             ifLen.Literal = this.DistanceFrom(ifStart);
 
-            this.Visit(i.WhenFalse);
+            this.Visit(i.NextFalse);
 
             elseLen.Literal = this.DistanceFrom(elseStart);
         }
 
         private void Visit(GotoTerminator g) {
-            this.Visit(g.Target);
+            this.Visit(g.Next);
 
-            var targetAddr = this.throwOnNoFunction ? this.basicBlockAddresses[g.Target] : 0;
+            var targetAddr = this.throwOnNoFunction ? this.basicBlockAddresses[g.Next] : 0;
             var currentAddr = this.throwOnNoFunction ? this.DistanceFrom(0) : 0;
 
             this.Emit(InstructionDefinition.SET, Parameter.CreateRegister(Register.RIP), Parameter.CreateLiteral(targetAddr - currentAddr, ParameterFlags.RelativeToRIP));

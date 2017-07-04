@@ -1,9 +1,9 @@
 func main() {
-	R1 = fib(10);
+	brk;
+	R1 = fib(4);
 }
 
 func fib(n) {
-	if (n == 0) return 0;
-	if (n == 1) return 1;
-	return fib(n - 1) + fib(n - 2);
+	if (n > 2) return fib(n - 1) + fib(n - 2);
+	else return n;
 }

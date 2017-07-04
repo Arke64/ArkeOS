@@ -34,26 +34,23 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
     public sealed class FunctionDeclarationVisitor {
         private readonly NameGenerator nameGenerator = new NameGenerator();
         private readonly IReadOnlyDictionary<string, ulong> consts;
-        private List<BasicBlockInstruction> currentInstructions;
         private List<LocalVariableLValue> localVariables;
-        private BasicBlock entry;
-        private BasicBlock parent;
-        private BasicBlock current;
+        private BasicBlock currentBlock;
 
         public FunctionDeclarationVisitor(IReadOnlyDictionary<string, ulong> consts) => this.consts = consts;
 
         public FunctionLValue Visit(FunctionDeclarationNode node) {
-            this.currentInstructions = new List<BasicBlockInstruction>();
             this.localVariables = new List<LocalVariableLValue>();
-            this.entry = null;
-            this.parent = null;
-            this.current = null;
+
+            var entry = this.PushBasicBlock(new BasicBlock());
 
             this.Visit(node.StatementBlock);
 
-            this.Push(new ReturnTerminator(this.CreateVariable()));
+            //See if this check can be put inside pushterminator
+            if (this.currentBlock.Terminator == null)
+                this.PushTerminator(new ReturnTerminator(this.CreateVariable()));
 
-            return new FunctionLValue(node.Identifier, this.entry, node.ArgumentListDeclaration.Items.Select(i => i.Identifier).ToList(), this.localVariables);
+            return new FunctionLValue(node.Identifier, entry, node.ArgumentListDeclaration.Items.Select(i => i.Identifier).ToList(), this.localVariables);
         }
 
         private void Visit(StatementBlockNode node) {
@@ -69,79 +66,60 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
                 default: throw new UnexpectedException(default(PositionInfo), "statement node");
                 case EmptyStatementNode n: break;
                 case DeclarationNode n: this.Visit(n); break;
-                case ReturnStatementNode n: this.Push(new ReturnTerminator(this.Visit(n.Expression))); break;
+                case ReturnStatementNode n: this.PushTerminator(new ReturnTerminator(this.Visit(n.Expression))); break;
                 case ExpressionStatementNode n: this.Visit(n); break;
                 case IntrinsicStatementNode n: this.Visit(n); break;
 
                 case AssignmentStatementNode n:
                     var lhs = this.VisitEnsureIsLValue(n.Target);
-                    var rhs = n is CompoundAssignmentStatementNode ca ? this.VisitAllowRValue(new BinaryExpressionNode(ca.Target, ca.Op, ca.Expression)) : this.VisitAllowRValue(n.Expression);
+                    var rhs = n is CompoundAssignmentStatementNode ca ? this.VisitAllowRawOp(new BinaryExpressionNode(ca.Target, ca.Op, ca.Expression)) : this.VisitAllowRawOp(n.Expression);
 
-                    this.Push(new BasicBlockAssignmentInstruction(lhs, rhs));
+                    this.PushInstuction(new BasicBlockAssignmentInstruction(lhs, rhs));
 
                     break;
 
                 case IfStatementNode n: {
-                        var term1 = new GotoTerminator();
-                        var entry = this.entry;
-                        var parent = this.parent;
-                        var insts = this.currentInstructions.Select(i => i).ToList();
+                        var ifTerminator = this.PushTerminator(new IfTerminator(this.Visit(n.Expression)));
+                        var after = new BasicBlock();
 
-                        this.currentInstructions = new List<BasicBlockInstruction>();
-
-                        this.entry = null;
-                        this.parent = null;
+                        var ifEntry = this.PushBasicBlock(new BasicBlock());
                         this.Visit(n.StatementBlock);
-                        this.Push(term1);
-                        var ifEntry = this.entry;
+                        if (this.currentBlock.Terminator == null)
+                            this.PushTerminator(new GotoTerminator(after));
 
-                        this.entry = null;
-                        this.parent = null;
+                        //Similar to while, if not an IfElse, we can probably push `after` instead of `elseEntry`
+                        var elseEntry = this.PushBasicBlock(new BasicBlock());
                         if (n is IfElseStatementNode ie)
                             this.Visit(ie.ElseStatementBlock);
-                        this.Push(term1);
-                        var elseEntry = this.entry;
+                        if (this.currentBlock.Terminator == null)
+                            this.PushTerminator(new GotoTerminator(after));
 
-                        this.entry = entry;
-                        this.parent = parent;
-                        this.currentInstructions = insts;
+                        ifTerminator.SetNext(ifEntry, elseEntry);
 
-                        this.Push(new IfTerminator(this.Visit(n.Expression), ifEntry, elseEntry));
+                        this.PushBasicBlock(after);
                     }
 
                     break;
 
                 case WhileStatementNode n: {
-                        var bodyGoto = new GotoTerminator();
-                        var endGoto = new GotoTerminator();
-                        var entry = this.entry;
-                        var parent = this.parent;
-                        var insts = this.currentInstructions.Select(i => i).ToList();
+                        var loopEntry = new BasicBlock();
+                        this.PushTerminator(new GotoTerminator(loopEntry));
+                        this.PushBasicBlock(loopEntry);
 
-                        this.currentInstructions = new List<BasicBlockInstruction>();
+                        var ifTerminator = this.PushTerminator(new IfTerminator(this.Visit(n.Expression)));
+                        var after = new BasicBlock();
 
-                        this.entry = null;
-                        this.parent = null;
+                        var ifEntry = this.PushBasicBlock(new BasicBlock());
                         this.Visit(n.StatementBlock);
-                        this.Push(bodyGoto);
-                        var bodyEntry = this.entry;
+                        this.PushTerminator(new GotoTerminator(loopEntry));
 
-                        this.entry = null;
-                        this.parent = null;
-                        this.Push(endGoto);
-                        var endEntry = this.entry;
+                        //We can probably elide this entire elseEntry and just push `after` instead of `elseEntry`
+                        var elseEntry = this.PushBasicBlock(new BasicBlock());
+                        this.PushTerminator(new GotoTerminator(after));
 
-                        this.entry = entry;
-                        this.parent = parent;
-                        this.currentInstructions = insts;
+                        ifTerminator.SetNext(ifEntry, elseEntry);
 
-                        var preconditionTerminator = new GotoTerminator();
-                        this.Push(preconditionTerminator);
-
-                        this.Push(new IfTerminator(this.Visit(n.Expression), bodyEntry, endEntry));
-
-                        preconditionTerminator.SetTarget(this.parent);
-                        bodyGoto.SetTarget(this.parent);
+                        this.PushBasicBlock(after);
                     }
 
                     break;
@@ -152,18 +130,19 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
             switch (node) {
                 default: throw new UnexpectedException(default(PositionInfo), "identifier node");
                 case LocalVariableDeclarationWithInitializerNode n:
-                    var i = this.VisitAllowRValue(n.Initializer);
+                    var lhs = new LocalVariableLValue(n.Identifier);
+                    var rhs = this.VisitAllowRawOp(n.Initializer);
 
-                    this.Push(new BasicBlockAssignmentInstruction(new LocalVariableLValue(n.Identifier), i));
+                    this.PushInstuction(new BasicBlockAssignmentInstruction(lhs, rhs));
 
                     break;
             }
         }
 
-        private LValue VisitEnsureIsLValue(ExpressionStatementNode node) => this.VisitAllowRValue(node) is LValue l ? l : throw new ExpectedException(default(PositionInfo), "lvalue");
+        private LValue VisitEnsureIsLValue(ExpressionStatementNode node) => this.VisitAllowRawOp(node) is LValue l ? l : throw new ExpectedException(default(PositionInfo), "lvalue");
 
         private RValue Visit(ExpressionStatementNode node) {
-            var res = this.VisitAllowRValue(node);
+            var res = this.VisitAllowRawOp(node);
 
             switch (node) {
                 case IdentifierExpressionNode _:
@@ -171,11 +150,15 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
                     return res;
 
                 default:
-                    return this.CreateVariableAndAssign(res);
+                    var ident = this.CreateVariable();
+
+                    this.PushInstuction(new BasicBlockAssignmentInstruction(ident, res));
+
+                    return ident;
             }
         }
 
-        private RValue VisitAllowRValue(ExpressionStatementNode node) {
+        private RValue VisitAllowRawOp(ExpressionStatementNode node) {
             switch (node) {
                 default: throw new UnexpectedException(default(PositionInfo), "expression node");
                 case IdentifierExpressionNode n: return this.Visit(n);
@@ -188,12 +171,9 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
                     return new BinaryOperation(l, (BinaryOperationType)n.Op.Operator, r);
 
                 case UnaryExpressionNode n:
-                    if (n.Op.Operator != Operator.Dereference) {
-                        return new UnaryOperation((UnaryOperationType)n.Op.Operator, this.Visit(n.Expression));
-                    }
-                    else {
-                        return new PointerLValue(this.VisitEnsureIsLValue(n.Expression));
-                    }
+                    var v = this.Visit(n.Expression);
+
+                    return n.Op.Operator != Operator.Dereference ? new UnaryOperation((UnaryOperationType)n.Op.Operator, v) : (RValue)new PointerLValue(v);
             }
         }
 
@@ -210,7 +190,9 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
                     foreach (var a in n.ArgumentList.Items)
                         args.Add(new FunctionArgumentLValue(this.Visit(a)));
 
-                    this.Push(new FunctionCallTerminator(n.Identifier, returnTarget, args));
+                    var terminator = this.PushTerminator(new CallTerminator(n.Identifier, returnTarget, args));
+                    var block = this.PushBasicBlock(new BasicBlock());
+                    terminator.SetNext(block);
 
                     return returnTarget;
             }
@@ -218,9 +200,9 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
 
         private RValue Visit(LiteralExpressionNode node) {
             switch (node) {
+                default: throw new UnexpectedException(default(PositionInfo), "literal node");
                 case IntegerLiteralNode n: return new UnsignedIntegerConstant(n.Literal);
                 case BoolLiteralNode n: return new UnsignedIntegerConstant(n.Literal ? ulong.MaxValue : 0);
-                default: throw new UnexpectedException(default(PositionInfo), "literal node");
             }
         }
 
@@ -228,6 +210,7 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
             var def = default(InstructionDefinition);
 
             switch (node) {
+                default: throw new UnexpectedException(default(PositionInfo), "intrinsic node");
                 case BrkStatementNode n: def = InstructionDefinition.BRK; break;
                 case EintStatementNode n: def = InstructionDefinition.EINT; break;
                 case HltStatementNode n: def = InstructionDefinition.HLT; break;
@@ -239,7 +222,6 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
                 case DbgStatementNode n: def = InstructionDefinition.DBG; break;
                 case CasStatementNode n: def = InstructionDefinition.CAS; break;
                 case XchgStatementNode n: def = InstructionDefinition.XCHG; break;
-                default: throw new UnexpectedException(default(PositionInfo), "intrinsic node");
             }
 
             if (def.ParameterCount != node.ArgumentList.Items.Count) throw new TooFewArgumentsException(default(PositionInfo));
@@ -250,10 +232,10 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
             if (def.ParameterCount > 1) { node.ArgumentList.Extract(1, out var arg); b = def.Parameter2Direction.HasFlag(ParameterDirection.Write) ? this.VisitEnsureIsLValue(arg) : this.Visit(arg); }
             if (def.ParameterCount > 2) { node.ArgumentList.Extract(2, out var arg); c = def.Parameter3Direction.HasFlag(ParameterDirection.Write) ? this.VisitEnsureIsLValue(arg) : this.Visit(arg); }
 
-            this.Push(new BasicBlockIntrinsicInstruction(def, a, b, c));
+            this.PushInstuction(new BasicBlockIntrinsicInstruction(def, a, b, c));
         }
 
-        private LValue CreateVariable() {
+        private LocalVariableLValue CreateVariable() {
             var ident = new LocalVariableLValue(this.nameGenerator.Next());
 
             this.localVariables.Add(ident);
@@ -261,51 +243,14 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
             return ident;
         }
 
-        private LValue CreateVariableAndAssign(RValue rhs) {
-            var ident = this.CreateVariable();
-
-            this.Push(new BasicBlockAssignmentInstruction(ident, rhs));
-
-            return ident;
-        }
-
-        private void Push(Terminator terminator) {
-            this.current = new BasicBlock(this.currentInstructions, terminator);
-
-            if (this.parent != null) {
-                if (this.parent.Terminator is FunctionCallTerminator c) {
-                    c.SetAfterReturn(this.current);
-                }
-                else if (this.parent.Terminator is GotoTerminator g) {
-                    g.SetTarget(this.current);
-                }
-                else if (this.parent.Terminator is IfTerminator i) {
-                    if (i.WhenTrue.Terminator is GotoTerminator g1 && g1.Target == null) {
-                        g1.SetTarget(this.current);
-                    }
-
-                    if (i.WhenFalse.Terminator is GotoTerminator g2 && g2.Target == null) {
-                        g2.SetTarget(this.current);
-                    }
-                }
-            }
-
-            this.parent = this.current;
-
-            this.currentInstructions = new List<BasicBlockInstruction>();
-
-            if (this.entry == null)
-                this.entry = this.parent;
-        }
-
-        private void Push(BasicBlockInstruction bbi) => this.currentInstructions.Add(bbi);
+        private BasicBlock PushBasicBlock(BasicBlock basicBlock) => this.currentBlock = basicBlock;
+        private T PushTerminator<T>(T terminator) where T : Terminator { this.currentBlock.Terminator = terminator; return terminator; }
+        private void PushInstuction(BasicBlockInstruction bbi) => this.currentBlock.Instructions.Add(bbi);
     }
 
     public sealed class BasicBlock {
-        public IReadOnlyCollection<BasicBlockInstruction> Instructions { get; }
-        public Terminator Terminator { get; }
-
-        public BasicBlock(IReadOnlyCollection<BasicBlockInstruction> instructions, Terminator terminator) => (this.Instructions, this.Terminator) = (instructions, terminator);
+        public ICollection<BasicBlockInstruction> Instructions { get; } = new List<BasicBlockInstruction>();
+        public Terminator Terminator { get; set; }
     }
 
     public abstract class BasicBlockInstruction {
@@ -379,9 +324,9 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
     }
 
     public sealed class PointerLValue : LValue {
-        public LValue Reference { get; }
+        public RValue Reference { get; }
 
-        public PointerLValue(LValue reference) => this.Reference = reference;
+        public PointerLValue(RValue reference) => this.Reference = reference;
 
         public override string ToString() => $"*({this.Reference.ToString()})";
     }
@@ -445,34 +390,36 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
     }
 
     public sealed class GotoTerminator : Terminator {
-        public BasicBlock Target { get; private set; }
+        public BasicBlock Next { get; }
 
-        public void SetTarget(BasicBlock target) => this.Target = target;
+        public GotoTerminator(BasicBlock next) => this.Next = next;
 
-        public override string ToString() => $"goto {this.Target}";
+        public override string ToString() => $"goto {this.Next}";
     }
 
     public sealed class IfTerminator : Terminator {
         public RValue Condition { get; }
-        public BasicBlock WhenTrue { get; }
-        public BasicBlock WhenFalse { get; }
+        public BasicBlock NextTrue { get; private set; }
+        public BasicBlock NextFalse { get; private set; }
 
-        public IfTerminator(RValue condition, BasicBlock whenTrue, BasicBlock whenFalse) => (this.Condition, this.WhenTrue, this.WhenFalse) = (condition, whenTrue, whenFalse);
+        public IfTerminator(RValue condition) => this.Condition = condition;
+
+        public void SetNext(BasicBlock nextTrue, BasicBlock nextFalse) => (this.NextTrue, this.NextFalse) = (nextTrue, nextFalse);
 
         public override string ToString() => $"if {this.Condition}";
     }
 
-    public sealed class FunctionCallTerminator : Terminator {
-        public string ToCall { get; }
-        public LValue ReturnTarget { get; }
+    public sealed class CallTerminator : Terminator {
+        public string Target { get; }
+        public LValue Result { get; }
         public IReadOnlyCollection<FunctionArgumentLValue> Arguments { get; }
-        public BasicBlock AfterReturn { get; private set; }
+        public BasicBlock Next { get; private set; }
 
-        public void SetAfterReturn(BasicBlock afterReturn) => this.AfterReturn = afterReturn;
+        public CallTerminator(string target, LValue result, IReadOnlyCollection<FunctionArgumentLValue> arguments) => (this.Target, this.Result, this.Arguments) = (target, result, arguments);
 
-        public FunctionCallTerminator(string toCall, LValue returnTarget, IReadOnlyCollection<FunctionArgumentLValue> arguments) => (this.ToCall, this.ReturnTarget, this.Arguments) = (toCall, returnTarget, arguments);
+        public void SetNext(BasicBlock next) => this.Next = next;
 
-        public override string ToString() => $"{this.ReturnTarget} = call {this.ToCall}";
+        public override string ToString() => $"{this.Result} = call {this.Target}";
     }
 
     public enum BinaryOperationType {
