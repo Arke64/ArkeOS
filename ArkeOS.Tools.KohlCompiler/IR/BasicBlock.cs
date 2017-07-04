@@ -65,7 +65,7 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
         private FunctionLValue Visit(FunctionDeclarationNode node) {
             this.Visit(node.StatementBlock);
 
-            this.block.PushTerminator(new ReturnTerminator(this.CreateTemporaryLocalVariable()), null);
+            this.block.PushTerminator(new ReturnTerminator(this.CreateTemporaryLocalVariable()));
 
             return new FunctionLValue(node.Identifier, this.block.Entry, node.ArgumentListDeclaration.Items.Select(i => i.Identifier).ToList(), this.localVariables);
         }
@@ -97,7 +97,7 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
                 default: throw new UnexpectedException(default(PositionInfo), "identifier node");
                 case LocalVariableDeclarationWithInitializerNode n:
                     var lhs = new LocalVariableLValue(n.Identifier);
-                    var rhs = this.VisitAllowRawOp(n.Initializer);
+                    var rhs = this.ExtractRValueOrOp(n.Initializer);
 
                     this.block.PushInstuction(new BasicBlockAssignmentInstruction(lhs, rhs));
 
@@ -106,29 +106,27 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
         }
 
         private void Visit(ReturnStatementNode node) {
-            this.block.PushTerminator(new ReturnTerminator(this.Visit(node.Expression)), null);
+            this.block.PushTerminator(new ReturnTerminator(this.Visit(node.Expression)));
         }
 
         private RValue Visit(ExpressionStatementNode node) {
-            var res = this.VisitAllowRawOp(node);
+            var res = this.ExtractRValueOrOp(node);
 
-            switch (node) {
-                case IdentifierExpressionNode _:
-                case LiteralExpressionNode _:
-                    return res;
+            if (res is RValue r) {
+                return r;
+            }
+            else {
+                var ident = this.CreateTemporaryLocalVariable();
 
-                default:
-                    var ident = this.CreateTemporaryLocalVariable();
+                this.block.PushInstuction(new BasicBlockAssignmentInstruction(ident, res));
 
-                    this.block.PushInstuction(new BasicBlockAssignmentInstruction(ident, res));
-
-                    return ident;
+                return ident;
             }
         }
 
         private void Visit(AssignmentStatementNode node) {
             var lhs = this.VisitRequireLValue(node.Target);
-            var rhs = node is CompoundAssignmentStatementNode ca ? this.VisitAllowRawOp(new BinaryExpressionNode(ca.Target, ca.Op, ca.Expression)) : this.VisitAllowRawOp(node.Expression);
+            var rhs = node is CompoundAssignmentStatementNode ca ? this.ExtractRValueOrOp(new BinaryExpressionNode(ca.Target, ca.Op, ca.Expression)) : this.ExtractRValueOrOp(node.Expression);
 
             this.block.PushInstuction(new BasicBlockAssignmentInstruction(lhs, rhs));
         }
@@ -192,9 +190,9 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
             this.block.PushInstuction(new BasicBlockIntrinsicInstruction(def, a, b, c));
         }
 
-        private LValue VisitRequireLValue(ExpressionStatementNode node) => this.VisitAllowRawOp(node) is LValue l ? l : throw new ExpectedException(default(PositionInfo), "lvalue");
+        private LValue VisitRequireLValue(ExpressionStatementNode node) => this.ExtractRValueOrOp(node) is LValue l ? l : throw new ExpectedException(default(PositionInfo), "lvalue");
 
-        private RValue VisitAllowRawOp(ExpressionStatementNode node) {
+        private RValueOrOp ExtractRValueOrOp(ExpressionStatementNode node) {
             switch (node) {
                 default: throw new UnexpectedException(default(PositionInfo), "expression node");
                 case VariableIdentifierNode n when this.consts.TryGetValue(n.Identifier, out var c): return new UnsignedIntegerConstant(c);
@@ -210,7 +208,7 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
                 case UnaryExpressionNode n:
                     var v = this.Visit(n.Expression);
 
-                    return n.Op.Operator != Operator.Dereference ? new UnaryOperation((UnaryOperationType)n.Op.Operator, v) : (RValue)new PointerLValue(v);
+                    return n.Op.Operator != Operator.Dereference ? new UnaryOperation((UnaryOperationType)n.Op.Operator, v) : (RValueOrOp)new PointerLValue(v);
             }
         }
 
@@ -222,10 +220,10 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
 
                 case FunctionCallIdentifierNode n:
                     var returnTarget = this.CreateTemporaryLocalVariable();
-                    var args = new List<FunctionArgumentLValue>();
+                    var args = new List<RValue>();
 
                     foreach (var a in n.ArgumentList.Items)
-                        args.Add(new FunctionArgumentLValue(this.Visit(a)));
+                        args.Add(this.Visit(a));
 
                     var (terminator, block) = this.block.PushTerminator(new CallTerminator(n.Identifier, returnTarget, args));
                     terminator.SetNext(block);
@@ -262,9 +260,9 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
 
     public sealed class BasicBlockAssignmentInstruction : BasicBlockInstruction {
         public LValue Target { get; }
-        public RValue Value { get; }
+        public RValueOrOp Value { get; }
 
-        public BasicBlockAssignmentInstruction(LValue target, RValue value) => (this.Target, this.Value) = (target, value);
+        public BasicBlockAssignmentInstruction(LValue target, RValueOrOp value) => (this.Target, this.Value) = (target, value);
 
         public override string ToString() => $"{this.Target} = {this.Value}";
     }
@@ -318,14 +316,6 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
         public override string ToString() => this.Register.ToString();
     }
 
-    public sealed class FunctionArgumentLValue : LValue {
-        public RValue Argument { get; }
-
-        public FunctionArgumentLValue(RValue argument) => this.Argument = argument;
-
-        public override string ToString() => $"arg {this.Argument.ToString()}";
-    }
-
     public sealed class PointerLValue : LValue {
         public RValue Reference { get; }
 
@@ -345,7 +335,11 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
         public override string ToString() => $"func {this.Identifier}";
     }
 
-    public abstract class RValue {
+    public abstract class RValueOrOp {
+
+    }
+
+    public abstract class RValue : RValueOrOp {
 
     }
 
@@ -361,7 +355,7 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
         public override string ToString() => this.Value.ToString();
     }
 
-    public sealed class BinaryOperation : RValue {
+    public sealed class BinaryOperation : RValueOrOp {
         public RValue Left { get; }
         public BinaryOperationType Op { get; }
         public RValue Right { get; }
@@ -371,7 +365,7 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
         public override string ToString() => $"{this.Left} '{this.Op}' {this.Right}";
     }
 
-    public sealed class UnaryOperation : RValue {
+    public sealed class UnaryOperation : RValueOrOp {
         public UnaryOperationType Op { get; }
         public RValue Value { get; }
 
@@ -415,10 +409,10 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
     public sealed class CallTerminator : Terminator {
         public string Target { get; }
         public LValue Result { get; }
-        public IReadOnlyCollection<FunctionArgumentLValue> Arguments { get; }
+        public IReadOnlyCollection<RValue> Arguments { get; }
         public BasicBlock Next { get; private set; }
 
-        public CallTerminator(string target, LValue result, IReadOnlyCollection<FunctionArgumentLValue> arguments) => (this.Target, this.Result, this.Arguments) = (target, result, arguments);
+        public CallTerminator(string target, LValue result, IReadOnlyCollection<RValue> arguments) => (this.Target, this.Result, this.Arguments) = (target, result, arguments);
 
         public void SetNext(BasicBlock next) => this.Next = next;
 

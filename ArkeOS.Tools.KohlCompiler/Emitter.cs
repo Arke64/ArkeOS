@@ -228,7 +228,7 @@ namespace ArkeOS.Tools.KohlCompiler {
             this.Emit(InstructionDefinition.SET, Emitter.StackParam, Parameter.CreateRegister(Register.RBP));
 
             foreach (var a in r.Arguments)
-                this.Emit(InstructionDefinition.SET, Emitter.StackParam, this.GetVariableAccessParameter(a.Argument, true));
+                this.Emit(InstructionDefinition.SET, Emitter.StackParam, this.GetVariableAccessParameter(a, true));
 
             this.Emit(InstructionDefinition.SUB, Parameter.CreateRegister(Register.RBP), Parameter.CreateRegister(Register.RSP), Parameter.CreateLiteral((ulong)r.Arguments.Count));
 
