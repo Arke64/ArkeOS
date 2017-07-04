@@ -199,7 +199,7 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
                 case VariableIdentifierNode n: return new LocalVariableLValue(n.Identifier);
                 case RegisterIdentifierNode n: return new RegisterLValue(n.Register);
                 case FunctionCallIdentifierNode n: ensureTarget(); this.Visit(n, target); return target;
-                case UnaryExpressionNode n when n.Op.Operator == Operator.Dereference: return new PointerLValue(this.ExtractRValue(n.Expression));
+                case UnaryExpressionNode n when n.Op.Operator == Operator.Dereference: return doAssign(new PointerLValue(this.ExtractRValue(n.Expression)));
             }
 
             if (requireLValueNoTemporary)
