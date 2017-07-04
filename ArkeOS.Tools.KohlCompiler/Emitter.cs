@@ -226,10 +226,11 @@ namespace ArkeOS.Tools.KohlCompiler {
             this.currentFunction = this.tree.Functions.Single(f => f.Identifier == r.Target);
 
             this.Emit(InstructionDefinition.SET, Emitter.StackParam, Parameter.CreateRegister(Register.RBP));
-            this.Emit(InstructionDefinition.SET, Parameter.CreateRegister(Register.RBP), Parameter.CreateRegister(Register.RSP));
 
             foreach (var a in r.Arguments)
                 this.Emit(InstructionDefinition.SET, Emitter.StackParam, this.GetVariableAccessParameter(a.Argument, true));
+
+            this.Emit(InstructionDefinition.SUB, Parameter.CreateRegister(Register.RBP), Parameter.CreateRegister(Register.RSP), Parameter.CreateLiteral((ulong)r.Arguments.Count));
 
             this.Emit(InstructionDefinition.ADD, Parameter.CreateRegister(Register.RSP), Parameter.CreateRegister(Register.RSP), Parameter.CreateLiteral((ulong)this.currentFunction.LocalVariables.Count));
 
