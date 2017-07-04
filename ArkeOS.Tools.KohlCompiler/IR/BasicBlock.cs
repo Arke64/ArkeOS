@@ -9,7 +9,7 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
     public class NameGenerator {
         private ulong nextId = 0;
 
-        public string Next() => "_" + this.nextId++.ToString();
+        public string Next() => "$tmp_" + this.nextId++.ToString();
     }
 
     public class IrGenerator {
@@ -19,7 +19,7 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
 
         public Compiliation Generate() {
             var visitor = new FunctionDeclarationVisitor(this.ast.ConstDeclarations.Items.ToDictionary(c => c.Identifier, c => c.Value.Literal));
-            var functions = new List<Function>();
+            var functions = new List<FunctionLValue>();
             var globalVars = new List<GlobalVariableLValue>();
 
             foreach (var i in this.ast.VariableDeclarations.Items)
@@ -43,7 +43,7 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
 
         public FunctionDeclarationVisitor(IReadOnlyDictionary<string, ulong> consts) => this.consts = consts;
 
-        public Function Visit(FunctionDeclarationNode node) {
+        public FunctionLValue Visit(FunctionDeclarationNode node) {
             this.currentInstructions = new List<BasicBlockInstruction>();
             this.localVariables = new List<LocalVariableLValue>();
             this.entry = null;
@@ -54,7 +54,7 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
 
             this.Push(new ReturnTerminator(this.CreateVariable()));
 
-            return new Function(node.Identifier, this.entry, node.ArgumentListDeclaration.Items.Select(i => i.Identifier).ToList(), this.localVariables);
+            return new FunctionLValue(node.Identifier, this.entry, node.ArgumentListDeclaration.Items.Select(i => i.Identifier).ToList(), this.localVariables);
         }
 
         private void Visit(StatementBlockNode node) {
@@ -217,12 +217,12 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
 
         private void Visit(IntrinsicStatementNode s) {
             switch (s) {
-                case BrkStatementNode n: this.Push(new BasicBlockIntrinsicInstruction(InstructionDefinition.BRK, null, null, null)); break;
-                case EintStatementNode n: this.Push(new BasicBlockIntrinsicInstruction(InstructionDefinition.EINT, null, null, null)); break;
-                case HltStatementNode n: this.Push(new BasicBlockIntrinsicInstruction(InstructionDefinition.HLT, null, null, null)); break;
-                case IntdStatementNode n: this.Push(new BasicBlockIntrinsicInstruction(InstructionDefinition.INTD, null, null, null)); break;
-                case InteStatementNode n: this.Push(new BasicBlockIntrinsicInstruction(InstructionDefinition.INTE, null, null, null)); break;
-                case NopStatementNode n: this.Push(new BasicBlockIntrinsicInstruction(InstructionDefinition.NOP, null, null, null)); break;
+                case BrkStatementNode n: this.Push(new BasicBlockIntrinsicInstruction(InstructionDefinition.BRK)); break;
+                case EintStatementNode n: this.Push(new BasicBlockIntrinsicInstruction(InstructionDefinition.EINT)); break;
+                case HltStatementNode n: this.Push(new BasicBlockIntrinsicInstruction(InstructionDefinition.HLT)); break;
+                case IntdStatementNode n: this.Push(new BasicBlockIntrinsicInstruction(InstructionDefinition.INTD)); break;
+                case InteStatementNode n: this.Push(new BasicBlockIntrinsicInstruction(InstructionDefinition.INTE)); break;
+                case NopStatementNode n: this.Push(new BasicBlockIntrinsicInstruction(InstructionDefinition.NOP)); break;
 
                 case CpyStatementNode n: {
                         if (n.ArgumentList.Extract(out var arg0, out var arg1, out var arg2)) {
@@ -289,7 +289,7 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
                             var a = this.VisitEnsureLValue(arg0);
                             var b = this.VisitEnsureLValue(arg1);
 
-                            this.Push(new BasicBlockIntrinsicInstruction(InstructionDefinition.XCHG, a, b, null));
+                            this.Push(new BasicBlockIntrinsicInstruction(InstructionDefinition.XCHG, a, b));
                         }
                         else {
                             throw new TooFewArgumentsException(default(PositionInfo));
@@ -376,36 +376,39 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
         public LValue Argument2 { get; }
         public LValue Argument3 { get; }
 
+        public BasicBlockIntrinsicInstruction(InstructionDefinition inst) : this(inst, null, null, null) { }
+        public BasicBlockIntrinsicInstruction(InstructionDefinition inst, LValue argument1) : this(inst, argument1, null, null) { }
+        public BasicBlockIntrinsicInstruction(InstructionDefinition inst, LValue argument1, LValue argument2) : this(inst, argument1, argument2, null) { }
         public BasicBlockIntrinsicInstruction(InstructionDefinition inst, LValue argument1, LValue argument2, LValue argument3) => (this.Intrinsic, this.Argument1, this.Argument2, this.Argument3) = (inst, argument1, argument2, argument3);
 
         public override string ToString() => $"{this.Intrinsic.Mnemonic} {this.Argument1} {this.Argument2} {this.Argument3}";
     }
 
     public sealed class Compiliation {
-        public IReadOnlyCollection<Function> Functions { get; }
+        public IReadOnlyCollection<FunctionLValue> Functions { get; }
         public IReadOnlyCollection<GlobalVariableLValue> GlobalVariables { get; }
 
-        public Compiliation(IReadOnlyCollection<Function> functions, IReadOnlyCollection<GlobalVariableLValue> globalVars) => (this.Functions, this.GlobalVariables) = (functions, globalVars);
+        public Compiliation(IReadOnlyCollection<FunctionLValue> functions, IReadOnlyCollection<GlobalVariableLValue> globalVars) => (this.Functions, this.GlobalVariables) = (functions, globalVars);
     }
 
     public abstract class LValue : RValue {
 
     }
 
-    public abstract class Variable : LValue {
+    public sealed class GlobalVariableLValue : LValue {
         public string Identifier { get; }
 
-        public Variable(string identifier) => this.Identifier = identifier;
+        public GlobalVariableLValue(string identifier) => this.Identifier = identifier;
+
+        public override string ToString() => $"gbl var {this.Identifier}";
+    }
+
+    public sealed class LocalVariableLValue : LValue {
+        public string Identifier { get; }
+
+        public LocalVariableLValue(string identifier) => this.Identifier = identifier;
 
         public override string ToString() => $"var {this.Identifier}";
-    }
-
-    public sealed class GlobalVariableLValue : Variable {
-        public GlobalVariableLValue(string identifier) : base(identifier) { }
-    }
-
-    public sealed class LocalVariableLValue : Variable {
-        public LocalVariableLValue(string identifier) : base(identifier) { }
     }
 
     public sealed class RegisterLValue : LValue {
@@ -432,13 +435,13 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
         public override string ToString() => $"*({this.Reference.ToString()})";
     }
 
-    public sealed class Function : LValue {
+    public sealed class FunctionLValue : LValue {
         public string Identifier { get; }
         public BasicBlock Entry { get; }
         public IReadOnlyCollection<string> Arguments { get; }
         public IReadOnlyCollection<LocalVariableLValue> LocalVariables { get; }
 
-        public Function(string identifier, BasicBlock bb, IReadOnlyCollection<string> arguments, IReadOnlyCollection<LocalVariableLValue> variables) => (this.Entry, this.Arguments, this.LocalVariables, this.Identifier) = (bb, arguments, variables, identifier);
+        public FunctionLValue(string identifier, BasicBlock entry, IReadOnlyCollection<string> arguments, IReadOnlyCollection<LocalVariableLValue> variables) => (this.Identifier, this.Entry, this.Arguments, this.LocalVariables) = (identifier, entry, arguments, variables);
 
         public override string ToString() => $"func {this.Identifier}";
     }

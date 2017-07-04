@@ -20,7 +20,7 @@ namespace ArkeOS.Tools.KohlCompiler {
         private Dictionary<string, ulong> functionAddresses;
         private Dictionary<string, ulong> variableAddresses;
         private List<Instruction> instructions;
-        private Function currentFunction;
+        private FunctionLValue currentFunction;
         private bool throwOnNoFunction;
 
         public Emitter(Compiliation tree, bool emitAssemblyListing, bool emitBootable, string outputFile) => (this.tree, this.emitAssemblyListing, this.emitBootable, this.outputFile) = (tree, emitAssemblyListing, emitBootable, outputFile);
@@ -70,23 +70,23 @@ namespace ArkeOS.Tools.KohlCompiler {
             this.Emit(InstructionDefinition.HLT);
         }
 
-        private void SetVariableAddress(Variable v) {
-            if (this.variableAddresses.ContainsKey(v.Identifier))
-                throw new AlreadyDefinedException(default(PositionInfo), v.Identifier);
+        private void SetVariableAddress(string v) {
+            if (this.variableAddresses.ContainsKey(v))
+                throw new AlreadyDefinedException(default(PositionInfo), v);
 
-            this.variableAddresses[v.Identifier] = this.nextVariableAddress++;
+            this.variableAddresses[v] = this.nextVariableAddress++;
         }
 
         private void DiscoverAddresses(Compiliation n) {
             foreach (var s in n.GlobalVariables)
-                this.SetVariableAddress(s);
+                this.SetVariableAddress(s.Identifier);
 
             foreach (var s in n.Functions) {
                 if (this.functionAddresses.ContainsKey(s.Identifier))
                     throw new AlreadyDefinedException(default(PositionInfo), s.Identifier);
 
                 foreach (var v in s.LocalVariables)
-                    this.SetVariableAddress(v);
+                    this.SetVariableAddress(v.Identifier);
 
                 this.functionAddresses[s.Identifier] = (ulong)this.instructions.Sum(i => i.Length);
 
@@ -161,7 +161,7 @@ namespace ArkeOS.Tools.KohlCompiler {
                 this.Visit(s);
         }
 
-        private void Visit(Function n) {
+        private void Visit(FunctionLValue n) {
             this.currentFunction = n;
 
             this.Visit(n.Entry);
