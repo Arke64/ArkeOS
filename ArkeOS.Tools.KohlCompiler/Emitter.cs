@@ -123,6 +123,9 @@ namespace ArkeOS.Tools.KohlCompiler {
                     if (localArg != null)
                         return Parameter.CreateLiteral((idx + (ulong)this.currentFunction.Arguments.Count) - 1, ParameterFlags.RelativeToRBP | (allowIndirect ? ParameterFlags.Indirect : 0));
 
+                    if (this.tree.Consts.TryGetValue(v.Identifier, out var c))
+                        return Parameter.CreateLiteral(c.Value);
+
                     if (!this.variableAddresses.TryGetValue(v.Identifier, out addr) && this.throwOnNoFunction)
                         throw new IdentifierNotFoundException(default(PositionInfo), v.Identifier);
 

@@ -18,18 +18,12 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
         public IrGenerator(ProgramDeclarationNode ast) => this.ast = ast;
 
         public Compiliation Generate() {
-            var globalVars = new List<GlobalVariableLValue>();
-            var functions = new List<Function>();
             var nameGenerator = new NameGenerator();
-            var consts = this.ast.ConstDeclarations.Items.ToDictionary(c => c.Identifier, c => c.Value.Literal);
+            var functions = this.ast.FunctionDeclarations.Items.Select(i => FunctionDeclarationVisitor.Visit(nameGenerator, i)).ToList();
+            var globalVars = this.ast.VariableDeclarations.Items.Select(i => new GlobalVariableLValue(i.Identifier)).ToList();
+            var consts = this.ast.ConstDeclarations.Items.ToDictionary(c => c.Identifier, c => new UnsignedIntegerConstant(c.Value.Literal));
 
-            foreach (var i in this.ast.VariableDeclarations.Items)
-                globalVars.Add(new GlobalVariableLValue(i.Identifier));
-
-            foreach (var i in this.ast.FunctionDeclarations.Items)
-                functions.Add(FunctionDeclarationVisitor.Visit(nameGenerator, consts, i));
-
-            return new Compiliation(functions, globalVars);
+            return new Compiliation(functions, globalVars, consts);
         }
     }
 
@@ -55,12 +49,11 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
     public sealed class FunctionDeclarationVisitor {
         private readonly List<LocalVariableLValue> localVariables = new List<LocalVariableLValue>();
         private readonly BasicBlockCreator block = new BasicBlockCreator();
-        private readonly IReadOnlyDictionary<string, ulong> consts;
         private readonly NameGenerator nameGenerator;
 
-        public static Function Visit(NameGenerator nameGenerator, IReadOnlyDictionary<string, ulong> consts, FunctionDeclarationNode node) => new FunctionDeclarationVisitor(nameGenerator, consts).Visit(node);
+        public static Function Visit(NameGenerator nameGenerator, FunctionDeclarationNode node) => new FunctionDeclarationVisitor(nameGenerator).Visit(node);
 
-        private FunctionDeclarationVisitor(NameGenerator nameGenerator, IReadOnlyDictionary<string, ulong> consts) => (this.nameGenerator, this.consts) = (nameGenerator, consts);
+        private FunctionDeclarationVisitor(NameGenerator nameGenerator) => this.nameGenerator = nameGenerator;
 
         private LocalVariableLValue CreateTemporaryLocalVariable() {
             var ident = new LocalVariableLValue(this.nameGenerator.Next());
@@ -205,7 +198,7 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
             switch (node) {
                 case IdentifierExpressionNode n:
                     switch (n) {
-                        case VariableIdentifierNode i when !this.consts.TryGetValue(i.Identifier, out _): return new LocalVariableLValue(i.Identifier);
+                        case VariableIdentifierNode i: return new LocalVariableLValue(i.Identifier);
                         case RegisterIdentifierNode i: return new RegisterLValue(i.Register);
                         case FunctionCallIdentifierNode i: ensureTarget(); this.Visit(i, target); return target;
                     }
@@ -224,12 +217,6 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
                         default: throw new UnexpectedException(default(PositionInfo), "literal node");
                         case IntegerLiteralNode l: return new UnsignedIntegerConstant(l.Literal);
                         case BoolLiteralNode l: return new UnsignedIntegerConstant(l.Literal ? ulong.MaxValue : 0);
-                    }
-
-                case IdentifierExpressionNode n:
-                    switch (n) {
-                        default: throw new UnexpectedException(default(PositionInfo), "identifier node");
-                        case VariableIdentifierNode i when this.consts.TryGetValue(i.Identifier, out var c): return new UnsignedIntegerConstant(c);
                     }
 
                 case BinaryExpressionNode n: return doAssign(new BinaryOperation(this.ExtractRValue(n.Left), (BinaryOperationType)n.Op.Operator, this.ExtractRValue(n.Right)));
@@ -274,8 +261,9 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
     public sealed class Compiliation {
         public IReadOnlyCollection<Function> Functions { get; }
         public IReadOnlyCollection<GlobalVariableLValue> GlobalVariables { get; }
+        public IReadOnlyDictionary<string, UnsignedIntegerConstant> Consts { get; }
 
-        public Compiliation(IReadOnlyCollection<Function> functions, IReadOnlyCollection<GlobalVariableLValue> globalVars) => (this.Functions, this.GlobalVariables) = (functions, globalVars);
+        public Compiliation(IReadOnlyCollection<Function> functions, IReadOnlyCollection<GlobalVariableLValue> globalVars, IReadOnlyDictionary<string, UnsignedIntegerConstant> consts) => (this.Functions, this.GlobalVariables, this.Consts) = (functions, globalVars, consts);
     }
 
     public sealed class Function {
