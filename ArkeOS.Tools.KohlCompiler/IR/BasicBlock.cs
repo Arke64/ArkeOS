@@ -96,23 +96,25 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
                         this.Push(term1);
                         var ifEntry = this.entry;
 
-                        if (n is IfElseStatementNode ie) {
-                            this.entry = null;
-                            this.parent = null;
+                        this.entry = null;
+                        this.parent = null;
+                        if (n is IfElseStatementNode ie)
                             this.Visit(ie.ElseStatementBlock);
-                        }
+                        this.Push(term1);
+                        var elseEntry = this.entry;
 
                         this.entry = entry;
                         this.parent = parent;
                         this.currentInstructions = insts;
 
-                        this.Push(new IfTerminator(this.Visit(n.Expression, false), ifEntry));
+                        this.Push(new IfTerminator(this.Visit(n.Expression, false), ifEntry, elseEntry));
                     }
 
                     break;
 
                 case WhileStatementNode n: {
                         var bodyGoto = new GotoTerminator();
+                        var endGoto = new GotoTerminator();
                         var entry = this.entry;
                         var parent = this.parent;
                         var insts = this.currentInstructions.Select(i => i).ToList();
@@ -125,6 +127,10 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
                         this.Push(bodyGoto);
                         var bodyEntry = this.entry;
 
+                        this.entry = null;
+                        this.parent = null;
+                        this.Push(endGoto);
+                        var endEntry = this.entry;
 
                         this.entry = entry;
                         this.parent = parent;
@@ -133,7 +139,7 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
                         var preconditionTerminator = new GotoTerminator();
                         this.Push(preconditionTerminator);
 
-                        this.Push(new IfTerminator(this.Visit(n.Expression, false), bodyEntry));
+                        this.Push(new IfTerminator(this.Visit(n.Expression, false), bodyEntry, endEntry));
 
                         preconditionTerminator.SetTarget(this.parent);
                         bodyGoto.SetTarget(this.parent);
@@ -177,7 +183,7 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
                         return allowOps ? op : (RValue)this.CreateVariableAndAssign(op);
                     }
                     else {
-                        return new PointerLValue(this.VisitEnsureLValue(n.Expression));
+                        return new PointerLValue((LValue)this.Visit(n.Expression, false));
                     }
             }
         }
@@ -327,7 +333,9 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
                         g1.SetTarget(this.current);
                     }
 
-                    i.SetWhenFalse(this.current);
+                    if (i.WhenFalse.Terminator is GotoTerminator g2 && g2.Target == null) {
+                        g2.SetTarget(this.current);
+                    }
                 }
             }
 
@@ -389,7 +397,7 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
 
         public Variable(string identifier) => this.Identifier = identifier;
 
-        public override string ToString() => this.Identifier;
+        public override string ToString() => $"var {this.Identifier}";
     }
 
     public sealed class GlobalVariableLValue : Variable {
@@ -413,7 +421,7 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
 
         public FunctionArgumentLValue(RValue argument) => this.Argument = argument;
 
-        public override string ToString() => this.Argument.ToString();
+        public override string ToString() => $"arg {this.Argument.ToString()}";
     }
 
     public sealed class PointerLValue : LValue {
@@ -421,7 +429,7 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
 
         public PointerLValue(LValue reference) => this.Reference = reference;
 
-        public override string ToString() => this.Reference.ToString();
+        public override string ToString() => $"*({this.Reference.ToString()})";
     }
 
     public sealed class Function : LValue {
@@ -432,7 +440,7 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
 
         public Function(string identifier, BasicBlock bb, IReadOnlyCollection<string> arguments, IReadOnlyCollection<LocalVariableLValue> variables) => (this.Entry, this.Arguments, this.LocalVariables, this.Identifier) = (bb, arguments, variables, identifier);
 
-        public override string ToString() => this.Identifier;
+        public override string ToString() => $"func {this.Identifier}";
     }
 
     public abstract class RValue {
@@ -478,22 +486,26 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
         public RValue Value { get; }
 
         public ReturnTerminator(RValue value) => this.Value = value;
+
+        public override string ToString() => $"return {this.Value}";
     }
 
     public sealed class GotoTerminator : Terminator {
         public BasicBlock Target { get; private set; }
 
         public void SetTarget(BasicBlock target) => this.Target = target;
+
+        public override string ToString() => $"goto {this.Target}";
     }
 
     public sealed class IfTerminator : Terminator {
         public RValue Condition { get; }
         public BasicBlock WhenTrue { get; }
-        public BasicBlock WhenFalse { get; private set; }
+        public BasicBlock WhenFalse { get; }
 
-        public void SetWhenFalse(BasicBlock whenFalse) => this.WhenFalse = whenFalse;
+        public IfTerminator(RValue condition, BasicBlock whenTrue, BasicBlock whenFalse) => (this.Condition, this.WhenTrue, this.WhenFalse) = (condition, whenTrue, whenFalse);
 
-        public IfTerminator(RValue condition, BasicBlock whenTrue) => (this.Condition, this.WhenTrue) = (condition, whenTrue);
+        public override string ToString() => $"if {this.Condition}";
     }
 
     public sealed class FunctionCallTerminator : Terminator {
@@ -505,6 +517,8 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
         public void SetAfterReturn(BasicBlock afterReturn) => this.AfterReturn = afterReturn;
 
         public FunctionCallTerminator(string toCall, LValue returnTarget, IReadOnlyCollection<FunctionArgumentLValue> arguments) => (this.ToCall, this.ReturnTarget, this.Arguments) = (toCall, returnTarget, arguments);
+
+        public override string ToString() => $"{this.ReturnTarget} = call {this.ToCall}";
     }
 
     public enum BinaryOperationType {
