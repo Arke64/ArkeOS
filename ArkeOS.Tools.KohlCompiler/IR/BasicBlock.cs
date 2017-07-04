@@ -103,7 +103,7 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
         private void Visit(DeclarationNode node) {
             switch (node) {
                 default: throw new UnexpectedException(default(PositionInfo), "identifier node");
-                case LocalVariableDeclarationWithInitializerNode n: this.block.PushInstuction(new BasicBlockAssignmentInstruction(new LocalVariableLValue(n.Identifier), this.ExtractRValueOrOp(n.Initializer))); break;
+                case LocalVariableDeclarationWithInitializerNode n: this.ExtractRValueInto(n.Initializer, new LocalVariableLValue(n.Identifier), false); break;
             }
         }
 
@@ -118,7 +118,7 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
             if (node is CompoundAssignmentStatementNode cnode)
                 exp = new BinaryExpressionNode(cnode.Target, cnode.Op, cnode.Expression);
 
-            this.block.PushInstuction(new BasicBlockAssignmentInstruction(lhs, this.ExtractRValueOrOp(exp)));
+            this.ExtractRValueInto(exp, lhs, false);
         }
 
         private void Visit(IfStatementNode node) {
@@ -194,59 +194,48 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
             callTerminator.SetNext(returnBlock);
         }
 
-        private RValue ExtractRValue(ExpressionStatementNode node) {
-            var res = this.ExtractRValueOrOp(node);
+        private RValue ExtractRValue(ExpressionStatementNode node) => this.ExtractRValueInto(node, null, false);
 
-            if (res is RValue r)
-                return r;
+        private LValue ExtractLValue(ExpressionStatementNode node) => (LValue)this.ExtractRValueInto(node, null, true);
 
-            var ident = this.CreateTemporaryLocalVariable();
+        private RValue ExtractRValueInto(ExpressionStatementNode node, LValue target, bool requireLValueReturn) {
+            void ensureTarget() { if (target == null) target = this.CreateTemporaryLocalVariable(); }
+            RValue doAssign(RValueOrOp value) { ensureTarget(); this.block.PushInstuction(new BasicBlockAssignmentInstruction(target, value)); return target; }
 
-            this.block.PushInstuction(new BasicBlockAssignmentInstruction(ident, res));
+            switch (node) {
+                case IdentifierExpressionNode n:
+                    switch (n) {
+                        case VariableIdentifierNode i when !this.consts.TryGetValue(i.Identifier, out _): return new LocalVariableLValue(i.Identifier);
+                        case RegisterIdentifierNode i: return new RegisterLValue(i.Register);
+                        case FunctionCallIdentifierNode i: ensureTarget(); this.Visit(i, target); return target;
+                    }
 
-            return ident;
-        }
+                    break;
 
-        private LValue ExtractLValue(ExpressionStatementNode node) {
-            var res = this.ExtractRValueOrOp(node);
+                case UnaryExpressionNode n when n.Op.Operator == Operator.Dereference: return new PointerLValue(this.ExtractRValue(n.Expression));
+            }
 
-            if (res is LValue l)
-                return l;
+            if (requireLValueReturn)
+                throw new ExpectedException(default(PositionInfo), "lvalue");
 
-            throw new ExpectedException(default(PositionInfo), "lvalue");
-        }
-
-        private RValueOrOp ExtractRValueOrOp(ExpressionStatementNode node) {
             switch (node) {
                 case LiteralExpressionNode n:
                     switch (n) {
+                        default: throw new UnexpectedException(default(PositionInfo), "literal node");
                         case IntegerLiteralNode l: return new UnsignedIntegerConstant(l.Literal);
                         case BoolLiteralNode l: return new UnsignedIntegerConstant(l.Literal ? ulong.MaxValue : 0);
                     }
 
-                    break;
-
                 case IdentifierExpressionNode n:
                     switch (n) {
+                        default: throw new UnexpectedException(default(PositionInfo), "identifier node");
                         case VariableIdentifierNode i when this.consts.TryGetValue(i.Identifier, out var c): return new UnsignedIntegerConstant(c);
-                        case VariableIdentifierNode i: return new LocalVariableLValue(i.Identifier);
-                        case RegisterIdentifierNode i: return new RegisterLValue(i.Register);
-                        case FunctionCallIdentifierNode i: var ident = this.CreateTemporaryLocalVariable(); this.Visit(i, ident); return ident;
                     }
 
-                    break;
-
-                case BinaryExpressionNode n:
-                    var lhs = this.ExtractRValue(n.Left);
-                    var rhs = this.ExtractRValue(n.Right);
-
-                    return new BinaryOperation(lhs, (BinaryOperationType)n.Op.Operator, rhs);
-
-                case UnaryExpressionNode n when n.Op.Operator != Operator.Dereference: return new UnaryOperation((UnaryOperationType)n.Op.Operator, this.ExtractRValue(n.Expression));
-                case UnaryExpressionNode n when n.Op.Operator == Operator.Dereference: return new PointerLValue(this.ExtractRValue(n.Expression));
+                case BinaryExpressionNode n: return doAssign(new BinaryOperation(this.ExtractRValue(n.Left), (BinaryOperationType)n.Op.Operator, this.ExtractRValue(n.Right)));
+                case UnaryExpressionNode n: return doAssign(new UnaryOperation((UnaryOperationType)n.Op.Operator, this.ExtractRValue(n.Expression)));
+                default: throw new UnexpectedException(default(PositionInfo), "expression node");
             }
-
-            throw new UnexpectedException(default(PositionInfo), "expression node");
         }
     }
 
