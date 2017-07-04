@@ -59,10 +59,10 @@ namespace ArkeOS.Tools.KohlCompiler {
             return new GlobalVariableDeclarationNode(ident);
         }
 
-        private VariableDeclarationNode ReadLocalVariableDeclaration() {
+        private LocalVariableDeclarationNode ReadLocalVariableDeclaration() {
             this.lexer.Read(TokenType.VarKeyword);
             var ident = this.lexer.Read(TokenType.Identifier);
-            var res = this.lexer.TryRead(TokenType.Equal) ? new VariableDeclarationWithInitializerNode(ident, this.ReadExpression()) : new VariableDeclarationNode(ident);
+            var res = this.lexer.TryRead(TokenType.Equal) ? new LocalVariableDeclarationWithInitializerNode(ident, this.ReadExpression()) : new LocalVariableDeclarationNode(ident);
             this.lexer.Read(TokenType.Semicolon);
 
             return res;
@@ -86,7 +86,7 @@ namespace ArkeOS.Tools.KohlCompiler {
                     if (this.lexer.TryPeek(TokenType.VarKeyword)) {
                         var res = this.ReadLocalVariableDeclaration();
 
-                        if (res is VariableDeclarationWithInitializerNode)
+                        if (res is LocalVariableDeclarationWithInitializerNode)
                             block.Statements.Add(res);
 
                         block.VariableDeclarations.Add(res);
