@@ -42,13 +42,15 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
         public FunctionLValue Visit(FunctionDeclarationNode node) {
             this.localVariables = new List<LocalVariableLValue>();
 
-            var entry = this.PushBasicBlock(new BasicBlock());
+            var entry = this.currentBlock = new BasicBlock();
 
             this.Visit(node.StatementBlock);
 
             //See if this check can be put inside pushterminator
-            if (this.currentBlock.Terminator == null)
-                this.PushTerminator(new ReturnTerminator(this.CreateVariable()));
+            if (this.currentBlock.Terminator != null)
+                ;
+
+            this.PushTerminator(new ReturnTerminator(this.CreateVariable()));
 
             return new FunctionLValue(node.Identifier, entry, node.ArgumentListDeclaration.Items.Select(i => i.Identifier).ToList(), this.localVariables);
         }
@@ -79,42 +81,46 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
                     break;
 
                 case IfStatementNode n: {
-                        var ifTerminator = this.PushTerminator(new IfTerminator(this.Visit(n.Expression)));
-                        var after = new BasicBlock();
+                        var (ifTerminator, ifEntry) = this.PushTerminator(new IfTerminator(this.Visit(n.Expression)));
 
-                        var ifEntry = this.PushBasicBlock(new BasicBlock());
                         this.Visit(n.StatementBlock);
-                        if (this.currentBlock.Terminator == null)
-                            this.PushTerminator(new GotoTerminator(after));
+                        if (this.currentBlock.Terminator != null)
+                            ;
+
+                        var (term, after) = this.PushTerminator(new GotoTerminator());
+                        term.SetNext(after);
 
                         var elseEntry = after;
                         if (n is IfElseStatementNode ie) {
-                            elseEntry = this.PushBasicBlock(new BasicBlock());
+                            elseEntry = this.currentBlock = new BasicBlock();
                             this.Visit(ie.ElseStatementBlock);
 
-                            if (this.currentBlock.Terminator == null)
-                                this.PushTerminator(new GotoTerminator(after));
+                            if (this.currentBlock.Terminator != null)
+                                ;
+
+                            var (elseTerm, _) = this.PushTerminator(new GotoTerminator());
+                            elseTerm.SetNext(after);
                         }
 
                         ifTerminator.SetNext(ifEntry, elseEntry);
 
-                        this.PushBasicBlock(after);
+                        this.currentBlock = after;
                     }
 
                     break;
 
                 case WhileStatementNode n: {
-                        var loopEntry = new BasicBlock();
-                        this.PushTerminator(new GotoTerminator(loopEntry));
-                        this.PushBasicBlock(loopEntry);
+                        var (startTerminator, loopEntry) = this.PushTerminator(new GotoTerminator());
 
-                        var ifTerminator = this.PushTerminator(new IfTerminator(this.Visit(n.Expression)));
+                        var (ifTerminator, ifEntry) = this.PushTerminator(new IfTerminator(this.Visit(n.Expression)));
 
-                        var ifEntry = this.PushBasicBlock(new BasicBlock());
                         this.Visit(n.StatementBlock);
-                        this.PushTerminator(new GotoTerminator(loopEntry));
 
-                        var after = this.PushBasicBlock(new BasicBlock());
+                        var (endTerminator, after) = this.PushTerminator(new GotoTerminator());
+
+                        startTerminator.SetNext(loopEntry);
+                        endTerminator.SetNext(loopEntry);
+
                         ifTerminator.SetNext(ifEntry, after);
                     }
 
@@ -186,8 +192,7 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
                     foreach (var a in n.ArgumentList.Items)
                         args.Add(new FunctionArgumentLValue(this.Visit(a)));
 
-                    var terminator = this.PushTerminator(new CallTerminator(n.Identifier, returnTarget, args));
-                    var block = this.PushBasicBlock(new BasicBlock());
+                    var (terminator, block) = this.PushTerminator(new CallTerminator(n.Identifier, returnTarget, args));
                     terminator.SetNext(block);
 
                     return returnTarget;
@@ -239,8 +244,7 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
             return ident;
         }
 
-        private BasicBlock PushBasicBlock(BasicBlock basicBlock) => this.currentBlock = basicBlock;
-        private T PushTerminator<T>(T terminator) where T : Terminator { this.currentBlock.Terminator = terminator; return terminator; }
+        private (T, BasicBlock) PushTerminator<T>(T terminator) where T : Terminator { this.currentBlock.Terminator = terminator; this.currentBlock = new BasicBlock(); return (terminator, this.currentBlock); }
         private void PushInstuction(BasicBlockInstruction bbi) => this.currentBlock.Instructions.Add(bbi);
     }
 
@@ -386,9 +390,9 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
     }
 
     public sealed class GotoTerminator : Terminator {
-        public BasicBlock Next { get; }
+        public BasicBlock Next { get; private set; }
 
-        public GotoTerminator(BasicBlock next) => this.Next = next;
+        public void SetNext(BasicBlock next) => this.Next = next;
 
         public override string ToString() => $"goto {this.Next}";
     }
