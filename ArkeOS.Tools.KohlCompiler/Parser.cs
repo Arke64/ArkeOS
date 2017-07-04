@@ -51,12 +51,12 @@ namespace ArkeOS.Tools.KohlCompiler {
 
         private ArgumentDeclarationNode ReadArgumentDeclaration() => new ArgumentDeclarationNode(this.lexer.Read(TokenType.Identifier));
 
-        private VariableDeclarationNode ReadGlobalVariableDeclaration() {
+        private GlobalVariableDeclarationNode ReadGlobalVariableDeclaration() {
             this.lexer.Read(TokenType.VarKeyword);
             var ident = this.lexer.Read(TokenType.Identifier);
             this.lexer.Read(TokenType.Semicolon);
 
-            return new VariableDeclarationNode(ident);
+            return new GlobalVariableDeclarationNode(ident);
         }
 
         private VariableDeclarationNode ReadLocalVariableDeclaration() {
