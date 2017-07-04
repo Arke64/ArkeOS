@@ -20,7 +20,7 @@ namespace ArkeOS.Tools.KohlCompiler {
         private Dictionary<string, ulong> functionAddresses;
         private Dictionary<string, ulong> variableAddresses;
         private List<Instruction> instructions;
-        private FunctionLValue currentFunction;
+        private Function currentFunction;
         private bool throwOnNoFunction;
 
         public Emitter(Compiliation tree, bool emitAssemblyListing, bool emitBootable, string outputFile) => (this.tree, this.emitAssemblyListing, this.emitBootable, this.outputFile) = (tree, emitAssemblyListing, emitBootable, outputFile);
@@ -164,7 +164,7 @@ namespace ArkeOS.Tools.KohlCompiler {
                 this.Visit(s);
         }
 
-        private void Visit(FunctionLValue n) {
+        private void Visit(Function n) {
             this.currentFunction = n;
 
             this.Visit(n.Entry);

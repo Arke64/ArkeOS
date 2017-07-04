@@ -19,7 +19,7 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
 
         public Compiliation Generate() {
             var globalVars = new List<GlobalVariableLValue>();
-            var functions = new List<FunctionLValue>();
+            var functions = new List<Function>();
             var nameGenerator = new NameGenerator();
             var consts = this.ast.ConstDeclarations.Items.ToDictionary(c => c.Identifier, c => c.Value.Literal);
 
@@ -58,7 +58,7 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
         private readonly IReadOnlyDictionary<string, ulong> consts;
         private readonly NameGenerator nameGenerator;
 
-        public static FunctionLValue Visit(NameGenerator nameGenerator, IReadOnlyDictionary<string, ulong> consts, FunctionDeclarationNode node) => new FunctionDeclarationVisitor(nameGenerator, consts).Visit(node);
+        public static Function Visit(NameGenerator nameGenerator, IReadOnlyDictionary<string, ulong> consts, FunctionDeclarationNode node) => new FunctionDeclarationVisitor(nameGenerator, consts).Visit(node);
 
         private FunctionDeclarationVisitor(NameGenerator nameGenerator, IReadOnlyDictionary<string, ulong> consts) => (this.nameGenerator, this.consts) = (nameGenerator, consts);
 
@@ -70,12 +70,12 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
             return ident;
         }
 
-        private FunctionLValue Visit(FunctionDeclarationNode node) {
+        private Function Visit(FunctionDeclarationNode node) {
             this.Visit(node.StatementBlock);
 
             this.block.PushTerminator(new ReturnTerminator(this.CreateTemporaryLocalVariable()));
 
-            return new FunctionLValue(node.Identifier, this.block.Entry, node.ArgumentListDeclaration.Items.Select(i => i.Identifier).ToList(), this.localVariables);
+            return new Function(node.Identifier, this.block.Entry, node.ArgumentListDeclaration.Items.Select(i => i.Identifier).ToList(), this.localVariables);
         }
 
         private void Visit(StatementBlockNode node) {
@@ -293,10 +293,21 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
     }
 
     public sealed class Compiliation {
-        public IReadOnlyCollection<FunctionLValue> Functions { get; }
+        public IReadOnlyCollection<Function> Functions { get; }
         public IReadOnlyCollection<GlobalVariableLValue> GlobalVariables { get; }
 
-        public Compiliation(IReadOnlyCollection<FunctionLValue> functions, IReadOnlyCollection<GlobalVariableLValue> globalVars) => (this.Functions, this.GlobalVariables) = (functions, globalVars);
+        public Compiliation(IReadOnlyCollection<Function> functions, IReadOnlyCollection<GlobalVariableLValue> globalVars) => (this.Functions, this.GlobalVariables) = (functions, globalVars);
+    }
+
+    public sealed class Function {
+        public string Identifier { get; }
+        public BasicBlock Entry { get; }
+        public IReadOnlyCollection<string> Arguments { get; }
+        public IReadOnlyCollection<LocalVariableLValue> LocalVariables { get; }
+
+        public Function(string identifier, BasicBlock entry, IReadOnlyCollection<string> arguments, IReadOnlyCollection<LocalVariableLValue> variables) => (this.Identifier, this.Entry, this.Arguments, this.LocalVariables) = (identifier, entry, arguments, variables);
+
+        public override string ToString() => $"func {this.Identifier}";
     }
 
     public abstract class LValue : RValue {
@@ -333,17 +344,6 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
         public PointerLValue(RValue reference) => this.Reference = reference;
 
         public override string ToString() => $"*({this.Reference.ToString()})";
-    }
-
-    public sealed class FunctionLValue : LValue {
-        public string Identifier { get; }
-        public BasicBlock Entry { get; }
-        public IReadOnlyCollection<string> Arguments { get; }
-        public IReadOnlyCollection<LocalVariableLValue> LocalVariables { get; }
-
-        public FunctionLValue(string identifier, BasicBlock entry, IReadOnlyCollection<string> arguments, IReadOnlyCollection<LocalVariableLValue> variables) => (this.Identifier, this.Entry, this.Arguments, this.LocalVariables) = (identifier, entry, arguments, variables);
-
-        public override string ToString() => $"func {this.Identifier}";
     }
 
     public abstract class RValueOrOp {
