@@ -191,34 +191,23 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
 
         private LValue ExtractLValue(ExpressionStatementNode node) => (LValue)this.ExtractRValueInto(node, null, true);
 
-        private RValue ExtractRValueInto(ExpressionStatementNode node, LValue target, bool requireLValueReturn) {
+        private RValue ExtractRValueInto(ExpressionStatementNode node, LValue target, bool requireLValueNoTemporary) {
             void ensureTarget() { if (target == null) target = this.CreateTemporaryLocalVariable(); }
             RValue doAssign(RValueOrOp value) { ensureTarget(); this.block.PushInstuction(new BasicBlockAssignmentInstruction(target, value)); return target; }
 
             switch (node) {
-                case IdentifierExpressionNode n:
-                    switch (n) {
-                        case VariableIdentifierNode i: return new LocalVariableLValue(i.Identifier);
-                        case RegisterIdentifierNode i: return new RegisterLValue(i.Register);
-                        case FunctionCallIdentifierNode i: ensureTarget(); this.Visit(i, target); return target;
-                    }
-
-                    break;
-
+                case VariableIdentifierNode n: return new LocalVariableLValue(n.Identifier);
+                case RegisterIdentifierNode n: return new RegisterLValue(n.Register);
+                case FunctionCallIdentifierNode n: ensureTarget(); this.Visit(n, target); return target;
                 case UnaryExpressionNode n when n.Op.Operator == Operator.Dereference: return new PointerLValue(this.ExtractRValue(n.Expression));
             }
 
-            if (requireLValueReturn)
+            if (requireLValueNoTemporary)
                 throw new ExpectedException(default(PositionInfo), "lvalue");
 
             switch (node) {
-                case LiteralExpressionNode n:
-                    switch (n) {
-                        default: throw new UnexpectedException(default(PositionInfo), "literal node");
-                        case IntegerLiteralNode l: return new UnsignedIntegerConstant(l.Literal);
-                        case BoolLiteralNode l: return new UnsignedIntegerConstant(l.Literal ? ulong.MaxValue : 0);
-                    }
-
+                case IntegerLiteralNode n: return new UnsignedIntegerConstant(n.Literal);
+                case BoolLiteralNode n: return new UnsignedIntegerConstant(n.Literal ? ulong.MaxValue : 0);
                 case BinaryExpressionNode n: return doAssign(new BinaryOperation(this.ExtractRValue(n.Left), (BinaryOperationType)n.Op.Operator, this.ExtractRValue(n.Right)));
                 case UnaryExpressionNode n: return doAssign(new UnaryOperation((UnaryOperationType)n.Op.Operator, this.ExtractRValue(n.Expression)));
                 default: throw new UnexpectedException(default(PositionInfo), "expression node");
