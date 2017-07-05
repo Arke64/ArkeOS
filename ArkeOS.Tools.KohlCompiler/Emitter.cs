@@ -195,6 +195,8 @@ namespace ArkeOS.Tools.KohlCompiler {
         private void Visit(BasicBlockInstruction s) {
             switch (s) {
                 case BasicBlockAssignmentInstruction n: this.Visit(n); break;
+                case BasicBlockBinaryOperationInstruction n: this.Visit(n); break;
+                case BasicBlockUnaryOperationInstruction n: this.Visit(n); break;
                 case BasicBlockIntrinsicInstruction n: this.Visit(n); break;
                 default: Debug.Assert(false); break;
             }
@@ -286,18 +288,12 @@ namespace ArkeOS.Tools.KohlCompiler {
             else if (a.Value is UnsignedIntegerConstant nnode) {
                 this.Emit(InstructionDefinition.SET, target, Parameter.CreateLiteral(nnode.Value));
             }
-            else if (a.Value is BinaryOperation bnode) {
-                this.Visit(target, bnode);
-            }
-            else if (a.Value is UnaryOperation unode) {
-                this.Visit(target, unode);
-            }
             else {
                 Debug.Assert(false);
             }
         }
 
-        private void Visit(Parameter target, BinaryOperation n) {
+        private void Visit(BasicBlockBinaryOperationInstruction n) {
             var def = default(InstructionDefinition);
 
             switch (n.Op) {
@@ -326,10 +322,12 @@ namespace ArkeOS.Tools.KohlCompiler {
                 default: Debug.Assert(false); break;
             }
 
-            this.Emit(def, target, this.GetVariableAccessParameter(n.Left, true), this.GetVariableAccessParameter(n.Right, true));
+            this.Emit(def, this.GetVariableAccessParameter(n.Target, true), this.GetVariableAccessParameter(n.Left, true), this.GetVariableAccessParameter(n.Right, true));
         }
 
-        private void Visit(Parameter target, UnaryOperation n) {
+        private void Visit(BasicBlockUnaryOperationInstruction n) {
+            var target = this.GetVariableAccessParameter(n.Target, true);
+
             if (n.Op == UnaryOperationType.AddressOf) {
                 this.Emit(InstructionDefinition.SET, target, this.GetVariableAccessParameter(n.Value, false));
             }

@@ -208,8 +208,8 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
             switch (node) {
                 case IntegerLiteralNode n: return new UnsignedIntegerConstant(n.Literal);
                 case BoolLiteralNode n: return new UnsignedIntegerConstant(n.Literal ? ulong.MaxValue : 0);
-                case BinaryExpressionNode n: return doAssign(new BinaryOperation(this.ExtractRValue(n.Left), (BinaryOperationType)n.Op.Operator, this.ExtractRValue(n.Right)));
-                case UnaryExpressionNode n: return doAssign(new UnaryOperation((UnaryOperationType)n.Op.Operator, this.ExtractRValue(n.Expression)));
+                case BinaryExpressionNode n: ensureTarget(); this.block.PushInstuction(new BasicBlockBinaryOperationInstruction(target, this.ExtractRValue(n.Left), (BinaryOperationType)n.Op.Operator, this.ExtractRValue(n.Right))); return target;
+                case UnaryExpressionNode n: ensureTarget(); this.block.PushInstuction(new BasicBlockUnaryOperationInstruction(target, (UnaryOperationType)n.Op.Operator, this.ExtractRValue(n.Expression))); return target;
                 default: throw new UnexpectedException(default(PositionInfo), "expression node");
             }
         }
@@ -231,6 +231,27 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
         public BasicBlockAssignmentInstruction(LValue target, RValueOrOp value) => (this.Target, this.Value) = (target, value);
 
         public override string ToString() => $"{this.Target} = {this.Value}";
+    }
+
+    public sealed class BasicBlockBinaryOperationInstruction : BasicBlockInstruction {
+        public LValue Target { get; }
+        public RValue Left { get; }
+        public BinaryOperationType Op { get; }
+        public RValue Right { get; }
+
+        public BasicBlockBinaryOperationInstruction(LValue target, RValue left, BinaryOperationType op, RValue right) => (this.Target, this.Left, this.Op, this.Right) = (target, left, op, right);
+
+        public override string ToString() => $"{this.Target} = {this.Left} '{this.Op}' {this.Right}";
+    }
+
+    public sealed class BasicBlockUnaryOperationInstruction : BasicBlockInstruction {
+        public LValue Target { get; }
+        public UnaryOperationType Op { get; }
+        public RValue Value { get; }
+
+        public BasicBlockUnaryOperationInstruction(LValue target, UnaryOperationType op, RValue value) => (this.Target, this.Op, this.Value) = (target, op, value);
+
+        public override string ToString() => $"{this.Target} = '{this.Op}' {this.Value}";
     }
 
     public sealed class BasicBlockIntrinsicInstruction : BasicBlockInstruction {
@@ -320,25 +341,6 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
         public UnsignedIntegerConstant(ulong value) => this.Value = value;
 
         public override string ToString() => this.Value.ToString();
-    }
-
-    public sealed class BinaryOperation : RValueOrOp {
-        public RValue Left { get; }
-        public BinaryOperationType Op { get; }
-        public RValue Right { get; }
-
-        public BinaryOperation(RValue left, BinaryOperationType op, RValue right) => (this.Left, this.Op, this.Right) = (left, op, right);
-
-        public override string ToString() => $"{this.Left} '{this.Op}' {this.Right}";
-    }
-
-    public sealed class UnaryOperation : RValueOrOp {
-        public UnaryOperationType Op { get; }
-        public RValue Value { get; }
-
-        public UnaryOperation(UnaryOperationType op, RValue value) => (this.Op, this.Value) = (op, value);
-
-        public override string ToString() => $"'{this.Op}' {this.Value}";
     }
 
     public abstract class Terminator {
