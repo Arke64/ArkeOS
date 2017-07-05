@@ -193,13 +193,12 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
 
         private RValue ExtractRValueInto(ExpressionStatementNode node, LValue target, bool requireLValueNoTemporary) {
             void ensureTarget() { if (target == null) target = this.CreateTemporaryLocalVariable(); }
-            RValue doAssign(RValueOrOp value) { ensureTarget(); this.block.PushInstuction(new BasicBlockAssignmentInstruction(target, value)); return target; }
 
             switch (node) {
                 case VariableIdentifierNode n: return new LocalVariableLValue(n.Identifier);
                 case RegisterIdentifierNode n: return new RegisterLValue(n.Register);
                 case FunctionCallIdentifierNode n: ensureTarget(); this.Visit(n, target); return target;
-                case UnaryExpressionNode n when n.Op.Operator == Operator.Dereference: return doAssign(new PointerLValue(this.ExtractRValue(n.Expression)));
+                case UnaryExpressionNode n when n.Op.Operator == Operator.Dereference: ensureTarget(); this.block.PushInstuction(new BasicBlockAssignmentInstruction(target, new PointerLValue(this.ExtractRValue(n.Expression)))); return target;
             }
 
             if (requireLValueNoTemporary)
@@ -226,9 +225,9 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
 
     public sealed class BasicBlockAssignmentInstruction : BasicBlockInstruction {
         public LValue Target { get; }
-        public RValueOrOp Value { get; }
+        public RValue Value { get; }
 
-        public BasicBlockAssignmentInstruction(LValue target, RValueOrOp value) => (this.Target, this.Value) = (target, value);
+        public BasicBlockAssignmentInstruction(LValue target, RValue value) => (this.Target, this.Value) = (target, value);
 
         public override string ToString() => $"{this.Target} = {this.Value}";
     }
@@ -323,11 +322,7 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
         public override string ToString() => $"*({this.Reference.ToString()})";
     }
 
-    public abstract class RValueOrOp {
-
-    }
-
-    public abstract class RValue : RValueOrOp {
+    public abstract class RValue {
 
     }
 
