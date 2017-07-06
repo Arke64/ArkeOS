@@ -211,8 +211,7 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
 
             switch (node) {
                 case BinaryExpressionNode n: this.block.PushInstuction(new BasicBlockBinaryOperationInstruction(target, this.ExtractRValue(n.Left), (BinaryOperationType)n.Op.Operator, this.ExtractRValue(n.Right))); break;
-                case UnaryExpressionNode n when n.Op.Operator != Operator.Dereference: this.block.PushInstuction(new BasicBlockUnaryOperationInstruction(target, (UnaryOperationType)n.Op.Operator, this.ExtractRValue(n.Expression))); break;
-                case UnaryExpressionNode n when n.Op.Operator == Operator.Dereference: this.block.PushInstuction(new BasicBlockAssignmentInstruction(target, new PointerLValue(this.ExtractRValue(n.Expression)))); break;
+                case UnaryExpressionNode n: this.block.PushInstuction(new BasicBlockUnaryOperationInstruction(target, (UnaryOperationType)n.Op.Operator, this.ExtractRValue(n.Expression))); break;
                 default: throw new UnexpectedException(default(PositionInfo), "expression node");
             }
 
@@ -330,14 +329,6 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
         public RegisterLValue(Register register) => this.Register = register;
 
         public override string ToString() => this.Register.ToString();
-    }
-
-    public sealed class PointerLValue : LValue {
-        public RValue Reference { get; }
-
-        public PointerLValue(RValue reference) => this.Reference = reference;
-
-        public override string ToString() => $"*({this.Reference.ToString()})";
     }
 
     public abstract class Terminator {
