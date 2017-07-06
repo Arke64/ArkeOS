@@ -192,9 +192,15 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
 
         private LValue ExtractLValue(ExpressionStatementNode node) {
             switch (node) {
+                default: throw new ExpectedException(default(PositionInfo), "lvalue");
                 case VariableIdentifierNode n: return new LocalVariableLValue(n.Identifier);
                 case RegisterIdentifierNode n: return new RegisterLValue(n.Register);
-                default: throw new ExpectedException(default(PositionInfo), "lvalue");
+                case UnaryExpressionNode n when n.Op.Operator == Operator.Dereference:
+                    var target = this.CreateTemporaryLocalVariable();
+
+                    this.block.PushInstuction(new BasicBlockDereferenceInstruction(target, this.ExtractRValue(n.Expression)));
+
+                    return target;
             }
         }
 
