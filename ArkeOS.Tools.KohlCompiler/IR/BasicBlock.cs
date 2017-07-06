@@ -296,11 +296,7 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
 
     }
 
-    public abstract class Constant : RValue {
-
-    }
-
-    public sealed class UnsignedIntegerConstant : Constant {
+    public sealed class UnsignedIntegerConstant : RValue {
         public ulong Value { get; }
 
         public UnsignedIntegerConstant(ulong value) => this.Value = value;
