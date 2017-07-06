@@ -96,7 +96,7 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
         private void Visit(DeclarationNode node) {
             switch (node) {
                 default: throw new UnexpectedException(default(PositionInfo), "identifier node");
-                case LocalVariableDeclarationWithInitializerNode n: this.ExtractRValueInto(n.Initializer, new LocalVariableLValue(n.Identifier), false); break;
+                case LocalVariableDeclarationWithInitializerNode n: this.Visit(new AssignmentStatementNode(new VariableIdentifierNode(n.Token), n.Initializer)); break;
             }
         }
 
@@ -111,7 +111,7 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
             if (node is CompoundAssignmentStatementNode cnode)
                 exp = new BinaryExpressionNode(cnode.Target, cnode.Op, cnode.Expression);
 
-            this.ExtractRValueInto(exp, lhs, false);
+            this.block.PushInstuction(new BasicBlockAssignmentInstruction(lhs, this.ExtractRValue(exp)));
         }
 
         private void Visit(IfStatementNode node) {
@@ -176,41 +176,47 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
         private void Visit(ExpressionStatementNode node) {
             switch (node) {
                 default: throw new UnexpectedException(default(PositionInfo), "expression node");
-                case FunctionCallIdentifierNode n: this.Visit(n, this.CreateTemporaryLocalVariable()); break;
+                case FunctionCallIdentifierNode n: this.Visit(n); break;
             }
         }
 
-        private void Visit(FunctionCallIdentifierNode node, LValue result) {
+        private LValue Visit(FunctionCallIdentifierNode node) {
             var args = node.ArgumentList.Items.Select(a => this.ExtractRValue(a)).ToList();
+            var result = this.CreateTemporaryLocalVariable();
 
             var (callTerminator, returnBlock) = this.block.PushTerminator(new CallTerminator(node.Identifier, result, args));
             callTerminator.SetNext(returnBlock);
+
+            return result;
         }
 
-        private RValue ExtractRValue(ExpressionStatementNode node) => this.ExtractRValueInto(node, null, false);
-
-        private LValue ExtractLValue(ExpressionStatementNode node) => (LValue)this.ExtractRValueInto(node, null, true);
-
-        private RValue ExtractRValueInto(ExpressionStatementNode node, LValue target, bool requireLValueNoTemporary) {
-            void ensureTarget() { if (target == null) target = this.CreateTemporaryLocalVariable(); }
-
+        private LValue ExtractLValue(ExpressionStatementNode node) {
             switch (node) {
                 case VariableIdentifierNode n: return new LocalVariableLValue(n.Identifier);
                 case RegisterIdentifierNode n: return new RegisterLValue(n.Register);
-                case FunctionCallIdentifierNode n: ensureTarget(); this.Visit(n, target); return target;
-                case UnaryExpressionNode n when n.Op.Operator == Operator.Dereference: ensureTarget(); this.block.PushInstuction(new BasicBlockAssignmentInstruction(target, new PointerLValue(this.ExtractRValue(n.Expression)))); return target;
+                default: throw new ExpectedException(default(PositionInfo), "lvalue");
             }
+        }
 
-            if (requireLValueNoTemporary)
-                throw new ExpectedException(default(PositionInfo), "lvalue");
-
+        private RValue ExtractRValue(ExpressionStatementNode node) {
             switch (node) {
+                case VariableIdentifierNode n: return new LocalVariableLValue(n.Identifier);
+                case RegisterIdentifierNode n: return new RegisterLValue(n.Register);
                 case IntegerLiteralNode n: return new UnsignedIntegerConstant(n.Literal);
                 case BoolLiteralNode n: return new UnsignedIntegerConstant(n.Literal ? ulong.MaxValue : 0);
-                case BinaryExpressionNode n: ensureTarget(); this.block.PushInstuction(new BasicBlockBinaryOperationInstruction(target, this.ExtractRValue(n.Left), (BinaryOperationType)n.Op.Operator, this.ExtractRValue(n.Right))); return target;
-                case UnaryExpressionNode n: ensureTarget(); this.block.PushInstuction(new BasicBlockUnaryOperationInstruction(target, (UnaryOperationType)n.Op.Operator, this.ExtractRValue(n.Expression))); return target;
+                case FunctionCallIdentifierNode n: return this.Visit(n);
+            }
+
+            var target = this.CreateTemporaryLocalVariable();
+
+            switch (node) {
+                case BinaryExpressionNode n: this.block.PushInstuction(new BasicBlockBinaryOperationInstruction(target, this.ExtractRValue(n.Left), (BinaryOperationType)n.Op.Operator, this.ExtractRValue(n.Right))); break;
+                case UnaryExpressionNode n when n.Op.Operator != Operator.Dereference: this.block.PushInstuction(new BasicBlockUnaryOperationInstruction(target, (UnaryOperationType)n.Op.Operator, this.ExtractRValue(n.Expression))); break;
+                case UnaryExpressionNode n when n.Op.Operator == Operator.Dereference: this.block.PushInstuction(new BasicBlockAssignmentInstruction(target, new PointerLValue(this.ExtractRValue(n.Expression)))); break;
                 default: throw new UnexpectedException(default(PositionInfo), "expression node");
             }
+
+            return target;
         }
     }
 
