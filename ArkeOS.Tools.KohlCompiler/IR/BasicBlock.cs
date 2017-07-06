@@ -292,6 +292,22 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
         public override string ToString() => $"func {this.Identifier}";
     }
 
+    public abstract class RValue {
+
+    }
+
+    public abstract class Constant : RValue {
+
+    }
+
+    public sealed class UnsignedIntegerConstant : Constant {
+        public ulong Value { get; }
+
+        public UnsignedIntegerConstant(ulong value) => this.Value = value;
+
+        public override string ToString() => this.Value.ToString();
+    }
+
     public abstract class LValue : RValue {
 
     }
@@ -326,22 +342,6 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
         public PointerLValue(RValue reference) => this.Reference = reference;
 
         public override string ToString() => $"*({this.Reference.ToString()})";
-    }
-
-    public abstract class RValue {
-
-    }
-
-    public abstract class Constant : RValue {
-
-    }
-
-    public sealed class UnsignedIntegerConstant : Constant {
-        public ulong Value { get; }
-
-        public UnsignedIntegerConstant(ulong value) => this.Value = value;
-
-        public override string ToString() => this.Value.ToString();
     }
 
     public abstract class Terminator {
