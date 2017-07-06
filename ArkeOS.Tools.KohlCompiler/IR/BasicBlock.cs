@@ -415,7 +415,6 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
     }
 
     public enum UnaryOperationType {
-        Plus = Operator.UnaryPlus,
         Minus = Operator.UnaryMinus,
         Not = Operator.Not,
         AddressOf = Operator.AddressOf,

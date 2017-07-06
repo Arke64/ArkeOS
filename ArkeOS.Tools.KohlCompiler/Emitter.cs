@@ -333,7 +333,6 @@ namespace ArkeOS.Tools.KohlCompiler {
             }
             else {
                 switch (n.Op) {
-                    case UnaryOperationType.Plus: break;
                     case UnaryOperationType.Minus: this.Emit(InstructionDefinition.MUL, target, this.GetVariableAccessParameter(n.Value, true), Parameter.CreateLiteral(ulong.MaxValue)); break;
                     case UnaryOperationType.Not: this.Emit(InstructionDefinition.NOT, target, this.GetVariableAccessParameter(n.Value, true)); break;
                     case UnaryOperationType.Dereference: this.Emit(InstructionDefinition.SET, target, this.GetVariableAccessParameter(n.Value, true)); break;

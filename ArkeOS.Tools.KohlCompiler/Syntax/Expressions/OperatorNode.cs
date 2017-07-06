@@ -8,7 +8,6 @@ namespace ArkeOS.Tools.KohlCompiler.Syntax {
         Division,
         Remainder,
         Exponentiation,
-        UnaryPlus,
         UnaryMinus,
         ShiftLeft,
         ShiftRight,
@@ -75,7 +74,6 @@ namespace ArkeOS.Tools.KohlCompiler.Syntax {
             [Operator.Exponentiation] = (90, false),
 
             [Operator.UnaryMinus] = (100, false),
-            [Operator.UnaryPlus] = (100, false),
             [Operator.Not] = (100, false),
             [Operator.AddressOf] = (100, false),
             [Operator.Dereference] = (100, false),
@@ -122,7 +120,6 @@ namespace ArkeOS.Tools.KohlCompiler.Syntax {
             }
             else {
                 switch (token.Type) {
-                    case TokenType.Plus: op = Operator.UnaryPlus; break;
                     case TokenType.Minus: op = Operator.UnaryMinus; break;
                     case TokenType.ExclamationPoint: op = Operator.Not; break;
                     case TokenType.Ampersand: op = Operator.AddressOf; break;
