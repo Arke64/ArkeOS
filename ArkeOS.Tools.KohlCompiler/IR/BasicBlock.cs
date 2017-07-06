@@ -216,7 +216,8 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
                     switch (n.Op.Operator) {
                         case Operator.UnaryMinus: return this.ExtractRValue(new BinaryExpressionNode(n.Expression, OperatorNode.FromOperator(Operator.Multiplication), new IntegerLiteralNode(ulong.MaxValue)));
                         case Operator.Not: return this.ExtractRValue(new BinaryExpressionNode(n.Expression, OperatorNode.FromOperator(Operator.Xor), new IntegerLiteralNode(ulong.MaxValue)));
-                        default: this.block.PushInstuction(new BasicBlockUnaryOperationInstruction(target, (UnaryOperationType)n.Op.Operator, this.ExtractRValue(n.Expression))); break;
+                        case Operator.AddressOf: this.block.PushInstuction(new BasicBlockAddressOfInstruction(target, this.ExtractRValue(n.Expression))); break;
+                        case Operator.Dereference: this.block.PushInstuction(new BasicBlockDereferenceInstruction(target, this.ExtractRValue(n.Expression))); break;
                     }
 
                     break;
@@ -255,14 +256,22 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
         public override string ToString() => $"{this.Target} = {this.Left} '{this.Op}' {this.Right}";
     }
 
-    public sealed class BasicBlockUnaryOperationInstruction : BasicBlockInstruction {
+    public sealed class BasicBlockAddressOfInstruction : BasicBlockInstruction {
         public LValue Target { get; }
-        public UnaryOperationType Op { get; }
         public RValue Value { get; }
 
-        public BasicBlockUnaryOperationInstruction(LValue target, UnaryOperationType op, RValue value) => (this.Target, this.Op, this.Value) = (target, op, value);
+        public BasicBlockAddressOfInstruction(LValue target, RValue value) => (this.Target, this.Value) = (target, value);
 
-        public override string ToString() => $"{this.Target} = '{this.Op}' {this.Value}";
+        public override string ToString() => $"{this.Target} = &{this.Value}";
+    }
+
+    public sealed class BasicBlockDereferenceInstruction : BasicBlockInstruction {
+        public LValue Target { get; }
+        public RValue Value { get; }
+
+        public BasicBlockDereferenceInstruction(LValue target, RValue value) => (this.Target, this.Value) = (target, value);
+
+        public override string ToString() => $"{this.Target} = *{this.Value}";
     }
 
     public sealed class BasicBlockIntrinsicInstruction : BasicBlockInstruction {
@@ -406,10 +415,5 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
         LessThanOrEqual = Operator.LessThanOrEqual,
         GreaterThan = Operator.GreaterThan,
         GreaterThanOrEqual = Operator.GreaterThanOrEqual,
-    }
-
-    public enum UnaryOperationType {
-        AddressOf = Operator.AddressOf,
-        Dereference = Operator.Dereference,
     }
 }

@@ -187,7 +187,8 @@ namespace ArkeOS.Tools.KohlCompiler {
             switch (s) {
                 case BasicBlockAssignmentInstruction n: this.Visit(n); break;
                 case BasicBlockBinaryOperationInstruction n: this.Visit(n); break;
-                case BasicBlockUnaryOperationInstruction n: this.Visit(n); break;
+                case BasicBlockDereferenceInstruction n: this.Emit(InstructionDefinition.SET, this.GetVariableAccessParameter(n.Target, true), this.Dereference(n.Value)); break;
+                case BasicBlockAddressOfInstruction n: this.Emit(InstructionDefinition.SET, this.GetVariableAccessParameter(n.Target, true), this.GetVariableAccessParameter(n.Value, false)); break;
                 case BasicBlockIntrinsicInstruction n: this.Visit(n); break;
                 default: Debug.Assert(false); break;
             }
@@ -314,16 +315,6 @@ namespace ArkeOS.Tools.KohlCompiler {
             }
 
             this.Emit(def, this.GetVariableAccessParameter(n.Target, true), this.GetVariableAccessParameter(n.Left, true), this.GetVariableAccessParameter(n.Right, true));
-        }
-
-        private void Visit(BasicBlockUnaryOperationInstruction n) {
-            var target = this.GetVariableAccessParameter(n.Target, true);
-
-            switch (n.Op) {
-                case UnaryOperationType.Dereference: this.Emit(InstructionDefinition.SET, target, this.Dereference(n.Value)); break;
-                case UnaryOperationType.AddressOf: this.Emit(InstructionDefinition.SET, target, this.GetVariableAccessParameter(n.Value, false)); break;
-                default: Debug.Assert(false); break;
-            }
         }
 
         private Parameter Dereference(RValue value) {
