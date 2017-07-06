@@ -320,8 +320,6 @@ namespace ArkeOS.Tools.KohlCompiler {
             var target = this.GetVariableAccessParameter(n.Target, true);
 
             switch (n.Op) {
-                case UnaryOperationType.Minus: this.Emit(InstructionDefinition.MUL, target, this.GetVariableAccessParameter(n.Value, true), Parameter.CreateLiteral(ulong.MaxValue)); break;
-                case UnaryOperationType.Not: this.Emit(InstructionDefinition.NOT, target, this.GetVariableAccessParameter(n.Value, true)); break;
                 case UnaryOperationType.Dereference: this.Emit(InstructionDefinition.SET, target, this.Dereference(n.Value)); break;
                 case UnaryOperationType.AddressOf: this.Emit(InstructionDefinition.SET, target, this.GetVariableAccessParameter(n.Value, false)); break;
                 default: Debug.Assert(false); break;

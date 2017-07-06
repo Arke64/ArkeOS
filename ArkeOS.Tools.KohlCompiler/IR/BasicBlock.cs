@@ -210,9 +210,16 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
             var target = this.CreateTemporaryLocalVariable();
 
             switch (node) {
-                case BinaryExpressionNode n: this.block.PushInstuction(new BasicBlockBinaryOperationInstruction(target, this.ExtractRValue(n.Left), (BinaryOperationType)n.Op.Operator, this.ExtractRValue(n.Right))); break;
-                case UnaryExpressionNode n: this.block.PushInstuction(new BasicBlockUnaryOperationInstruction(target, (UnaryOperationType)n.Op.Operator, this.ExtractRValue(n.Expression))); break;
                 default: throw new UnexpectedException(default(PositionInfo), "expression node");
+                case BinaryExpressionNode n: this.block.PushInstuction(new BasicBlockBinaryOperationInstruction(target, this.ExtractRValue(n.Left), (BinaryOperationType)n.Op.Operator, this.ExtractRValue(n.Right))); break;
+                case UnaryExpressionNode n:
+                    switch (n.Op.Operator) {
+                        case Operator.UnaryMinus: return this.ExtractRValue(new BinaryExpressionNode(n.Expression, OperatorNode.FromOperator(Operator.Multiplication), new IntegerLiteralNode(ulong.MaxValue)));
+                        case Operator.Not: return this.ExtractRValue(new BinaryExpressionNode(n.Expression, OperatorNode.FromOperator(Operator.Xor), new IntegerLiteralNode(ulong.MaxValue)));
+                        default: this.block.PushInstuction(new BasicBlockUnaryOperationInstruction(target, (UnaryOperationType)n.Op.Operator, this.ExtractRValue(n.Expression))); break;
+                    }
+
+                    break;
             }
 
             return target;
@@ -402,8 +409,6 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
     }
 
     public enum UnaryOperationType {
-        Minus = Operator.UnaryMinus,
-        Not = Operator.Not,
         AddressOf = Operator.AddressOf,
         Dereference = Operator.Dereference,
     }

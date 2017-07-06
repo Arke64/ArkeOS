@@ -86,6 +86,22 @@ namespace ArkeOS.Tools.KohlCompiler.Syntax {
 
         private OperatorNode(Operator op, OperatorClass cls) => (this.Operator, this.Class, (this.Precedence, this.IsLeftAssociative)) = (op, cls, OperatorNode.Defs[op]);
 
+        public static OperatorNode FromOperator(Operator op) {
+            var cls = OperatorClass.Binary;
+
+            switch (op) {
+                case Operator.UnaryMinus:
+                case Operator.Not:
+                case Operator.AddressOf:
+                case Operator.Dereference:
+                    cls = OperatorClass.Binary;
+
+                    break;
+            }
+
+            return new OperatorNode(op, cls);
+        }
+
         public static OperatorNode FromToken(Token token, OperatorClass cls) {
             var op = default(Operator);
 
