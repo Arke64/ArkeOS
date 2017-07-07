@@ -60,6 +60,13 @@ namespace ArkeOS.Hardware.ArkeIndustries {
             this.SetNextInstruction();
         }
 
+        public override void Stop() {
+            if (this.running) {
+                this.running = false;
+                this.runner.Wait();
+            }
+        }
+
         public void Break() => this.running = false;
 
         public void Continue() {
