@@ -1,29 +1,134 @@
 ﻿using ArkeOS.Hardware.Architecture;
+using ArkeOS.Tools.KohlCompiler.Analysis;
 using ArkeOS.Tools.KohlCompiler.Exceptions;
 using ArkeOS.Tools.KohlCompiler.Syntax;
+using ArkeOS.Utilities.Extensions;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace ArkeOS.Tools.KohlCompiler.IR {
-    public sealed class NameGenerator {
-        private ulong nextId = 0;
+namespace ArkeOS.Tools.KohlCompiler.Analysis {
+    public class SymbolTable {
+        private ulong nextTemporarySymbolId = 0;
 
-        public string Next() => "$tmp_" + this.nextId++.ToString();
+        public IReadOnlyCollection<ConstVariableSymbol> ConstVariables { get; }
+        public IReadOnlyCollection<GlobalVariableSymbol> GlobalVariables { get; }
+        public IReadOnlyCollection<RegisterSymbol> Registers { get; }
+        public IReadOnlyCollection<FunctionSymbol> Functions { get; }
+
+        public SymbolTable(ProgramDeclarationNode ast) {
+            this.ConstVariables = ast.ConstDeclarations.Items.Select(i => new ConstVariableSymbol(i.Identifier, i.Value.Literal)).ToList();
+            this.GlobalVariables = ast.VariableDeclarations.Items.Select(i => new GlobalVariableSymbol(i.Identifier)).ToList();
+            this.Registers = EnumExtensions.ToList<Register>().Select(i => new RegisterSymbol(i.ToString(), i)).ToList();
+            this.Functions = ast.FunctionDeclarations.Items.Select(i => this.Visit(i)).ToList();
+        }
+
+        private FunctionSymbol Visit(FunctionDeclarationNode node) {
+            var variables = new List<LocalVariableSymbol>();
+
+            void visitStatementBlock(StatementBlockNode n)
+            {
+                variables.AddRange(n.VariableDeclarations.Items.Select(i => new LocalVariableSymbol(i.Identifier)));
+
+                foreach (var s in n.Statements.Items)
+                    visitStatement(s);
+            }
+
+            void visitStatement(StatementNode n)
+            {
+                switch (n) {
+                    case IfElseStatementNode s: visitStatementBlock(s.ElseStatementBlock); visitStatementBlock(s.StatementBlock); break;
+                    case IfStatementNode s: visitStatementBlock(s.StatementBlock); break;
+                    case WhileStatementNode s: visitStatementBlock(s.StatementBlock); break;
+                }
+            }
+
+            visitStatementBlock(node.StatementBlock);
+
+            return new FunctionSymbol(node.Identifier, node.ArgumentListDeclaration.Items.Select(i => new ArgumentSymbol(i.Identifier)).ToList(), variables);
+        }
+
+        public LocalVariableSymbol CreateTemporaryLocalVariable(FunctionSymbol function) {
+            var variable = new LocalVariableSymbol("$tmp_" + this.nextTemporarySymbolId++.ToString());
+
+            function.AddLocalVariable(variable);
+
+            return variable;
+        }
+
+        private bool TryFind<T>(IReadOnlyCollection<T> collection, string name, out T result) where T : Symbol => (result = collection.SingleOrDefault(c => c.Name == name)) != null;
+
+        public ConstVariableSymbol FindConstVariable(string name) => this.TryFindConstVariable(name, out var r) ? r : throw new IdentifierNotFoundException(default(PositionInfo), name);
+        public GlobalVariableSymbol FindGlobalVariable(string name) => this.TryFindGlobalVariable(name, out var r) ? r : throw new IdentifierNotFoundException(default(PositionInfo), name);
+        public RegisterSymbol FindRegister(string name) => this.TryFindRegister(name, out var r) ? r : throw new IdentifierNotFoundException(default(PositionInfo), name);
+        public FunctionSymbol FindFunction(string name) => this.TryFindFunction(name, out var r) ? r : throw new IdentifierNotFoundException(default(PositionInfo), name);
+        public ArgumentSymbol FindArgument(FunctionSymbol function, string name) => this.TryFindArgument(function, name, out var r) ? r : throw new IdentifierNotFoundException(default(PositionInfo), name);
+        public LocalVariableSymbol FindLocalVariable(FunctionSymbol function, string name) => this.TryFindLocalVariable(function, name, out var r) ? r : throw new IdentifierNotFoundException(default(PositionInfo), name);
+
+        public bool TryFindConstVariable(string name, out ConstVariableSymbol result) => this.TryFind(this.ConstVariables, name, out result);
+        public bool TryFindGlobalVariable(string name, out GlobalVariableSymbol result) => this.TryFind(this.GlobalVariables, name, out result);
+        public bool TryFindRegister(string name, out RegisterSymbol result) => this.TryFind(this.Registers, name, out result);
+        public bool TryFindFunction(string name, out FunctionSymbol result) => this.TryFind(this.Functions, name, out result);
+        public bool TryFindArgument(FunctionSymbol function, string name, out ArgumentSymbol result) => this.TryFind(function.Arguments, name, out result);
+        public bool TryFindLocalVariable(FunctionSymbol function, string name, out LocalVariableSymbol result) => this.TryFind(function.LocalVariables, name, out result);
     }
 
+    public abstract class Symbol {
+        public string Name { get; }
+
+        protected Symbol(string name) => this.Name = name;
+
+        public override string ToString() => $"{this.Name}({this.GetType().Name})";
+    }
+
+    public sealed class FunctionSymbol : Symbol {
+        private List<ArgumentSymbol> arguments;
+        private List<LocalVariableSymbol> localVariables;
+
+        public IReadOnlyCollection<ArgumentSymbol> Arguments => this.arguments;
+        public IReadOnlyCollection<LocalVariableSymbol> LocalVariables => this.localVariables;
+
+        public FunctionSymbol(string name, IReadOnlyCollection<ArgumentSymbol> arguments, IReadOnlyCollection<LocalVariableSymbol> variables) : base(name) => (this.arguments, this.localVariables) = (arguments.ToList(), variables.ToList());
+
+        public void AddLocalVariable(LocalVariableSymbol variable) => this.localVariables.Add(variable);
+    }
+
+    public sealed class ArgumentSymbol : Symbol {
+        public ArgumentSymbol(string name) : base(name) { }
+    }
+
+    public sealed class LocalVariableSymbol : Symbol {
+        public LocalVariableSymbol(string name) : base(name) { }
+    }
+
+    public sealed class RegisterSymbol : Symbol {
+        public Register Register { get; }
+
+        public RegisterSymbol(string name, Register register) : base(name) => this.Register = register;
+    }
+
+    public sealed class GlobalVariableSymbol : Symbol {
+        public GlobalVariableSymbol(string name) : base(name) { }
+    }
+
+    public sealed class ConstVariableSymbol : Symbol {
+        public ulong Value { get; }
+
+        public ConstVariableSymbol(string name, ulong value) : base(name) => this.Value = value;
+    }
+}
+
+namespace ArkeOS.Tools.KohlCompiler.IR {
     public sealed class IrGenerator {
         private readonly ProgramDeclarationNode ast;
 
         public IrGenerator(ProgramDeclarationNode ast) => this.ast = ast;
 
         public Compiliation Generate() {
-            var nameGenerator = new NameGenerator();
-            var functions = this.ast.FunctionDeclarations.Items.Select(i => FunctionDeclarationVisitor.Visit(nameGenerator, i)).ToList();
-            var globalVars = this.ast.VariableDeclarations.Items.Select(i => new GlobalVariableLValue(i.Identifier)).ToList();
-            var consts = this.ast.ConstDeclarations.Items.ToDictionary(c => c.Identifier, c => new UnsignedIntegerConstant(c.Value.Literal));
+            var symbolTable = new SymbolTable(this.ast);
+            var functions = this.ast.FunctionDeclarations.Items.Select(i => FunctionDeclarationVisitor.Visit(symbolTable, i)).ToList();
 
-            return new Compiliation(functions, globalVars, consts);
+            return new Compiliation(functions, symbolTable.GlobalVariables);
         }
     }
 
@@ -47,34 +152,25 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
     }
 
     public sealed class FunctionDeclarationVisitor {
-        private readonly List<LocalVariableLValue> localVariables = new List<LocalVariableLValue>();
         private readonly BasicBlockCreator block = new BasicBlockCreator();
-        private readonly NameGenerator nameGenerator;
+        private readonly SymbolTable symbolTable;
+        private readonly FunctionSymbol functionSymbol;
 
-        public static Function Visit(NameGenerator nameGenerator, FunctionDeclarationNode node) => new FunctionDeclarationVisitor(nameGenerator).Visit(node);
+        private FunctionDeclarationVisitor(SymbolTable symbolTable, FunctionSymbol functionSymbol) => (this.symbolTable, this.functionSymbol) = (symbolTable, functionSymbol);
 
-        private FunctionDeclarationVisitor(NameGenerator nameGenerator) => this.nameGenerator = nameGenerator;
+        private LocalVariableLValue CreateTemporaryLocalVariable() => new LocalVariableLValue(this.symbolTable.CreateTemporaryLocalVariable(this.functionSymbol));
 
-        private LocalVariableLValue CreateTemporaryLocalVariable() {
-            var ident = new LocalVariableLValue(this.nameGenerator.Next());
+        public static Function Visit(SymbolTable symbolTable, FunctionDeclarationNode node) {
+            var visitor = new FunctionDeclarationVisitor(symbolTable, symbolTable.FindFunction(node.Identifier));
 
-            this.localVariables.Add(ident);
+            visitor.Visit(node.StatementBlock);
 
-            return ident;
-        }
+            visitor.block.PushTerminator(new ReturnTerminator(visitor.CreateTemporaryLocalVariable()));
 
-        private Function Visit(FunctionDeclarationNode node) {
-            this.Visit(node.StatementBlock);
-
-            this.block.PushTerminator(new ReturnTerminator(this.CreateTemporaryLocalVariable()));
-
-            return new Function(node.Identifier, this.block.Entry, node.ArgumentListDeclaration.Items.Select(i => i.Identifier).ToList(), this.localVariables);
+            return new Function(symbolTable.FindFunction(node.Identifier), visitor.block.Entry);
         }
 
         private void Visit(StatementBlockNode node) {
-            foreach (var v in node.VariableDeclarations.Items)
-                this.localVariables.Add(new LocalVariableLValue(v.Identifier));
-
             foreach (var b in node.Statements.Items)
                 this.Visit(b);
         }
@@ -96,7 +192,7 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
         private void Visit(DeclarationNode node) {
             switch (node) {
                 default: throw new UnexpectedException(default(PositionInfo), "identifier node");
-                case LocalVariableDeclarationWithInitializerNode n: this.Visit(new AssignmentStatementNode(new VariableIdentifierNode(n.Token), n.Initializer)); break;
+                case LocalVariableDeclarationWithInitializerNode n: this.Visit(new AssignmentStatementNode(new IdentifierNode(n.Token), n.Initializer)); break;
             }
         }
 
@@ -184,17 +280,29 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
             var args = node.ArgumentList.Items.Select(a => this.ExtractRValue(a)).ToList();
             var result = this.CreateTemporaryLocalVariable();
 
-            var (callTerminator, returnBlock) = this.block.PushTerminator(new CallTerminator(node.Identifier, result, args));
+            var (callTerminator, returnBlock) = this.block.PushTerminator(new CallTerminator(this.symbolTable.FindFunction(node.Identifier), result, args));
             callTerminator.SetNext(returnBlock);
 
             return result;
         }
 
+        private LValue ExtractLValue(IdentifierExpressionNode node) => (LValue)this.ExtractValue(node, false);
+        private RValue ExtractRValue(IdentifierExpressionNode node) => this.ExtractValue(node, true);
+
+        private RValue ExtractValue(IdentifierExpressionNode node, bool allowRValue) {
+            if (this.symbolTable.TryFindRegister(node.Identifier, out var rs)) return new RegisterLValue(rs);
+            if (this.symbolTable.TryFindArgument(this.functionSymbol, node.Identifier, out var ps)) return new ArgumentLValue(ps);
+            if (this.symbolTable.TryFindLocalVariable(this.functionSymbol, node.Identifier, out var ls)) return new LocalVariableLValue(ls);
+            if (this.symbolTable.TryFindGlobalVariable(node.Identifier, out var gs)) return new GlobalVariableLValue(gs);
+            if (allowRValue && this.symbolTable.TryFindConstVariable(node.Identifier, out var cs)) return new UnsignedIntegerConstant(cs.Value);
+
+            throw new ExpectedException(default(PositionInfo), "lvalue");
+        }
+
         private LValue ExtractLValue(ExpressionStatementNode node) {
             switch (node) {
                 default: throw new ExpectedException(default(PositionInfo), "lvalue");
-                case VariableIdentifierNode n: return new LocalVariableLValue(n.Identifier);
-                case RegisterIdentifierNode n: return new RegisterLValue(n.Register);
+                case IdentifierExpressionNode n: return this.ExtractLValue(n);
                 case UnaryExpressionNode n when n.Op.Operator == Operator.Dereference:
                     var target = this.CreateTemporaryLocalVariable();
 
@@ -206,11 +314,10 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
 
         private RValue ExtractRValue(ExpressionStatementNode node) {
             switch (node) {
-                case VariableIdentifierNode n: return new LocalVariableLValue(n.Identifier);
-                case RegisterIdentifierNode n: return new RegisterLValue(n.Register);
                 case IntegerLiteralNode n: return new UnsignedIntegerConstant(n.Literal);
                 case BoolLiteralNode n: return new UnsignedIntegerConstant(n.Literal ? ulong.MaxValue : 0);
                 case FunctionCallIdentifierNode n: return this.Visit(n);
+                case IdentifierExpressionNode n: return this.ExtractRValue(n);
             }
 
             var target = this.CreateTemporaryLocalVariable();
@@ -296,21 +403,18 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
 
     public sealed class Compiliation {
         public IReadOnlyCollection<Function> Functions { get; }
-        public IReadOnlyCollection<GlobalVariableLValue> GlobalVariables { get; }
-        public IReadOnlyDictionary<string, UnsignedIntegerConstant> Consts { get; }
+        public IReadOnlyCollection<GlobalVariableSymbol> GlobalVariables { get; }
 
-        public Compiliation(IReadOnlyCollection<Function> functions, IReadOnlyCollection<GlobalVariableLValue> globalVars, IReadOnlyDictionary<string, UnsignedIntegerConstant> consts) => (this.Functions, this.GlobalVariables, this.Consts) = (functions, globalVars, consts);
+        public Compiliation(IReadOnlyCollection<Function> functions, IReadOnlyCollection<GlobalVariableSymbol> globalVars) => (this.Functions, this.GlobalVariables) = (functions, globalVars);
     }
 
     public sealed class Function {
-        public string Identifier { get; }
+        public FunctionSymbol Symbol { get; }
         public BasicBlock Entry { get; }
-        public IReadOnlyCollection<string> Arguments { get; }
-        public IReadOnlyCollection<LocalVariableLValue> LocalVariables { get; }
 
-        public Function(string identifier, BasicBlock entry, IReadOnlyCollection<string> arguments, IReadOnlyCollection<LocalVariableLValue> variables) => (this.Identifier, this.Entry, this.Arguments, this.LocalVariables) = (identifier, entry, arguments, variables);
+        public Function(FunctionSymbol symbol, BasicBlock entry) => (this.Symbol, this.Entry) = (symbol, entry);
 
-        public override string ToString() => $"func {this.Identifier}";
+        public override string ToString() => $"func {this.Symbol}";
     }
 
     public abstract class RValue {
@@ -329,28 +433,36 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
 
     }
 
-    public sealed class GlobalVariableLValue : LValue {
-        public string Identifier { get; }
+    public sealed class ArgumentLValue : LValue {
+        public ArgumentSymbol Symbol { get; }
 
-        public GlobalVariableLValue(string identifier) => this.Identifier = identifier;
+        public ArgumentLValue(ArgumentSymbol argument) => this.Symbol = argument;
 
-        public override string ToString() => $"gbl var {this.Identifier}";
+        public override string ToString() => $"aref {this.Symbol}";
     }
 
     public sealed class LocalVariableLValue : LValue {
-        public string Identifier { get; }
+        public LocalVariableSymbol Symbol { get; }
 
-        public LocalVariableLValue(string identifier) => this.Identifier = identifier;
+        public LocalVariableLValue(LocalVariableSymbol variable) => this.Symbol = variable;
 
-        public override string ToString() => $"var {this.Identifier}";
+        public override string ToString() => $"vref {this.Symbol}";
+    }
+
+    public sealed class GlobalVariableLValue : LValue {
+        public GlobalVariableSymbol Symbol { get; }
+
+        public GlobalVariableLValue(GlobalVariableSymbol variable) => this.Symbol = variable;
+
+        public override string ToString() => $"gref {this.Symbol}";
     }
 
     public sealed class RegisterLValue : LValue {
-        public Register Register { get; }
+        public RegisterSymbol Symbol { get; }
 
-        public RegisterLValue(Register register) => this.Register = register;
+        public RegisterLValue(RegisterSymbol symbol) => this.Symbol = symbol;
 
-        public override string ToString() => this.Register.ToString();
+        public override string ToString() => $"rref {this.Symbol}";
     }
 
     public abstract class Terminator {
@@ -386,12 +498,12 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
     }
 
     public sealed class CallTerminator : Terminator {
-        public string Target { get; }
+        public FunctionSymbol Target { get; }
         public LValue Result { get; }
         public IReadOnlyCollection<RValue> Arguments { get; }
         public BasicBlock Next { get; private set; }
 
-        public CallTerminator(string target, LValue result, IReadOnlyCollection<RValue> arguments) => (this.Target, this.Result, this.Arguments) = (target, result, arguments);
+        public CallTerminator(FunctionSymbol target, LValue result, IReadOnlyCollection<RValue> arguments) => (this.Target, this.Result, this.Arguments) = (target, result, arguments);
 
         public void SetNext(BasicBlock next) => this.Next = next;
 

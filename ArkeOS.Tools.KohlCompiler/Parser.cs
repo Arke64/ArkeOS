@@ -157,7 +157,7 @@ namespace ArkeOS.Tools.KohlCompiler {
                 return new FunctionCallIdentifierNode(tok, this.ReadArgumentList());
             }
             else {
-                return tok.Value.IsValidEnum<Register>() ? new RegisterIdentifierNode(tok) : (IdentifierExpressionNode)new VariableIdentifierNode(tok);
+                return tok.Value.IsValidEnum<Register>() ? new RegisterIdentifierNode(tok) : (IdentifierExpressionNode)new IdentifierNode(tok);
             }
         }
 

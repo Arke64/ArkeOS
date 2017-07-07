@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 
@@ -35,5 +36,12 @@ namespace ArkeOS.Utilities.Extensions {
     public static class StringExtensions {
         public static T ToEnum<T>(this string self) where T : struct => (T)Enum.Parse(typeof(T), self);
         public static bool IsValidEnum<T>(this string self) where T : struct => Enum.TryParse(self, out T _);
+    }
+
+    public static class EnumExtensions {
+        public static IEnumerable<T> ToList<T>() where T : struct {
+            foreach (var a in Enum.GetValues(typeof(T)))
+                yield return (T)a;
+        }
     }
 }

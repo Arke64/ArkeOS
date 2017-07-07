@@ -1,6 +1,8 @@
 ﻿using ArkeOS.Hardware.Architecture;
+using ArkeOS.Tools.KohlCompiler.Analysis;
 using ArkeOS.Tools.KohlCompiler.Exceptions;
 using ArkeOS.Tools.KohlCompiler.IR;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -14,13 +16,13 @@ namespace ArkeOS.Tools.KohlCompiler {
         private readonly bool emitAssemblyListing;
         private readonly bool emitBootable;
         private readonly string outputFile;
-        private ulong nextVariableAddress;
+        private ulong nextGlobalVariableAddress;
         private HashSet<BasicBlock> visitedBasicBlocks;
         private Dictionary<BasicBlock, ulong> basicBlockAddresses;
-        private Dictionary<string, ulong> functionAddresses;
-        private Dictionary<string, ulong> variableAddresses;
+        private Dictionary<FunctionSymbol, ulong> functionAddresses;
+        private Dictionary<GlobalVariableSymbol, ulong> globalVariableAddresses;
         private List<Instruction> instructions;
-        private Function currentFunction;
+        private FunctionSymbol currentFunction;
         private bool throwOnNoFunction;
 
         public Emitter(Compiliation tree, bool emitAssemblyListing, bool emitBootable, string outputFile) => (this.tree, this.emitAssemblyListing, this.emitBootable, this.outputFile) = (tree, emitAssemblyListing, emitBootable, outputFile);
@@ -29,9 +31,9 @@ namespace ArkeOS.Tools.KohlCompiler {
 
         public void Emit() {
             this.basicBlockAddresses = new Dictionary<BasicBlock, ulong>();
-            this.functionAddresses = new Dictionary<string, ulong>();
-            this.variableAddresses = new Dictionary<string, ulong>();
-            this.nextVariableAddress = 0UL;
+            this.functionAddresses = new Dictionary<FunctionSymbol, ulong>();
+            this.globalVariableAddresses = new Dictionary<GlobalVariableSymbol, ulong>();
+            this.nextGlobalVariableAddress = 0UL;
 
             this.visitedBasicBlocks = new HashSet<BasicBlock>();
             this.instructions = new List<Instruction>();
@@ -53,7 +55,7 @@ namespace ArkeOS.Tools.KohlCompiler {
                         writer.Write(0x00000000454B5241UL);
 
                     if (this.emitAssemblyListing)
-                        File.WriteAllLines(Path.ChangeExtension(this.outputFile, "lst"), this.variableAddresses.Select(i => $"{i.Key}: 0x{i.Value:X16}").Concat(this.instructions.Select(i => i.ToString())));
+                        File.WriteAllLines(Path.ChangeExtension(this.outputFile, "lst"), this.globalVariableAddresses.Select(i => $"{i.Key}: 0x{i.Value:X16}").Concat(this.instructions.Select(i => i.ToString())));
 
                     foreach (var inst in this.instructions)
                         inst.Encode(writer);
@@ -66,26 +68,26 @@ namespace ArkeOS.Tools.KohlCompiler {
         private void EmitHeader() {
             this.Emit(InstructionDefinition.SET, Parameter.CreateRegister(Register.RSP), Parameter.CreateLiteral(0x1_0000));
             this.Emit(InstructionDefinition.SET, Parameter.CreateRegister(Register.RBP), Parameter.CreateRegister(Register.RSP));
-            this.Emit(InstructionDefinition.CALL, this.GetFunctionAccessParameter("main"));
+            this.Emit(InstructionDefinition.CALL, this.throwOnNoFunction ? this.GetFunctionAccessParameter(this.functionAddresses.Single(f => f.Key.Name == "main").Key) : Parameter.CreateLiteral(0));
             this.Emit(InstructionDefinition.HLT);
         }
 
-        private void SetVariableAddress(GlobalVariableLValue v) {
-            if (this.variableAddresses.ContainsKey(v.Identifier))
-                throw new AlreadyDefinedException(default(PositionInfo), v.Identifier);
+        private void SetGlobalVariableAddress(GlobalVariableSymbol v) {
+            if (this.globalVariableAddresses.ContainsKey(v))
+                throw new AlreadyDefinedException(default(PositionInfo), v.Name);
 
-            this.variableAddresses[v.Identifier] = this.nextVariableAddress++;
+            this.globalVariableAddresses[v] = this.nextGlobalVariableAddress++;
         }
 
         private void DiscoverAddresses(Compiliation n) {
             foreach (var s in n.GlobalVariables)
-                this.SetVariableAddress(s);
+                this.SetGlobalVariableAddress(s);
 
             foreach (var s in n.Functions) {
-                if (this.functionAddresses.ContainsKey(s.Identifier))
-                    throw new AlreadyDefinedException(default(PositionInfo), s.Identifier);
+                if (this.functionAddresses.ContainsKey(s.Symbol))
+                    throw new AlreadyDefinedException(default(PositionInfo), s.Symbol.Name);
 
-                this.functionAddresses[s.Identifier] = (ulong)this.instructions.Sum(i => i.Length);
+                this.functionAddresses[s.Symbol] = (ulong)this.instructions.Sum(i => i.Length);
 
                 this.Visit(s);
             }
@@ -111,41 +113,42 @@ namespace ArkeOS.Tools.KohlCompiler {
 
             switch (variable) {
                 case LocalVariableLValue v:
-                    var idx = 0UL;
-                    var arg = this.currentFunction.Arguments.SkipWhile(a => { idx++; return a != v.Identifier; }).FirstOrDefault();
+                    var vidx = 0UL;
+                    var localArg = this.currentFunction.LocalVariables.SkipWhile(a => { vidx++; return a != v.Symbol; }).FirstOrDefault();
 
-                    if (arg != null)
-                        return Parameter.CreateLiteral(idx - 1, ParameterFlags.RelativeToRBP | (allowIndirect ? ParameterFlags.Indirect : 0));
+                    if (localArg == null)
+                        throw new IdentifierNotFoundException(default(PositionInfo), v.Symbol.Name);
 
-                    idx = 0UL;
-                    var localArg = this.currentFunction.LocalVariables.SkipWhile(a => { idx++; return a.Identifier != v.Identifier; }).FirstOrDefault();
+                    return Parameter.CreateLiteral((vidx + (ulong)this.currentFunction.Arguments.Count) - 1, ParameterFlags.RelativeToRBP | (allowIndirect ? ParameterFlags.Indirect : 0));
 
-                    if (localArg != null)
-                        return Parameter.CreateLiteral((idx + (ulong)this.currentFunction.Arguments.Count) - 1, ParameterFlags.RelativeToRBP | (allowIndirect ? ParameterFlags.Indirect : 0));
+                case GlobalVariableLValue v:
+                    if (!this.globalVariableAddresses.TryGetValue(v.Symbol, out addr) && this.throwOnNoFunction)
+                        throw new IdentifierNotFoundException(default(PositionInfo), v.Symbol.Name);
 
-                    if (this.tree.Consts.TryGetValue(v.Identifier, out var c))
-                        return Parameter.CreateLiteral(c.Value);
+                    return Parameter.CreateLiteral(addr, allowIndirect ? ParameterFlags.Indirect : 0);
 
-                    if (!this.variableAddresses.TryGetValue(v.Identifier, out addr) && this.throwOnNoFunction)
-                        throw new IdentifierNotFoundException(default(PositionInfo), v.Identifier);
+                case ArgumentLValue v:
+                    var aidx = 0UL;
+                    var arg = this.currentFunction.Arguments.SkipWhile(a => { aidx++; return a != v.Symbol; }).FirstOrDefault();
 
-                    break;
+                    if (arg == null)
+                        throw new IdentifierNotFoundException(default(PositionInfo), v.Symbol.Name);
+
+                    return Parameter.CreateLiteral(aidx - 1, ParameterFlags.RelativeToRBP | (allowIndirect ? ParameterFlags.Indirect : 0));
 
                 case RegisterLValue v:
-                    return Parameter.CreateRegister(v.Register);
+                    return Parameter.CreateRegister(v.Symbol.Register);
 
                 default:
                     Debug.Assert(false);
 
-                    break;
+                    throw new InvalidOperationException();
             }
-
-            return Parameter.CreateLiteral(addr, allowIndirect ? ParameterFlags.Indirect : 0);
         }
 
-        private Parameter GetFunctionAccessParameter(string func) {
+        private Parameter GetFunctionAccessParameter(FunctionSymbol func) {
             if (!this.functionAddresses.TryGetValue(func, out var addr) && this.throwOnNoFunction)
-                throw new IdentifierNotFoundException(default(PositionInfo), func);
+                throw new IdentifierNotFoundException(default(PositionInfo), func.Name);
 
             return Parameter.CreateLiteral(addr - this.DistanceFrom(0), ParameterFlags.RelativeToRIP);
         }
@@ -159,7 +162,7 @@ namespace ArkeOS.Tools.KohlCompiler {
         }
 
         private void Visit(Function n) {
-            this.currentFunction = n;
+            this.currentFunction = n.Symbol;
 
             this.Visit(n.Entry);
         }
@@ -220,7 +223,7 @@ namespace ArkeOS.Tools.KohlCompiler {
         private void Visit(CallTerminator r) {
             var orig = this.currentFunction;
 
-            this.currentFunction = this.tree.Functions.Single(f => f.Identifier == r.Target);
+            this.currentFunction = r.Target;
 
             this.Emit(InstructionDefinition.SET, Emitter.StackParam, Parameter.CreateRegister(Register.RBP));
 
