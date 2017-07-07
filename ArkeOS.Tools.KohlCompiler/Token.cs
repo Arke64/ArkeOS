@@ -34,6 +34,7 @@ namespace ArkeOS.Tools.KohlCompiler {
         Semicolon,
         Comma,
         Period,
+        Colon,
 
         OpenParenthesis,
         CloseParenthesis,
@@ -211,6 +212,7 @@ namespace ArkeOS.Tools.KohlCompiler {
                         case TokenType.Semicolon:
                         case TokenType.Comma:
                         case TokenType.Period:
+                        case TokenType.Colon:
                             this.tokenClass = TokenClass.Separator;
                             break;
 

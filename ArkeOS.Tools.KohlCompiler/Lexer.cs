@@ -171,6 +171,7 @@ namespace ArkeOS.Tools.KohlCompiler {
             switch (c) {
                 case ';': tok = TokenType.Semicolon; break;
                 case '.': tok = TokenType.Period; break;
+                case ':': tok = TokenType.Colon; break;
                 case ',': tok = TokenType.Comma; break;
                 case '(': tok = TokenType.OpenParenthesis; break;
                 case ')': tok = TokenType.CloseParenthesis; break;
