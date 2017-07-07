@@ -17,7 +17,7 @@ namespace ArkeOS.Tools.KohlCompiler {
                     case TokenType.FuncKeyword: prog.FunctionDeclarations.Add(this.ReadFunctionDeclaration()); break;
                     case TokenType.VarKeyword: prog.VariableDeclarations.Add(this.ReadGlobalVariableDeclaration()); break;
                     case TokenType.ConstKeyword: prog.ConstDeclarations.Add(this.ReadConstDeclaration()); break;
-                    default: throw this.GetUnexpectedException(tok.Type);
+                    default: throw this.GetUnexpectedException(tok);
                 }
             }
 
@@ -135,13 +135,13 @@ namespace ArkeOS.Tools.KohlCompiler {
                     var op = this.lexer.Read(TokenClass.Assignment);
                     var rhs = this.ReadExpression();
 
-                    res = op.Type == TokenType.Equal ? new AssignmentStatementNode(lhs, rhs) : new CompoundAssignmentStatementNode(lhs, OperatorNode.FromCompoundToken(op) ?? throw this.GetUnexpectedException(op.Type), rhs);
+                    res = op.Type == TokenType.Equal ? new AssignmentStatementNode(lhs, rhs) : new CompoundAssignmentStatementNode(lhs, OperatorNode.FromCompoundToken(op) ?? throw this.GetUnexpectedException(op), rhs);
                 }
                 else if (lhs is FunctionCallIdentifierNode) {
                     res = lhs;
                 }
                 else {
-                    throw this.GetExpectedException("statement");
+                    throw this.GetExpectedException(lhs.Position, "statement");
                 }
 
                 this.lexer.Read(TokenType.Semicolon);
@@ -167,7 +167,7 @@ namespace ArkeOS.Tools.KohlCompiler {
             switch (tok.Type) {
                 case TokenType.IntegerLiteral: return new IntegerLiteralNode(tok);
                 case TokenType.BoolLiteral: return new BoolLiteralNode(tok);
-                default: throw this.GetUnexpectedException(tok.Type);
+                default: throw this.GetUnexpectedException(tok);
             }
         }
 
@@ -202,7 +202,7 @@ namespace ArkeOS.Tools.KohlCompiler {
                 case TokenType.IntKeyword: return new IntStatementNode(this.ReadArgumentList());
                 case TokenType.NopKeyword: return new NopStatementNode();
                 case TokenType.XchgKeyword: return new XchgStatementNode(this.ReadArgumentList());
-                default: throw this.GetUnexpectedException(tok.Type);
+                default: throw this.GetUnexpectedException(tok);
             }
         }
 
@@ -254,11 +254,11 @@ namespace ArkeOS.Tools.KohlCompiler {
                     if (--seenOpenParens < 0)
                         break;
 
-                    stack.Push(this.ReadOperator(OperatorClass.Binary), this.lexer.CurrentPosition);
+                    stack.Push(this.ReadOperator(OperatorClass.Binary));
                     start = false;
                 }
                 else if (tok.Class == TokenClass.Operator) {
-                    stack.Push(this.ReadOperator(start && tok.Type != TokenType.OpenParenthesis ? OperatorClass.Unary : OperatorClass.Binary), this.lexer.CurrentPosition);
+                    stack.Push(this.ReadOperator(start && tok.Type != TokenType.OpenParenthesis ? OperatorClass.Unary : OperatorClass.Binary));
                     start = true;
                 }
                 else {
@@ -266,16 +266,16 @@ namespace ArkeOS.Tools.KohlCompiler {
                 }
             }
 
-            return stack.ToNode() ?? throw this.GetExpectedException("expression");
+            return stack.ToNode() ?? throw this.GetExpectedException(default(PositionInfo), "expression");
         }
 
         private OperatorNode ReadOperator(OperatorClass cls) {
             var token = this.lexer.Read(TokenClass.Operator);
 
-            return OperatorNode.FromToken(token, cls) ?? throw this.GetUnexpectedException(token.Type);
+            return OperatorNode.FromToken(token, cls) ?? throw this.GetUnexpectedException(token);
         }
 
-        private UnexpectedException GetUnexpectedException(TokenType t) => new UnexpectedException(this.lexer.CurrentPosition, t);
-        private ExpectedException GetExpectedException(string t) => new ExpectedException(this.lexer.CurrentPosition, t);
+        private UnexpectedException GetUnexpectedException(Token t) => new UnexpectedException(t.Position, t.Type);
+        private ExpectedException GetExpectedException(PositionInfo position, string t) => new ExpectedException(position, t);
     }
 }

@@ -3,6 +3,5 @@
         public IntegerLiteralNode Value { get; }
 
         public ConstDeclarationNode(Token identifier, IntegerLiteralNode value) : base(identifier) => this.Value = value;
-        public ConstDeclarationNode(string identifier, IntegerLiteralNode value) : base(identifier) => this.Value = value;
     }
 }

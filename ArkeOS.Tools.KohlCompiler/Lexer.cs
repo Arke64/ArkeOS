@@ -85,7 +85,7 @@ namespace ArkeOS.Tools.KohlCompiler {
         private bool eof;
         private Token currentToken;
 
-        public PositionInfo CurrentPosition => this.file != null ? new PositionInfo(this.file.Path, this.file.Line, this.file.Column) : default(PositionInfo);
+        private PositionInfo CurrentPosition => this.file != null ? new PositionInfo(this.file.Path, this.file.Line, this.file.Column) : default(PositionInfo);
 
         public Lexer(IReadOnlyList<string> filePaths) {
             this.files = new Queue<FileInfo>(filePaths.Select(f => new FileInfo(f)));
@@ -118,16 +118,16 @@ namespace ArkeOS.Tools.KohlCompiler {
         private bool TryReadChar(char chr) => this.TryReadChar(c => c == chr, out _);
         private bool TryReadChar(Predicate<char> predicate, out char chr) => this.TryPeekChar(out chr) && predicate(chr) && this.TryReadChar(out _);
 
-        private Token ReadWhitespace() {
+        private Token ReadWhitespace(PositionInfo start) {
             this.builder.Clear();
 
             while (this.TryReadChar(char.IsWhiteSpace, out var c))
                 this.builder.Append(c);
 
-            return new Token(TokenType.Whitespace, this.builder.ToString());
+            return new Token(start, TokenType.Whitespace, this.builder.ToString());
         }
 
-        private Token ReadWord() {
+        private Token ReadWord(PositionInfo start) {
             this.builder.Clear();
 
             while (this.TryReadChar(chr => char.IsLetterOrDigit(chr) || chr == '_', out var c))
@@ -135,13 +135,13 @@ namespace ArkeOS.Tools.KohlCompiler {
 
             var str = this.builder.ToString();
 
-            if (Lexer.Keywords.TryGetValue(str, out var t1)) return new Token(t1);
-            if (Lexer.Literals.TryGetValue(str, out var t2)) return new Token(t2, str);
+            if (Lexer.Keywords.TryGetValue(str, out var t1)) return new Token(start, t1);
+            if (Lexer.Literals.TryGetValue(str, out var t2)) return new Token(start, t2, str);
 
-            return new Token(TokenType.Identifier, str);
+            return new Token(start, TokenType.Identifier, str);
         }
 
-        private Token ReadNumber() {
+        private Token ReadNumber(PositionInfo start) {
             this.builder.Clear();
 
             var radix = 10;
@@ -160,10 +160,10 @@ namespace ArkeOS.Tools.KohlCompiler {
                 if (c != '_')
                     this.builder.Append(c);
 
-            return new Token(TokenType.IntegerLiteral, Convert.ToUInt64(this.builder.ToString(), radix).ToString());
+            return new Token(start, TokenType.IntegerLiteral, Convert.ToUInt64(this.builder.ToString(), radix).ToString());
         }
 
-        private Token ReadSymbol() {
+        private Token ReadSymbol(PositionInfo start) {
             var tok = default(TokenType);
 
             this.TryReadChar(out var c);
@@ -212,7 +212,7 @@ namespace ArkeOS.Tools.KohlCompiler {
                 default: throw new UnexpectedException(this.CurrentPosition, c);
             }
 
-            return new Token(tok);
+            return new Token(start, tok);
         }
 
         private Token LexNextToken() {
@@ -222,10 +222,10 @@ namespace ArkeOS.Tools.KohlCompiler {
                 return default(Token);
             }
 
-            if (char.IsLetter(c)) return this.ReadWord();
-            if (char.IsNumber(c)) return this.ReadNumber();
-            if (char.IsWhiteSpace(c)) { _ = this.ReadWhitespace(); return this.LexNextToken(); }
-            return this.ReadSymbol();
+            if (char.IsLetter(c)) return this.ReadWord(this.CurrentPosition);
+            if (char.IsNumber(c)) return this.ReadNumber(this.CurrentPosition);
+            if (char.IsWhiteSpace(c)) { _ = this.ReadWhitespace(this.CurrentPosition); return this.LexNextToken(); }
+            return this.ReadSymbol(this.CurrentPosition);
         }
 
         public List<Token> ToList() {

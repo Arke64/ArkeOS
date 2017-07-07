@@ -103,11 +103,12 @@ namespace ArkeOS.Tools.KohlCompiler {
         private bool classSet;
         private TokenClass tokenClass;
 
+        public PositionInfo Position;
         public TokenType Type;
         public string Value;
 
-        public Token(TokenType type) : this(type, string.Empty) { }
-        public Token(TokenType type, string value) => (this.Type, this.Value, this.classSet, this.tokenClass) = (type, value, false, default(TokenClass));
+        public Token(PositionInfo position, TokenType type) : this(position, type, string.Empty) { }
+        public Token(PositionInfo position, TokenType type, string value) => (this.Position, this.Type, this.Value, this.classSet, this.tokenClass) = (position, type, value, false, default(TokenClass));
 
         public override string ToString() => $"{this.Type}{(this.Value != string.Empty ? ": " + this.Value : string.Empty)}";
 
