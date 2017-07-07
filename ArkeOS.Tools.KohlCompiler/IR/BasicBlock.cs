@@ -324,7 +324,7 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
                     switch (n.Op.Operator) {
                         case Operator.UnaryMinus: return this.ExtractRValue(new BinaryExpressionNode(n.Expression, OperatorNode.FromOperator(Operator.Multiplication), new IntegerLiteralNode(ulong.MaxValue)));
                         case Operator.Not: return this.ExtractRValue(new BinaryExpressionNode(n.Expression, OperatorNode.FromOperator(Operator.Xor), new IntegerLiteralNode(ulong.MaxValue)));
-                        case Operator.AddressOf: this.block.PushInstuction(new BasicBlockAddressOfInstruction(target, this.ExtractRValue(n.Expression))); break;
+                        case Operator.AddressOf: this.block.PushInstuction(new BasicBlockAddressOfInstruction(target, this.ExtractLValue(n.Expression))); break;
                         case Operator.Dereference: this.block.PushInstuction(new BasicBlockDereferenceInstruction(target, this.ExtractRValue(n.Expression))); break;
                     }
 
@@ -366,9 +366,9 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
 
     public sealed class BasicBlockAddressOfInstruction : BasicBlockInstruction {
         public LValue Target { get; }
-        public RValue Value { get; }
+        public LValue Value { get; }
 
-        public BasicBlockAddressOfInstruction(LValue target, RValue value) => (this.Target, this.Value) = (target, value);
+        public BasicBlockAddressOfInstruction(LValue target, LValue value) => (this.Target, this.Value) = (target, value);
 
         public override string ToString() => $"{this.Target} = &{this.Value}";
     }
