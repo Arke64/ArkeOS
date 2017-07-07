@@ -58,13 +58,6 @@ namespace ArkeOS.Tools.KohlCompiler.Analysis {
 
         private bool TryFind<T>(IReadOnlyCollection<T> collection, string name, out T result) where T : Symbol => (result = collection.SingleOrDefault(c => c.Name == name)) != null;
 
-        public ConstVariableSymbol FindConstVariable(string name) => this.TryFindConstVariable(name, out var r) ? r : throw new IdentifierNotFoundException(default(PositionInfo), name);
-        public GlobalVariableSymbol FindGlobalVariable(string name) => this.TryFindGlobalVariable(name, out var r) ? r : throw new IdentifierNotFoundException(default(PositionInfo), name);
-        public RegisterSymbol FindRegister(string name) => this.TryFindRegister(name, out var r) ? r : throw new IdentifierNotFoundException(default(PositionInfo), name);
-        public FunctionSymbol FindFunction(string name) => this.TryFindFunction(name, out var r) ? r : throw new IdentifierNotFoundException(default(PositionInfo), name);
-        public ArgumentSymbol FindArgument(FunctionSymbol function, string name) => this.TryFindArgument(function, name, out var r) ? r : throw new IdentifierNotFoundException(default(PositionInfo), name);
-        public LocalVariableSymbol FindLocalVariable(FunctionSymbol function, string name) => this.TryFindLocalVariable(function, name, out var r) ? r : throw new IdentifierNotFoundException(default(PositionInfo), name);
-
         public bool TryFindConstVariable(string name, out ConstVariableSymbol result) => this.TryFind(this.ConstVariables, name, out result);
         public bool TryFindGlobalVariable(string name, out GlobalVariableSymbol result) => this.TryFind(this.GlobalVariables, name, out result);
         public bool TryFindRegister(string name, out RegisterSymbol result) => this.TryFind(this.Registers, name, out result);
@@ -161,13 +154,14 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
         private LocalVariableLValue CreateTemporaryLocalVariable() => new LocalVariableLValue(this.symbolTable.CreateTemporaryLocalVariable(this.functionSymbol));
 
         public static Function Visit(SymbolTable symbolTable, FunctionDeclarationNode node) {
-            var visitor = new FunctionDeclarationVisitor(symbolTable, symbolTable.FindFunction(node.Identifier));
+            var func = symbolTable.TryFindFunction(node.Identifier, out var f) ? f : throw new IdentifierNotFoundException(node.Position, node.Identifier);
+            var visitor = new FunctionDeclarationVisitor(symbolTable, func);
 
             visitor.Visit(node.StatementBlock);
 
             visitor.block.PushTerminator(new ReturnTerminator(visitor.CreateTemporaryLocalVariable()));
 
-            return new Function(symbolTable.FindFunction(node.Identifier), visitor.block.Entry);
+            return new Function(func, visitor.block.Entry);
         }
 
         private void Visit(StatementBlockNode node) {
@@ -177,7 +171,7 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
 
         private void Visit(StatementNode node) {
             switch (node) {
-                default: throw new UnexpectedException(default(PositionInfo), "statement node");
+                default: throw new UnexpectedException(node.Position, "statement node");
                 case EmptyStatementNode n: break;
                 case DeclarationNode n: this.Visit(n); break;
                 case ReturnStatementNode n: this.Visit(n); break;
@@ -191,7 +185,7 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
 
         private void Visit(DeclarationNode node) {
             switch (node) {
-                default: throw new UnexpectedException(default(PositionInfo), "identifier node");
+                default: throw new UnexpectedException(node.Position, "identifier node");
                 case LocalVariableDeclarationWithInitializerNode n: this.Visit(new AssignmentStatementNode(new IdentifierNode(n.Token), n.Initializer)); break;
             }
         }
@@ -244,7 +238,7 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
             var def = default(InstructionDefinition);
 
             switch (node) {
-                default: throw new UnexpectedException(default(PositionInfo), "intrinsic node");
+                default: throw new UnexpectedException(node.Position, "intrinsic node");
                 case BrkStatementNode n: def = InstructionDefinition.BRK; break;
                 case EintStatementNode n: def = InstructionDefinition.EINT; break;
                 case HltStatementNode n: def = InstructionDefinition.HLT; break;
@@ -258,7 +252,7 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
                 case XchgStatementNode n: def = InstructionDefinition.XCHG; break;
             }
 
-            if (def.ParameterCount != node.ArgumentList.Items.Count) throw new TooFewArgumentsException(default(PositionInfo));
+            if (def.ParameterCount != node.ArgumentList.Items.Count) throw new TooFewArgumentsException(node.Position);
 
             RValue a = null, b = null, c = null;
 
@@ -271,16 +265,17 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
 
         private void Visit(ExpressionStatementNode node) {
             switch (node) {
-                default: throw new UnexpectedException(default(PositionInfo), "expression node");
+                default: throw new UnexpectedException(node.Position, "expression node");
                 case FunctionCallIdentifierNode n: this.Visit(n); break;
             }
         }
 
         private LValue Visit(FunctionCallIdentifierNode node) {
             var args = node.ArgumentList.Items.Select(a => this.ExtractRValue(a)).ToList();
+            var func = this.symbolTable.TryFindFunction(node.Identifier, out var f) ? f : throw new IdentifierNotFoundException(node.Position, node.Identifier);
             var result = this.CreateTemporaryLocalVariable();
 
-            var (callTerminator, returnBlock) = this.block.PushTerminator(new CallTerminator(this.symbolTable.FindFunction(node.Identifier), result, args));
+            var (callTerminator, returnBlock) = this.block.PushTerminator(new CallTerminator(func, result, args));
             callTerminator.SetNext(returnBlock);
 
             return result;
@@ -296,12 +291,12 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
             if (this.symbolTable.TryFindGlobalVariable(node.Identifier, out var gs)) return new GlobalVariableLValue(gs);
             if (allowRValue && this.symbolTable.TryFindConstVariable(node.Identifier, out var cs)) return new UnsignedIntegerConstant(cs.Value);
 
-            throw new ExpectedException(default(PositionInfo), "lvalue");
+            throw new ExpectedException(node.Position, "lvalue");
         }
 
         private LValue ExtractLValue(ExpressionStatementNode node) {
             switch (node) {
-                default: throw new ExpectedException(default(PositionInfo), "lvalue");
+                default: throw new ExpectedException(node.Position, "lvalue");
                 case IdentifierExpressionNode n: return this.ExtractLValue(n);
                 case UnaryExpressionNode n when n.Op.Operator == Operator.Dereference:
                     var target = this.CreateTemporaryLocalVariable();
@@ -323,7 +318,7 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
             var target = this.CreateTemporaryLocalVariable();
 
             switch (node) {
-                default: throw new UnexpectedException(default(PositionInfo), "expression node");
+                default: throw new UnexpectedException(node.Position, "expression node");
                 case BinaryExpressionNode n: this.block.PushInstuction(new BasicBlockBinaryOperationInstruction(target, this.ExtractRValue(n.Left), (BinaryOperationType)n.Op.Operator, this.ExtractRValue(n.Right))); break;
                 case UnaryExpressionNode n:
                     switch (n.Op.Operator) {
