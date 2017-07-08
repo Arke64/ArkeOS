@@ -1,27 +1,27 @@
-﻿const DeviceAddressBitSize = 0d52;
+﻿const DeviceAddressBitSize : word = 0d52;
 
-const BootDeviceType = 0d5;
-const BootDeviceSignature = 0x00000000454B5241;
-const BootDeviceSignatureOffset = 0x0;
-const BootDeviceEntryPointOffset = 0x1;
+const BootDeviceType : word = 0d5;
+const BootDeviceSignature : word = 0x00000000454B5241;
+const BootDeviceSignatureOffset : word = 0x0;
+const BootDeviceEntryPointOffset : word = 0x1;
 
-const BusControllerId = 0xFFF;
-const BusControllerDeviceCountOffset = 0d0;
-const BusControllerDeviceListOffset = 0d1;
+const BusControllerId : word = 0xFFF;
+const BusControllerDeviceCountOffset : word = 0d0;
+const BusControllerDeviceListOffset : word = 0d1;
 
-const BusDeviceEntryLength = 0d4;
-const BusDeviceEntryIdOffset = 0d0;
-const BusDeviceEntryTypeOffset = 0d1;
+const BusDeviceEntryLength : word = 0d4;
+const BusDeviceEntryIdOffset : word = 0d0;
+const BusDeviceEntryTypeOffset : word = 0d1;
 
-func main() {
-	var currentDevice = BusControllerId << DeviceAddressBitSize;
-	var deviceCount = *(currentDevice + BusControllerDeviceCountOffset);
+func main() : word {
+	var currentDevice : word* = BusControllerId << DeviceAddressBitSize;
+	var deviceCount : word = *(currentDevice + BusControllerDeviceCountOffset);
 
 	currentDevice += BusControllerDeviceListOffset;
 
-	while (deviceCount) {
+	while (deviceCount > 0) {
 		if (*(currentDevice + BusDeviceEntryTypeOffset) == BootDeviceType) {
-			var deviceAddress = *(currentDevice + BusDeviceEntryIdOffset) << DeviceAddressBitSize;
+			var deviceAddress : word* = *(currentDevice + BusDeviceEntryIdOffset) << DeviceAddressBitSize;
 
 			if (*(deviceAddress + BootDeviceSignatureOffset) == BootDeviceSignature) {
 				RIP = deviceAddress + BootDeviceEntryPointOffset;
