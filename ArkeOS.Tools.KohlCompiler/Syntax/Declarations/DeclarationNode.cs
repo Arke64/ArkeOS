@@ -2,7 +2,8 @@
     public abstract class DeclarationNode : StatementNode {
         public Token Token { get; }
         public string Identifier { get; }
+        public TypeIdentifierNode Type { get; }
 
-        protected DeclarationNode(Token token) => (this.Token, this.Identifier) = (token, token.Value);
+        protected DeclarationNode(Token identifier, TypeIdentifierNode type) => (this.Token, this.Identifier, this.Type) = (identifier, identifier.Value, type);
     }
 }

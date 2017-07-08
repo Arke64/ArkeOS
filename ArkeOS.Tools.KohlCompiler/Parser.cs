@@ -28,9 +28,11 @@ namespace ArkeOS.Tools.KohlCompiler {
             this.lexer.Read(TokenType.FuncKeyword);
             var ident = this.lexer.Read(TokenType.Identifier);
             var args = this.ReadArgumentListDeclaration();
+            this.lexer.Read(TokenType.Colon);
+            var type = this.ReadTypeIdentifier();
             var block = this.ReadStatementBlock();
 
-            return new FunctionDeclarationNode(ident, args, block);
+            return new FunctionDeclarationNode(ident, type, args, block);
         }
 
         private ArgumentListDeclarationNode ReadArgumentListDeclaration() {
@@ -49,20 +51,32 @@ namespace ArkeOS.Tools.KohlCompiler {
             return list;
         }
 
-        private ArgumentDeclarationNode ReadArgumentDeclaration() => new ArgumentDeclarationNode(this.lexer.Read(TokenType.Identifier));
+        private TypeIdentifierNode ReadTypeIdentifier() => new TypeIdentifierNode(this.lexer.Read(TokenType.Identifier));
+
+        private ArgumentDeclarationNode ReadArgumentDeclaration() {
+            var ident = this.lexer.Read(TokenType.Identifier);
+            this.lexer.Read(TokenType.Colon);
+            var type = this.ReadTypeIdentifier();
+
+            return new ArgumentDeclarationNode(ident, type);
+        }
 
         private GlobalVariableDeclarationNode ReadGlobalVariableDeclaration() {
             this.lexer.Read(TokenType.VarKeyword);
             var ident = this.lexer.Read(TokenType.Identifier);
+            this.lexer.Read(TokenType.Colon);
+            var type = this.ReadTypeIdentifier();
             this.lexer.Read(TokenType.Semicolon);
 
-            return new GlobalVariableDeclarationNode(ident);
+            return new GlobalVariableDeclarationNode(ident, type);
         }
 
         private LocalVariableDeclarationNode ReadLocalVariableDeclaration() {
             this.lexer.Read(TokenType.VarKeyword);
             var ident = this.lexer.Read(TokenType.Identifier);
-            var res = this.lexer.TryRead(TokenType.Equal) ? new LocalVariableDeclarationWithInitializerNode(ident, this.ReadExpression()) : new LocalVariableDeclarationNode(ident);
+            this.lexer.Read(TokenType.Colon);
+            var type = this.ReadTypeIdentifier();
+            var res = this.lexer.TryRead(TokenType.Equal) ? new LocalVariableDeclarationWithInitializerNode(ident, type, this.ReadExpression()) : new LocalVariableDeclarationNode(ident, type);
             this.lexer.Read(TokenType.Semicolon);
 
             return res;
@@ -71,11 +85,13 @@ namespace ArkeOS.Tools.KohlCompiler {
         private ConstDeclarationNode ReadConstDeclaration() {
             this.lexer.Read(TokenType.ConstKeyword);
             var ident = this.lexer.Read(TokenType.Identifier);
+            this.lexer.Read(TokenType.Colon);
+            var type = this.ReadTypeIdentifier();
             this.lexer.Read(TokenType.Equal);
             var tok = this.lexer.Read(TokenType.IntegerLiteral);
             this.lexer.Read(TokenType.Semicolon);
 
-            return new ConstDeclarationNode(ident, new IntegerLiteralNode(tok));
+            return new ConstDeclarationNode(ident, type, new IntegerLiteralNode(tok));
         }
 
         private StatementBlockNode ReadStatementBlock() {

@@ -2,6 +2,6 @@
     public sealed class LocalVariableDeclarationWithInitializerNode : LocalVariableDeclarationNode {
         public ExpressionStatementNode Initializer { get; }
 
-        public LocalVariableDeclarationWithInitializerNode(Token identifier, ExpressionStatementNode initializer) : base(identifier) => this.Initializer = initializer;
+        public LocalVariableDeclarationWithInitializerNode(Token identifier, TypeIdentifierNode type, ExpressionStatementNode initializer) : base(identifier, type) => this.Initializer = initializer;
     }
 }

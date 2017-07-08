@@ -2,6 +2,6 @@
     public sealed class ConstDeclarationNode : DeclarationNode {
         public IntegerLiteralNode Value { get; }
 
-        public ConstDeclarationNode(Token identifier, IntegerLiteralNode value) : base(identifier) => this.Value = value;
+        public ConstDeclarationNode(Token identifier, TypeIdentifierNode type, IntegerLiteralNode value) : base(identifier, type) => this.Value = value;
     }
 }
