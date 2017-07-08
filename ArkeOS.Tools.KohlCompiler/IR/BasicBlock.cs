@@ -289,7 +289,7 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
             if (this.symbolTable.TryFindArgument(this.functionSymbol, node.Identifier, out var ps)) return new ArgumentLValue(ps);
             if (this.symbolTable.TryFindLocalVariable(this.functionSymbol, node.Identifier, out var ls)) return new LocalVariableLValue(ls);
             if (this.symbolTable.TryFindGlobalVariable(node.Identifier, out var gs)) return new GlobalVariableLValue(gs);
-            if (allowRValue && this.symbolTable.TryFindConstVariable(node.Identifier, out var cs)) return new UnsignedIntegerConstant(cs.Value);
+            if (allowRValue && this.symbolTable.TryFindConstVariable(node.Identifier, out var cs)) return new IntegerRValue(cs.Value);
 
             throw new ExpectedException(node.Position, "lvalue");
         }
@@ -304,29 +304,29 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
 
         private RValue ExtractRValue(ExpressionStatementNode node) {
             switch (node) {
-                case IntegerLiteralNode n: return new UnsignedIntegerConstant(n.Literal);
-                case BoolLiteralNode n: return new UnsignedIntegerConstant(n.Literal ? ulong.MaxValue : 0);
+                case IntegerLiteralNode n: return new IntegerRValue(n.Literal);
+                case BoolLiteralNode n: return new IntegerRValue(n.Literal ? ulong.MaxValue : 0);
                 case FunctionCallIdentifierNode n: return this.Visit(n);
                 case IdentifierExpressionNode n: return this.ExtractRValue(n);
-            }
-
-            var target = this.CreateTemporaryLocalVariable();
-
-            switch (node) {
-                default: throw new UnexpectedException(node.Position, "expression node");
-                case BinaryExpressionNode n: this.block.PushInstuction(new BasicBlockBinaryOperationInstruction(target, this.ExtractRValue(n.Left), (BinaryOperationType)n.Op.Operator, this.ExtractRValue(n.Right))); break;
                 case UnaryExpressionNode n:
                     switch (n.Op.Operator) {
                         case Operator.UnaryMinus: return this.ExtractRValue(new BinaryExpressionNode(n.Expression, OperatorNode.FromOperator(Operator.Multiplication), new IntegerLiteralNode(ulong.MaxValue)));
                         case Operator.Not: return this.ExtractRValue(new BinaryExpressionNode(n.Expression, OperatorNode.FromOperator(Operator.Xor), new IntegerLiteralNode(ulong.MaxValue)));
-                        case Operator.AddressOf: this.block.PushInstuction(new BasicBlockAddressOfInstruction(target, this.ExtractLValue(n.Expression))); break;
+                        case Operator.AddressOf: return new AddressOfRValue(this.ExtractLValue(n.Expression));
                         case Operator.Dereference: return new PointerLValue(this.ExtractRValue(n.Expression));
                     }
 
                     break;
+
+                case BinaryExpressionNode n:
+                    var target = this.CreateTemporaryLocalVariable();
+
+                    this.block.PushInstuction(new BasicBlockBinaryOperationInstruction(target, this.ExtractRValue(n.Left), (BinaryOperationType)n.Op.Operator, this.ExtractRValue(n.Right)));
+
+                    return target;
             }
 
-            return target;
+            throw new UnexpectedException(node.Position, "expression node");
         }
     }
 
@@ -357,15 +357,6 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
         public BasicBlockBinaryOperationInstruction(LValue target, RValue left, BinaryOperationType op, RValue right) => (this.Target, this.Left, this.Op, this.Right) = (target, left, op, right);
 
         public override string ToString() => $"{this.Target} = {this.Left} '{this.Op}' {this.Right}";
-    }
-
-    public sealed class BasicBlockAddressOfInstruction : BasicBlockInstruction {
-        public LValue Target { get; }
-        public LValue Value { get; }
-
-        public BasicBlockAddressOfInstruction(LValue target, LValue value) => (this.Target, this.Value) = (target, value);
-
-        public override string ToString() => $"{this.Target} = &{this.Value}";
     }
 
     public sealed class BasicBlockIntrinsicInstruction : BasicBlockInstruction {
@@ -402,12 +393,20 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
 
     }
 
-    public sealed class UnsignedIntegerConstant : RValue {
+    public sealed class IntegerRValue : RValue {
         public ulong Value { get; }
 
-        public UnsignedIntegerConstant(ulong value) => this.Value = value;
+        public IntegerRValue(ulong value) => this.Value = value;
 
         public override string ToString() => this.Value.ToString();
+    }
+
+    public sealed class AddressOfRValue : RValue {
+        public LValue Target { get; }
+
+        public AddressOfRValue(LValue target) => this.Target = target;
+
+        public override string ToString() => $"addr {this.Target}";
     }
 
     public abstract class LValue : RValue {
