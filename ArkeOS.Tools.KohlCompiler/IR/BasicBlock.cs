@@ -153,6 +153,11 @@ namespace ArkeOS.Tools.KohlCompiler.Analysis {
                     switch (n.Op.Operator) {
                         case Operator.Addition:
                         case Operator.Subtraction:
+                            if (lt != WellKnownSymbol.Word && !(lt is PointerTypeSymbol)) throw new WrongTypeException(n.Position, lt.Name);
+                            if (rt != WellKnownSymbol.Word) throw new WrongTypeException(n.Position, rt.Name);
+
+                            return lt;
+
                         case Operator.Multiplication:
                         case Operator.Division:
                         case Operator.Remainder:
@@ -179,7 +184,7 @@ namespace ArkeOS.Tools.KohlCompiler.Analysis {
 
                         case Operator.Equals:
                         case Operator.NotEquals:
-                            if (lt != rt) throw new WrongTypeException(n.Position, rt.Name);
+                            if (lt != rt && !((lt is PointerTypeSymbol && rt == WellKnownSymbol.Word) || (rt is PointerTypeSymbol && lt == WellKnownSymbol.Word))) throw new WrongTypeException(n.Position, rt.Name);
 
                             return WellKnownSymbol.Bool;
 
@@ -191,12 +196,6 @@ namespace ArkeOS.Tools.KohlCompiler.Analysis {
                             if (rt != WellKnownSymbol.Word) throw new WrongTypeException(n.Position, rt.Name);
 
                             return WellKnownSymbol.Bool;
-
-                        case Operator.UnaryMinus:
-                        case Operator.Not:
-                        case Operator.AddressOf:
-                        case Operator.Dereference:
-                            break;
                     }
 
                     break;
@@ -350,7 +349,16 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
         private void Visit(DeclarationNode node) {
             switch (node) {
                 default: throw new UnexpectedException(node.Position, "identifier node");
-                case LocalVariableDeclarationWithInitializerNode n: this.symbolTable.CheckTypeOfExpression(n.Type, n.Initializer, this.functionSymbol); this.Visit(new AssignmentStatementNode(new IdentifierNode(n.Token), n.Initializer)); break;
+                case LocalVariableDeclarationWithInitializerNode n:
+                    var lhsType = this.symbolTable.FindType(n.Type);
+                    var rhsType = this.symbolTable.GetTypeOfExpression(n.Initializer, this.functionSymbol);
+
+                    if (!(lhsType is PointerTypeSymbol) && rhsType != WellKnownSymbol.Word)
+                        this.symbolTable.CheckTypeOfExpression(n.Type, n.Initializer, this.functionSymbol);
+
+                    this.Visit(new AssignmentStatementNode(new IdentifierNode(n.Token), n.Initializer));
+
+                    break;
             }
         }
 
@@ -365,7 +373,11 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
             if (node is CompoundAssignmentStatementNode cnode)
                 exp = new BinaryExpressionNode(cnode.Target, cnode.Op, cnode.Expression);
 
-            this.symbolTable.CheckTypeOfExpression(node.Target, exp, this.functionSymbol);
+            var lhsType = this.symbolTable.GetTypeOfExpression(node.Target, this.functionSymbol);
+            var rhsType = this.symbolTable.GetTypeOfExpression(exp, this.functionSymbol);
+
+            if (!(lhsType is PointerTypeSymbol) && rhsType != WellKnownSymbol.Word)
+                this.symbolTable.CheckTypeOfExpression(node.Target, exp, this.functionSymbol);
 
             this.block.PushInstuction(new BasicBlockAssignmentInstruction(lhs, this.ExtractRValue(exp)));
         }
