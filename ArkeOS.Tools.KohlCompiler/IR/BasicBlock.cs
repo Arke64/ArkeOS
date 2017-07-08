@@ -65,7 +65,7 @@ namespace ArkeOS.Tools.KohlCompiler.Analysis {
 
         private bool TryFind<T>(IReadOnlyCollection<T> collection, string name, out T result) where T : Symbol => (result = collection.SingleOrDefault(c => c.Name == name)) != null;
 
-        public TypeSymbol FindType(TypeIdentifierNode node) => this.TryFindType(node.Identifier, out var r) ? r : throw new IdentifierNotFoundException(node.Position, node.Identifier);
+        public TypeSymbol FindType(TypeIdentifierNode node) => this.GetTypeSymbol(node);
         public ConstVariableSymbol FindConstVariable(PositionInfo position, string name) => this.TryFindConstVariable(name, out var r) ? r : throw new IdentifierNotFoundException(position, name);
         public GlobalVariableSymbol FindGlobalVariable(PositionInfo position, string name) => this.TryFindGlobalVariable(name, out var r) ? r : throw new IdentifierNotFoundException(position, name);
         public RegisterSymbol FindRegister(PositionInfo position, string name) => this.TryFindRegister(name, out var r) ? r : throw new IdentifierNotFoundException(position, name);
@@ -81,11 +81,27 @@ namespace ArkeOS.Tools.KohlCompiler.Analysis {
         public bool TryFindArgument(FunctionSymbol function, string name, out ArgumentSymbol result) => this.TryFind(function.Arguments, name, out result);
         public bool TryFindLocalVariable(FunctionSymbol function, string name, out LocalVariableSymbol result) => this.TryFind(function.LocalVariables, name, out result);
 
+        private TypeSymbol GetTypeSymbol(TypeIdentifierNode node) {
+            var count = 0;
+
+            while (node is PointerTypeIdentifierNode p) {
+                count++;
+                node = p.Target;
+            }
+
+            var type = this.TryFindType(node.Identifier, out var r) ? r : throw new IdentifierNotFoundException(node.Position, node.Identifier);
+
+            while (count-- > 0)
+                type = new PointerTypeSymbol(type);
+
+            return type;
+        }
+
         public void CheckTypeOfExpression(ExpressionStatementNode node) => this.CheckTypeOfExpression(node, default(FunctionSymbol));
         public void CheckTypeOfExpression(ExpressionStatementNode node, FunctionSymbol function) => this.GetTypeOfExpression(node, function);
 
         public void CheckTypeOfExpression(TypeIdentifierNode expected, ExpressionStatementNode node) => this.CheckTypeOfExpression(expected, node, null);
-        public void CheckTypeOfExpression(TypeIdentifierNode expected, ExpressionStatementNode node, FunctionSymbol function) => this.CheckTypeOfExpression(this.FindType(expected), node, function);
+        public void CheckTypeOfExpression(TypeIdentifierNode expected, ExpressionStatementNode node, FunctionSymbol function) => this.CheckTypeOfExpression(this.GetTypeSymbol(expected), node, function);
 
         public void CheckTypeOfExpression(ExpressionStatementNode expected, ExpressionStatementNode node) => this.CheckTypeOfExpression(expected, node, null);
         public void CheckTypeOfExpression(ExpressionStatementNode expected, ExpressionStatementNode node, FunctionSymbol function) => this.CheckTypeOfExpression(this.GetTypeOfExpression(expected, function), node, function);
@@ -122,10 +138,10 @@ namespace ArkeOS.Tools.KohlCompiler.Analysis {
                             return t;
 
                         case Operator.AddressOf:
-                            throw new NotImplementedException();
+                            return new PointerTypeSymbol(t);
 
                         case Operator.Dereference:
-                            throw new NotImplementedException();
+                            return ((PointerTypeSymbol)t).Target;
                     }
 
                     break;
@@ -242,8 +258,19 @@ namespace ArkeOS.Tools.KohlCompiler.Analysis {
         public ConstVariableSymbol(string name, TypeSymbol type, ulong value) : base(name) => (this.Type, this.Value) = (type, value);
     }
 
-    public sealed class TypeSymbol : Symbol {
+    public class TypeSymbol : Symbol {
         public TypeSymbol(string name) : base(name) { }
+
+        public static bool operator ==(TypeSymbol lhs, TypeSymbol rhs) => lhs.Name == rhs.Name;
+        public static bool operator !=(TypeSymbol lhs, TypeSymbol rhs) => !(lhs == rhs);
+        public override bool Equals(object obj) => obj is TypeSymbol t ? t == this : false;
+        public override int GetHashCode() => this.Name.GetHashCode();
+    }
+
+    public sealed class PointerTypeSymbol : TypeSymbol {
+        public TypeSymbol Target { get; }
+
+        public PointerTypeSymbol(TypeSymbol target) : base(target.Name + "*") => this.Target = target;
     }
 }
 
@@ -323,7 +350,7 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
         private void Visit(DeclarationNode node) {
             switch (node) {
                 default: throw new UnexpectedException(node.Position, "identifier node");
-                case LocalVariableDeclarationWithInitializerNode n: this.symbolTable.CheckTypeOfExpression(n.Type, n.Initializer); this.Visit(new AssignmentStatementNode(new IdentifierNode(n.Token), n.Initializer)); break;
+                case LocalVariableDeclarationWithInitializerNode n: this.symbolTable.CheckTypeOfExpression(n.Type, n.Initializer, this.functionSymbol); this.Visit(new AssignmentStatementNode(new IdentifierNode(n.Token), n.Initializer)); break;
             }
         }
 
