@@ -66,10 +66,10 @@ namespace ArkeOS.Tools.KohlCompiler {
         }
 
         private void EmitHeader() {
-            this.Emit(InstructionDefinition.SET, Parameter.CreateRegister(Register.RSP), Parameter.CreateLiteral(0x1_0000));
-            this.Emit(InstructionDefinition.SET, Parameter.CreateRegister(Register.RBP), Parameter.CreateRegister(Register.RSP));
-            this.Emit(InstructionDefinition.CALL, this.throwOnNoFunction ? this.GetFunctionAccessParameter(this.functionAddresses.Single(f => f.Key.Name == "main").Key) : Parameter.CreateLiteral(0));
-            this.Emit(InstructionDefinition.HLT);
+            var entry = this.tree.Functions.Single(f => f.Symbol.Name == "main");
+
+            this.Emit(InstructionDefinition.SET, Parameter.CreateRegister(Register.RSP), Parameter.CreateLiteral((ulong)entry.Symbol.LocalVariables.Count + 0x1_0000));
+            this.Emit(InstructionDefinition.SET, Parameter.CreateRegister(Register.RBP), Parameter.CreateLiteral(0x1_0000));
         }
 
         private void SetGlobalVariableAddress(GlobalVariableSymbol v) {
@@ -139,6 +139,15 @@ namespace ArkeOS.Tools.KohlCompiler {
                 case RegisterLValue v:
                     return Parameter.CreateRegister(v.Symbol.Register);
 
+                case PointerLValue v:
+                    var r = this.GetVariableAccessParameter(v.Target, false);
+
+                    r.IsIndirect = true;
+
+                    this.Emit(InstructionDefinition.SET, Emitter.StackParam, r);
+
+                    return Parameter.CreateStack(ParameterFlags.Indirect);
+
                 default:
                     Debug.Assert(false);
 
@@ -190,7 +199,6 @@ namespace ArkeOS.Tools.KohlCompiler {
             switch (s) {
                 case BasicBlockAssignmentInstruction n: this.Visit(n); break;
                 case BasicBlockBinaryOperationInstruction n: this.Visit(n); break;
-                case BasicBlockDereferenceInstruction n: this.Emit(InstructionDefinition.SET, this.GetVariableAccessParameter(n.Target, true), this.Dereference(n.Value)); break;
                 case BasicBlockAddressOfInstruction n: this.Emit(InstructionDefinition.SET, this.GetVariableAccessParameter(n.Target, true), this.GetVariableAccessParameter(n.Value, false)); break;
                 case BasicBlockIntrinsicInstruction n: this.Visit(n); break;
                 default: Debug.Assert(false); break;
@@ -318,16 +326,6 @@ namespace ArkeOS.Tools.KohlCompiler {
             }
 
             this.Emit(def, this.GetVariableAccessParameter(n.Target, true), this.GetVariableAccessParameter(n.Left, true), this.GetVariableAccessParameter(n.Right, true));
-        }
-
-        private Parameter Dereference(RValue value) {
-            var r = this.GetVariableAccessParameter(value, false);
-
-            r.IsIndirect = true;
-
-            this.Emit(InstructionDefinition.SET, Emitter.StackParam, r);
-
-            return Parameter.CreateStack(ParameterFlags.Indirect);
         }
     }
 }

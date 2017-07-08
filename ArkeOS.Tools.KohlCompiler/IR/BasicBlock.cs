@@ -298,12 +298,7 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
             switch (node) {
                 default: throw new ExpectedException(node.Position, "lvalue");
                 case IdentifierExpressionNode n: return this.ExtractLValue(n);
-                case UnaryExpressionNode n when n.Op.Operator == Operator.Dereference:
-                    var target = this.CreateTemporaryLocalVariable();
-
-                    this.block.PushInstuction(new BasicBlockDereferenceInstruction(target, this.ExtractRValue(n.Expression)));
-
-                    return target;
+                case UnaryExpressionNode n when n.Op.Operator == Operator.Dereference: return new PointerLValue(this.ExtractRValue(n.Expression));
             }
         }
 
@@ -325,7 +320,7 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
                         case Operator.UnaryMinus: return this.ExtractRValue(new BinaryExpressionNode(n.Expression, OperatorNode.FromOperator(Operator.Multiplication), new IntegerLiteralNode(ulong.MaxValue)));
                         case Operator.Not: return this.ExtractRValue(new BinaryExpressionNode(n.Expression, OperatorNode.FromOperator(Operator.Xor), new IntegerLiteralNode(ulong.MaxValue)));
                         case Operator.AddressOf: this.block.PushInstuction(new BasicBlockAddressOfInstruction(target, this.ExtractLValue(n.Expression))); break;
-                        case Operator.Dereference: this.block.PushInstuction(new BasicBlockDereferenceInstruction(target, this.ExtractRValue(n.Expression))); break;
+                        case Operator.Dereference: return new PointerLValue(this.ExtractRValue(n.Expression));
                     }
 
                     break;
@@ -371,15 +366,6 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
         public BasicBlockAddressOfInstruction(LValue target, LValue value) => (this.Target, this.Value) = (target, value);
 
         public override string ToString() => $"{this.Target} = &{this.Value}";
-    }
-
-    public sealed class BasicBlockDereferenceInstruction : BasicBlockInstruction {
-        public LValue Target { get; }
-        public RValue Value { get; }
-
-        public BasicBlockDereferenceInstruction(LValue target, RValue value) => (this.Target, this.Value) = (target, value);
-
-        public override string ToString() => $"{this.Target} = *{this.Value}";
     }
 
     public sealed class BasicBlockIntrinsicInstruction : BasicBlockInstruction {
@@ -450,6 +436,14 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
         public GlobalVariableLValue(GlobalVariableSymbol variable) => this.Symbol = variable;
 
         public override string ToString() => $"gref {this.Symbol}";
+    }
+
+    public sealed class PointerLValue : LValue {
+        public RValue Target { get; }
+
+        public PointerLValue(RValue target) => this.Target = target;
+
+        public override string ToString() => $"pref {this.Target}";
     }
 
     public sealed class RegisterLValue : LValue {
