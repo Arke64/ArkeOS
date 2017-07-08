@@ -84,15 +84,15 @@ namespace ArkeOS.Tools.KohlCompiler.Analysis {
         private TypeSymbol GetTypeSymbol(TypeIdentifierNode node) {
             var count = 0;
 
-            while (node is PointerTypeIdentifierNode p) {
+            while (node.GenericArguments.Any()) {
                 count++;
-                node = p.Target;
+                node = node.GenericArguments.Single();
             }
 
             var type = this.TryFindType(node.Identifier, out var r) ? r : throw new IdentifierNotFoundException(node.Position, node.Identifier);
 
             while (count-- > 0)
-                type = new PointerTypeSymbol(type);
+                type = new TypeSymbol("ptr", type);
 
             return type;
         }
@@ -138,10 +138,10 @@ namespace ArkeOS.Tools.KohlCompiler.Analysis {
                             return t;
 
                         case Operator.AddressOf:
-                            return new PointerTypeSymbol(t);
+                            return new TypeSymbol("ptr", t);
 
                         case Operator.Dereference:
-                            return ((PointerTypeSymbol)t).Target;
+                            return t.GenericArguments.Single();
                     }
 
                     break;
@@ -153,7 +153,7 @@ namespace ArkeOS.Tools.KohlCompiler.Analysis {
                     switch (n.Op.Operator) {
                         case Operator.Addition:
                         case Operator.Subtraction:
-                            if (lt != WellKnownSymbol.Word && !(lt is PointerTypeSymbol)) throw new WrongTypeException(n.Position, lt.Name);
+                            if (lt != WellKnownSymbol.Word && !(lt.Name == "ptr")) throw new WrongTypeException(n.Position, lt.Name);
                             if (rt != WellKnownSymbol.Word) throw new WrongTypeException(n.Position, rt.Name);
 
                             return lt;
@@ -184,7 +184,7 @@ namespace ArkeOS.Tools.KohlCompiler.Analysis {
 
                         case Operator.Equals:
                         case Operator.NotEquals:
-                            if (lt != rt && !((lt is PointerTypeSymbol && rt == WellKnownSymbol.Word) || (rt is PointerTypeSymbol && lt == WellKnownSymbol.Word))) throw new WrongTypeException(n.Position, rt.Name);
+                            if (lt != rt && !((lt.Name == "ptr" && rt == WellKnownSymbol.Word) || (rt.Name == "ptr" && lt == WellKnownSymbol.Word))) throw new WrongTypeException(n.Position, rt.Name);
 
                             return WellKnownSymbol.Bool;
 
@@ -257,19 +257,18 @@ namespace ArkeOS.Tools.KohlCompiler.Analysis {
         public ConstVariableSymbol(string name, TypeSymbol type, ulong value) : base(name) => (this.Type, this.Value) = (type, value);
     }
 
-    public class TypeSymbol : Symbol {
-        public TypeSymbol(string name) : base(name) { }
+    public sealed class TypeSymbol : Symbol {
+        public IReadOnlyCollection<TypeSymbol> GenericArguments { get; }
 
-        public static bool operator ==(TypeSymbol lhs, TypeSymbol rhs) => lhs.Name == rhs.Name;
+        public string FullName => this.Name + (this.GenericArguments.Any() ? "[" + string.Join(", ", this.GenericArguments.Select(g => g.Name)) + "]" : string.Empty);
+
+        public TypeSymbol(string name) : base(name) => this.GenericArguments = new List<TypeSymbol>();
+        public TypeSymbol(string name, params TypeSymbol[] genericArguments) : base(name) => this.GenericArguments = genericArguments;
+
+        public static bool operator ==(TypeSymbol lhs, TypeSymbol rhs) => lhs.FullName == rhs.FullName;
         public static bool operator !=(TypeSymbol lhs, TypeSymbol rhs) => !(lhs == rhs);
-        public override bool Equals(object obj) => obj is TypeSymbol t ? t == this : false;
-        public override int GetHashCode() => this.Name.GetHashCode();
-    }
-
-    public sealed class PointerTypeSymbol : TypeSymbol {
-        public TypeSymbol Target { get; }
-
-        public PointerTypeSymbol(TypeSymbol target) : base(target.Name + "*") => this.Target = target;
+        public override bool Equals(object obj) => obj is TypeSymbol t && t == this;
+        public override int GetHashCode() => this.FullName.GetHashCode();
     }
 }
 
@@ -353,7 +352,7 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
                     var lhsType = this.symbolTable.FindType(n.Type);
                     var rhsType = this.symbolTable.GetTypeOfExpression(n.Initializer, this.functionSymbol);
 
-                    if (!((lhsType is PointerTypeSymbol && rhsType == WellKnownSymbol.Word) || (rhsType is PointerTypeSymbol && lhsType == WellKnownSymbol.Word)))
+                    if (!((lhsType.Name == "ptr" && rhsType == WellKnownSymbol.Word) || (rhsType.Name == "ptr" && lhsType == WellKnownSymbol.Word)))
                         this.symbolTable.CheckTypeOfExpression(n.Type, n.Initializer, this.functionSymbol);
 
                     this.Visit(new AssignmentStatementNode(new IdentifierNode(n.Token), n.Initializer));
@@ -376,7 +375,7 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
             var lhsType = this.symbolTable.GetTypeOfExpression(node.Target, this.functionSymbol);
             var rhsType = this.symbolTable.GetTypeOfExpression(exp, this.functionSymbol);
 
-            if (!((lhsType is PointerTypeSymbol && rhsType == WellKnownSymbol.Word) || (rhsType is PointerTypeSymbol && lhsType == WellKnownSymbol.Word)))
+            if (!((lhsType.Name == "ptr" && rhsType == WellKnownSymbol.Word) || (rhsType.Name == "ptr" && lhsType == WellKnownSymbol.Word)))
                 this.symbolTable.CheckTypeOfExpression(node.Target, exp, this.functionSymbol);
 
             this.block.PushInstuction(new BasicBlockAssignmentInstruction(lhs, this.ExtractRValue(exp)));

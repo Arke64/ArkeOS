@@ -42,6 +42,9 @@ namespace ArkeOS.Tools.KohlCompiler {
         OpenCurlyBrace,
         CloseCurlyBrace,
 
+        OpenSquareBrace,
+        CloseSquareBrace,
+
         Equal,
         DoubleEqual,
 
@@ -218,6 +221,8 @@ namespace ArkeOS.Tools.KohlCompiler {
 
                         case TokenType.OpenCurlyBrace:
                         case TokenType.CloseCurlyBrace:
+                        case TokenType.OpenSquareBrace:
+                        case TokenType.CloseSquareBrace:
                             this.tokenClass = TokenClass.Brace;
                             break;
 

@@ -53,12 +53,17 @@ namespace ArkeOS.Tools.KohlCompiler {
 
         private TypeIdentifierNode ReadTypeIdentifier() {
             var ident = this.lexer.Read(TokenType.Identifier);
-            var node = new TypeIdentifierNode(ident);
 
-            while (this.lexer.TryRead(TokenType.Asterisk))
-                node = new PointerTypeIdentifierNode(node);
+            if (this.lexer.TryRead(TokenType.OpenSquareBrace)) {
+                var node = new TypeIdentifierNode(ident, this.ReadTypeIdentifier());
 
-            return node;
+                this.lexer.Read(TokenType.CloseSquareBrace);
+
+                return node;
+            }
+            else {
+                return new TypeIdentifierNode(ident);
+            }
         }
 
         private ArgumentDeclarationNode ReadArgumentDeclaration() {

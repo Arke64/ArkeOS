@@ -1,7 +1,5 @@
-﻿using ArkeOS.Tools.KohlCompiler.Exceptions;
-using ArkeOS.Tools.KohlCompiler.IR;
+﻿using ArkeOS.Tools.KohlCompiler.IR;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 
 namespace ArkeOS.Tools.KohlCompiler {
@@ -27,22 +25,14 @@ namespace ArkeOS.Tools.KohlCompiler {
         public IReadOnlyList<CompilationError> Compile() {
             var errors = new List<CompilationError>();
 
-            try {
-                var lexer = new Lexer(this.sources);
-                var parser = new Parser(lexer);
-                var ast = parser.Parse();
-                var generator = new IrGenerator(ast);
-                var ir = generator.Generate();
-                var emitter = new Emitter(ir, this.EmitAssemblyListing, this.EmitBootable, this.OutputName);
+            var lexer = new Lexer(this.sources);
+            var parser = new Parser(lexer);
+            var ast = parser.Parse();
+            var generator = new IrGenerator(ast);
+            var ir = generator.Generate();
+            var emitter = new Emitter(ir, this.EmitAssemblyListing, this.EmitBootable, this.OutputName);
 
-                emitter.Emit();
-            }
-            catch (CompilationException e) {
-                errors.Add(new CompilationError(e.Message, e.Position));
-
-                if (Debugger.IsAttached)
-                    throw;
-            }
+            emitter.Emit();
 
             return errors;
         }

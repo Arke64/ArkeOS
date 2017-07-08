@@ -177,6 +177,8 @@ namespace ArkeOS.Tools.KohlCompiler {
                 case ')': tok = TokenType.CloseParenthesis; break;
                 case '{': tok = TokenType.OpenCurlyBrace; break;
                 case '}': tok = TokenType.CloseCurlyBrace; break;
+                case '[': tok = TokenType.OpenSquareBrace; break;
+                case ']': tok = TokenType.CloseSquareBrace; break;
 
                 case '+': tok = this.TryReadChar('=') ? TokenType.PlusEqual : TokenType.Plus; break;
                 case '-': tok = this.TryReadChar('=') ? TokenType.MinusEqual : TokenType.Minus; break;
