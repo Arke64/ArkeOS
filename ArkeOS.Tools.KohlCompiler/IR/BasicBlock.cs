@@ -274,13 +274,11 @@ namespace ArkeOS.Tools.KohlCompiler.Analysis {
 
 namespace ArkeOS.Tools.KohlCompiler.IR {
     public sealed class IrGenerator {
-        private readonly ProgramDeclarationNode ast;
+        private IrGenerator() { }
 
-        public IrGenerator(ProgramDeclarationNode ast) => this.ast = ast;
-
-        public Compiliation Generate() {
-            var symbolTable = new SymbolTable(this.ast);
-            var functions = this.ast.FunctionDeclarations.Items.Select(i => FunctionDeclarationVisitor.Visit(symbolTable, i)).ToList();
+        public static Compiliation Generate(ProgramDeclarationNode ast) {
+            var symbolTable = new SymbolTable(ast);
+            var functions = ast.FunctionDeclarations.Items.Select(i => FunctionDeclarationVisitor.Visit(symbolTable, i)).ToList();
 
             return new Compiliation(functions, symbolTable.GlobalVariables);
         }

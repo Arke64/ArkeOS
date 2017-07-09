@@ -53,14 +53,10 @@ namespace ArkeOS.Tools.KohlCompiler {
             var errors = new List<CompilationError>();
 
             try {
-                var lexer = new Lexer(options);
-                var parser = new Parser(lexer);
-                var ast = parser.Parse();
-                var generator = new IrGenerator(ast);
-                var ir = generator.Generate();
-                var emitter = new Emitter(options, ir);
+                var ast = Parser.Parse(options);
+                var ir = IrGenerator.Generate(ast);
 
-                emitter.Emit();
+                Emitter.Emit(options, ir);
             }
             catch (CompilationException e) {
                 errors.Add(new CompilationError(e.Position, e.Message));

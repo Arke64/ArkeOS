@@ -4,12 +4,14 @@ using ArkeOS.Tools.KohlCompiler.Syntax;
 using ArkeOS.Utilities.Extensions;
 
 namespace ArkeOS.Tools.KohlCompiler {
-    public class Parser {
+    public sealed class Parser {
         private readonly Lexer lexer;
 
-        public Parser(Lexer lexer) => this.lexer = lexer;
+        private Parser(Lexer lexer) => this.lexer = lexer;
 
-        public ProgramDeclarationNode Parse() {
+        public static ProgramDeclarationNode Parse(CompilationOptions options) => new Parser(new Lexer(options)).Parse();
+
+        private ProgramDeclarationNode Parse() {
             var prog = new ProgramDeclarationNode();
 
             while (this.lexer.TryPeek(out var tok)) {

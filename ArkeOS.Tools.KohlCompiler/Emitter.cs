@@ -9,7 +9,7 @@ using System.IO;
 using System.Linq;
 
 namespace ArkeOS.Tools.KohlCompiler {
-    public class Emitter {
+    public sealed class Emitter {
         private static Parameter StackParam { get; } = new Parameter { Type = ParameterType.Stack };
 
         private readonly CompilationOptions options;
@@ -23,11 +23,13 @@ namespace ArkeOS.Tools.KohlCompiler {
         private FunctionSymbol currentFunction;
         private bool throwOnNoFunction;
 
-        public Emitter(CompilationOptions options, Compiliation tree) => (this.options, this.tree) = (options, tree);
+        public static void Emit(CompilationOptions options, Compiliation tree) => new Emitter(options, tree).Emit();
+
+        private Emitter(CompilationOptions options, Compiliation tree) => (this.options, this.tree) = (options, tree);
 
         private ulong DistanceFrom(int startInst) => (ulong)this.instructions.Skip(startInst).Sum(i => i.Length);
 
-        public void Emit() {
+        private void Emit() {
             this.basicBlockAddresses = new Dictionary<BasicBlock, ulong>();
             this.functionAddresses = new Dictionary<FunctionSymbol, ulong>();
             this.globalVariableAddresses = new Dictionary<GlobalVariableSymbol, ulong>();
