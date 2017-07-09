@@ -25,7 +25,7 @@ namespace ArkeOS.Tools.KohlCompiler.Analysis {
 
         public SymbolTable(ProgramNode ast) {
             this.ConstVariables = ast.OfType<ConstDeclarationNode>().Select(i => new ConstVariableSymbol(i.Identifier, this.FindType(i.Type), ((IntegerLiteralNode)i.Value).Literal)).ToList();
-            this.GlobalVariables = ast.OfType<GlobalVariableDeclarationNode>().Select(i => new GlobalVariableSymbol(i.Identifier, this.FindType(i.Type))).ToList();
+            this.GlobalVariables = ast.OfType<VariableDeclarationNode>().Select(i => new GlobalVariableSymbol(i.Identifier, this.FindType(i.Type))).ToList();
             this.Registers = EnumExtensions.ToList<Register>().Select(i => new RegisterSymbol(i.ToString(), i)).ToList();
             this.Functions = ast.OfType<FunctionDeclarationNode>().Select(i => this.Visit(i)).ToList();
         }
@@ -346,7 +346,7 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
         private void Visit(DeclarationNode node) {
             switch (node) {
                 default: throw new UnexpectedException(node.Position, "identifier node");
-                case LocalVariableDeclarationWithInitializerNode n:
+                case VariableDeclarationNode n:
                     var lhsType = this.symbolTable.FindType(n.Type);
                     var rhsType = this.symbolTable.GetTypeOfExpression(n.Initializer, this.functionSymbol);
 

@@ -18,7 +18,7 @@ namespace ArkeOS.Tools.KohlCompiler {
             while (this.lexer.TryPeek(out var tok)) {
                 switch (tok.Type) {
                     case TokenType.FuncKeyword: prog.Add(this.ReadFunctionDeclaration()); break;
-                    case TokenType.VarKeyword: prog.Add(this.ReadGlobalVariableDeclaration()); break;
+                    case TokenType.VarKeyword: prog.Add(this.ReadVariableDeclaration()); break;
                     case TokenType.ConstKeyword: prog.Add(this.ReadConstDeclaration()); break;
                     default: throw this.GetUnexpectedException(tok);
                 }
@@ -77,22 +77,13 @@ namespace ArkeOS.Tools.KohlCompiler {
             return new ArgumentDeclarationNode(ident, type);
         }
 
-        private GlobalVariableDeclarationNode ReadGlobalVariableDeclaration() {
+        private VariableDeclarationNode ReadVariableDeclaration() {
             this.lexer.Read(TokenType.VarKeyword);
             var ident = this.lexer.Read(TokenType.Identifier);
             this.lexer.Read(TokenType.Colon);
             var type = this.ReadTypeIdentifier();
-            this.lexer.Read(TokenType.Semicolon);
-
-            return new GlobalVariableDeclarationNode(ident, type);
-        }
-
-        private LocalVariableDeclarationNode ReadLocalVariableDeclaration() {
-            this.lexer.Read(TokenType.VarKeyword);
-            var ident = this.lexer.Read(TokenType.Identifier);
-            this.lexer.Read(TokenType.Colon);
-            var type = this.ReadTypeIdentifier();
-            var res = this.lexer.TryRead(TokenType.Equal) ? new LocalVariableDeclarationWithInitializerNode(ident, type, this.ReadExpression()) : new LocalVariableDeclarationNode(ident, type);
+            this.lexer.TryRead(TokenType.Equal);
+            var res = new VariableDeclarationNode(ident, type, this.ReadExpression());
             this.lexer.Read(TokenType.Semicolon);
 
             return res;
@@ -116,9 +107,9 @@ namespace ArkeOS.Tools.KohlCompiler {
             if (this.lexer.TryRead(TokenType.OpenCurlyBrace)) {
                 while (!this.lexer.TryRead(TokenType.CloseCurlyBrace)) {
                     if (this.lexer.TryPeek(TokenType.VarKeyword)) {
-                        var res = this.ReadLocalVariableDeclaration();
+                        var res = this.ReadVariableDeclaration();
 
-                        if (res is LocalVariableDeclarationWithInitializerNode)
+                        if (res is VariableDeclarationNode)
                             block.Statements.Add(res);
 
                         block.VariableDeclarations.Add(res);
