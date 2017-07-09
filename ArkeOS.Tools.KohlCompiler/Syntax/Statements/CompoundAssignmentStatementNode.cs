@@ -2,6 +2,6 @@
     public sealed class CompoundAssignmentStatementNode : AssignmentStatementNode {
         public OperatorNode Op { get; }
 
-        public CompoundAssignmentStatementNode(ExpressionStatementNode target, OperatorNode op, ExpressionStatementNode expression) : base(target, expression) => this.Op = op;
+        public CompoundAssignmentStatementNode(PositionInfo position, ExpressionStatementNode target, OperatorNode op, ExpressionStatementNode expression) : base(position, target, expression) => this.Op = op;
     }
 }

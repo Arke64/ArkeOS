@@ -45,14 +45,14 @@ namespace ArkeOS.Tools.KohlCompiler {
                     var r = this.outputStack.Pop();
                     var l = this.outputStack.Pop();
 
-                    this.outputStack.Push(new BinaryExpressionNode(l, op, r));
+                    this.outputStack.Push(new BinaryExpressionNode(l.Position, l, op, r));
 
                     break;
 
                 case OperatorClass.Unary:
                     if (this.outputStack.Count < 1) throw new ExpectedException(op.Position, "operand");
 
-                    this.outputStack.Push(new UnaryExpressionNode(op, this.outputStack.Pop()));
+                    this.outputStack.Push(new UnaryExpressionNode(op.Position, op, this.outputStack.Pop()));
 
                     break;
             }

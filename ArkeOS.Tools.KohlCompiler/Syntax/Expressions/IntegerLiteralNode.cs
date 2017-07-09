@@ -2,7 +2,7 @@
     public sealed class IntegerLiteralNode : LiteralExpressionNode {
         public ulong Literal { get; }
 
-        public IntegerLiteralNode(Token token) : this(ulong.Parse(token.Value)) { }
-        public IntegerLiteralNode(ulong literal) => this.Literal = literal;
+        public IntegerLiteralNode(Token token) : this(token.Position, ulong.Parse(token.Value)) { }
+        public IntegerLiteralNode(PositionInfo position, ulong literal) : base(position) => this.Literal = literal;
     }
 }

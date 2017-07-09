@@ -4,6 +4,6 @@
         public SyntaxListNode<GlobalVariableDeclarationNode> VariableDeclarations { get; }
         public SyntaxListNode<ConstDeclarationNode> ConstDeclarations { get; }
 
-        public ProgramDeclarationNode() => (this.FunctionDeclarations, this.VariableDeclarations, this.ConstDeclarations) = (new SyntaxListNode<FunctionDeclarationNode>(), new SyntaxListNode<GlobalVariableDeclarationNode>(), new SyntaxListNode<ConstDeclarationNode>());
+        public ProgramDeclarationNode(PositionInfo position) : base(position) => (this.FunctionDeclarations, this.VariableDeclarations, this.ConstDeclarations) = (new SyntaxListNode<FunctionDeclarationNode>(position), new SyntaxListNode<GlobalVariableDeclarationNode>(position), new SyntaxListNode<ConstDeclarationNode>(position));
     }
 }

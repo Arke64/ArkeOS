@@ -2,7 +2,7 @@
     public abstract class IntrinsicStatementNode : StatementNode {
         public ArgumentListNode ArgumentList { get; }
 
-        public IntrinsicStatementNode() : this(new ArgumentListNode()) { }
-        public IntrinsicStatementNode(ArgumentListNode argumentList) => this.ArgumentList = argumentList;
+        public IntrinsicStatementNode(PositionInfo position) : this(position, new ArgumentListNode(position)) { }
+        public IntrinsicStatementNode(PositionInfo position, ArgumentListNode argumentList) : base(position) => this.ArgumentList = argumentList;
     }
 }

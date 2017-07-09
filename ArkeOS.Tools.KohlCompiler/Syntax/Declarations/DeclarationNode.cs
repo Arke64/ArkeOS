@@ -4,6 +4,6 @@
         public string Identifier { get; }
         public TypeIdentifierNode Type { get; }
 
-        protected DeclarationNode(Token identifier, TypeIdentifierNode type) => (this.Token, this.Identifier, this.Type) = (identifier, identifier.Value, type);
+        protected DeclarationNode(Token identifier, TypeIdentifierNode type) : base(identifier.Position) => (this.Token, this.Identifier, this.Type) = (identifier, identifier.Value, type);
     }
 }

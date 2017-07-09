@@ -3,6 +3,6 @@
         public ExpressionStatementNode Target { get; }
         public ExpressionStatementNode Expression { get; }
 
-        public AssignmentStatementNode(ExpressionStatementNode target, ExpressionStatementNode expression) => (this.Target, this.Expression) = (target, expression);
+        public AssignmentStatementNode(PositionInfo position, ExpressionStatementNode target, ExpressionStatementNode expression) : base(position) => (this.Target, this.Expression) = (target, expression);
     }
 }

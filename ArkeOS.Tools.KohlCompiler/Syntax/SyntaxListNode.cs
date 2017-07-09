@@ -5,6 +5,8 @@ namespace ArkeOS.Tools.KohlCompiler.Syntax {
     public class SyntaxListNode<T> : SyntaxNode, IList<T>, IReadOnlyList<T> where T : SyntaxNode {
         private readonly List<T> items = new List<T>();
 
+        public SyntaxListNode(PositionInfo position) : base(position) { }
+
         public T this[int index] { get => this.items[index]; set => this.items[index] = value; }
 
         public int Count => this.items.Count;

@@ -86,7 +86,7 @@ namespace ArkeOS.Tools.KohlCompiler {
         private bool eof;
         private Token currentToken;
 
-        private PositionInfo CurrentPosition => this.file != null ? new PositionInfo(this.file.Path, this.file.Line, this.file.Column) : default(PositionInfo);
+        public PositionInfo CurrentPosition => this.file != null ? new PositionInfo(this.file.Path, this.file.Line, this.file.Column) : default(PositionInfo);
 
         public Lexer(CompilationOptions options) {
             this.files = new Queue<FileInfo>(options.Sources.Select(f => new FileInfo(f)));

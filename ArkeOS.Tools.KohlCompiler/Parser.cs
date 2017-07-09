@@ -12,7 +12,7 @@ namespace ArkeOS.Tools.KohlCompiler {
         public static ProgramDeclarationNode Parse(CompilationOptions options) => new Parser(new Lexer(options)).Parse();
 
         private ProgramDeclarationNode Parse() {
-            var prog = new ProgramDeclarationNode();
+            var prog = new ProgramDeclarationNode(this.lexer.CurrentPosition);
 
             while (this.lexer.TryPeek(out var tok)) {
                 switch (tok.Type) {
@@ -38,7 +38,7 @@ namespace ArkeOS.Tools.KohlCompiler {
         }
 
         private ArgumentListDeclarationNode ReadArgumentListDeclaration() {
-            var list = new ArgumentListDeclarationNode();
+            var list = new ArgumentListDeclarationNode(this.lexer.CurrentPosition);
 
             this.lexer.Read(TokenType.OpenParenthesis);
 
@@ -110,7 +110,7 @@ namespace ArkeOS.Tools.KohlCompiler {
         }
 
         private StatementBlockNode ReadStatementBlock() {
-            var block = new StatementBlockNode();
+            var block = new StatementBlockNode(this.lexer.CurrentPosition);
 
             if (this.lexer.TryRead(TokenType.OpenCurlyBrace)) {
                 while (!this.lexer.TryRead(TokenType.CloseCurlyBrace)) {
@@ -155,7 +155,7 @@ namespace ArkeOS.Tools.KohlCompiler {
                 this.lexer.Read(TokenType.Semicolon);
             }
             else if (tok.Type == TokenType.Semicolon) {
-                res = new EmptyStatementNode();
+                res = new EmptyStatementNode(tok.Position);
 
                 this.lexer.Read(TokenType.Semicolon);
             }
@@ -166,7 +166,7 @@ namespace ArkeOS.Tools.KohlCompiler {
                     var op = this.lexer.Read(TokenClass.Assignment);
                     var rhs = this.ReadExpression();
 
-                    res = op.Type == TokenType.Equal ? new AssignmentStatementNode(lhs, rhs) : new CompoundAssignmentStatementNode(lhs, OperatorNode.FromCompoundToken(op) ?? throw this.GetUnexpectedException(op), rhs);
+                    res = op.Type == TokenType.Equal ? new AssignmentStatementNode(lhs.Position, lhs, rhs) : new CompoundAssignmentStatementNode(lhs.Position, lhs, OperatorNode.FromCompoundToken(op) ?? throw this.GetUnexpectedException(op), rhs);
                 }
                 else if (lhs is FunctionCallIdentifierNode) {
                     res = lhs;
@@ -203,7 +203,7 @@ namespace ArkeOS.Tools.KohlCompiler {
         }
 
         private ArgumentListNode ReadArgumentList() {
-            var list = new ArgumentListNode();
+            var list = new ArgumentListNode(this.lexer.CurrentPosition);
 
             this.lexer.Read(TokenType.OpenParenthesis);
 
@@ -222,45 +222,45 @@ namespace ArkeOS.Tools.KohlCompiler {
             var tok = this.lexer.Read();
 
             switch (tok.Type) {
-                case TokenType.BrkKeyword: return new BrkStatementNode();
-                case TokenType.CasKeyword: return new CasStatementNode(this.ReadArgumentList());
-                case TokenType.CpyKeyword: return new CpyStatementNode(this.ReadArgumentList());
-                case TokenType.DbgKeyword: return new DbgStatementNode(this.ReadArgumentList());
-                case TokenType.EintKeyword: return new EintStatementNode();
-                case TokenType.HltKeyword: return new HltStatementNode();
-                case TokenType.IntdKeyword: return new IntdStatementNode();
-                case TokenType.InteKeyword: return new InteStatementNode();
-                case TokenType.IntKeyword: return new IntStatementNode(this.ReadArgumentList());
-                case TokenType.NopKeyword: return new NopStatementNode();
-                case TokenType.XchgKeyword: return new XchgStatementNode(this.ReadArgumentList());
+                case TokenType.BrkKeyword: return new BrkStatementNode(tok.Position);
+                case TokenType.CasKeyword: return new CasStatementNode(tok.Position, this.ReadArgumentList());
+                case TokenType.CpyKeyword: return new CpyStatementNode(tok.Position, this.ReadArgumentList());
+                case TokenType.DbgKeyword: return new DbgStatementNode(tok.Position, this.ReadArgumentList());
+                case TokenType.EintKeyword: return new EintStatementNode(tok.Position);
+                case TokenType.HltKeyword: return new HltStatementNode(tok.Position);
+                case TokenType.IntdKeyword: return new IntdStatementNode(tok.Position);
+                case TokenType.InteKeyword: return new InteStatementNode(tok.Position);
+                case TokenType.IntKeyword: return new IntStatementNode(tok.Position, this.ReadArgumentList());
+                case TokenType.NopKeyword: return new NopStatementNode(tok.Position);
+                case TokenType.XchgKeyword: return new XchgStatementNode(tok.Position, this.ReadArgumentList());
                 default: throw this.GetUnexpectedException(tok);
             }
         }
 
         private IfStatementNode ReadIfStatement() {
-            this.lexer.Read(TokenType.IfKeyword);
+            var tok = this.lexer.Read(TokenType.IfKeyword);
             this.lexer.Read(TokenType.OpenParenthesis);
             var exp = this.ReadExpression();
             this.lexer.Read(TokenType.CloseParenthesis);
             var block = this.ReadStatementBlock();
 
-            return !this.lexer.TryRead(TokenType.ElseKeyword) ? new IfStatementNode(exp, block) : new IfElseStatementNode(exp, block, this.ReadStatementBlock());
+            return !this.lexer.TryRead(TokenType.ElseKeyword) ? new IfStatementNode(tok.Position, exp, block) : new IfElseStatementNode(tok.Position, exp, block, this.ReadStatementBlock());
         }
 
         private WhileStatementNode ReadWhileStatement() {
-            this.lexer.Read(TokenType.WhileKeyword);
+            var tok = this.lexer.Read(TokenType.WhileKeyword);
             this.lexer.Read(TokenType.OpenParenthesis);
             var exp = this.ReadExpression();
             this.lexer.Read(TokenType.CloseParenthesis);
             var block = this.ReadStatementBlock();
 
-            return new WhileStatementNode(exp, block);
+            return new WhileStatementNode(tok.Position, exp, block);
         }
 
         private ReturnStatementNode ReadReturnStatement() {
-            this.lexer.Read(TokenType.ReturnKeyword);
+            var tok = this.lexer.Read(TokenType.ReturnKeyword);
 
-            return new ReturnStatementNode(this.ReadExpression());
+            return new ReturnStatementNode(tok.Position, this.ReadExpression());
         }
 
         private ExpressionStatementNode ReadExpression() {

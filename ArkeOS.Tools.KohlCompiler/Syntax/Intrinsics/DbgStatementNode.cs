@@ -1,5 +1,5 @@
 ﻿namespace ArkeOS.Tools.KohlCompiler.Syntax {
     public sealed class DbgStatementNode : IntrinsicStatementNode {
-        public DbgStatementNode(ArgumentListNode argumentList) : base(argumentList) { }
+        public DbgStatementNode(PositionInfo position, ArgumentListNode argumentList) : base(position, argumentList) { }
     }
 }

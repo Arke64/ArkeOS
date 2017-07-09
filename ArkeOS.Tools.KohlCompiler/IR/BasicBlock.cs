@@ -353,7 +353,7 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
                     if (!((lhsType.Name == "ptr" && rhsType == WellKnownSymbol.Word) || (rhsType.Name == "ptr" && lhsType == WellKnownSymbol.Word)))
                         this.symbolTable.CheckTypeOfExpression(n.Type, n.Initializer, this.functionSymbol);
 
-                    this.Visit(new AssignmentStatementNode(new IdentifierNode(n.Token), n.Initializer));
+                    this.Visit(new AssignmentStatementNode(n.Position, new IdentifierNode(n.Token), n.Initializer));
 
                     break;
             }
@@ -368,7 +368,7 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
             var exp = node.Expression;
 
             if (node is CompoundAssignmentStatementNode cnode)
-                exp = new BinaryExpressionNode(cnode.Target, cnode.Op, cnode.Expression);
+                exp = new BinaryExpressionNode(cnode.Position, cnode.Target, cnode.Op, cnode.Expression);
 
             var lhsType = this.symbolTable.GetTypeOfExpression(node.Target, this.functionSymbol);
             var rhsType = this.symbolTable.GetTypeOfExpression(exp, this.functionSymbol);
@@ -493,8 +493,8 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
                 case IdentifierExpressionNode n: return this.ExtractRValue(n);
                 case UnaryExpressionNode n:
                     switch (n.Op.Operator) {
-                        case Operator.UnaryMinus: return this.ExtractRValue(new BinaryExpressionNode(n.Expression, OperatorNode.FromOperator(Operator.Multiplication), new IntegerLiteralNode(ulong.MaxValue)));
-                        case Operator.Not: return this.ExtractRValue(new BinaryExpressionNode(n.Expression, OperatorNode.FromOperator(Operator.Xor), new IntegerLiteralNode(ulong.MaxValue)));
+                        case Operator.UnaryMinus: return this.ExtractRValue(new BinaryExpressionNode(n.Position, n.Expression, OperatorNode.FromOperator(Operator.Multiplication), new IntegerLiteralNode(n.Position, ulong.MaxValue)));
+                        case Operator.Not: return this.ExtractRValue(new BinaryExpressionNode(n.Position, n.Expression, OperatorNode.FromOperator(Operator.Xor), new IntegerLiteralNode(n.Position, ulong.MaxValue)));
                         case Operator.AddressOf: return new AddressOfRValue(this.ExtractLValue(n.Expression));
                         case Operator.Dereference: return new PointerLValue(this.ExtractRValue(n.Expression));
                     }

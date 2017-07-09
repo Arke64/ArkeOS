@@ -3,6 +3,6 @@
         public OperatorNode Op { get; }
         public ExpressionStatementNode Expression { get; }
 
-        public UnaryExpressionNode(OperatorNode op, ExpressionStatementNode expression) => (this.Expression, this.Op) = (expression, op);
+        public UnaryExpressionNode(PositionInfo position, OperatorNode op, ExpressionStatementNode expression) : base(position) => (this.Expression, this.Op) = (expression, op);
     }
 }

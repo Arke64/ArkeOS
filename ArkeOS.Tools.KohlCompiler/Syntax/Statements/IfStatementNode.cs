@@ -3,6 +3,6 @@
         public ExpressionStatementNode Expression { get; }
         public StatementBlockNode StatementBlock { get; }
 
-        public IfStatementNode(ExpressionStatementNode expression, StatementBlockNode statementBlock) => (this.Expression, this.StatementBlock) = (expression, statementBlock);
+        public IfStatementNode(PositionInfo position, ExpressionStatementNode expression, StatementBlockNode statementBlock) : base(position) => (this.Expression, this.StatementBlock) = (expression, statementBlock);
     }
 }
