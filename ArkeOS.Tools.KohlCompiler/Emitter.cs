@@ -12,10 +12,8 @@ namespace ArkeOS.Tools.KohlCompiler {
     public class Emitter {
         private static Parameter StackParam { get; } = new Parameter { Type = ParameterType.Stack };
 
+        private readonly CompilationOptions options;
         private readonly Compiliation tree;
-        private readonly bool emitAssemblyListing;
-        private readonly bool emitBootable;
-        private readonly string outputFile;
         private ulong nextGlobalVariableAddress;
         private HashSet<BasicBlock> visitedBasicBlocks;
         private Dictionary<BasicBlock, ulong> basicBlockAddresses;
@@ -25,7 +23,7 @@ namespace ArkeOS.Tools.KohlCompiler {
         private FunctionSymbol currentFunction;
         private bool throwOnNoFunction;
 
-        public Emitter(Compiliation tree, bool emitAssemblyListing, bool emitBootable, string outputFile) => (this.tree, this.emitAssemblyListing, this.emitBootable, this.outputFile) = (tree, emitAssemblyListing, emitBootable, outputFile);
+        public Emitter(CompilationOptions options, Compiliation tree) => (this.options, this.tree) = (options, tree);
 
         private ulong DistanceFrom(int startInst) => (ulong)this.instructions.Skip(startInst).Sum(i => i.Length);
 
@@ -51,16 +49,16 @@ namespace ArkeOS.Tools.KohlCompiler {
 
             using (var stream = new MemoryStream()) {
                 using (var writer = new BinaryWriter(stream)) {
-                    if (this.emitBootable)
+                    if (this.options.EmitBootable)
                         writer.Write(0x00000000454B5241UL);
 
-                    if (this.emitAssemblyListing)
-                        File.WriteAllLines(Path.ChangeExtension(this.outputFile, "lst"), this.globalVariableAddresses.Select(i => $"{i.Key}: 0x{i.Value:X16}").Concat(this.instructions.Select(i => i.ToString())));
+                    if (this.options.EmitAssemblyListing)
+                        File.WriteAllLines(Path.ChangeExtension(this.options.OutputName, "lst"), this.globalVariableAddresses.Select(i => $"{i.Key}: 0x{i.Value:X16}").Concat(this.instructions.Select(i => i.ToString())));
 
                     foreach (var inst in this.instructions)
                         inst.Encode(writer);
 
-                    File.WriteAllBytes(this.outputFile, stream.ToArray());
+                    File.WriteAllBytes(this.options.OutputName, stream.ToArray());
                 }
             }
         }

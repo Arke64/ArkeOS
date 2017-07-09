@@ -1,63 +1,75 @@
-﻿using ArkeOS.Tools.KohlCompiler.IR;
+﻿using ArkeOS.Tools.KohlCompiler.Exceptions;
+using ArkeOS.Tools.KohlCompiler.IR;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 
 namespace ArkeOS.Tools.KohlCompiler {
-    public class CompilationError {
-        public string Message { get; }
+    public sealed class CompilationError {
         public PositionInfo Position { get; }
+        public string Message { get; }
 
-        public CompilationError(string message, PositionInfo position) => (this.Message, this.Position) = (message, position);
+        public CompilationError(PositionInfo position, string message) => (this.Position, this.Message) = (position, message);
 
         public override string ToString() => $"'{this.Position.File}' at {this.Position.Line:N0}:{this.Position.Column:N0}: {this.Message}";
     }
 
-    public class Compiler {
+    public sealed class CompilationOptions {
         private readonly List<string> sources = new List<string>();
 
+        public IReadOnlyCollection<string> Sources => this.sources;
+
         public string OutputName { get; set; } = "Kohl.bin";
-        public bool Optimize { get; set; } = true;
-        public bool EmitAssemblyListing { get; set; } = true;
+        public bool Optimize { get; set; } = false;
+        public bool EmitAssemblyListing { get; set; } = false;
         public bool EmitBootable { get; set; } = false;
 
         public void AddSource(string file) => this.sources.Add(file);
 
-        public IReadOnlyList<CompilationError> Compile() {
-            var errors = new List<CompilationError>();
-
-            var lexer = new Lexer(this.sources);
-            var parser = new Parser(lexer);
-            var ast = parser.Parse();
-            var generator = new IrGenerator(ast);
-            var ir = generator.Generate();
-            var emitter = new Emitter(ir, this.EmitAssemblyListing, this.EmitBootable, this.OutputName);
-
-            emitter.Emit();
-
-            return errors;
-        }
-
-        public static string Usage { get; } = "[optional options] [output file] [source files...]";
-
-        public static Compiler FromArgs(string[] args) {
+        public static (CompilationOptions result, IReadOnlyCollection<string> unrecognized) FromArgs(string[] args) {
             var a = new Queue<string>(args);
-            var c = new Compiler();
+            var c = new CompilationOptions();
+            var e = new List<string>();
 
-            if (a.Count < 2) return null;
+            while (a.Any()) {
+                var cur = a.Dequeue().Substring(2);
 
-            while (a.Peek().StartsWith("--")) {
-                switch (a.Dequeue().Substring(2)) {
+                switch (cur) {
                     case "bootable": c.EmitBootable = true; break;
-                    default: return null;
+                    case "optimize": c.Optimize = true; break;
+                    case "asm": c.EmitAssemblyListing = true; break;
+                    case "output": c.OutputName = a.Dequeue(); break;
+                    case "src": c.AddSource(a.Dequeue()); break;
+                    default: e.Add(cur); break;
                 }
             }
 
-            c.OutputName = a.Dequeue();
+            return (c, e);
+        }
+    }
 
-            while (a.Any())
-                c.AddSource(a.Dequeue());
+    public static class Compiler {
+        public static IReadOnlyCollection<CompilationError> Compile(CompilationOptions options) {
+            var errors = new List<CompilationError>();
 
-            return c;
+            try {
+                var lexer = new Lexer(options);
+                var parser = new Parser(lexer);
+                var ast = parser.Parse();
+                var generator = new IrGenerator(ast);
+                var ir = generator.Generate();
+                var emitter = new Emitter(options, ir);
+
+                emitter.Emit();
+            }
+            catch (CompilationException e) {
+                errors.Add(new CompilationError(e.Position, e.Message));
+
+                if (Debugger.IsAttached)
+                    throw;
+            }
+
+            return errors;
         }
     }
 }

@@ -433,7 +433,7 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
                 case XchgStatementNode n: def = InstructionDefinition.XCHG; break;
             }
 
-            if (def.ParameterCount != node.ArgumentList.Items.Count) throw new TooFewArgumentsException(node.Position);
+            if (def.ParameterCount != node.ArgumentList.Items.Count) throw new TooFewArgumentsException(node.Position, def.Mnemonic);
 
             RValue a = null, b = null, c = null;
 

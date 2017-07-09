@@ -1,4 +1,5 @@
 ﻿using ArkeOS.Tools.KohlCompiler.Exceptions;
+using ArkeOS.Tools.KohlCompiler.Syntax;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -87,8 +88,8 @@ namespace ArkeOS.Tools.KohlCompiler {
 
         private PositionInfo CurrentPosition => this.file != null ? new PositionInfo(this.file.Path, this.file.Line, this.file.Column) : default(PositionInfo);
 
-        public Lexer(IReadOnlyList<string> filePaths) {
-            this.files = new Queue<FileInfo>(filePaths.Select(f => new FileInfo(f)));
+        public Lexer(CompilationOptions options) {
+            this.files = new Queue<FileInfo>(options.Sources.Select(f => new FileInfo(f)));
             this.builder = new StringBuilder();
             this.file = this.files.Dequeue();
             this.eof = false;

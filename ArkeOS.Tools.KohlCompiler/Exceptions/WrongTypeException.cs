@@ -1,5 +1,5 @@
 ﻿namespace ArkeOS.Tools.KohlCompiler.Exceptions {
-    public class WrongTypeException : CompilationException {
-        public WrongTypeException(PositionInfo position, string identifier) : base(position, $"Wrong type: '{identifier}'") { }
+    public sealed class WrongTypeException : CompilationException {
+        public WrongTypeException(PositionInfo position, string message) : base(position, $"Wrong type: '{message}'.") { }
     }
 }

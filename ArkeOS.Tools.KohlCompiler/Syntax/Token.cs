@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace ArkeOS.Tools.KohlCompiler {
+namespace ArkeOS.Tools.KohlCompiler.Syntax {
     public enum TokenType {
         IntegerLiteral,
         FloatLiteral,

@@ -3,15 +3,14 @@
 namespace ArkeOS.Tools.KohlCompiler {
     public static class Program {
         public static void Main(string[] args) {
-            var c = Compiler.FromArgs(args);
+            var c = CompilationOptions.FromArgs(args);
+            var e = c.unrecognized;
 
-            if (c != null) {
-                foreach (var e in c.Compile())
-                    Console.WriteLine(e);
-            }
-            else {
-                Console.WriteLine("Usage: " + Compiler.Usage);
-            }
+            foreach (var err in c.unrecognized)
+                Console.WriteLine(e);
+
+            foreach (var err in Compiler.Compile(c.result))
+                Console.WriteLine(e);
         }
     }
 }

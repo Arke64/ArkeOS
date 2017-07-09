@@ -1,6 +1,5 @@
 ﻿namespace ArkeOS.Tools.KohlCompiler.Exceptions {
-    public class TooFewArgumentsException : CompilationException {
-        public TooFewArgumentsException(PositionInfo position) : base(position) { }
-        public TooFewArgumentsException(PositionInfo position, string message) : base(position, message) { }
+    public sealed class TooFewArgumentsException : CompilationException {
+        public TooFewArgumentsException(PositionInfo position, string identifier) : base(position, identifier) { }
     }
 }
