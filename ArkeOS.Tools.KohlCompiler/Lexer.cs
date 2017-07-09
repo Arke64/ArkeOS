@@ -91,7 +91,7 @@ namespace ArkeOS.Tools.KohlCompiler {
         public Lexer(CompilationOptions options) {
             this.files = new Queue<FileInfo>(options.Sources.Select(f => new FileInfo(f)));
             this.builder = new StringBuilder();
-            this.file = this.files.Dequeue();
+            this.file = this.files.Any() ? this.files.Dequeue() : null;
             this.eof = false;
             this.currentToken = this.LexNextToken();
         }
