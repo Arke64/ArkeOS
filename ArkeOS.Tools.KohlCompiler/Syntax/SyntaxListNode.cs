@@ -1,19 +1,24 @@
-﻿using System;
+﻿using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
 
 namespace ArkeOS.Tools.KohlCompiler.Syntax {
-    public class SyntaxListNode<T> : SyntaxNode where T : SyntaxNode {
+    public class SyntaxListNode<T> : SyntaxNode, IList<T>, IReadOnlyList<T> where T : SyntaxNode {
         private readonly List<T> items = new List<T>();
 
-        public IReadOnlyList<T> Items => this.items;
+        public T this[int index] { get => this.items[index]; set => this.items[index] = value; }
+
+        public int Count => this.items.Count;
+        public bool IsReadOnly => ((IList<T>)this.items).IsReadOnly;
 
         public void Add(T node) => this.items.Add(node);
-
-        public bool TryGetIndex(Func<T, bool> predicate, out ulong result) {
-            result = (ulong)this.items.TakeWhile(v => !predicate(v)).Count();
-
-            return result != (ulong)this.items.Count;
-        }
+        public void Clear() => this.items.Clear();
+        public bool Contains(T item) => this.items.Contains(item);
+        public void CopyTo(T[] array, int arrayIndex) => this.items.CopyTo(array, arrayIndex);
+        public IEnumerator<T> GetEnumerator() => this.items.GetEnumerator();
+        public int IndexOf(T item) => this.items.IndexOf(item);
+        public void Insert(int index, T item) => this.items.Insert(index, item);
+        public bool Remove(T item) => this.items.Remove(item);
+        public void RemoveAt(int index) => this.items.RemoveAt(index);
+        IEnumerator IEnumerable.GetEnumerator() => this.items.GetEnumerator();
     }
 }

@@ -24,10 +24,10 @@ namespace ArkeOS.Tools.KohlCompiler.Analysis {
         public IReadOnlyCollection<FunctionSymbol> Functions { get; }
 
         public SymbolTable(ProgramDeclarationNode ast) {
-            this.ConstVariables = ast.ConstDeclarations.Items.Select(i => new ConstVariableSymbol(i.Identifier, this.FindType(i.Type), i.Value.Literal)).ToList();
-            this.GlobalVariables = ast.VariableDeclarations.Items.Select(i => new GlobalVariableSymbol(i.Identifier, this.FindType(i.Type))).ToList();
+            this.ConstVariables = ast.ConstDeclarations.Select(i => new ConstVariableSymbol(i.Identifier, this.FindType(i.Type), i.Value.Literal)).ToList();
+            this.GlobalVariables = ast.VariableDeclarations.Select(i => new GlobalVariableSymbol(i.Identifier, this.FindType(i.Type))).ToList();
             this.Registers = EnumExtensions.ToList<Register>().Select(i => new RegisterSymbol(i.ToString(), i)).ToList();
-            this.Functions = ast.FunctionDeclarations.Items.Select(i => this.Visit(i)).ToList();
+            this.Functions = ast.FunctionDeclarations.Select(i => this.Visit(i)).ToList();
         }
 
         private FunctionSymbol Visit(FunctionDeclarationNode node) {
@@ -35,9 +35,9 @@ namespace ArkeOS.Tools.KohlCompiler.Analysis {
 
             void visitStatementBlock(StatementBlockNode n)
             {
-                variables.AddRange(n.VariableDeclarations.Items.Select(i => new LocalVariableSymbol(i.Identifier, this.FindType(i.Type))));
+                variables.AddRange(n.VariableDeclarations.Select(i => new LocalVariableSymbol(i.Identifier, this.FindType(i.Type))));
 
-                foreach (var s in n.Statements.Items)
+                foreach (var s in n.Statements)
                     visitStatement(s);
             }
 
@@ -52,7 +52,7 @@ namespace ArkeOS.Tools.KohlCompiler.Analysis {
 
             visitStatementBlock(node.StatementBlock);
 
-            return new FunctionSymbol(node.Identifier, this.FindType(node.Type), node.ArgumentListDeclaration.Items.Select(i => new ArgumentSymbol(i.Identifier, this.FindType(i.Type))).ToList(), variables);
+            return new FunctionSymbol(node.Identifier, this.FindType(node.Type), node.ArgumentListDeclaration.Select(i => new ArgumentSymbol(i.Identifier, this.FindType(i.Type))).ToList(), variables);
         }
 
         public LocalVariableSymbol CreateTemporaryLocalVariable(FunctionSymbol function, TypeSymbol type) {
@@ -278,7 +278,7 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
 
         public static Compiliation Generate(ProgramDeclarationNode ast) {
             var symbolTable = new SymbolTable(ast);
-            var functions = ast.FunctionDeclarations.Items.Select(i => FunctionDeclarationVisitor.Visit(symbolTable, i)).ToList();
+            var functions = ast.FunctionDeclarations.Select(i => FunctionDeclarationVisitor.Visit(symbolTable, i)).ToList();
 
             return new Compiliation(functions, symbolTable.GlobalVariables);
         }
@@ -325,7 +325,7 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
         }
 
         private void Visit(StatementBlockNode node) {
-            foreach (var b in node.Statements.Items)
+            foreach (var b in node.Statements)
                 this.Visit(b);
         }
 
@@ -431,7 +431,7 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
                 case XchgStatementNode n: def = InstructionDefinition.XCHG; break;
             }
 
-            if (def.ParameterCount != node.ArgumentList.Items.Count) throw new TooFewArgumentsException(node.Position, def.Mnemonic);
+            if (def.ParameterCount != node.ArgumentList.Count) throw new TooFewArgumentsException(node.Position, def.Mnemonic);
 
             RValue a = null, b = null, c = null;
 
@@ -450,7 +450,7 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
         }
 
         private LValue Visit(FunctionCallIdentifierNode node) {
-            var args = node.ArgumentList.Items.Select(a => this.ExtractRValue(a)).ToList();
+            var args = node.ArgumentList.Select(a => this.ExtractRValue(a)).ToList();
             var func = this.symbolTable.TryFindFunction(node.Identifier, out var f) ? f : throw new IdentifierNotFoundException(node.Position, node.Identifier);
             var result = this.CreateTemporaryLocalVariable(func.Type);
 

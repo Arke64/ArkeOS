@@ -1,8 +1,8 @@
 ﻿namespace ArkeOS.Tools.KohlCompiler.Syntax {
     public class ArgumentListNode : SyntaxListNode<ExpressionStatementNode> {
         public bool Extract(int index, out ExpressionStatementNode arg) {
-            if (index < this.Items.Count) {
-                arg = this.Items[index];
+            if (index < this.Count) {
+                arg = this[index];
                 return true;
             }
             else {
