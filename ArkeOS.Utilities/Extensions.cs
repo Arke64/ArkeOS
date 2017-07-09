@@ -44,4 +44,19 @@ namespace ArkeOS.Utilities.Extensions {
                 yield return (T)a;
         }
     }
+
+    public static class IListExtensions {
+        public static bool TryGet<T>(this IList<T> self, int index, out T result) {
+            if (index < self.Count) {
+                result = self[index];
+
+                return true;
+            }
+            else {
+                result = default(T);
+
+                return false;
+            }
+        }
+    }
 }

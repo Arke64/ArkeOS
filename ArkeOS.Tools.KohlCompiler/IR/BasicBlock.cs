@@ -23,11 +23,11 @@ namespace ArkeOS.Tools.KohlCompiler.Analysis {
         public IReadOnlyCollection<RegisterSymbol> Registers { get; }
         public IReadOnlyCollection<FunctionSymbol> Functions { get; }
 
-        public SymbolTable(ProgramDeclarationNode ast) {
-            this.ConstVariables = ast.ConstDeclarations.Select(i => new ConstVariableSymbol(i.Identifier, this.FindType(i.Type), i.Value.Literal)).ToList();
-            this.GlobalVariables = ast.VariableDeclarations.Select(i => new GlobalVariableSymbol(i.Identifier, this.FindType(i.Type))).ToList();
+        public SymbolTable(ProgramNode ast) {
+            this.ConstVariables = ast.OfType<ConstDeclarationNode>().Select(i => new ConstVariableSymbol(i.Identifier, this.FindType(i.Type), ((IntegerLiteralNode)i.Value).Literal)).ToList();
+            this.GlobalVariables = ast.OfType<GlobalVariableDeclarationNode>().Select(i => new GlobalVariableSymbol(i.Identifier, this.FindType(i.Type))).ToList();
             this.Registers = EnumExtensions.ToList<Register>().Select(i => new RegisterSymbol(i.ToString(), i)).ToList();
-            this.Functions = ast.FunctionDeclarations.Select(i => this.Visit(i)).ToList();
+            this.Functions = ast.OfType<FunctionDeclarationNode>().Select(i => this.Visit(i)).ToList();
         }
 
         private FunctionSymbol Visit(FunctionDeclarationNode node) {
@@ -276,9 +276,9 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
     public sealed class IrGenerator {
         private IrGenerator() { }
 
-        public static Compiliation Generate(ProgramDeclarationNode ast) {
+        public static Compiliation Generate(ProgramNode ast) {
             var symbolTable = new SymbolTable(ast);
-            var functions = ast.FunctionDeclarations.Select(i => FunctionDeclarationVisitor.Visit(symbolTable, i)).ToList();
+            var functions = ast.OfType<FunctionDeclarationNode>().Select(i => FunctionDeclarationVisitor.Visit(symbolTable, i)).ToList();
 
             return new Compiliation(functions, symbolTable.GlobalVariables);
         }
@@ -431,13 +431,13 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
                 case XchgStatementNode n: def = InstructionDefinition.XCHG; break;
             }
 
-            if (def.ParameterCount != node.ArgumentList.Count) throw new TooFewArgumentsException(node.Position, def.Mnemonic);
+            if (def.ParameterCount != node.ArgumentList.Count) throw new WrongNumberOfArgumentsException(node.Position, def.Mnemonic);
 
             RValue a = null, b = null, c = null;
 
-            if (def.ParameterCount > 0) { node.ArgumentList.Extract(0, out var arg); this.symbolTable.CheckTypeOfExpression(WellKnownSymbol.Word, arg, this.functionSymbol); a = def.Parameter1Direction.HasFlag(ParameterDirection.Write) ? this.ExtractLValue(arg) : this.ExtractRValue(arg); }
-            if (def.ParameterCount > 1) { node.ArgumentList.Extract(1, out var arg); this.symbolTable.CheckTypeOfExpression(WellKnownSymbol.Word, arg, this.functionSymbol); b = def.Parameter2Direction.HasFlag(ParameterDirection.Write) ? this.ExtractLValue(arg) : this.ExtractRValue(arg); }
-            if (def.ParameterCount > 2) { node.ArgumentList.Extract(2, out var arg); this.symbolTable.CheckTypeOfExpression(WellKnownSymbol.Word, arg, this.functionSymbol); c = def.Parameter3Direction.HasFlag(ParameterDirection.Write) ? this.ExtractLValue(arg) : this.ExtractRValue(arg); }
+            if (def.ParameterCount > 0) { node.ArgumentList.TryGet(0, out var arg); this.symbolTable.CheckTypeOfExpression(WellKnownSymbol.Word, arg, this.functionSymbol); a = def.Parameter1Direction.HasFlag(ParameterDirection.Write) ? this.ExtractLValue(arg) : this.ExtractRValue(arg); }
+            if (def.ParameterCount > 1) { node.ArgumentList.TryGet(1, out var arg); this.symbolTable.CheckTypeOfExpression(WellKnownSymbol.Word, arg, this.functionSymbol); b = def.Parameter2Direction.HasFlag(ParameterDirection.Write) ? this.ExtractLValue(arg) : this.ExtractRValue(arg); }
+            if (def.ParameterCount > 2) { node.ArgumentList.TryGet(2, out var arg); this.symbolTable.CheckTypeOfExpression(WellKnownSymbol.Word, arg, this.functionSymbol); c = def.Parameter3Direction.HasFlag(ParameterDirection.Write) ? this.ExtractLValue(arg) : this.ExtractRValue(arg); }
 
             this.block.PushInstuction(new BasicBlockIntrinsicInstruction(def, a, b, c));
         }
@@ -493,8 +493,8 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
                 case IdentifierExpressionNode n: return this.ExtractRValue(n);
                 case UnaryExpressionNode n:
                     switch (n.Op.Operator) {
-                        case Operator.UnaryMinus: return this.ExtractRValue(new BinaryExpressionNode(n.Position, n.Expression, OperatorNode.FromOperator(Operator.Multiplication), new IntegerLiteralNode(n.Position, ulong.MaxValue)));
-                        case Operator.Not: return this.ExtractRValue(new BinaryExpressionNode(n.Position, n.Expression, OperatorNode.FromOperator(Operator.Xor), new IntegerLiteralNode(n.Position, ulong.MaxValue)));
+                        case Operator.UnaryMinus: return this.ExtractRValue(new BinaryExpressionNode(n.Position, n.Expression, OperatorNode.FromOperator(n.Position, Operator.Multiplication), new IntegerLiteralNode(n.Position, ulong.MaxValue)));
+                        case Operator.Not: return this.ExtractRValue(new BinaryExpressionNode(n.Position, n.Expression, OperatorNode.FromOperator(n.Position, Operator.Xor), new IntegerLiteralNode(n.Position, ulong.MaxValue)));
                         case Operator.AddressOf: return new AddressOfRValue(this.ExtractLValue(n.Expression));
                         case Operator.Dereference: return new PointerLValue(this.ExtractRValue(n.Expression));
                     }

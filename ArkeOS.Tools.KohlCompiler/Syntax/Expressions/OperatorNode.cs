@@ -84,9 +84,9 @@ namespace ArkeOS.Tools.KohlCompiler.Syntax {
         public int Precedence { get; }
         public bool IsLeftAssociative { get; }
 
-        private OperatorNode(Token token, Operator op, OperatorClass cls) : base(token.Position) => (this.Operator, this.Class, (this.Precedence, this.IsLeftAssociative)) = (op, cls, OperatorNode.Defs[op]);
+        private OperatorNode(PositionInfo position, Operator op, OperatorClass cls) : base(position) => (this.Operator, this.Class, (this.Precedence, this.IsLeftAssociative)) = (op, cls, OperatorNode.Defs[op]);
 
-        public static OperatorNode FromOperator(Operator op) {
+        public static OperatorNode FromOperator(PositionInfo position, Operator op) {
             var cls = OperatorClass.Binary;
 
             switch (op) {
@@ -99,7 +99,7 @@ namespace ArkeOS.Tools.KohlCompiler.Syntax {
                     break;
             }
 
-            return new OperatorNode(default(Token), op, cls);
+            return new OperatorNode(position, op, cls);
         }
 
         public static OperatorNode FromToken(Token token, OperatorClass cls) {
@@ -144,7 +144,7 @@ namespace ArkeOS.Tools.KohlCompiler.Syntax {
                 }
             }
 
-            return new OperatorNode(token, op, cls);
+            return new OperatorNode(token.Position, op, cls);
         }
 
         public static OperatorNode FromCompoundToken(Token token) {
@@ -170,7 +170,7 @@ namespace ArkeOS.Tools.KohlCompiler.Syntax {
                 default: return null;
             }
 
-            return new OperatorNode(token, op, OperatorClass.Binary);
+            return new OperatorNode(token.Position, op, OperatorClass.Binary);
         }
     }
 }

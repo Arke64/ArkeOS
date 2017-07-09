@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 
 namespace ArkeOS.Tools.KohlCompiler.Syntax {
     public enum TokenType {
@@ -104,140 +105,122 @@ namespace ArkeOS.Tools.KohlCompiler.Syntax {
     }
 
     public struct Token {
-        private bool classSet;
-        private TokenClass tokenClass;
-
         public PositionInfo Position;
         public TokenType Type;
+        public TokenClass Class;
         public string Value;
 
         public Token(PositionInfo position, TokenType type) : this(position, type, string.Empty) { }
-        public Token(PositionInfo position, TokenType type, string value) => (this.Position, this.Type, this.Value, this.classSet, this.tokenClass) = (position, type, value, false, default(TokenClass));
+        public Token(PositionInfo position, TokenType type, string value) => (this.Position, this.Type, this.Value, this.Class) = (position, type, value, Token.GetClass(type));
 
-        public override string ToString() => $"{this.Type}{(this.Value != string.Empty ? ": " + this.Value : string.Empty)}";
+        public override string ToString() => !string.IsNullOrEmpty(this.Value) ? $"{this.Type}<{this.Value}>" : this.Type.ToString();
 
-        public TokenClass Class {
-            get {
-                if (!this.classSet) {
-                    switch (this.Type) {
-                        case TokenType.OpenParenthesis:
-                        case TokenType.CloseParenthesis:
+        private static TokenClass GetClass(TokenType token) {
+            switch (token) {
+                case TokenType.OpenParenthesis:
+                case TokenType.CloseParenthesis:
 
-                        case TokenType.DoubleEqual:
-                        case TokenType.ExclamationPoint:
-                        case TokenType.ExclamationPointEqual:
+                case TokenType.DoubleEqual:
+                case TokenType.ExclamationPoint:
+                case TokenType.ExclamationPointEqual:
 
-                        case TokenType.LessThanEqual:
-                        case TokenType.GreaterThanEqual:
+                case TokenType.LessThanEqual:
+                case TokenType.GreaterThanEqual:
 
-                        case TokenType.Plus:
-                        case TokenType.Minus:
-                        case TokenType.Asterisk:
-                        case TokenType.ForwardSlash:
-                        case TokenType.Caret:
-                        case TokenType.Percent:
-                        case TokenType.Ampersand:
-                        case TokenType.Pipe:
-                        case TokenType.Tilde:
+                case TokenType.Plus:
+                case TokenType.Minus:
+                case TokenType.Asterisk:
+                case TokenType.ForwardSlash:
+                case TokenType.Caret:
+                case TokenType.Percent:
+                case TokenType.Ampersand:
+                case TokenType.Pipe:
+                case TokenType.Tilde:
 
-                        case TokenType.ExclamationPointAmpersand:
-                        case TokenType.ExclamationPointPipe:
-                        case TokenType.ExclamationPointTilde:
-                        case TokenType.LessThan:
-                        case TokenType.DoubleLessThan:
-                        case TokenType.TripleLessThan:
-                        case TokenType.GreaterThan:
-                        case TokenType.DoubleGreaterThan:
-                        case TokenType.TripleGreaterThan:
-                            this.tokenClass = TokenClass.Operator;
-                            break;
+                case TokenType.ExclamationPointAmpersand:
+                case TokenType.ExclamationPointPipe:
+                case TokenType.ExclamationPointTilde:
+                case TokenType.LessThan:
+                case TokenType.DoubleLessThan:
+                case TokenType.TripleLessThan:
+                case TokenType.GreaterThan:
+                case TokenType.DoubleGreaterThan:
+                case TokenType.TripleGreaterThan:
+                    return TokenClass.Operator;
 
-                        case TokenType.Equal:
+                case TokenType.Equal:
 
-                        case TokenType.PlusEqual:
-                        case TokenType.MinusEqual:
-                        case TokenType.AsteriskEqual:
-                        case TokenType.ForwardSlashEqual:
-                        case TokenType.CaretEqual:
-                        case TokenType.PercentEqual:
-                        case TokenType.AmpersandEqual:
-                        case TokenType.PipeEqual:
-                        case TokenType.TildeEqual:
+                case TokenType.PlusEqual:
+                case TokenType.MinusEqual:
+                case TokenType.AsteriskEqual:
+                case TokenType.ForwardSlashEqual:
+                case TokenType.CaretEqual:
+                case TokenType.PercentEqual:
+                case TokenType.AmpersandEqual:
+                case TokenType.PipeEqual:
+                case TokenType.TildeEqual:
 
-                        case TokenType.ExclamationPointAmpersandEqual:
-                        case TokenType.ExclamationPointPipeEqual:
-                        case TokenType.ExclamationPointTildeEqual:
-                        case TokenType.DoubleLessThanEqual:
-                        case TokenType.TripleLessThanEqual:
-                        case TokenType.DoubleGreaterThanEqual:
-                        case TokenType.TripleGreaterThanEqual:
-                            this.tokenClass = TokenClass.Assignment;
-                            break;
+                case TokenType.ExclamationPointAmpersandEqual:
+                case TokenType.ExclamationPointPipeEqual:
+                case TokenType.ExclamationPointTildeEqual:
+                case TokenType.DoubleLessThanEqual:
+                case TokenType.TripleLessThanEqual:
+                case TokenType.DoubleGreaterThanEqual:
+                case TokenType.TripleGreaterThanEqual:
+                    return TokenClass.Assignment;
 
-                        case TokenType.IntegerLiteral:
-                        case TokenType.FloatLiteral:
-                        case TokenType.BoolLiteral:
-                        case TokenType.NullLiteral:
-                            this.tokenClass = TokenClass.Literal;
-                            break;
+                case TokenType.IntegerLiteral:
+                case TokenType.FloatLiteral:
+                case TokenType.BoolLiteral:
+                case TokenType.NullLiteral:
+                    return TokenClass.Literal;
 
-                        case TokenType.Identifier:
-                            this.tokenClass = TokenClass.Identifier;
-                            break;
+                case TokenType.Identifier:
+                    return TokenClass.Identifier;
 
-                        case TokenType.IfKeyword:
-                        case TokenType.ElseKeyword:
-                        case TokenType.WhileKeyword:
-                        case TokenType.FuncKeyword:
-                            this.tokenClass = TokenClass.BlockKeyword;
-                            break;
+                case TokenType.IfKeyword:
+                case TokenType.ElseKeyword:
+                case TokenType.WhileKeyword:
+                case TokenType.FuncKeyword:
+                    return TokenClass.BlockKeyword;
 
-                        case TokenType.VarKeyword:
-                        case TokenType.ConstKeyword:
-                        case TokenType.ReturnKeyword:
-                            this.tokenClass = TokenClass.StatementKeyword;
-                            break;
+                case TokenType.VarKeyword:
+                case TokenType.ConstKeyword:
+                case TokenType.ReturnKeyword:
+                    return TokenClass.StatementKeyword;
 
-                        case TokenType.DbgKeyword:
-                        case TokenType.BrkKeyword:
-                        case TokenType.HltKeyword:
-                        case TokenType.NopKeyword:
-                        case TokenType.IntKeyword:
-                        case TokenType.EintKeyword:
-                        case TokenType.InteKeyword:
-                        case TokenType.IntdKeyword:
-                        case TokenType.XchgKeyword:
-                        case TokenType.CasKeyword:
-                        case TokenType.CpyKeyword:
-                            this.tokenClass = TokenClass.IntrinsicKeyword;
-                            break;
+                case TokenType.DbgKeyword:
+                case TokenType.BrkKeyword:
+                case TokenType.HltKeyword:
+                case TokenType.NopKeyword:
+                case TokenType.IntKeyword:
+                case TokenType.EintKeyword:
+                case TokenType.InteKeyword:
+                case TokenType.IntdKeyword:
+                case TokenType.XchgKeyword:
+                case TokenType.CasKeyword:
+                case TokenType.CpyKeyword:
+                    return TokenClass.IntrinsicKeyword;
 
-                        case TokenType.Semicolon:
-                        case TokenType.Comma:
-                        case TokenType.Period:
-                        case TokenType.Colon:
-                            this.tokenClass = TokenClass.Separator;
-                            break;
+                case TokenType.Semicolon:
+                case TokenType.Comma:
+                case TokenType.Period:
+                case TokenType.Colon:
+                    return TokenClass.Separator;
 
-                        case TokenType.OpenCurlyBrace:
-                        case TokenType.CloseCurlyBrace:
-                        case TokenType.OpenSquareBrace:
-                        case TokenType.CloseSquareBrace:
-                            this.tokenClass = TokenClass.Brace;
-                            break;
+                case TokenType.OpenCurlyBrace:
+                case TokenType.CloseCurlyBrace:
+                case TokenType.OpenSquareBrace:
+                case TokenType.CloseSquareBrace:
+                    return TokenClass.Brace;
 
-                        case TokenType.Whitespace:
-                            this.tokenClass = TokenClass.Whitespace;
-                            break;
+                case TokenType.Whitespace:
+                    return TokenClass.Whitespace;
 
-                        default:
-                            throw new InvalidOperationException();
-                    }
+                default:
+                    Debug.Assert(false);
 
-                    this.classSet = true;
-                }
-
-                return this.tokenClass;
+                    throw new InvalidOperationException();
             }
         }
     }

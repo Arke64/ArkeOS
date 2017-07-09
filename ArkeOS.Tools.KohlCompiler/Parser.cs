@@ -2,6 +2,7 @@
 using ArkeOS.Tools.KohlCompiler.Exceptions;
 using ArkeOS.Tools.KohlCompiler.Syntax;
 using ArkeOS.Utilities.Extensions;
+using System.Collections.Generic;
 
 namespace ArkeOS.Tools.KohlCompiler {
     public sealed class Parser {
@@ -9,16 +10,16 @@ namespace ArkeOS.Tools.KohlCompiler {
 
         private Parser(Lexer lexer) => this.lexer = lexer;
 
-        public static ProgramDeclarationNode Parse(CompilationOptions options) => new Parser(new Lexer(options)).Parse();
+        public static ProgramNode Parse(CompilationOptions options) => new Parser(new Lexer(options)).Parse();
 
-        private ProgramDeclarationNode Parse() {
-            var prog = new ProgramDeclarationNode(this.lexer.CurrentPosition);
+        private ProgramNode Parse() {
+            var prog = new ProgramNode(this.lexer.CurrentPosition);
 
             while (this.lexer.TryPeek(out var tok)) {
                 switch (tok.Type) {
-                    case TokenType.FuncKeyword: prog.FunctionDeclarations.Add(this.ReadFunctionDeclaration()); break;
-                    case TokenType.VarKeyword: prog.VariableDeclarations.Add(this.ReadGlobalVariableDeclaration()); break;
-                    case TokenType.ConstKeyword: prog.ConstDeclarations.Add(this.ReadConstDeclaration()); break;
+                    case TokenType.FuncKeyword: prog.Add(this.ReadFunctionDeclaration()); break;
+                    case TokenType.VarKeyword: prog.Add(this.ReadGlobalVariableDeclaration()); break;
+                    case TokenType.ConstKeyword: prog.Add(this.ReadConstDeclaration()); break;
                     default: throw this.GetUnexpectedException(tok);
                 }
             }
@@ -57,7 +58,7 @@ namespace ArkeOS.Tools.KohlCompiler {
             var ident = this.lexer.Read(TokenType.Identifier);
 
             if (this.lexer.TryRead(TokenType.OpenSquareBrace)) {
-                var node = new TypeIdentifierNode(ident, this.ReadTypeIdentifier());
+                var node = new TypeIdentifierNode(ident, new List<TypeIdentifierNode> { this.ReadTypeIdentifier() });
 
                 this.lexer.Read(TokenType.CloseSquareBrace);
 
