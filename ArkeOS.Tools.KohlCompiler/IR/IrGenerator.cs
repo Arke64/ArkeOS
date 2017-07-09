@@ -3,40 +3,37 @@ using ArkeOS.Tools.KohlCompiler.Analysis;
 using ArkeOS.Tools.KohlCompiler.Exceptions;
 using ArkeOS.Tools.KohlCompiler.Syntax;
 using ArkeOS.Utilities.Extensions;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace ArkeOS.Tools.KohlCompiler.IR {
     public sealed class IrGenerator {
-        private IrGenerator() { }
-
-        public static Compiliation Generate(ProgramNode ast) {
-            var symbolTable = new SymbolTable(ast);
-            var functions = ast.OfType<FunctionDeclarationNode>().Select(i => FunctionDeclarationVisitor.Visit(symbolTable, i)).ToList();
-
-            return new Compiliation(functions, symbolTable.GlobalVariables);
-        }
-    }
-
-    public sealed class FunctionDeclarationVisitor {
         private readonly BasicBlockCreator block = new BasicBlockCreator();
         private readonly SymbolTable symbolTable;
         private readonly FunctionSymbol functionSymbol;
 
-        private FunctionDeclarationVisitor(SymbolTable symbolTable, FunctionSymbol functionSymbol) => (this.symbolTable, this.functionSymbol) = (symbolTable, functionSymbol);
+        private IrGenerator(SymbolTable symbolTable, FunctionSymbol functionSymbol) => (this.symbolTable, this.functionSymbol) = (symbolTable, functionSymbol);
+
+        public static Compiliation Generate(ProgramNode ast) {
+            var symbolTable = new SymbolTable(ast);
+            var functions = new List<Function>();
+
+            foreach (var node in ast.OfType<FunctionDeclarationNode>()) {
+                var func = symbolTable.TryFindFunction(node.Identifier, out var f) ? f : throw new IdentifierNotFoundException(node.Position, node.Identifier);
+                var visitor = new IrGenerator(symbolTable, func);
+
+                visitor.Visit(node.StatementBlock);
+
+                visitor.block.PushTerminator(new ReturnTerminator(visitor.CreateTemporaryLocalVariable(node.Type)));
+
+                functions.Add(new Function(func, visitor.block.Entry));
+            }
+
+            return new Compiliation(functions, symbolTable.GlobalVariables);
+        }
 
         private LocalVariableLValue CreateTemporaryLocalVariable(TypeSymbol type) => new LocalVariableLValue(this.symbolTable.CreateTemporaryLocalVariable(this.functionSymbol, type));
         private LocalVariableLValue CreateTemporaryLocalVariable(TypeIdentifierNode node) => this.CreateTemporaryLocalVariable(this.symbolTable.FindType(node));
-
-        public static Function Visit(SymbolTable symbolTable, FunctionDeclarationNode node) {
-            var func = symbolTable.TryFindFunction(node.Identifier, out var f) ? f : throw new IdentifierNotFoundException(node.Position, node.Identifier);
-            var visitor = new FunctionDeclarationVisitor(symbolTable, func);
-
-            visitor.Visit(node.StatementBlock);
-
-            visitor.block.PushTerminator(new ReturnTerminator(visitor.CreateTemporaryLocalVariable(node.Type)));
-
-            return new Function(func, visitor.block.Entry);
-        }
 
         private void Visit(StatementBlockNode node) {
             foreach (var b in node)
