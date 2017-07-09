@@ -2,7 +2,6 @@
 using ArkeOS.Tools.KohlCompiler.Exceptions;
 using ArkeOS.Tools.KohlCompiler.Syntax;
 using ArkeOS.Utilities.Extensions;
-using System.Collections.Generic;
 
 namespace ArkeOS.Tools.KohlCompiler {
     public sealed class Parser {
@@ -18,8 +17,8 @@ namespace ArkeOS.Tools.KohlCompiler {
             while (this.lexer.TryPeek(out var tok)) {
                 switch (tok.Type) {
                     case TokenType.FuncKeyword: prog.Add(this.ReadFunctionDeclaration()); break;
-                    case TokenType.VarKeyword: prog.Add(this.ReadVariableDeclaration()); break;
-                    case TokenType.ConstKeyword: prog.Add(this.ReadConstDeclaration()); break;
+                    case TokenType.VarKeyword: prog.Add(this.ReadVariableDeclaration()); this.lexer.Read(TokenType.Semicolon); break;
+                    case TokenType.ConstKeyword: prog.Add(this.ReadConstDeclaration()); this.lexer.Read(TokenType.Semicolon); break;
                     default: throw this.GetUnexpectedException(tok);
                 }
             }
@@ -56,17 +55,17 @@ namespace ArkeOS.Tools.KohlCompiler {
 
         private TypeIdentifierNode ReadTypeIdentifier() {
             var ident = this.lexer.Read(TokenType.Identifier);
+            var args = new SyntaxListNode<TypeIdentifierNode>(ident.Position);
 
             if (this.lexer.TryRead(TokenType.OpenSquareBrace)) {
-                var node = new TypeIdentifierNode(ident, new List<TypeIdentifierNode> { this.ReadTypeIdentifier() });
+                do {
+                    args.Add(this.ReadTypeIdentifier());
+                } while (this.lexer.TryRead(TokenType.Comma));
 
                 this.lexer.Read(TokenType.CloseSquareBrace);
+            }
 
-                return node;
-            }
-            else {
-                return new TypeIdentifierNode(ident);
-            }
+            return new TypeIdentifierNode(ident, args);
         }
 
         private ArgumentDeclarationNode ReadArgumentDeclaration() {
@@ -82,11 +81,10 @@ namespace ArkeOS.Tools.KohlCompiler {
             var ident = this.lexer.Read(TokenType.Identifier);
             this.lexer.Read(TokenType.Colon);
             var type = this.ReadTypeIdentifier();
-            this.lexer.TryRead(TokenType.Equal);
-            var res = new VariableDeclarationNode(ident, type, this.ReadExpression());
-            this.lexer.Read(TokenType.Semicolon);
+            this.lexer.Read(TokenType.Equal);
+            var exp = this.ReadExpression();
 
-            return res;
+            return new VariableDeclarationNode(ident, type, exp);
         }
 
         private ConstDeclarationNode ReadConstDeclaration() {
@@ -95,32 +93,20 @@ namespace ArkeOS.Tools.KohlCompiler {
             this.lexer.Read(TokenType.Colon);
             var type = this.ReadTypeIdentifier();
             this.lexer.Read(TokenType.Equal);
-            var tok = this.lexer.Read(TokenType.IntegerLiteral);
-            this.lexer.Read(TokenType.Semicolon);
+            var exp = this.ReadExpression();
 
-            return new ConstDeclarationNode(ident, type, new IntegerLiteralNode(tok));
+            return new ConstDeclarationNode(ident, type, exp);
         }
 
         private StatementBlockNode ReadStatementBlock() {
             var block = new StatementBlockNode(this.lexer.CurrentPosition);
 
             if (this.lexer.TryRead(TokenType.OpenCurlyBrace)) {
-                while (!this.lexer.TryRead(TokenType.CloseCurlyBrace)) {
-                    if (this.lexer.TryPeek(TokenType.VarKeyword)) {
-                        var res = this.ReadVariableDeclaration();
-
-                        if (res is VariableDeclarationNode)
-                            block.Statements.Add(res);
-
-                        block.VariableDeclarations.Add(res);
-                    }
-                    else {
-                        block.Statements.Add(this.ReadStatement());
-                    }
-                }
+                while (!this.lexer.TryRead(TokenType.CloseCurlyBrace))
+                    block.Add(this.ReadStatement());
             }
             else {
-                block.Statements.Add(this.ReadStatement());
+                block.Add(this.ReadStatement());
             }
 
             return block;
@@ -132,6 +118,11 @@ namespace ArkeOS.Tools.KohlCompiler {
 
             if (tok.Class == TokenClass.IntrinsicKeyword) {
                 res = this.ReadIntrinsicStatement();
+
+                this.lexer.Read(TokenType.Semicolon);
+            }
+            else if (tok.Type == TokenType.VarKeyword) {
+                res = this.ReadVariableDeclaration();
 
                 this.lexer.Read(TokenType.Semicolon);
             }
@@ -154,8 +145,7 @@ namespace ArkeOS.Tools.KohlCompiler {
             else {
                 var lhs = this.ReadExpression();
 
-                if (this.lexer.TryPeek(TokenClass.Assignment)) {
-                    var op = this.lexer.Read(TokenClass.Assignment);
+                if (this.lexer.TryRead(TokenClass.Assignment, out var op)) {
                     var rhs = this.ReadExpression();
 
                     res = op.Type == TokenType.Equal ? new AssignmentStatementNode(lhs.Position, lhs, rhs) : new CompoundAssignmentStatementNode(lhs.Position, lhs, OperatorNode.FromCompoundToken(op) ?? throw this.GetUnexpectedException(op), rhs);

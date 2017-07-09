@@ -33,17 +33,12 @@ namespace ArkeOS.Tools.KohlCompiler.Analysis {
         private FunctionSymbol Visit(FunctionDeclarationNode node) {
             var variables = new List<LocalVariableSymbol>();
 
-            void visitStatementBlock(StatementBlockNode n)
-            {
-                variables.AddRange(n.VariableDeclarations.Select(i => new LocalVariableSymbol(i.Identifier, this.FindType(i.Type))));
-
-                foreach (var s in n.Statements)
-                    visitStatement(s);
-            }
+            void visitStatementBlock(StatementBlockNode n) => n.ForEach(s => visitStatement(s));
 
             void visitStatement(StatementNode n)
             {
                 switch (n) {
+                    case VariableDeclarationNode s: variables.Add(new LocalVariableSymbol(s.Identifier, this.FindType(s.Type))); break;
                     case IfElseStatementNode s: visitStatementBlock(s.ElseStatementBlock); visitStatementBlock(s.StatementBlock); break;
                     case IfStatementNode s: visitStatementBlock(s.StatementBlock); break;
                     case WhileStatementNode s: visitStatementBlock(s.StatementBlock); break;
@@ -325,7 +320,7 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
         }
 
         private void Visit(StatementBlockNode node) {
-            foreach (var b in node.Statements)
+            foreach (var b in node)
                 this.Visit(b);
         }
 

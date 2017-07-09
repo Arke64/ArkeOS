@@ -260,13 +260,17 @@ namespace ArkeOS.Tools.KohlCompiler {
         public Token Read() => this.TryRead(out var token) ? token : throw new ExpectedException(this.CurrentPosition, "token");
         public Token Read(TokenType type) => this.TryRead(out var token) && token.Type == type ? token : throw new ExpectedException(this.CurrentPosition, type);
         public Token Read(TokenClass cls) => this.TryRead(out var token) && token.Class == cls ? token : throw new ExpectedException(this.CurrentPosition, cls);
-        public bool TryRead(TokenType type) => this.TryPeek(type) && this.TryRead(out _);
-        public bool TryRead(TokenClass cls) => this.TryPeek(cls) && this.TryRead(out _);
+        public bool TryRead(TokenType type) => this.TryRead(type, out _);
+        public bool TryRead(TokenClass cls) => this.TryRead(cls, out _);
+        public bool TryRead(TokenType type, out Token token) => this.TryPeek(type, out token) && this.TryRead(out _);
+        public bool TryRead(TokenClass cls, out Token token) => this.TryPeek(cls, out token) && this.TryRead(out _);
 
         public Token Peek() => this.TryPeek(out var token) ? token : throw new ExpectedException(this.CurrentPosition, "token");
         public Token Peek(TokenType type) => this.TryPeek(out var token) && token.Type == type ? token : throw new ExpectedException(this.CurrentPosition, type);
         public Token Peek(TokenClass cls) => this.TryPeek(out var token) && token.Class == cls ? token : throw new ExpectedException(this.CurrentPosition, cls);
-        public bool TryPeek(TokenType type) => this.TryPeek(out var token) && token.Type == type;
-        public bool TryPeek(TokenClass cls) => this.TryPeek(out var token) && token.Class == cls;
+        public bool TryPeek(TokenType type) => this.TryPeek(type, out _);
+        public bool TryPeek(TokenClass cls) => this.TryPeek(cls, out _);
+        public bool TryPeek(TokenType type, out Token token) => this.TryPeek(out token) && token.Type == type;
+        public bool TryPeek(TokenClass cls, out Token token) => this.TryPeek(out token) && token.Class == cls;
     }
 }

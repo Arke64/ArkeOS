@@ -46,6 +46,11 @@ namespace ArkeOS.Utilities.Extensions {
     }
 
     public static class IListExtensions {
+        public static void ForEach<T>(this IList<T> self, Action<T> action) {
+            foreach (var s in self)
+                action(s);
+        }
+
         public static bool TryGet<T>(this IList<T> self, int index, out T result) {
             if (index < self.Count) {
                 result = self[index];
