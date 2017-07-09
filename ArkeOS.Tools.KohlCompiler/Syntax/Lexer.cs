@@ -1,12 +1,11 @@
 ﻿using ArkeOS.Tools.KohlCompiler.Exceptions;
-using ArkeOS.Tools.KohlCompiler.Syntax;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
 
-namespace ArkeOS.Tools.KohlCompiler {
+namespace ArkeOS.Tools.KohlCompiler.Syntax {
     public class Lexer {
         private static IReadOnlyDictionary<int, char[]> ValidDigitsForBase { get; } = new Dictionary<int, char[]> { [2] = new[] { '0', '1' }, [8] = new[] { '0', '1', '2', '3', '4', '5', '6', '7' }, [10] = new[] { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9' }, [16] = new[] { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f', 'A', 'B', 'C', 'D', 'E', 'F' } };
 

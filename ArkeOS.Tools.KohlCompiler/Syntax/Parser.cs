@@ -1,9 +1,8 @@
 ﻿using ArkeOS.Hardware.Architecture;
 using ArkeOS.Tools.KohlCompiler.Exceptions;
-using ArkeOS.Tools.KohlCompiler.Syntax;
 using ArkeOS.Utilities.Extensions;
 
-namespace ArkeOS.Tools.KohlCompiler {
+namespace ArkeOS.Tools.KohlCompiler.Syntax {
     public sealed class Parser {
         private readonly Lexer lexer;
 

@@ -1,9 +1,8 @@
 ﻿using ArkeOS.Tools.KohlCompiler.Exceptions;
-using ArkeOS.Tools.KohlCompiler.Syntax;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace ArkeOS.Tools.KohlCompiler {
+namespace ArkeOS.Tools.KohlCompiler.Syntax {
     public class ExpressionStack {
         private readonly Stack<ExpressionStatementNode> outputStack = new Stack<ExpressionStatementNode>();
         private readonly Stack<OperatorNode> operatorStack = new Stack<OperatorNode>();
