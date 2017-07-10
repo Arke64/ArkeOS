@@ -19,7 +19,7 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
             var functions = new List<Function>();
 
             foreach (var node in ast.OfType<FunctionDeclarationNode>()) {
-                var func = symbolTable.TryFindFunction(node.Identifier, out var f) ? f : throw new IdentifierNotFoundException(node.Position, node.Identifier);
+                var func = symbolTable.FindFunction(node.Position, node.Identifier);
                 var visitor = new IrGenerator(symbolTable, func);
 
                 visitor.Visit(node.StatementBlock);
@@ -58,11 +58,7 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
             switch (node) {
                 default: throw new UnexpectedException(node.Position, "identifier node");
                 case VariableDeclarationNode n:
-                    var lhsType = this.symbolTable.FindType(n.Type);
-                    var rhsType = this.symbolTable.GetTypeOfExpression(n.Initializer, this.functionSymbol);
-
-                    if (!((lhsType.BaseName == "ptr" && rhsType == WellKnownSymbol.Word) || (rhsType.BaseName == "ptr" && lhsType == WellKnownSymbol.Word)))
-                        this.symbolTable.CheckTypeOfExpression(n.Type, n.Initializer, this.functionSymbol);
+                    this.symbolTable.CheckAssignable(n.Type, n.Initializer, this.functionSymbol);
 
                     this.Visit(new AssignmentStatementNode(n.Position, new IdentifierNode(n.Token), n.Initializer));
 
@@ -71,6 +67,8 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
         }
 
         private void Visit(ReturnStatementNode node) {
+            this.symbolTable.CheckAssignable(this.functionSymbol.Type, node.Expression, this.functionSymbol);
+
             this.block.PushTerminator(new ReturnTerminator(this.ExtractRValue(node.Expression)));
         }
 
@@ -81,17 +79,13 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
             if (node is CompoundAssignmentStatementNode cnode)
                 exp = new BinaryExpressionNode(cnode.Position, cnode.Target, cnode.Op, cnode.Expression);
 
-            var lhsType = this.symbolTable.GetTypeOfExpression(node.Target, this.functionSymbol);
-            var rhsType = this.symbolTable.GetTypeOfExpression(exp, this.functionSymbol);
-
-            if (!((lhsType.BaseName == "ptr" && rhsType == WellKnownSymbol.Word) || (rhsType.BaseName == "ptr" && lhsType == WellKnownSymbol.Word)))
-                this.symbolTable.CheckTypeOfExpression(node.Target, exp, this.functionSymbol);
+            this.symbolTable.CheckAssignable(node.Target, exp, this.functionSymbol);
 
             this.block.PushInstuction(new BasicBlockAssignmentInstruction(lhs, this.ExtractRValue(exp)));
         }
 
         private void Visit(IfStatementNode node) {
-            this.symbolTable.CheckTypeOfExpression(WellKnownSymbol.Bool, node.Expression, this.functionSymbol);
+            this.symbolTable.CheckAssignable(WellKnownSymbol.Bool, node.Expression, this.functionSymbol);
 
             var (startTerminator, ifBlock) = this.block.PushTerminator(new IfTerminator(this.ExtractRValue(node.Expression)));
             this.Visit(node.StatementBlock);
@@ -110,7 +104,7 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
         }
 
         private void Visit(WhileStatementNode node) {
-            this.symbolTable.CheckTypeOfExpression(WellKnownSymbol.Bool, node.Expression, this.functionSymbol);
+            this.symbolTable.CheckAssignable(WellKnownSymbol.Bool, node.Expression, this.functionSymbol);
 
             var (startTerminator, conditionBlock) = this.block.PushTerminator(new GotoTerminator());
             startTerminator.SetNext(conditionBlock);
@@ -161,9 +155,17 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
         }
 
         private LValue Visit(FunctionCallIdentifierNode node) {
-            var args = node.ArgumentList.Select(a => this.ExtractRValue(a)).ToList();
-            var func = this.symbolTable.TryFindFunction(node.Identifier, out var f) ? f : throw new IdentifierNotFoundException(node.Position, node.Identifier);
+            var func = this.symbolTable.FindFunction(node.Position, node.Identifier);
             var result = this.CreateTemporaryLocalVariable(func.Type);
+            var args = new List<RValue>();
+
+            for (var i = 0; i < func.Arguments.Count; i++) {
+                var a = node.ArgumentList[i];
+
+                this.symbolTable.CheckAssignable(func.Arguments[i].Type, a, this.functionSymbol);
+
+                args.Add(this.ExtractRValue(a));
+            }
 
             var (callTerminator, returnBlock) = this.block.PushTerminator(new CallTerminator(func, result, args));
             callTerminator.SetNext(returnBlock);
@@ -171,10 +173,7 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
             return result;
         }
 
-        private LValue ExtractLValue(IdentifierExpressionNode node) => (LValue)this.ExtractValue(node, false);
-        private RValue ExtractRValue(IdentifierExpressionNode node) => this.ExtractValue(node, true);
-
-        private RValue ExtractValue(IdentifierExpressionNode node, bool allowRValue) {
+        private RValue AccessSymbol(IdentifierExpressionNode node, bool allowRValue) {
             if (this.symbolTable.TryFindRegister(node.Identifier, out var rs)) return new RegisterLValue(rs);
             if (this.symbolTable.TryFindArgument(this.functionSymbol, node.Identifier, out var ps)) return new ArgumentLValue(ps);
             if (this.symbolTable.TryFindLocalVariable(this.functionSymbol, node.Identifier, out var ls)) return new LocalVariableLValue(ls);
@@ -185,11 +184,11 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
         }
 
         private LValue ExtractLValue(ExpressionStatementNode node) {
-            var type = this.symbolTable.GetTypeOfExpression(node, this.functionSymbol);
+            this.symbolTable.CheckTypeOfExpression(node, this.functionSymbol);
 
             switch (node) {
                 default: throw new ExpectedException(node.Position, "lvalue");
-                case IdentifierExpressionNode n: return this.ExtractLValue(n);
+                case IdentifierExpressionNode n: return (LValue)this.AccessSymbol(n, false);
                 case UnaryExpressionNode n when n.Op.Operator == Operator.Dereference: return new PointerLValue(this.ExtractRValue(n.Expression));
             }
         }
@@ -201,7 +200,7 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
                 case IntegerLiteralNode n: return new IntegerRValue(n.Literal);
                 case BoolLiteralNode n: return new IntegerRValue(n.Literal ? ulong.MaxValue : 0);
                 case FunctionCallIdentifierNode n: return this.Visit(n);
-                case IdentifierExpressionNode n: return this.ExtractRValue(n);
+                case IdentifierExpressionNode n: return this.AccessSymbol(n, true);
                 case UnaryExpressionNode n:
                     switch (n.Op.Operator) {
                         case Operator.UnaryMinus: return this.ExtractRValue(new BinaryExpressionNode(n.Position, n.Expression, OperatorNode.FromOperator(n.Position, Operator.Multiplication), new IntegerLiteralNode(n.Position, ulong.MaxValue)));

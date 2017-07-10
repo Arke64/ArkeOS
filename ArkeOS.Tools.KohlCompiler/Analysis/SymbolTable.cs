@@ -85,6 +85,30 @@ namespace ArkeOS.Tools.KohlCompiler.Analysis {
             return type;
         }
 
+        public void CheckAssignable(TypeIdentifierNode target, ExpressionStatementNode exp, FunctionSymbol functionSymbol) {
+            var lhsType = this.FindType(target);
+            var rhsType = this.GetTypeOfExpression(exp, functionSymbol);
+
+            if (!((lhsType.BaseName == "ptr" && rhsType == WellKnownSymbol.Word) || (rhsType.BaseName == "ptr" && lhsType == WellKnownSymbol.Word)))
+                this.CheckTypeOfExpression(target, exp, functionSymbol);
+        }
+
+        public void CheckAssignable(ExpressionStatementNode target, ExpressionStatementNode exp, FunctionSymbol functionSymbol) {
+            var lhsType = this.GetTypeOfExpression(target, functionSymbol);
+            var rhsType = this.GetTypeOfExpression(exp, functionSymbol);
+
+            if (!((lhsType.BaseName == "ptr" && rhsType == WellKnownSymbol.Word) || (rhsType.BaseName == "ptr" && lhsType == WellKnownSymbol.Word)))
+                this.CheckTypeOfExpression(target, exp, functionSymbol);
+        }
+
+        public void CheckAssignable(TypeSymbol target, ExpressionStatementNode exp, FunctionSymbol functionSymbol) {
+            var lhsType = target;
+            var rhsType = this.GetTypeOfExpression(exp, functionSymbol);
+
+            if (!((lhsType.BaseName == "ptr" && rhsType == WellKnownSymbol.Word) || (rhsType.BaseName == "ptr" && lhsType == WellKnownSymbol.Word)))
+                this.CheckTypeOfExpression(target, exp, functionSymbol);
+        }
+
         public void CheckTypeOfExpression(ExpressionStatementNode node) => this.CheckTypeOfExpression(node, default(FunctionSymbol));
         public void CheckTypeOfExpression(ExpressionStatementNode node, FunctionSymbol function) => this.GetTypeOfExpression(node, function);
 
@@ -110,6 +134,7 @@ namespace ArkeOS.Tools.KohlCompiler.Analysis {
                     if (function != null && this.TryFindLocalVariable(function, n.Identifier, out var ls)) return ls.Type;
                     if (this.TryFindGlobalVariable(n.Identifier, out var gs)) return gs.Type;
                     if (this.TryFindConstVariable(n.Identifier, out var cs)) return cs.Type;
+                    if (this.TryFindType(n.Identifier, out var ts)) return ts;
 
                     break;
 

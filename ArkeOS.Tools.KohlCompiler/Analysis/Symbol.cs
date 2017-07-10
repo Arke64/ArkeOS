@@ -23,10 +23,10 @@ namespace ArkeOS.Tools.KohlCompiler.Analysis {
         private List<LocalVariableSymbol> localVariables;
 
         public TypeSymbol Type { get; }
-        public IReadOnlyCollection<ArgumentSymbol> Arguments => this.arguments;
-        public IReadOnlyCollection<LocalVariableSymbol> LocalVariables => this.localVariables;
+        public IReadOnlyList<ArgumentSymbol> Arguments => this.arguments;
+        public IReadOnlyList<LocalVariableSymbol> LocalVariables => this.localVariables;
 
-        public FunctionSymbol(string name, TypeSymbol type, IReadOnlyCollection<ArgumentSymbol> arguments, IReadOnlyCollection<LocalVariableSymbol> variables) : base(name) => (this.Type, this.arguments, this.localVariables) = (type, arguments.ToList(), variables.ToList());
+        public FunctionSymbol(string name, TypeSymbol type, IReadOnlyList<ArgumentSymbol> arguments, IReadOnlyList<LocalVariableSymbol> variables) : base(name) => (this.Type, this.arguments, this.localVariables) = (type, arguments.ToList(), variables.ToList());
 
         public void AddLocalVariable(LocalVariableSymbol variable) => this.localVariables.Add(variable);
     }
