@@ -1,14 +1,21 @@
 ﻿using ArkeOS.Hardware.Architecture;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
 namespace ArkeOS.Tools.KohlCompiler.Analysis {
-    public abstract class Symbol {
+    public abstract class Symbol : IEquatable<Symbol> {
         public string Name { get; }
 
         protected Symbol(string name) => this.Name = name;
 
         public override string ToString() => $"{this.Name}({this.GetType().Name})";
+
+        public static bool operator ==(Symbol lhs, Symbol rhs) => lhs?.Name == rhs?.Name;
+        public static bool operator !=(Symbol lhs, Symbol rhs) => !(lhs == rhs);
+        public override int GetHashCode() => this.Name.GetHashCode();
+        public override bool Equals(object obj) => obj is Symbol t && this.Equals(t);
+        public bool Equals(Symbol obj) => this == obj;
     }
 
     public sealed class FunctionSymbol : Symbol {
@@ -56,16 +63,10 @@ namespace ArkeOS.Tools.KohlCompiler.Analysis {
     }
 
     public sealed class TypeSymbol : Symbol {
-        public IReadOnlyCollection<TypeSymbol> GenericArguments { get; }
+        public string BaseName { get; }
+        public IReadOnlyCollection<TypeSymbol> TypeArguments { get; }
 
-        public string FullName => this.Name + (this.GenericArguments.Any() ? "[" + string.Join(", ", this.GenericArguments.Select(g => g.Name)) + "]" : string.Empty);
-
-        public TypeSymbol(string name) : base(name) => this.GenericArguments = new List<TypeSymbol>();
-        public TypeSymbol(string name, params TypeSymbol[] genericArguments) : base(name) => this.GenericArguments = genericArguments;
-
-        public static bool operator ==(TypeSymbol lhs, TypeSymbol rhs) => lhs.FullName == rhs.FullName;
-        public static bool operator !=(TypeSymbol lhs, TypeSymbol rhs) => !(lhs == rhs);
-        public override bool Equals(object obj) => obj is TypeSymbol t && t == this;
-        public override int GetHashCode() => this.FullName.GetHashCode();
+        public TypeSymbol(string name) : this(name, new List<TypeSymbol>()) { }
+        public TypeSymbol(string name, IReadOnlyCollection<TypeSymbol> typeArguments) : base(name + (typeArguments.Any() ? $"[{string.Join(", ", typeArguments.Select(g => g.Name))}]" : string.Empty)) => (this.BaseName, this.TypeArguments) = (name, typeArguments);
     }
 }

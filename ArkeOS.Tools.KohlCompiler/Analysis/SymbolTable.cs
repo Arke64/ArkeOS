@@ -80,7 +80,7 @@ namespace ArkeOS.Tools.KohlCompiler.Analysis {
             var type = this.TryFindType(node.Identifier, out var r) ? r : throw new IdentifierNotFoundException(node.Position, node.Identifier);
 
             while (count-- > 0)
-                type = new TypeSymbol("ptr", type);
+                type = new TypeSymbol("ptr", new List<TypeSymbol> { type });
 
             return type;
         }
@@ -126,10 +126,10 @@ namespace ArkeOS.Tools.KohlCompiler.Analysis {
                             return t;
 
                         case Operator.AddressOf:
-                            return new TypeSymbol("ptr", t);
+                            return new TypeSymbol("ptr", new List<TypeSymbol> { t });
 
                         case Operator.Dereference:
-                            return t.GenericArguments.Single();
+                            return t.TypeArguments.Single();
                     }
 
                     break;
@@ -141,7 +141,7 @@ namespace ArkeOS.Tools.KohlCompiler.Analysis {
                     switch (n.Op.Operator) {
                         case Operator.Addition:
                         case Operator.Subtraction:
-                            if (lt != WellKnownSymbol.Word && !(lt.Name == "ptr")) throw new WrongTypeException(n.Position, lt.Name);
+                            if (lt != WellKnownSymbol.Word && !(lt.BaseName == "ptr")) throw new WrongTypeException(n.Position, lt.Name);
                             if (rt != WellKnownSymbol.Word) throw new WrongTypeException(n.Position, rt.Name);
 
                             return lt;
@@ -172,7 +172,7 @@ namespace ArkeOS.Tools.KohlCompiler.Analysis {
 
                         case Operator.Equals:
                         case Operator.NotEquals:
-                            if (lt != rt && !((lt.Name == "ptr" && rt == WellKnownSymbol.Word) || (rt.Name == "ptr" && lt == WellKnownSymbol.Word))) throw new WrongTypeException(n.Position, rt.Name);
+                            if (lt != rt && !((lt.BaseName == "ptr" && rt == WellKnownSymbol.Word) || (rt.BaseName == "ptr" && lt == WellKnownSymbol.Word))) throw new WrongTypeException(n.Position, rt.Name);
 
                             return WellKnownSymbol.Bool;
 

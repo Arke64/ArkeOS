@@ -61,7 +61,7 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
                     var lhsType = this.symbolTable.FindType(n.Type);
                     var rhsType = this.symbolTable.GetTypeOfExpression(n.Initializer, this.functionSymbol);
 
-                    if (!((lhsType.Name == "ptr" && rhsType == WellKnownSymbol.Word) || (rhsType.Name == "ptr" && lhsType == WellKnownSymbol.Word)))
+                    if (!((lhsType.BaseName == "ptr" && rhsType == WellKnownSymbol.Word) || (rhsType.BaseName == "ptr" && lhsType == WellKnownSymbol.Word)))
                         this.symbolTable.CheckTypeOfExpression(n.Type, n.Initializer, this.functionSymbol);
 
                     this.Visit(new AssignmentStatementNode(n.Position, new IdentifierNode(n.Token), n.Initializer));
@@ -84,7 +84,7 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
             var lhsType = this.symbolTable.GetTypeOfExpression(node.Target, this.functionSymbol);
             var rhsType = this.symbolTable.GetTypeOfExpression(exp, this.functionSymbol);
 
-            if (!((lhsType.Name == "ptr" && rhsType == WellKnownSymbol.Word) || (rhsType.Name == "ptr" && lhsType == WellKnownSymbol.Word)))
+            if (!((lhsType.BaseName == "ptr" && rhsType == WellKnownSymbol.Word) || (rhsType.BaseName == "ptr" && lhsType == WellKnownSymbol.Word)))
                 this.symbolTable.CheckTypeOfExpression(node.Target, exp, this.functionSymbol);
 
             this.block.PushInstuction(new BasicBlockAssignmentInstruction(lhs, this.ExtractRValue(exp)));
