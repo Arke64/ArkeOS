@@ -1,4 +1,5 @@
-﻿using ArkeOS.Tools.KohlCompiler.Exceptions;
+﻿using ArkeOS.Tools.KohlCompiler.Emit;
+using ArkeOS.Tools.KohlCompiler.Exceptions;
 using ArkeOS.Tools.KohlCompiler.IR;
 using ArkeOS.Tools.KohlCompiler.Syntax;
 using System.Collections.Generic;

@@ -8,7 +8,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 
-namespace ArkeOS.Tools.KohlCompiler {
+namespace ArkeOS.Tools.KohlCompiler.Emit {
     public sealed class Emitter {
         private static Parameter StackParam { get; } = new Parameter { Type = ParameterType.Stack };
 
