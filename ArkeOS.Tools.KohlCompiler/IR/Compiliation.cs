@@ -12,8 +12,9 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
     public sealed class Function {
         public FunctionSymbol Symbol { get; }
         public BasicBlock Entry { get; }
+        public IReadOnlyCollection<BasicBlock> AllBlocks { get; }
 
-        public Function(FunctionSymbol symbol, BasicBlock entry) => (this.Symbol, this.Entry) = (symbol, entry);
+        public Function(FunctionSymbol symbol, BasicBlock entry, IReadOnlyCollection<BasicBlock> allBlocks) => (this.Symbol, this.Entry, this.AllBlocks) = (symbol, entry, allBlocks);
 
         public override string ToString() => $"func {this.Symbol}";
     }

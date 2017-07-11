@@ -26,7 +26,7 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
 
                 visitor.block.PushTerminator(new ReturnTerminator(visitor.CreateTemporaryLocalVariable(node.Type)));
 
-                functions.Add(new Function(func, visitor.block.Entry));
+                functions.Add(new Function(func, visitor.block.Entry, visitor.block.AllBlocks));
             }
 
             return new Compiliation(functions, symbolTable.GlobalVariables);
