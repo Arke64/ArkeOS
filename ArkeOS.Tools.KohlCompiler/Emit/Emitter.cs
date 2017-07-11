@@ -12,42 +12,45 @@ namespace ArkeOS.Tools.KohlCompiler.Emit {
     public sealed class Emitter {
         private static Parameter StackParam { get; } = new Parameter { Type = ParameterType.Stack };
 
+        private readonly Dictionary<GlobalVariableSymbol, ulong> variableOffsets = new Dictionary<GlobalVariableSymbol, ulong>();
+        private readonly Dictionary<BasicBlock, ulong> blockOffsets = new Dictionary<BasicBlock, ulong>();
+        private readonly Dictionary<FunctionSymbol, ulong> functionOffsets = new Dictionary<FunctionSymbol, ulong>();
+
+        private readonly Dictionary<Parameter, BasicBlock> jumpFixups = new Dictionary<Parameter, BasicBlock>();
+        private readonly Dictionary<Parameter, FunctionSymbol> callFixups = new Dictionary<Parameter, FunctionSymbol>();
+
+        private readonly List<Instruction> instructions = new List<Instruction>();
         private readonly CompilationOptions options;
         private readonly Compiliation tree;
-        private ulong nextGlobalVariableAddress;
-        private HashSet<BasicBlock> visitedBasicBlocks;
-        private Dictionary<BasicBlock, ulong> basicBlockAddresses;
-        private Dictionary<FunctionSymbol, ulong> functionAddresses;
-        private Dictionary<GlobalVariableSymbol, ulong> globalVariableAddresses;
-        private List<Instruction> instructions;
         private FunctionSymbol currentFunction;
-        private bool throwOnNoFunction;
 
         public static void Emit(CompilationOptions options, Compiliation tree) => new Emitter(options, tree).Emit();
 
         private Emitter(CompilationOptions options, Compiliation tree) => (this.options, this.tree) = (options, tree);
 
-        private ulong DistanceFrom(int startInst) => (ulong)this.instructions.Skip(startInst).Sum(i => i.Length);
+        private ulong CurrentOffset => (ulong)this.instructions.Sum(i => i.Length);
 
         private void Emit() {
-            this.basicBlockAddresses = new Dictionary<BasicBlock, ulong>();
-            this.functionAddresses = new Dictionary<FunctionSymbol, ulong>();
-            this.globalVariableAddresses = new Dictionary<GlobalVariableSymbol, ulong>();
-            this.nextGlobalVariableAddress = 0UL;
-
-            this.visitedBasicBlocks = new HashSet<BasicBlock>();
-            this.instructions = new List<Instruction>();
-            this.throwOnNoFunction = false;
-
             this.EmitHeader();
-            this.DiscoverAddresses(this.tree);
 
-            this.visitedBasicBlocks.Clear();
-            this.instructions.Clear();
-            this.throwOnNoFunction = true;
+            var next = 0UL;
+            foreach (var g in this.tree.GlobalVariables)
+                this.variableOffsets[g] = next++;
 
-            this.EmitHeader();
-            this.Visit(this.tree);
+            foreach (var f in this.tree.Functions) {
+                this.currentFunction = f.Symbol;
+
+                this.functionOffsets[f.Symbol] = (ulong)this.instructions.Sum(i => i.Length);
+
+                foreach (var b in f.AllBlocks)
+                    this.Visit(b);
+            }
+
+            foreach (var f in this.jumpFixups)
+                f.Key.Literal = this.blockOffsets[f.Value] - f.Key.Literal;
+
+            foreach (var f in this.callFixups)
+                f.Key.Literal = this.functionOffsets[f.Value] - f.Key.Literal;
 
             using (var stream = new MemoryStream()) {
                 using (var writer = new BinaryWriter(stream)) {
@@ -55,7 +58,7 @@ namespace ArkeOS.Tools.KohlCompiler.Emit {
                         writer.Write(0x00000000454B5241UL);
 
                     if (this.options.EmitAssemblyListing)
-                        File.WriteAllLines(Path.ChangeExtension(this.options.OutputName, "lst"), this.globalVariableAddresses.Select(i => $"{i.Key}: 0x{i.Value:X16}").Concat(this.instructions.Select(i => i.ToString())));
+                        File.WriteAllLines(Path.ChangeExtension(this.options.OutputName, "lst"), this.variableOffsets.Select(i => $"{i.Key.Name}: 0x{i.Value:X16}").Concat(this.instructions.Select(i => i.ToString())));
 
                     foreach (var inst in this.instructions)
                         inst.Encode(writer);
@@ -68,41 +71,47 @@ namespace ArkeOS.Tools.KohlCompiler.Emit {
         private void EmitHeader() {
             var entry = this.tree.Functions.Single(f => f.Symbol.Name == "main");
 
+            this.Emit(InstructionDefinition.BRK);
             this.Emit(InstructionDefinition.SET, Parameter.CreateRegister(Register.RSP), Parameter.CreateLiteral((ulong)entry.Symbol.LocalVariables.Count + 0x1_0000));
             this.Emit(InstructionDefinition.SET, Parameter.CreateRegister(Register.RBP), Parameter.CreateLiteral(0x1_0000));
         }
 
-        private void SetGlobalVariableAddress(GlobalVariableSymbol v) {
-            if (this.globalVariableAddresses.ContainsKey(v))
-                throw new AlreadyDefinedException(default(PositionInfo), v.Name);
+        private void Emit(InstructionDefinition def, params Parameter[] parameters) => this.instructions.Add(new Instruction(def, parameters));
+        private void Emit(InstructionDefinition def, Parameter conditional, InstructionConditionalType conditionalType, params Parameter[] parameters) => this.instructions.Add(new Instruction(def, parameters, conditional, conditionalType));
 
-            this.globalVariableAddresses[v] = this.nextGlobalVariableAddress++;
-        }
+        private void Visit(BasicBlock node) {
+            if (node.Instructions.Count() == 0 && node.Terminator == null) return;
 
-        private void DiscoverAddresses(Compiliation n) {
-            foreach (var s in n.GlobalVariables)
-                this.SetGlobalVariableAddress(s);
-
-            foreach (var s in n.Functions) {
-                if (this.functionAddresses.ContainsKey(s.Symbol))
-                    throw new AlreadyDefinedException(default(PositionInfo), s.Symbol.Name);
-
-                this.functionAddresses[s.Symbol] = (ulong)this.instructions.Sum(i => i.Length);
-
-                this.Visit(s);
+            foreach (var i in node.Instructions) {
+                switch (i) {
+                    case BasicBlockAssignmentInstruction n: this.Visit(n); break;
+                    case BasicBlockBinaryOperationInstruction n: this.Visit(n); break;
+                    case BasicBlockIntrinsicInstruction n: this.Visit(n); break;
+                    default: Debug.Assert(false); break;
+                }
             }
+
+            switch (node.Terminator) {
+                case ReturnTerminator n: this.Visit(n); break;
+                case CallTerminator n: this.Visit(n); break;
+                case IfTerminator n: this.Visit(n); break;
+                case GotoTerminator n: this.Visit(n); break;
+                default: Debug.Assert(false); break;
+            }
+
+            this.blockOffsets[node] = (ulong)this.instructions.Sum(i => i.Length);
         }
 
-        private Parameter GetVariableAccessParameter(RValue variable, bool allowIndirect) {
+        private Parameter GetParameter(RValue variable) {
             switch (variable) {
                 case IntegerRValue v:
                     return Parameter.CreateLiteral(v.Value);
 
                 case AddressOfRValue n:
-                    return this.GetVariableAccessParameter(n.Target, false);
+                    return this.GetParameter(n.Target);
 
                 case LValue v:
-                    return this.GetVariableAccessParameter(v, allowIndirect);
+                    return this.GetParameter(v);
 
                 default:
                     Debug.Assert(false);
@@ -111,7 +120,7 @@ namespace ArkeOS.Tools.KohlCompiler.Emit {
             }
         }
 
-        private Parameter GetVariableAccessParameter(LValue variable, bool allowIndirect) {
+        private Parameter GetParameter(LValue variable) {
             var addr = 0UL;
 
             switch (variable) {
@@ -122,13 +131,13 @@ namespace ArkeOS.Tools.KohlCompiler.Emit {
                     if (localArg == null)
                         throw new IdentifierNotFoundException(default(PositionInfo), v.Symbol.Name);
 
-                    return Parameter.CreateLiteral((vidx + (ulong)this.currentFunction.Arguments.Count) - 1, ParameterFlags.RelativeToRBP | (allowIndirect ? ParameterFlags.Indirect : 0));
+                    return Parameter.CreateLiteral((vidx + (ulong)this.currentFunction.Arguments.Count) - 1, ParameterFlags.RelativeToRBP | ParameterFlags.Indirect);
 
                 case GlobalVariableLValue v:
-                    if (!this.globalVariableAddresses.TryGetValue(v.Symbol, out addr) && this.throwOnNoFunction)
+                    if (!this.variableOffsets.TryGetValue(v.Symbol, out addr))
                         throw new IdentifierNotFoundException(default(PositionInfo), v.Symbol.Name);
 
-                    return Parameter.CreateLiteral(addr, allowIndirect ? ParameterFlags.Indirect : 0);
+                    return Parameter.CreateLiteral(addr, ParameterFlags.Indirect);
 
                 case ArgumentLValue v:
                     var aidx = 0UL;
@@ -137,13 +146,13 @@ namespace ArkeOS.Tools.KohlCompiler.Emit {
                     if (arg == null)
                         throw new IdentifierNotFoundException(default(PositionInfo), v.Symbol.Name);
 
-                    return Parameter.CreateLiteral(aidx - 1, ParameterFlags.RelativeToRBP | (allowIndirect ? ParameterFlags.Indirect : 0));
+                    return Parameter.CreateLiteral(aidx - 1, ParameterFlags.RelativeToRBP | ParameterFlags.Indirect);
 
                 case RegisterLValue v:
                     return Parameter.CreateRegister(v.Symbol.Register);
 
                 case PointerLValue v:
-                    var r = this.GetVariableAccessParameter(v.Target, false);
+                    var r = this.GetParameter(v.Target);
 
                     r.IsIndirect = true;
 
@@ -158,144 +167,24 @@ namespace ArkeOS.Tools.KohlCompiler.Emit {
             }
         }
 
-        private Parameter GetFunctionAccessParameter(FunctionSymbol func) {
-            if (!this.functionAddresses.TryGetValue(func, out var addr) && this.throwOnNoFunction)
-                throw new IdentifierNotFoundException(default(PositionInfo), func.Name);
+        private Parameter GetParameter(FunctionSymbol variable) {
+            var param = Parameter.CreateLiteral(this.CurrentOffset, ParameterFlags.RelativeToRIP);
 
-            return Parameter.CreateLiteral(addr - this.DistanceFrom(0), ParameterFlags.RelativeToRIP);
-        }
+            this.callFixups[param] = variable;
 
-        private void Emit(InstructionDefinition def, params Parameter[] parameters) => this.instructions.Add(new Instruction(def, parameters));
-        private void Emit(InstructionDefinition def, Parameter conditional, InstructionConditionalType conditionalType, params Parameter[] parameters) => this.instructions.Add(new Instruction(def, parameters, conditional, conditionalType));
-
-        private void Visit(Compiliation n) {
-            foreach (var s in n.Functions)
-                this.Visit(s);
-        }
-
-        private void Visit(Function n) {
-            this.currentFunction = n.Symbol;
-
-            this.Visit(n.Entry);
-        }
-
-        private void Visit(BasicBlock n) {
-            if (this.visitedBasicBlocks.Contains(n))
-                return;
-
-            this.visitedBasicBlocks.Add(n);
-
-            if (!this.throwOnNoFunction) {
-                if (this.basicBlockAddresses.ContainsKey(n))
-                    return;
-
-                this.basicBlockAddresses[n] = (ulong)this.instructions.Sum(i => i.Length);
-            }
-
-            foreach (var s in n.Instructions)
-                this.Visit(s);
-
-            this.Visit(n.Terminator);
-        }
-
-        private void Visit(BasicBlockInstruction s) {
-            switch (s) {
-                case BasicBlockAssignmentInstruction n: this.Visit(n); break;
-                case BasicBlockBinaryOperationInstruction n: this.Visit(n); break;
-                case BasicBlockIntrinsicInstruction n: this.Visit(n); break;
-                default: Debug.Assert(false); break;
-            }
+            return param;
         }
 
         private void Visit(BasicBlockIntrinsicInstruction s) {
-            var a = s.Argument1 != null ? this.GetVariableAccessParameter(s.Argument1, true) : null;
-            var b = s.Argument2 != null ? this.GetVariableAccessParameter(s.Argument2, true) : null;
-            var c = s.Argument3 != null ? this.GetVariableAccessParameter(s.Argument3, true) : null;
+            var a = s.Argument1 != null ? this.GetParameter(s.Argument1) : null;
+            var b = s.Argument2 != null ? this.GetParameter(s.Argument2) : null;
+            var c = s.Argument3 != null ? this.GetParameter(s.Argument3) : null;
 
             this.Emit(s.Intrinsic, a, b, c);
         }
 
-        private void Visit(Terminator terminator) {
-            switch (terminator) {
-                case ReturnTerminator n: this.Visit(n); break;
-                case CallTerminator n: this.Visit(n); break;
-                case IfTerminator n: this.Visit(n); break;
-                case GotoTerminator n: this.Visit(n); break;
-                default: Debug.Assert(false); break;
-            }
-        }
-
-        private void Visit(ReturnTerminator r) {
-            this.Emit(InstructionDefinition.SET, Parameter.CreateRegister(Register.R0), this.GetVariableAccessParameter(r.Value, true));
-            this.Emit(InstructionDefinition.RET);
-        }
-
-        private void Visit(CallTerminator r) {
-            var orig = this.currentFunction;
-
-            this.Emit(InstructionDefinition.SET, Emitter.StackParam, Parameter.CreateRegister(Register.RBP));
-
-            foreach (var a in r.Arguments)
-                this.Emit(InstructionDefinition.SET, Emitter.StackParam, this.GetVariableAccessParameter(a, true));
-
-            this.currentFunction = r.Target;
-
-            this.Emit(InstructionDefinition.SUB, Parameter.CreateRegister(Register.RBP), Parameter.CreateRegister(Register.RSP), Parameter.CreateLiteral((ulong)r.Arguments.Count));
-
-            this.Emit(InstructionDefinition.ADD, Parameter.CreateRegister(Register.RSP), Parameter.CreateRegister(Register.RSP), Parameter.CreateLiteral((ulong)this.currentFunction.LocalVariables.Count));
-
-            this.Emit(InstructionDefinition.CALL, this.GetFunctionAccessParameter(r.Target));
-
-            this.Emit(InstructionDefinition.SUB, Parameter.CreateRegister(Register.RSP), Parameter.CreateRegister(Register.RSP), Parameter.CreateLiteral((ulong)(r.Arguments.Count + this.currentFunction.LocalVariables.Count)));
-
-            this.Emit(InstructionDefinition.SET, Parameter.CreateRegister(Register.RBP), Emitter.StackParam);
-
-            this.currentFunction = orig;
-
-            this.Emit(InstructionDefinition.SET, this.GetVariableAccessParameter(r.Result, true), Parameter.CreateRegister(Register.R0));
-
-            this.Visit(r.Next);
-        }
-
-        private void Visit(IfTerminator i) {
-            var ifStart = this.instructions.Count;
-            var ifLen = Parameter.CreateLiteral(0, ParameterFlags.RelativeToRIP);
-            this.Emit(InstructionDefinition.SET, this.GetVariableAccessParameter(i.Condition, true), InstructionConditionalType.WhenZero, Parameter.CreateRegister(Register.RIP), ifLen);
-
-            this.Visit(i.NextTrue);
-
-            var elseStart = this.instructions.Count;
-            var elseLen = Parameter.CreateLiteral(0, ParameterFlags.RelativeToRIP);
-            this.Emit(InstructionDefinition.SET, Parameter.CreateRegister(Register.RIP), elseLen);
-
-            ifLen.Literal = this.DistanceFrom(ifStart);
-
-            this.Visit(i.NextFalse);
-
-            elseLen.Literal = this.DistanceFrom(elseStart);
-        }
-
-        private void Visit(GotoTerminator g) {
-            this.Visit(g.Next);
-
-            var targetAddr = this.throwOnNoFunction ? this.basicBlockAddresses[g.Next] : 0;
-            var currentAddr = this.throwOnNoFunction ? this.DistanceFrom(0) : 0;
-
-            this.Emit(InstructionDefinition.SET, Parameter.CreateRegister(Register.RIP), Parameter.CreateLiteral(targetAddr - currentAddr, ParameterFlags.RelativeToRIP));
-        }
-
         private void Visit(BasicBlockAssignmentInstruction a) {
-            var target = this.GetVariableAccessParameter(a.Target, true);
-
-            if (a.Value is LValue vnode) {
-                this.Emit(InstructionDefinition.SET, target, this.GetVariableAccessParameter(vnode, true));
-            }
-            else if (a.Value is RValue rnode) {
-                this.Emit(InstructionDefinition.SET, target, this.GetVariableAccessParameter(rnode, false));
-            }
-            else {
-                Debug.Assert(false);
-            }
+            this.Emit(InstructionDefinition.SET, this.GetParameter(a.Target), this.GetParameter(a.Value));
         }
 
         private void Visit(BasicBlockBinaryOperationInstruction n) {
@@ -327,7 +216,63 @@ namespace ArkeOS.Tools.KohlCompiler.Emit {
                 default: Debug.Assert(false); break;
             }
 
-            this.Emit(def, this.GetVariableAccessParameter(n.Target, true), this.GetVariableAccessParameter(n.Left, true), this.GetVariableAccessParameter(n.Right, true));
+            this.Emit(def, this.GetParameter(n.Target), this.GetParameter(n.Left), this.GetParameter(n.Right));
+        }
+
+        private void Visit(ReturnTerminator r) {
+            this.Emit(InstructionDefinition.SET, Parameter.CreateRegister(Register.R0), this.GetParameter(r.Value));
+            this.Emit(InstructionDefinition.RET);
+        }
+
+        private void Visit(CallTerminator r) {
+            var orig = this.currentFunction;
+
+            this.Emit(InstructionDefinition.SET, Emitter.StackParam, Parameter.CreateRegister(Register.RBP));
+
+            foreach (var a in r.Arguments)
+                this.Emit(InstructionDefinition.SET, Emitter.StackParam, this.GetParameter(a));
+
+            this.currentFunction = r.Target;
+
+            //TODO Cache these registers
+            this.Emit(InstructionDefinition.SUB, Parameter.CreateRegister(Register.RBP), Parameter.CreateRegister(Register.RSP), Parameter.CreateLiteral((ulong)r.Arguments.Count));
+
+            this.Emit(InstructionDefinition.ADD, Parameter.CreateRegister(Register.RSP), Parameter.CreateRegister(Register.RSP), Parameter.CreateLiteral((ulong)r.Target.LocalVariables.Count));
+
+            this.Emit(InstructionDefinition.CALL, this.GetParameter(r.Target));
+
+            this.Emit(InstructionDefinition.SUB, Parameter.CreateRegister(Register.RSP), Parameter.CreateRegister(Register.RSP), Parameter.CreateLiteral((ulong)(r.Arguments.Count + r.Target.LocalVariables.Count)));
+
+            this.Emit(InstructionDefinition.SET, Parameter.CreateRegister(Register.RBP), Emitter.StackParam);
+
+            this.currentFunction = orig;
+
+            this.Emit(InstructionDefinition.SET, this.GetParameter(r.Result), Parameter.CreateRegister(Register.R0));
+
+            var param = Parameter.CreateLiteral(this.CurrentOffset, ParameterFlags.RelativeToRIP);
+
+            this.Emit(InstructionDefinition.SET, Parameter.CreateRegister(Register.RIP), param);
+
+            this.jumpFixups.Add(param, r.Next);
+        }
+
+        private void Visit(IfTerminator i) {
+            var param2 = Parameter.CreateLiteral(this.CurrentOffset, ParameterFlags.RelativeToRIP);
+            this.Emit(InstructionDefinition.SET, this.GetParameter(i.Condition), InstructionConditionalType.WhenZero, Parameter.CreateRegister(Register.RIP), param2);
+
+            var param1 = Parameter.CreateLiteral(this.CurrentOffset, ParameterFlags.RelativeToRIP);
+            this.Emit(InstructionDefinition.SET, Parameter.CreateRegister(Register.RIP), param1);
+
+            this.jumpFixups.Add(param1, i.NextTrue);
+            this.jumpFixups.Add(param2, i.NextFalse);
+        }
+
+        private void Visit(GotoTerminator g) {
+            var param = Parameter.CreateLiteral(this.CurrentOffset, ParameterFlags.RelativeToRIP);
+
+            this.Emit(InstructionDefinition.SET, Parameter.CreateRegister(Register.RIP), param);
+
+            this.jumpFixups.Add(param, g.Next);
         }
     }
 }
