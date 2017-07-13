@@ -71,7 +71,6 @@ namespace ArkeOS.Tools.KohlCompiler.Emit {
         private void EmitHeader() {
             var entry = this.tree.Functions.Single(f => f.Symbol.Name == "main");
 
-            this.Emit(InstructionDefinition.BRK);
             this.Emit(InstructionDefinition.SET, Parameter.CreateRegister(Register.RSP), Parameter.CreateLiteral((ulong)entry.Symbol.LocalVariables.Count + 0x1_0000));
             this.Emit(InstructionDefinition.SET, Parameter.CreateRegister(Register.RBP), Parameter.CreateLiteral(0x1_0000));
         }
@@ -81,6 +80,8 @@ namespace ArkeOS.Tools.KohlCompiler.Emit {
 
         private void Visit(BasicBlock node) {
             if (node.Instructions.Count() == 0 && node.Terminator == null) return;
+
+            this.blockOffsets[node] = (ulong)this.instructions.Sum(i => i.Length);
 
             foreach (var i in node.Instructions) {
                 switch (i) {
@@ -98,8 +99,6 @@ namespace ArkeOS.Tools.KohlCompiler.Emit {
                 case GotoTerminator n: this.Visit(n); break;
                 default: Debug.Assert(false); break;
             }
-
-            this.blockOffsets[node] = (ulong)this.instructions.Sum(i => i.Length);
         }
 
         private Parameter GetParameter(RValue variable) {
