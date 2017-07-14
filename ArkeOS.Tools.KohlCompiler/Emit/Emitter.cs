@@ -10,47 +10,46 @@ using System.Linq;
 
 namespace ArkeOS.Tools.KohlCompiler.Emit {
     public sealed class Emitter {
-        private static Parameter StackParam { get; } = new Parameter { Type = ParameterType.Stack };
-
-        private readonly Dictionary<GlobalVariableSymbol, ulong> variableOffsets = new Dictionary<GlobalVariableSymbol, ulong>();
-        private readonly Dictionary<BasicBlock, ulong> blockOffsets = new Dictionary<BasicBlock, ulong>();
         private readonly Dictionary<FunctionSymbol, ulong> functionOffsets = new Dictionary<FunctionSymbol, ulong>();
-
-        private readonly Dictionary<Parameter, BasicBlock> jumpFixups = new Dictionary<Parameter, BasicBlock>();
-        private readonly Dictionary<Parameter, FunctionSymbol> callFixups = new Dictionary<Parameter, FunctionSymbol>();
+        private readonly Dictionary<GlobalVariableSymbol, ulong> variableOffsets = new Dictionary<GlobalVariableSymbol, ulong>();
 
         private readonly List<Instruction> instructions = new List<Instruction>();
+        private readonly List<Function> functions = new List<Function>();
+
         private readonly CompilationOptions options;
         private readonly Compiliation tree;
-        private FunctionSymbol currentFunction;
 
         public static void Emit(CompilationOptions options, Compiliation tree) => new Emitter(options, tree).Emit();
 
-        private Emitter(CompilationOptions options, Compiliation tree) => (this.options, this.tree) = (options, tree);
+        private void Emit(InstructionDefinition def, params Parameter[] parameters) => this.instructions.Add(new Instruction(def, parameters));
 
-        private ulong CurrentOffset => (ulong)this.instructions.Sum(i => i.Length);
+        private Emitter(CompilationOptions options, Compiliation tree) => (this.options, this.tree) = (options, tree);
 
         private void Emit() {
             this.EmitHeader();
 
+            var current = (ulong)this.instructions.Sum(i => i.Length);
             var next = 0UL;
             foreach (var g in this.tree.GlobalVariables)
                 this.variableOffsets[g] = next++;
 
             foreach (var f in this.tree.Functions) {
-                this.currentFunction = f.Symbol;
+                var func = new Function(f, this.variableOffsets);
 
-                this.functionOffsets[f.Symbol] = (ulong)this.instructions.Sum(i => i.Length);
+                func.Emit();
 
-                foreach (var b in f.AllBlocks)
-                    this.Visit(b);
+                this.functions.Add(func);
+
+                this.functionOffsets[f.Symbol] = current;
+
+                current += func.Length;
             }
 
-            foreach (var f in this.jumpFixups)
-                f.Key.Literal = this.blockOffsets[f.Value] - f.Key.Literal;
+            foreach (var f in this.functions) {
+                f.Fixup(this.functionOffsets);
 
-            foreach (var f in this.callFixups)
-                f.Key.Literal = this.functionOffsets[f.Value] - f.Key.Literal;
+                this.instructions.AddRange(f.Instructions);
+            }
 
             using (var stream = new MemoryStream()) {
                 using (var writer = new BinaryWriter(stream)) {
@@ -74,9 +73,53 @@ namespace ArkeOS.Tools.KohlCompiler.Emit {
             this.Emit(InstructionDefinition.SET, Parameter.CreateRegister(Register.RSP), Parameter.CreateLiteral((ulong)entry.Symbol.LocalVariables.Count + 0x1_0000));
             this.Emit(InstructionDefinition.SET, Parameter.CreateRegister(Register.RBP), Parameter.CreateLiteral(0x1_0000));
         }
+    }
 
-        private void Emit(InstructionDefinition def, params Parameter[] parameters) => this.instructions.Add(new Instruction(def, parameters));
-        private void Emit(InstructionDefinition def, Parameter conditional, InstructionConditionalType conditionalType, params Parameter[] parameters) => this.instructions.Add(new Instruction(def, parameters, conditional, conditionalType));
+    public sealed class Function {
+        private static Parameter StackParam { get; } = new Parameter { Type = ParameterType.Stack };
+
+        private readonly Dictionary<BasicBlock, ulong> blockOffsets = new Dictionary<BasicBlock, ulong>();
+
+        private readonly Dictionary<Parameter, BasicBlock> jumpFixups = new Dictionary<Parameter, BasicBlock>();
+        private readonly Dictionary<Parameter, FunctionSymbol> callFixups = new Dictionary<Parameter, FunctionSymbol>();
+
+        private readonly List<Instruction> instructions = new List<Instruction>();
+
+        private readonly IReadOnlyDictionary<GlobalVariableSymbol, ulong> variableOffsets;
+        private readonly IR.Function source;
+        private readonly FunctionSymbol currentFunction;
+
+        private ulong length = 0;
+
+        private void Add(Instruction i) {
+            this.instructions.Add(i);
+            this.length += i.Length;
+        }
+
+        public IReadOnlyCollection<Instruction> Instructions => this.instructions;
+        public ulong Length => this.length;
+
+        public Function(IR.Function source, IReadOnlyDictionary<GlobalVariableSymbol, ulong> globalVariables) => (this.source, this.variableOffsets, this.currentFunction) = (source, globalVariables, source.Symbol);
+
+        public void Emit() {
+            foreach (var f in this.source.AllBlocks)
+                this.Visit(f);
+        }
+
+        public void Fixup(IReadOnlyDictionary<FunctionSymbol, ulong> functionOffsets) {
+            var start = functionOffsets[this.currentFunction];
+
+            foreach (var f in this.jumpFixups)
+                f.Key.Literal = this.blockOffsets[f.Value] - f.Key.Literal;
+
+            foreach (var f in this.callFixups)
+                f.Key.Literal = functionOffsets[f.Value] - (start + f.Key.Literal);
+        }
+
+        private ulong CurrentOffset => (ulong)this.instructions.Sum(i => i.Length);
+
+        private void Emit(InstructionDefinition def, params Parameter[] parameters) => this.Add(new Instruction(def, parameters));
+        private void Emit(InstructionDefinition def, Parameter conditional, InstructionConditionalType conditionalType, params Parameter[] parameters) => this.Add(new Instruction(def, parameters, conditional, conditionalType));
 
         private void Visit(BasicBlock node) {
             if (node.Instructions.Count() == 0 && node.Terminator == null) return;
@@ -155,7 +198,7 @@ namespace ArkeOS.Tools.KohlCompiler.Emit {
 
                     r.IsIndirect = true;
 
-                    this.Emit(InstructionDefinition.SET, Emitter.StackParam, r);
+                    this.Emit(InstructionDefinition.SET, Function.StackParam, r);
 
                     return Parameter.CreateStack(ParameterFlags.Indirect);
 
@@ -224,14 +267,10 @@ namespace ArkeOS.Tools.KohlCompiler.Emit {
         }
 
         private void Visit(CallTerminator r) {
-            var orig = this.currentFunction;
-
-            this.Emit(InstructionDefinition.SET, Emitter.StackParam, Parameter.CreateRegister(Register.RBP));
+            this.Emit(InstructionDefinition.SET, Function.StackParam, Parameter.CreateRegister(Register.RBP));
 
             foreach (var a in r.Arguments)
-                this.Emit(InstructionDefinition.SET, Emitter.StackParam, this.GetParameter(a));
-
-            this.currentFunction = r.Target;
+                this.Emit(InstructionDefinition.SET, Function.StackParam, this.GetParameter(a));
 
             //TODO Cache these registers
             this.Emit(InstructionDefinition.SUB, Parameter.CreateRegister(Register.RBP), Parameter.CreateRegister(Register.RSP), Parameter.CreateLiteral((ulong)r.Arguments.Count));
@@ -242,9 +281,7 @@ namespace ArkeOS.Tools.KohlCompiler.Emit {
 
             this.Emit(InstructionDefinition.SUB, Parameter.CreateRegister(Register.RSP), Parameter.CreateRegister(Register.RSP), Parameter.CreateLiteral((ulong)(r.Arguments.Count + r.Target.LocalVariables.Count)));
 
-            this.Emit(InstructionDefinition.SET, Parameter.CreateRegister(Register.RBP), Emitter.StackParam);
-
-            this.currentFunction = orig;
+            this.Emit(InstructionDefinition.SET, Parameter.CreateRegister(Register.RBP), Function.StackParam);
 
             this.Emit(InstructionDefinition.SET, this.GetParameter(r.Result), Parameter.CreateRegister(Register.R0));
 
