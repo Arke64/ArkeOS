@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Text;
 
 namespace ArkeOS.Tools.KohlCompiler.Emit {
     public sealed class Emitter {
@@ -56,8 +57,38 @@ namespace ArkeOS.Tools.KohlCompiler.Emit {
                     if (this.options.EmitBootable)
                         writer.Write(0x00000000454B5241UL);
 
-                    if (this.options.EmitAssemblyListing)
-                        File.WriteAllLines(Path.ChangeExtension(this.options.OutputName, "lst"), this.variableOffsets.Select(i => $"{i.Key.Name}: 0x{i.Value:X16}").Concat(this.instructions.Select(i => i.ToString())));
+                    if (this.options.EmitAssemblyListing) {
+                        var str = new StringBuilder();
+
+                        foreach (var i in this.variableOffsets)
+                            str.AppendLine($"{i.Key.Name}: 0x{i.Value:X16}");
+
+                        if (this.variableOffsets.Any())
+                            str.AppendLine();
+
+                        foreach (var f in this.functions) {
+                            str.AppendLine($"{f.Source.Symbol.Name}: 0x{this.functionOffsets[f.Source.Symbol]:X16}");
+
+                            var para = 0;
+                            var formatter = "X" + ((f.Source.Symbol.Arguments.Count + f.Source.Symbol.LocalVariables.Count) / 16);
+
+                            foreach (var a in f.Source.Symbol.Arguments)
+                                str.AppendLine($"arg {a.Name}: 0x{(para++).ToString(formatter)}");
+
+                            foreach (var a in f.Source.Symbol.LocalVariables)
+                                str.AppendLine($"var {a.Name}: 0x{(para++).ToString(formatter)}");
+
+                            var cur = 0UL;
+                            foreach (var i in f.Instructions) {
+                                str.AppendLine($"0x{cur.ToString("X" + (f.Length / 16))}: {i}");
+                                cur += i.Length;
+                            }
+
+                            str.AppendLine();
+                        }
+
+                        File.WriteAllText(Path.ChangeExtension(this.options.OutputName, "lst"), str.ToString());
+                    }
 
                     foreach (var inst in this.instructions)
                         inst.Encode(writer);
@@ -86,7 +117,6 @@ namespace ArkeOS.Tools.KohlCompiler.Emit {
         private readonly List<Instruction> instructions = new List<Instruction>();
 
         private readonly IReadOnlyDictionary<GlobalVariableSymbol, ulong> variableOffsets;
-        private readonly IR.Function source;
         private readonly FunctionSymbol currentFunction;
 
         private ulong length = 0;
@@ -98,11 +128,12 @@ namespace ArkeOS.Tools.KohlCompiler.Emit {
 
         public IReadOnlyCollection<Instruction> Instructions => this.instructions;
         public ulong Length => this.length;
+        public IR.Function Source { get; }
 
-        public Function(IR.Function source, IReadOnlyDictionary<GlobalVariableSymbol, ulong> globalVariables) => (this.source, this.variableOffsets, this.currentFunction) = (source, globalVariables, source.Symbol);
+        public Function(IR.Function source, IReadOnlyDictionary<GlobalVariableSymbol, ulong> globalVariables) => (this.Source, this.variableOffsets, this.currentFunction) = (source, globalVariables, source.Symbol);
 
         public void Emit() {
-            foreach (var f in this.source.AllBlocks)
+            foreach (var f in this.Source.AllBlocks)
                 this.Visit(f);
         }
 
