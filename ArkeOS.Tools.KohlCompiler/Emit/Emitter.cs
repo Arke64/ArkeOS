@@ -110,11 +110,12 @@ namespace ArkeOS.Tools.KohlCompiler.Emit {
         private static Parameter StackParam { get; } = Parameter.CreateStack();
         private static Parameter RbpParam { get; } = Parameter.CreateRegister(Register.RBP);
         private static Parameter RspParam { get; } = Parameter.CreateRegister(Register.RSP);
+        private static Parameter R0Param { get; } = Parameter.CreateRegister(Register.R0);
 
         private readonly Dictionary<BasicBlock, ulong> blockOffsets = new Dictionary<BasicBlock, ulong>();
 
-        private readonly Dictionary<Parameter, BasicBlock> jumpFixups = new Dictionary<Parameter, BasicBlock>();
-        private readonly Dictionary<Parameter, FunctionSymbol> callFixups = new Dictionary<Parameter, FunctionSymbol>();
+        private readonly List<(Parameter, BasicBlock)> jumpFixups = new List<(Parameter, BasicBlock)>();
+        private readonly List<(Parameter, FunctionSymbol)> callFixups = new List<(Parameter, FunctionSymbol)>();
 
         private readonly List<Instruction> instructions = new List<Instruction>();
 
@@ -143,10 +144,10 @@ namespace ArkeOS.Tools.KohlCompiler.Emit {
             var start = functionOffsets[this.currentFunction];
 
             foreach (var f in this.jumpFixups)
-                f.Key.Literal = this.blockOffsets[f.Value] - f.Key.Literal;
+                f.Item1.Literal = this.blockOffsets[f.Item2] - f.Item1.Literal;
 
             foreach (var f in this.callFixups)
-                f.Key.Literal = functionOffsets[f.Value] - (start + f.Key.Literal);
+                f.Item1.Literal = functionOffsets[f.Item2] - (start + f.Item1.Literal);
         }
 
         private ulong CurrentOffset => (ulong)this.instructions.Sum(i => i.Length);
@@ -155,7 +156,7 @@ namespace ArkeOS.Tools.KohlCompiler.Emit {
         private void Emit(InstructionDefinition def, Parameter conditional, InstructionConditionalType conditionalType, params Parameter[] parameters) => this.Add(new Instruction(def, parameters, conditional, conditionalType));
 
         private void Visit(BasicBlock node) {
-            if (node.Instructions.Count() == 0 && node.Terminator == null) return;
+            if (!node.Instructions.Any() && node.Terminator == null) return;
 
             this.blockOffsets[node] = (ulong)this.instructions.Sum(i => i.Length);
 
@@ -242,25 +243,14 @@ namespace ArkeOS.Tools.KohlCompiler.Emit {
             }
         }
 
-        private Parameter GetParameter(FunctionSymbol variable) {
-            var param = Parameter.CreateLiteral(this.CurrentOffset, ParameterFlags.RelativeToRIP);
-
-            this.callFixups[param] = variable;
-
-            return param;
-        }
-
         private void Visit(BasicBlockIntrinsicInstruction s) {
-            var a = s.Argument1 != null ? this.GetParameter(s.Argument1) : null;
-            var b = s.Argument2 != null ? this.GetParameter(s.Argument2) : null;
-            var c = s.Argument3 != null ? this.GetParameter(s.Argument3) : null;
-
-            this.Emit(s.Intrinsic, a, b, c);
+            if (s.Intrinsic.ParameterCount == 3) this.Emit(s.Intrinsic, this.GetParameter(s.Argument1), this.GetParameter(s.Argument2), this.GetParameter(s.Argument3));
+            else if (s.Intrinsic.ParameterCount == 2) this.Emit(s.Intrinsic, this.GetParameter(s.Argument1), this.GetParameter(s.Argument2));
+            else if (s.Intrinsic.ParameterCount == 1) this.Emit(s.Intrinsic, this.GetParameter(s.Argument1));
+            else this.Emit(s.Intrinsic);
         }
 
-        private void Visit(BasicBlockAssignmentInstruction a) {
-            this.Emit(InstructionDefinition.SET, this.GetParameter(a.Target), this.GetParameter(a.Value));
-        }
+        private void Visit(BasicBlockAssignmentInstruction a) => this.Emit(InstructionDefinition.SET, this.GetParameter(a.Target), this.GetParameter(a.Value));
 
         private void Visit(BasicBlockBinaryOperationInstruction n) {
             var def = default(InstructionDefinition);
@@ -295,7 +285,7 @@ namespace ArkeOS.Tools.KohlCompiler.Emit {
         }
 
         private void Visit(ReturnTerminator r) {
-            this.Emit(InstructionDefinition.SET, Parameter.CreateRegister(Register.R0), this.GetParameter(r.Value));
+            this.Emit(InstructionDefinition.SET, Function.R0Param, this.GetParameter(r.Value));
             this.Emit(InstructionDefinition.RET);
         }
 
@@ -309,13 +299,13 @@ namespace ArkeOS.Tools.KohlCompiler.Emit {
 
             this.Emit(InstructionDefinition.ADD, Function.RspParam, Function.RspParam, Parameter.CreateLiteral((ulong)r.Target.LocalVariables.Count));
 
-            this.Emit(InstructionDefinition.CALL, this.GetParameter(r.Target));
+            this.EmitCall(r.Target);
 
             this.Emit(InstructionDefinition.SUB, Function.RspParam, Function.RspParam, Parameter.CreateLiteral((ulong)(r.Arguments.Count + r.Target.LocalVariables.Count)));
 
             this.Emit(InstructionDefinition.SET, Function.RbpParam, Function.StackParam);
 
-            this.Emit(InstructionDefinition.SET, this.GetParameter(r.Result), Parameter.CreateRegister(Register.R0));
+            this.Emit(InstructionDefinition.SET, this.GetParameter(r.Result), Function.R0Param);
 
             this.EmitJump(r.Next);
         }
@@ -325,9 +315,7 @@ namespace ArkeOS.Tools.KohlCompiler.Emit {
             this.EmitJump(i.NextTrue);
         }
 
-        private void Visit(GotoTerminator g) {
-            this.EmitJump(g.Next);
-        }
+        private void Visit(GotoTerminator g) => this.EmitJump(g.Next);
 
         private void EmitJump(BasicBlock target) => this.EmitJump(target, null);
 
@@ -341,7 +329,15 @@ namespace ArkeOS.Tools.KohlCompiler.Emit {
                 this.Emit(InstructionDefinition.SET, this.GetParameter(whenZero), InstructionConditionalType.WhenZero, Parameter.CreateRegister(Register.RIP), param);
             }
 
-            this.jumpFixups.Add(param, target);
+            this.jumpFixups.Add((param, target));
+        }
+
+        private void EmitCall(FunctionSymbol target) {
+            var param = Parameter.CreateLiteral(this.CurrentOffset, ParameterFlags.RelativeToRIP);
+
+            this.Emit(InstructionDefinition.CALL, param);
+
+            this.callFixups.Add((param, target));
         }
     }
 }
