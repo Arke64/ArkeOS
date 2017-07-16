@@ -112,72 +112,61 @@ namespace ArkeOS.Tools.KohlCompiler.Emit {
         private static Parameter RspParam { get; } = Parameter.CreateRegister(Register.RSP);
         private static Parameter R0Param { get; } = Parameter.CreateRegister(Register.R0);
 
+        private readonly IReadOnlyDictionary<GlobalVariableSymbol, ulong> globalVariableAddresses;
         private readonly Dictionary<BasicBlock, ulong> blockOffsets = new Dictionary<BasicBlock, ulong>();
-
-        private readonly List<(Parameter, BasicBlock)> jumpFixups = new List<(Parameter, BasicBlock)>();
-        private readonly List<(Parameter, FunctionSymbol)> callFixups = new List<(Parameter, FunctionSymbol)>();
-
+        private readonly List<(Parameter src, BasicBlock target)> jumpFixups = new List<(Parameter, BasicBlock)>();
+        private readonly List<(Parameter src, FunctionSymbol target)> callFixups = new List<(Parameter, FunctionSymbol)>();
         private readonly List<Instruction> instructions = new List<Instruction>();
-
-        private readonly IReadOnlyDictionary<GlobalVariableSymbol, ulong> variableOffsets;
-        private readonly FunctionSymbol currentFunction;
-
-        private ulong length = 0;
-
-        private void Add(Instruction i) {
-            this.instructions.Add(i);
-            this.length += i.Length;
-        }
+        private ulong currentOffset = 0;
 
         public IReadOnlyCollection<Instruction> Instructions => this.instructions;
-        public ulong Length => this.length;
+        public ulong Length => this.currentOffset;
         public IR.Function Source { get; }
 
-        public Function(IR.Function source, IReadOnlyDictionary<GlobalVariableSymbol, ulong> globalVariables) => (this.Source, this.variableOffsets, this.currentFunction) = (source, globalVariables, source.Symbol);
+        public Function(IR.Function source, IReadOnlyDictionary<GlobalVariableSymbol, ulong> globalVariableAddresses) => (this.Source, this.globalVariableAddresses) = (source, globalVariableAddresses);
 
         public void Emit() {
-            foreach (var f in this.Source.AllBlocks)
-                this.Visit(f);
-        }
+            foreach (var node in this.Source.AllBlocks) {
+                if (!node.Instructions.Any() && node.Terminator == null) return; //TODO remove the need for this
 
-        public void Fixup(IReadOnlyDictionary<FunctionSymbol, ulong> functionOffsets) {
-            var start = functionOffsets[this.currentFunction];
+                this.blockOffsets[node] = this.currentOffset;
 
-            foreach (var f in this.jumpFixups)
-                f.Item1.Literal = this.blockOffsets[f.Item2] - f.Item1.Literal;
+                foreach (var i in node.Instructions) {
+                    switch (i) {
+                        case BasicBlockAssignmentInstruction n: this.Visit(n); break;
+                        case BasicBlockBinaryOperationInstruction n: this.Visit(n); break;
+                        case BasicBlockIntrinsicInstruction n: this.Visit(n); break;
+                        default: Debug.Assert(false); break;
+                    }
+                }
 
-            foreach (var f in this.callFixups)
-                f.Item1.Literal = functionOffsets[f.Item2] - (start + f.Item1.Literal);
-        }
-
-        private ulong CurrentOffset => (ulong)this.instructions.Sum(i => i.Length);
-
-        private ulong GetGlobalVariableAddress(GlobalVariableSymbol sym) => this.variableOffsets.TryGetValue(sym, out var addr) ? addr : throw new IdentifierNotFoundException(default(PositionInfo), sym.Name);
-
-        private void Emit(InstructionDefinition def, params Parameter[] parameters) => this.Add(new Instruction(def, parameters));
-        private void Emit(InstructionDefinition def, Parameter conditional, InstructionConditionalType conditionalType, params Parameter[] parameters) => this.Add(new Instruction(def, parameters, conditional, conditionalType));
-
-        private void Visit(BasicBlock node) {
-            if (!node.Instructions.Any() && node.Terminator == null) return;
-
-            this.blockOffsets[node] = (ulong)this.instructions.Sum(i => i.Length);
-
-            foreach (var i in node.Instructions) {
-                switch (i) {
-                    case BasicBlockAssignmentInstruction n: this.Visit(n); break;
-                    case BasicBlockBinaryOperationInstruction n: this.Visit(n); break;
-                    case BasicBlockIntrinsicInstruction n: this.Visit(n); break;
+                switch (node.Terminator) {
+                    case ReturnTerminator n: this.Visit(n); break;
+                    case CallTerminator n: this.Visit(n); break;
+                    case IfTerminator n: this.Visit(n); break;
+                    case GotoTerminator n: this.Visit(n); break;
                     default: Debug.Assert(false); break;
                 }
             }
+        }
 
-            switch (node.Terminator) {
-                case ReturnTerminator n: this.Visit(n); break;
-                case CallTerminator n: this.Visit(n); break;
-                case IfTerminator n: this.Visit(n); break;
-                case GotoTerminator n: this.Visit(n); break;
-                default: Debug.Assert(false); break;
-            }
+        public void Fixup(IReadOnlyDictionary<FunctionSymbol, ulong> functionOffsets) {
+            var thisFileOffset = functionOffsets[this.Source.Symbol];
+
+            foreach (var f in this.jumpFixups)
+                f.src.Literal = this.blockOffsets[f.target] - f.src.Literal;
+
+            foreach (var f in this.callFixups)
+                f.src.Literal = functionOffsets[f.target] - (thisFileOffset + f.src.Literal);
+        }
+
+        private ulong GetGlobalVariableAddress(GlobalVariableSymbol sym) => this.globalVariableAddresses.TryGetValue(sym, out var addr) ? addr : throw new IdentifierNotFoundException(default(PositionInfo), sym.Name);
+        private void Emit(InstructionDefinition def, params Parameter[] parameters) => this.Add(new Instruction(def, parameters));
+        private void Emit(InstructionDefinition def, Parameter conditional, InstructionConditionalType conditionalType, params Parameter[] parameters) => this.Add(new Instruction(def, parameters, conditional, conditionalType));
+
+        private void Add(Instruction i) {
+            this.instructions.Add(i);
+            this.currentOffset += i.Length;
         }
 
         private Parameter GetParameter(RValue variable) {
@@ -192,8 +181,8 @@ namespace ArkeOS.Tools.KohlCompiler.Emit {
         private Parameter GetParameter(LValue variable) {
             switch (variable) {
                 case RegisterLValue v: return Parameter.CreateRegister(v.Symbol.Register);
-                case ArgumentLValue v: return Parameter.CreateLiteral(this.currentFunction.GetPosition(v.Symbol), ParameterFlags.RelativeToRBP | ParameterFlags.Indirect);
-                case LocalVariableLValue v: return Parameter.CreateLiteral(this.currentFunction.GetPosition(v.Symbol) + (ulong)this.currentFunction.Arguments.Count, ParameterFlags.RelativeToRBP | ParameterFlags.Indirect);
+                case ArgumentLValue v: return Parameter.CreateLiteral(this.Source.Symbol.GetPosition(v.Symbol), ParameterFlags.RelativeToRBP | ParameterFlags.Indirect);
+                case LocalVariableLValue v: return Parameter.CreateLiteral(this.Source.Symbol.GetPosition(v.Symbol) + (ulong)this.Source.Symbol.Arguments.Count, ParameterFlags.RelativeToRBP | ParameterFlags.Indirect);
                 case GlobalVariableLValue v: return Parameter.CreateLiteral(this.GetGlobalVariableAddress(v.Symbol), ParameterFlags.Indirect);
                 case PointerLValue v: return this.Dereference(v);
                 default: Debug.Assert(false); throw new InvalidOperationException();
@@ -287,7 +276,7 @@ namespace ArkeOS.Tools.KohlCompiler.Emit {
         private void EmitJump(BasicBlock target) => this.EmitJump(target, null);
 
         private void EmitJump(BasicBlock target, RValue whenZero) {
-            var param = Parameter.CreateLiteral(this.CurrentOffset, ParameterFlags.RelativeToRIP);
+            var param = Parameter.CreateLiteral(this.currentOffset, ParameterFlags.RelativeToRIP);
 
             if (whenZero == null) {
                 this.Emit(InstructionDefinition.SET, Parameter.CreateRegister(Register.RIP), param);
@@ -300,7 +289,7 @@ namespace ArkeOS.Tools.KohlCompiler.Emit {
         }
 
         private void EmitCall(FunctionSymbol target) {
-            var param = Parameter.CreateLiteral(this.CurrentOffset, ParameterFlags.RelativeToRIP);
+            var param = Parameter.CreateLiteral(this.currentOffset, ParameterFlags.RelativeToRIP);
 
             this.Emit(InstructionDefinition.CALL, param);
 
