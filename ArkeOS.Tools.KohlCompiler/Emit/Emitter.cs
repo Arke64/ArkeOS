@@ -107,7 +107,9 @@ namespace ArkeOS.Tools.KohlCompiler.Emit {
     }
 
     public sealed class Function {
-        private static Parameter StackParam { get; } = new Parameter { Type = ParameterType.Stack };
+        private static Parameter StackParam { get; } = Parameter.CreateStack();
+        private static Parameter RbpParam { get; } = Parameter.CreateRegister(Register.RBP);
+        private static Parameter RspParam { get; } = Parameter.CreateRegister(Register.RSP);
 
         private readonly Dictionary<BasicBlock, ulong> blockOffsets = new Dictionary<BasicBlock, ulong>();
 
@@ -298,48 +300,48 @@ namespace ArkeOS.Tools.KohlCompiler.Emit {
         }
 
         private void Visit(CallTerminator r) {
-            this.Emit(InstructionDefinition.SET, Function.StackParam, Parameter.CreateRegister(Register.RBP));
+            this.Emit(InstructionDefinition.SET, Function.StackParam, Function.RbpParam);
 
             foreach (var a in r.Arguments)
                 this.Emit(InstructionDefinition.SET, Function.StackParam, this.GetParameter(a));
 
-            //TODO Cache these registers
-            this.Emit(InstructionDefinition.SUB, Parameter.CreateRegister(Register.RBP), Parameter.CreateRegister(Register.RSP), Parameter.CreateLiteral((ulong)r.Arguments.Count));
+            this.Emit(InstructionDefinition.SUB, Function.RbpParam, Function.RspParam, Parameter.CreateLiteral((ulong)r.Arguments.Count));
 
-            this.Emit(InstructionDefinition.ADD, Parameter.CreateRegister(Register.RSP), Parameter.CreateRegister(Register.RSP), Parameter.CreateLiteral((ulong)r.Target.LocalVariables.Count));
+            this.Emit(InstructionDefinition.ADD, Function.RspParam, Function.RspParam, Parameter.CreateLiteral((ulong)r.Target.LocalVariables.Count));
 
             this.Emit(InstructionDefinition.CALL, this.GetParameter(r.Target));
 
-            this.Emit(InstructionDefinition.SUB, Parameter.CreateRegister(Register.RSP), Parameter.CreateRegister(Register.RSP), Parameter.CreateLiteral((ulong)(r.Arguments.Count + r.Target.LocalVariables.Count)));
+            this.Emit(InstructionDefinition.SUB, Function.RspParam, Function.RspParam, Parameter.CreateLiteral((ulong)(r.Arguments.Count + r.Target.LocalVariables.Count)));
 
-            this.Emit(InstructionDefinition.SET, Parameter.CreateRegister(Register.RBP), Function.StackParam);
+            this.Emit(InstructionDefinition.SET, Function.RbpParam, Function.StackParam);
 
             this.Emit(InstructionDefinition.SET, this.GetParameter(r.Result), Parameter.CreateRegister(Register.R0));
 
-            var param = Parameter.CreateLiteral(this.CurrentOffset, ParameterFlags.RelativeToRIP);
-
-            this.Emit(InstructionDefinition.SET, Parameter.CreateRegister(Register.RIP), param);
-
-            this.jumpFixups.Add(param, r.Next);
+            this.EmitJump(r.Next);
         }
 
         private void Visit(IfTerminator i) {
-            var param2 = Parameter.CreateLiteral(this.CurrentOffset, ParameterFlags.RelativeToRIP);
-            this.Emit(InstructionDefinition.SET, this.GetParameter(i.Condition), InstructionConditionalType.WhenZero, Parameter.CreateRegister(Register.RIP), param2);
-
-            var param1 = Parameter.CreateLiteral(this.CurrentOffset, ParameterFlags.RelativeToRIP);
-            this.Emit(InstructionDefinition.SET, Parameter.CreateRegister(Register.RIP), param1);
-
-            this.jumpFixups.Add(param1, i.NextTrue);
-            this.jumpFixups.Add(param2, i.NextFalse);
+            this.EmitJump(i.NextFalse, i.Condition);
+            this.EmitJump(i.NextTrue);
         }
 
         private void Visit(GotoTerminator g) {
+            this.EmitJump(g.Next);
+        }
+
+        private void EmitJump(BasicBlock target) => this.EmitJump(target, null);
+
+        private void EmitJump(BasicBlock target, RValue whenZero) {
             var param = Parameter.CreateLiteral(this.CurrentOffset, ParameterFlags.RelativeToRIP);
 
-            this.Emit(InstructionDefinition.SET, Parameter.CreateRegister(Register.RIP), param);
+            if (whenZero == null) {
+                this.Emit(InstructionDefinition.SET, Parameter.CreateRegister(Register.RIP), param);
+            }
+            else {
+                this.Emit(InstructionDefinition.SET, this.GetParameter(whenZero), InstructionConditionalType.WhenZero, Parameter.CreateRegister(Register.RIP), param);
+            }
 
-            this.jumpFixups.Add(param, g.Next);
+            this.jumpFixups.Add(param, target);
         }
     }
 }
