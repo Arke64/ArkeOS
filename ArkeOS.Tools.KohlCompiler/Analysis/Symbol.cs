@@ -1,4 +1,5 @@
 ﻿using ArkeOS.Hardware.Architecture;
+using ArkeOS.Tools.KohlCompiler.Exceptions;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -29,6 +30,15 @@ namespace ArkeOS.Tools.KohlCompiler.Analysis {
         public FunctionSymbol(string name, TypeSymbol type, IReadOnlyList<ArgumentSymbol> arguments, IReadOnlyList<LocalVariableSymbol> variables) : base(name) => (this.Type, this.arguments, this.localVariables) = (type, arguments.ToList(), variables.ToList());
 
         public void AddLocalVariable(LocalVariableSymbol variable) => this.localVariables.Add(variable);
+
+        public ulong GetPosition(ArgumentSymbol sym) => FunctionSymbol.GetPosition(this.arguments, sym);
+        public ulong GetPosition(LocalVariableSymbol sym) => FunctionSymbol.GetPosition(this.localVariables, sym);
+
+        private static ulong GetPosition<T>(List<T> source, T sym) where T : Symbol {
+            var idx = source.IndexOf(sym);
+
+            return idx != -1 ? (ulong)idx : throw new IdentifierNotFoundException(default(PositionInfo), sym.Name);
+        }
     }
 
     public sealed class ArgumentSymbol : Symbol {

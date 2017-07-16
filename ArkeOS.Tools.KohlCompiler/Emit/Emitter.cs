@@ -152,6 +152,8 @@ namespace ArkeOS.Tools.KohlCompiler.Emit {
 
         private ulong CurrentOffset => (ulong)this.instructions.Sum(i => i.Length);
 
+        private ulong GetGlobalVariableAddress(GlobalVariableSymbol sym) => this.variableOffsets.TryGetValue(sym, out var addr) ? addr : throw new IdentifierNotFoundException(default(PositionInfo), sym.Name);
+
         private void Emit(InstructionDefinition def, params Parameter[] parameters) => this.Add(new Instruction(def, parameters));
         private void Emit(InstructionDefinition def, Parameter conditional, InstructionConditionalType conditionalType, params Parameter[] parameters) => this.Add(new Instruction(def, parameters, conditional, conditionalType));
 
@@ -180,67 +182,32 @@ namespace ArkeOS.Tools.KohlCompiler.Emit {
 
         private Parameter GetParameter(RValue variable) {
             switch (variable) {
-                case IntegerRValue v:
-                    return Parameter.CreateLiteral(v.Value);
-
-                case AddressOfRValue n:
-                    return this.GetParameter(n.Target);
-
-                case LValue v:
-                    return this.GetParameter(v);
-
-                default:
-                    Debug.Assert(false);
-
-                    return null;
+                case IntegerRValue v: return Parameter.CreateLiteral(v.Value);
+                case AddressOfRValue n: return this.GetParameter(n.Target);
+                case LValue v: return this.GetParameter(v);
+                default: Debug.Assert(false); throw new InvalidOperationException();
             }
         }
 
         private Parameter GetParameter(LValue variable) {
-            var addr = 0UL;
-
             switch (variable) {
-                case LocalVariableLValue v:
-                    var vidx = 0UL;
-                    var localArg = this.currentFunction.LocalVariables.SkipWhile(a => { vidx++; return a != v.Symbol; }).FirstOrDefault();
-
-                    if (localArg == null)
-                        throw new IdentifierNotFoundException(default(PositionInfo), v.Symbol.Name);
-
-                    return Parameter.CreateLiteral((vidx + (ulong)this.currentFunction.Arguments.Count) - 1, ParameterFlags.RelativeToRBP | ParameterFlags.Indirect);
-
-                case GlobalVariableLValue v:
-                    if (!this.variableOffsets.TryGetValue(v.Symbol, out addr))
-                        throw new IdentifierNotFoundException(default(PositionInfo), v.Symbol.Name);
-
-                    return Parameter.CreateLiteral(addr, ParameterFlags.Indirect);
-
-                case ArgumentLValue v:
-                    var aidx = 0UL;
-                    var arg = this.currentFunction.Arguments.SkipWhile(a => { aidx++; return a != v.Symbol; }).FirstOrDefault();
-
-                    if (arg == null)
-                        throw new IdentifierNotFoundException(default(PositionInfo), v.Symbol.Name);
-
-                    return Parameter.CreateLiteral(aidx - 1, ParameterFlags.RelativeToRBP | ParameterFlags.Indirect);
-
-                case RegisterLValue v:
-                    return Parameter.CreateRegister(v.Symbol.Register);
-
-                case PointerLValue v:
-                    var r = this.GetParameter(v.Target);
-
-                    r.IsIndirect = true;
-
-                    this.Emit(InstructionDefinition.SET, Function.StackParam, r);
-
-                    return Parameter.CreateStack(ParameterFlags.Indirect);
-
-                default:
-                    Debug.Assert(false);
-
-                    throw new InvalidOperationException();
+                case RegisterLValue v: return Parameter.CreateRegister(v.Symbol.Register);
+                case ArgumentLValue v: return Parameter.CreateLiteral(this.currentFunction.GetPosition(v.Symbol), ParameterFlags.RelativeToRBP | ParameterFlags.Indirect);
+                case LocalVariableLValue v: return Parameter.CreateLiteral(this.currentFunction.GetPosition(v.Symbol) + (ulong)this.currentFunction.Arguments.Count, ParameterFlags.RelativeToRBP | ParameterFlags.Indirect);
+                case GlobalVariableLValue v: return Parameter.CreateLiteral(this.GetGlobalVariableAddress(v.Symbol), ParameterFlags.Indirect);
+                case PointerLValue v: return this.Dereference(v);
+                default: Debug.Assert(false); throw new InvalidOperationException();
             }
+        }
+
+        private Parameter Dereference(PointerLValue value) {
+            var r = this.GetParameter(value.Target);
+
+            r.IsIndirect = true;
+
+            this.Emit(InstructionDefinition.SET, Function.StackParam, r);
+
+            return Parameter.CreateStack(ParameterFlags.Indirect);
         }
 
         private void Visit(BasicBlockIntrinsicInstruction s) {
