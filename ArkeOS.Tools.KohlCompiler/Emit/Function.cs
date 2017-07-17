@@ -5,7 +5,6 @@ using ArkeOS.Tools.KohlCompiler.IR;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
 
 namespace ArkeOS.Tools.KohlCompiler.Emit {
     public sealed class Function {
@@ -29,8 +28,6 @@ namespace ArkeOS.Tools.KohlCompiler.Emit {
 
         public void Emit() {
             foreach (var node in this.Source.AllBlocks) {
-                if (!node.Instructions.Any() && node.Terminator == null) return; //TODO remove the need for this
-
                 this.blockOffsets[node] = this.currentOffset;
 
                 foreach (var i in node.Instructions) {

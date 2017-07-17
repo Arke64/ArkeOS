@@ -19,8 +19,8 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
 
         public BasicBlockCreator() => this.currentBlock = this.Entry = this.NewBlock();
 
-        private BasicBlock SetBlock(BasicBlock block) => this.currentBlock = block;
-        private T SetTerminator<T>(T terminator) where T : Terminator => this.currentBlock.Terminator == null ? (T)(this.currentBlock.Terminator = terminator) : throw new InvalidOperationException();
+        public BasicBlock SetBlock(BasicBlock block) => this.currentBlock = block;
+        public T SetTerminator<T>(T terminator) where T : Terminator => this.currentBlock.Terminator == null ? (T)(this.currentBlock.Terminator = terminator) : throw new InvalidOperationException();
 
         public BasicBlock PushNew() => this.SetBlock(this.NewBlock());
         public BasicBlock PushNew(BasicBlock block) => this.SetBlock(block);
