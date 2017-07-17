@@ -13,10 +13,10 @@ namespace ArkeOS.Tools.KohlCompiler.Emit {
         private static Parameter RspParam { get; } = Parameter.CreateRegister(Register.RSP);
         private static Parameter R0Param { get; } = Parameter.CreateRegister(Register.R0);
 
-        private readonly IReadOnlyDictionary<GlobalVariableSymbol, ulong> globalVariableAddresses;
         private readonly Dictionary<BasicBlock, ulong> blockOffsets = new Dictionary<BasicBlock, ulong>();
         private readonly List<(Parameter src, BasicBlock target)> jumpFixups = new List<(Parameter, BasicBlock)>();
         private readonly List<(Parameter src, FunctionSymbol target)> callFixups = new List<(Parameter, FunctionSymbol)>();
+        private readonly List<(Parameter src, GlobalVariableSymbol target)> globalVariableFixups = new List<(Parameter, GlobalVariableSymbol)>();
         private readonly List<Instruction> instructions = new List<Instruction>();
         private ulong currentOffset = 0;
 
@@ -24,7 +24,7 @@ namespace ArkeOS.Tools.KohlCompiler.Emit {
         public ulong Length => this.currentOffset;
         public IR.Function Source { get; }
 
-        public Function(IR.Function source, IReadOnlyDictionary<GlobalVariableSymbol, ulong> globalVariableAddresses) => (this.Source, this.globalVariableAddresses) = (source, globalVariableAddresses);
+        public Function(IR.Function source) => this.Source = source;
 
         public void Emit() {
             foreach (var node in this.Source.AllBlocks) {
@@ -49,17 +49,19 @@ namespace ArkeOS.Tools.KohlCompiler.Emit {
             }
         }
 
-        public void Fixup(IReadOnlyDictionary<FunctionSymbol, ulong> functionOffsets) {
-            var thisFileOffset = functionOffsets[this.Source.Symbol];
+        public void Fixup(IReadOnlyDictionary<FunctionSymbol, ulong> functionAddresses, IReadOnlyDictionary<GlobalVariableSymbol, ulong> globalVariableAddresses) {
+            var thisFileOffset = functionAddresses[this.Source.Symbol];
+
+            foreach (var f in this.globalVariableFixups)
+                f.src.Literal = globalVariableAddresses.TryGetValue(f.target, out var addr) ? addr : throw new IdentifierNotFoundException(default(PositionInfo), f.target.Name);
 
             foreach (var f in this.jumpFixups)
                 f.src.Literal = this.blockOffsets[f.target] - f.src.Literal;
 
             foreach (var f in this.callFixups)
-                f.src.Literal = functionOffsets[f.target] - (thisFileOffset + f.src.Literal);
+                f.src.Literal = functionAddresses[f.target] - (thisFileOffset + f.src.Literal);
         }
 
-        private ulong GetGlobalVariableAddress(GlobalVariableSymbol sym) => this.globalVariableAddresses.TryGetValue(sym, out var addr) ? addr : throw new IdentifierNotFoundException(default(PositionInfo), sym.Name);
         private void Emit(InstructionDefinition def, params Parameter[] parameters) => this.Add(new Instruction(def, parameters));
         private void Emit(InstructionDefinition def, Parameter conditional, InstructionConditionalType conditionalType, params Parameter[] parameters) => this.Add(new Instruction(def, parameters, conditional, conditionalType));
 
@@ -82,7 +84,7 @@ namespace ArkeOS.Tools.KohlCompiler.Emit {
                 case RegisterLValue v: return Parameter.CreateRegister(v.Symbol.Register);
                 case ArgumentLValue v: return Parameter.CreateLiteral(this.Source.Symbol.GetPosition(v.Symbol), ParameterFlags.RelativeToRBP | ParameterFlags.Indirect);
                 case LocalVariableLValue v: return Parameter.CreateLiteral(this.Source.Symbol.GetPosition(v.Symbol) + (ulong)this.Source.Symbol.Arguments.Count, ParameterFlags.RelativeToRBP | ParameterFlags.Indirect);
-                case GlobalVariableLValue v: return Parameter.CreateLiteral(this.GetGlobalVariableAddress(v.Symbol), ParameterFlags.Indirect);
+                case GlobalVariableLValue v: return this.EmitGlobalVariable(v.Symbol);
                 case PointerLValue v: return this.Dereference(v);
                 default: Debug.Assert(false); throw new InvalidOperationException();
             }
@@ -156,7 +158,7 @@ namespace ArkeOS.Tools.KohlCompiler.Emit {
 
             this.EmitCall(r.Target);
 
-            this.Emit(InstructionDefinition.SUB, Function.RspParam, Function.RspParam, Parameter.CreateLiteral((ulong)(r.Arguments.Count + r.Target.LocalVariables.Count)));
+            this.Emit(InstructionDefinition.SUB, Function.RspParam, Function.RspParam, Parameter.CreateLiteral(r.Target.StackRequired));
 
             this.Emit(InstructionDefinition.SET, Function.RbpParam, Function.StackParam);
 
@@ -193,6 +195,14 @@ namespace ArkeOS.Tools.KohlCompiler.Emit {
             this.Emit(InstructionDefinition.CALL, param);
 
             this.callFixups.Add((param, target));
+        }
+
+        private Parameter EmitGlobalVariable(GlobalVariableSymbol target) {
+            var param = Parameter.CreateLiteral(0, ParameterFlags.Indirect);
+
+            this.globalVariableFixups.Add((param, target));
+
+            return param;
         }
     }
 }

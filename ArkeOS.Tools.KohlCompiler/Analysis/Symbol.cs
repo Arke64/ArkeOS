@@ -27,6 +27,8 @@ namespace ArkeOS.Tools.KohlCompiler.Analysis {
         public IReadOnlyList<ArgumentSymbol> Arguments => this.arguments;
         public IReadOnlyList<LocalVariableSymbol> LocalVariables => this.localVariables;
 
+        public ulong StackRequired => (ulong)(this.Arguments.Count + this.LocalVariables.Count);
+
         public FunctionSymbol(string name, TypeSymbol type, IReadOnlyList<ArgumentSymbol> arguments, IReadOnlyList<LocalVariableSymbol> variables) : base(name) => (this.Type, this.arguments, this.localVariables) = (type, arguments.ToList(), variables.ToList());
 
         public void AddLocalVariable(LocalVariableSymbol variable) => this.localVariables.Add(variable);
