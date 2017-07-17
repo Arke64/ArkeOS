@@ -13,6 +13,7 @@ namespace ArkeOS.Tools.KohlCompiler.Syntax {
             ["if"] = TokenType.IfKeyword,
             ["else"] = TokenType.ElseKeyword,
             ["while"] = TokenType.WhileKeyword,
+            ["struct"] = TokenType.StructKeyword,
             ["func"] = TokenType.FuncKeyword,
             ["var"] = TokenType.VarKeyword,
             ["const"] = TokenType.ConstKeyword,
@@ -181,7 +182,6 @@ namespace ArkeOS.Tools.KohlCompiler.Syntax {
                 case ']': tok = TokenType.CloseSquareBrace; break;
 
                 case '+': tok = this.TryReadChar('=') ? TokenType.PlusEqual : TokenType.Plus; break;
-                case '-': tok = this.TryReadChar('=') ? TokenType.MinusEqual : TokenType.Minus; break;
                 case '*': tok = this.TryReadChar('=') ? TokenType.AsteriskEqual : TokenType.Asterisk; break;
                 case '/': tok = this.TryReadChar('=') ? TokenType.ForwardSlashEqual : TokenType.ForwardSlash; break;
                 case '^': tok = this.TryReadChar('=') ? TokenType.CaretEqual : TokenType.Caret; break;
@@ -190,6 +190,8 @@ namespace ArkeOS.Tools.KohlCompiler.Syntax {
                 case '|': tok = this.TryReadChar('=') ? TokenType.PipeEqual : TokenType.Pipe; break;
                 case '~': tok = this.TryReadChar('=') ? TokenType.TildeEqual : TokenType.Tilde; break;
                 case '=': tok = this.TryReadChar('=') ? TokenType.DoubleEqual : TokenType.Equal; break;
+
+                case '-': tok = this.TryReadChar('=') ? TokenType.MinusEqual : (this.TryReadChar('>') ? TokenType.MinusGreaterThan : TokenType.Minus); break;
 
                 case '!':
                     if (this.TryReadChar('&')) tok = this.TryReadChar('=') ? TokenType.ExclamationPointAmpersandEqual : TokenType.ExclamationPointAmpersand;

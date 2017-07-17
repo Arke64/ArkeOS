@@ -15,6 +15,7 @@ namespace ArkeOS.Tools.KohlCompiler.Syntax {
         IfKeyword,
         ElseKeyword,
         WhileKeyword,
+        StructKeyword,
         FuncKeyword,
         VarKeyword,
         ConstKeyword,
@@ -36,6 +37,7 @@ namespace ArkeOS.Tools.KohlCompiler.Syntax {
         Comma,
         Period,
         Colon,
+        MinusGreaterThan,
 
         OpenParenthesis,
         CloseParenthesis,
@@ -181,6 +183,7 @@ namespace ArkeOS.Tools.KohlCompiler.Syntax {
                 case TokenType.IfKeyword:
                 case TokenType.ElseKeyword:
                 case TokenType.WhileKeyword:
+                case TokenType.StructKeyword:
                 case TokenType.FuncKeyword:
                     return TokenClass.BlockKeyword;
 
@@ -206,6 +209,7 @@ namespace ArkeOS.Tools.KohlCompiler.Syntax {
                 case TokenType.Comma:
                 case TokenType.Period:
                 case TokenType.Colon:
+                case TokenType.MinusGreaterThan:
                     return TokenClass.Separator;
 
                 case TokenType.OpenCurlyBrace:
