@@ -18,7 +18,7 @@ namespace ArkeOS.Tools.KohlCompiler.Analysis {
 
         public SymbolTable(ProgramNode ast) {
             this.ConstVariables = ast.OfType<ConstDeclarationNode>().Select(i => new ConstVariableSymbol(i.Identifier, this.FindType(i.Type), ((IntegerLiteralNode)i.Value).Literal)).ToList();
-            this.GlobalVariables = ast.OfType<VariableDeclarationNode>().Select(i => new GlobalVariableSymbol(i.Identifier, this.FindType(i.Type))).ToList();
+            this.GlobalVariables = ast.OfType<VariableDeclarationAndInitializationNode>().Select(i => new GlobalVariableSymbol(i.Identifier, this.FindType(i.Type))).ToList();
             this.Registers = EnumExtensions.ToList<Register>().Select(i => new RegisterSymbol(i.ToString(), i)).ToList();
             this.Functions = ast.OfType<FunctionDeclarationNode>().Select(i => this.Visit(i)).ToList();
         }
@@ -31,7 +31,7 @@ namespace ArkeOS.Tools.KohlCompiler.Analysis {
             void visitStatement(StatementNode n)
             {
                 switch (n) {
-                    case VariableDeclarationNode s: variables.Add(new LocalVariableSymbol(s.Identifier, this.FindType(s.Type))); break;
+                    case VariableDeclarationAndInitializationNode s: variables.Add(new LocalVariableSymbol(s.Identifier, this.FindType(s.Type))); break;
                     case IfElseStatementNode s: visitStatementBlock(s.ElseStatementBlock); visitStatementBlock(s.StatementBlock); break;
                     case IfStatementNode s: visitStatementBlock(s.StatementBlock); break;
                     case WhileStatementNode s: visitStatementBlock(s.StatementBlock); break;

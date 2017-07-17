@@ -15,14 +15,30 @@ namespace ArkeOS.Tools.KohlCompiler.Syntax {
 
             while (this.lexer.TryPeek(out var tok)) {
                 switch (tok.Type) {
+                    case TokenType.StructKeyword: prog.Add(this.ReadStructDeclaration()); break;
                     case TokenType.FuncKeyword: prog.Add(this.ReadFunctionDeclaration()); break;
-                    case TokenType.VarKeyword: prog.Add(this.ReadVariableDeclaration()); this.lexer.Read(TokenType.Semicolon); break;
+                    case TokenType.VarKeyword: prog.Add(this.ReadVariableDeclarationAndInitialization()); this.lexer.Read(TokenType.Semicolon); break;
                     case TokenType.ConstKeyword: prog.Add(this.ReadConstDeclaration()); this.lexer.Read(TokenType.Semicolon); break;
                     default: throw this.GetUnexpectedException(tok);
                 }
             }
 
             return prog;
+        }
+
+        private StructDeclarationNode ReadStructDeclaration() {
+            this.lexer.Read(TokenType.StructKeyword);
+            var ident = this.lexer.Read(TokenType.Identifier);
+            this.lexer.TryRead(TokenType.OpenCurlyBrace);
+
+            var vars = new SyntaxListNode<VariableDeclarationNode>(this.lexer.CurrentPosition);
+            while (!this.lexer.TryRead(TokenType.CloseCurlyBrace)) {
+                vars.Add(this.ReadVariableDeclaration());
+
+                this.lexer.TryRead(TokenType.Semicolon);
+            }
+
+            return new StructDeclarationNode(ident, vars);
         }
 
         private FunctionDeclarationNode ReadFunctionDeclaration() {
@@ -80,10 +96,19 @@ namespace ArkeOS.Tools.KohlCompiler.Syntax {
             var ident = this.lexer.Read(TokenType.Identifier);
             this.lexer.Read(TokenType.Colon);
             var type = this.ReadTypeIdentifier();
+
+            return new VariableDeclarationNode(ident, type);
+        }
+
+        private VariableDeclarationAndInitializationNode ReadVariableDeclarationAndInitialization() {
+            this.lexer.Read(TokenType.VarKeyword);
+            var ident = this.lexer.Read(TokenType.Identifier);
+            this.lexer.Read(TokenType.Colon);
+            var type = this.ReadTypeIdentifier();
             this.lexer.Read(TokenType.Equal);
             var exp = this.ReadExpression();
 
-            return new VariableDeclarationNode(ident, type, exp);
+            return new VariableDeclarationAndInitializationNode(ident, type, exp);
         }
 
         private ConstDeclarationNode ReadConstDeclaration() {
@@ -121,7 +146,7 @@ namespace ArkeOS.Tools.KohlCompiler.Syntax {
                 this.lexer.Read(TokenType.Semicolon);
             }
             else if (tok.Type == TokenType.VarKeyword) {
-                res = this.ReadVariableDeclaration();
+                res = this.ReadVariableDeclarationAndInitialization();
 
                 this.lexer.Read(TokenType.Semicolon);
             }

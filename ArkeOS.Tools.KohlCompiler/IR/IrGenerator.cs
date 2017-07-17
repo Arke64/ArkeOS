@@ -44,7 +44,7 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
             switch (node) {
                 default: throw new UnexpectedException(node.Position, "statement node");
                 case EmptyStatementNode n: break;
-                case DeclarationNode n: this.Visit(n); break;
+                case TypedDeclarationNode n: this.Visit(n); break;
                 case ReturnStatementNode n: this.Visit(n); break;
                 case AssignmentStatementNode n: this.Visit(n); break;
                 case IfStatementNode n: this.Visit(n); break;
@@ -54,10 +54,10 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
             }
         }
 
-        private void Visit(DeclarationNode node) {
+        private void Visit(TypedDeclarationNode node) {
             switch (node) {
                 default: throw new UnexpectedException(node.Position, "identifier node");
-                case VariableDeclarationNode n:
+                case VariableDeclarationAndInitializationNode n:
                     this.symbolTable.CheckAssignable(n.Type, n.Initializer, this.functionSymbol);
 
                     this.Visit(new AssignmentStatementNode(n.Position, new IdentifierNode(n.Token), n.Initializer));

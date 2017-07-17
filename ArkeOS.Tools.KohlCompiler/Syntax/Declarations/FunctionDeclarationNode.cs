@@ -1,5 +1,5 @@
 ﻿namespace ArkeOS.Tools.KohlCompiler.Syntax {
-    public sealed class FunctionDeclarationNode : DeclarationNode {
+    public sealed class FunctionDeclarationNode : TypedDeclarationNode {
         public ArgumentListDeclarationNode ArgumentListDeclaration { get; }
         public StatementBlockNode StatementBlock { get; }
 
