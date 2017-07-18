@@ -19,6 +19,18 @@ namespace ArkeOS.Tools.KohlCompiler.Analysis {
         public bool Equals(Symbol obj) => this == obj;
     }
 
+    public sealed class StructSymbol : TypeSymbol {
+        private readonly List<StructMemberSymbol> members = new List<StructMemberSymbol>();
+
+        public IReadOnlyList<StructMemberSymbol> Members => this.members;
+
+        public override ulong Size => (ulong)this.Members.Sum(m => (long)m.Type.Size);
+
+        public StructSymbol(string name) : base(name, 0) { }
+
+        public void AddMember(StructMemberSymbol member) => this.members.Add(member);
+    }
+
     public sealed class FunctionSymbol : Symbol {
         private List<ArgumentSymbol> arguments;
         private List<LocalVariableSymbol> localVariables;
@@ -27,7 +39,7 @@ namespace ArkeOS.Tools.KohlCompiler.Analysis {
         public IReadOnlyList<ArgumentSymbol> Arguments => this.arguments;
         public IReadOnlyList<LocalVariableSymbol> LocalVariables => this.localVariables;
 
-        public ulong StackRequired => (ulong)(this.Arguments.Count + this.LocalVariables.Count);
+        public ulong StackRequired => (ulong)(this.Arguments.Sum(v => (long)v.Type.Size) + this.LocalVariables.Sum(v => (long)v.Type.Size));
 
         public FunctionSymbol(string name, TypeSymbol type, IReadOnlyList<ArgumentSymbol> arguments, IReadOnlyList<LocalVariableSymbol> variables) : base(name) => (this.Type, this.arguments, this.localVariables) = (type, arguments.ToList(), variables.ToList());
 
@@ -55,6 +67,12 @@ namespace ArkeOS.Tools.KohlCompiler.Analysis {
         public LocalVariableSymbol(string name, TypeSymbol type) : base(name) => this.Type = type;
     }
 
+    public sealed class StructMemberSymbol : Symbol {
+        public TypeSymbol Type { get; }
+
+        public StructMemberSymbol(string name, TypeSymbol type) : base(name) => this.Type = type;
+    }
+
     public sealed class RegisterSymbol : Symbol {
         public Register Register { get; }
 
@@ -74,11 +92,12 @@ namespace ArkeOS.Tools.KohlCompiler.Analysis {
         public ConstVariableSymbol(string name, TypeSymbol type, ulong value) : base(name) => (this.Type, this.Value) = (type, value);
     }
 
-    public sealed class TypeSymbol : Symbol {
+    public class TypeSymbol : Symbol {
         public string BaseName { get; }
+        public virtual ulong Size { get; }
         public IReadOnlyCollection<TypeSymbol> TypeArguments { get; }
 
-        public TypeSymbol(string name) : this(name, new List<TypeSymbol>()) { }
-        public TypeSymbol(string name, IReadOnlyCollection<TypeSymbol> typeArguments) : base(name + (typeArguments.Any() ? $"[{string.Join(", ", typeArguments.Select(g => g.Name))}]" : string.Empty)) => (this.BaseName, this.TypeArguments) = (name, typeArguments);
+        public TypeSymbol(string name, ulong size) : this(name, size, new List<TypeSymbol>()) { }
+        public TypeSymbol(string name, ulong size, IReadOnlyCollection<TypeSymbol> typeArguments) : base(name + (typeArguments.Any() ? $"[{string.Join(", ", typeArguments.Select(g => g.Name))}]" : string.Empty)) => (this.BaseName, this.Size, this.TypeArguments) = (name, size, typeArguments);
     }
 }

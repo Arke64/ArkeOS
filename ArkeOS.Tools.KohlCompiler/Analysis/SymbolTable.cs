@@ -15,11 +15,20 @@ namespace ArkeOS.Tools.KohlCompiler.Analysis {
         public IReadOnlyCollection<GlobalVariableSymbol> GlobalVariables { get; }
         public IReadOnlyCollection<RegisterSymbol> Registers { get; }
         public IReadOnlyCollection<FunctionSymbol> Functions { get; }
+        public IReadOnlyCollection<StructSymbol> Structs { get; }
 
         public SymbolTable(ProgramNode ast) {
             this.ConstVariables = ast.OfType<ConstDeclarationNode>().Select(i => new ConstVariableSymbol(i.Identifier, this.FindType(i.Type), ((IntegerLiteralNode)i.Value).Literal)).ToList();
             this.GlobalVariables = ast.OfType<VariableDeclarationAndInitializationNode>().Select(i => new GlobalVariableSymbol(i.Identifier, this.FindType(i.Type))).ToList();
             this.Registers = EnumExtensions.ToList<Register>().Select(i => new RegisterSymbol(i.ToString(), i)).ToList();
+
+            var structs = ast.OfType<StructDeclarationNode>().Select(s => (s, new StructSymbol(s.Identifier))).ToList();
+            this.Structs = structs.Select(i => i.Item2).ToList();
+
+            foreach (var s in structs)
+                foreach (var m in s.Item1.Members)
+                    s.Item2.AddMember(new StructMemberSymbol(m.Identifier, this.FindType(m.Type)));
+
             this.Functions = ast.OfType<FunctionDeclarationNode>().Select(i => this.Visit(i)).ToList();
         }
 
@@ -60,14 +69,16 @@ namespace ArkeOS.Tools.KohlCompiler.Analysis {
         public FunctionSymbol FindFunction(PositionInfo position, string name) => this.TryFindFunction(name, out var r) ? r : throw new IdentifierNotFoundException(position, name);
         public ArgumentSymbol FindArgument(PositionInfo position, FunctionSymbol function, string name) => this.TryFindArgument(function, name, out var r) ? r : throw new IdentifierNotFoundException(position, name);
         public LocalVariableSymbol FindLocalVariable(PositionInfo position, FunctionSymbol function, string name) => this.TryFindLocalVariable(function, name, out var r) ? r : throw new IdentifierNotFoundException(position, name);
+        public StructMemberSymbol FindStructMember(PositionInfo position, StructSymbol strct, string name) => this.TryFindStructMember(strct, name, out var r) ? r : throw new IdentifierNotFoundException(position, name);
 
-        public bool TryFindType(string name, out TypeSymbol result) => this.TryFind(SymbolTable.WellKnownTypes, name, out result);
+        public bool TryFindType(string name, out TypeSymbol result) => this.TryFind(SymbolTable.WellKnownTypes, name, out result) || this.TryFind(this.Structs, name, out result);
         public bool TryFindConstVariable(string name, out ConstVariableSymbol result) => this.TryFind(this.ConstVariables, name, out result);
         public bool TryFindGlobalVariable(string name, out GlobalVariableSymbol result) => this.TryFind(this.GlobalVariables, name, out result);
         public bool TryFindRegister(string name, out RegisterSymbol result) => this.TryFind(this.Registers, name, out result);
         public bool TryFindFunction(string name, out FunctionSymbol result) => this.TryFind(this.Functions, name, out result);
         public bool TryFindArgument(FunctionSymbol function, string name, out ArgumentSymbol result) => this.TryFind(function.Arguments, name, out result);
         public bool TryFindLocalVariable(FunctionSymbol function, string name, out LocalVariableSymbol result) => this.TryFind(function.LocalVariables, name, out result);
+        public bool TryFindStructMember(StructSymbol strct, string name, out StructMemberSymbol result) => this.TryFind(strct.Members, name, out result);
 
         private TypeSymbol GetTypeSymbol(TypeIdentifierNode node) {
             var count = 0;
@@ -80,7 +91,7 @@ namespace ArkeOS.Tools.KohlCompiler.Analysis {
             var type = this.TryFindType(node.Identifier, out var r) ? r : throw new IdentifierNotFoundException(node.Position, node.Identifier);
 
             while (count-- > 0)
-                type = new TypeSymbol("ptr", new List<TypeSymbol> { type });
+                type = new TypeSymbol("ptr", 1, new List<TypeSymbol> { type });
 
             return type;
         }
@@ -128,15 +139,28 @@ namespace ArkeOS.Tools.KohlCompiler.Analysis {
                 case IntegerLiteralNode n: return WellKnownSymbol.Word;
                 case BoolLiteralNode n: return WellKnownSymbol.Bool;
                 case FunctionCallIdentifierNode n: return this.TryFindFunction(n.Identifier, out var f) ? f.Type : throw new IdentifierNotFoundException(n.Position, n.Identifier);
-                case IdentifierExpressionNode n:
-                    if (this.TryFindRegister(n.Identifier, out var rs)) return WellKnownSymbol.Word;
-                    if (function != null && this.TryFindArgument(function, n.Identifier, out var ps)) return ps.Type;
-                    if (function != null && this.TryFindLocalVariable(function, n.Identifier, out var ls)) return ls.Type;
-                    if (this.TryFindGlobalVariable(n.Identifier, out var gs)) return gs.Type;
-                    if (this.TryFindConstVariable(n.Identifier, out var cs)) return cs.Type;
-                    if (this.TryFindType(n.Identifier, out var ts)) return ts;
 
-                    break;
+                case MemberDereferenceIdentifierNode n: {
+                        var i = this.VisitIdentifier(n, function);
+
+                        if (i.BaseName != "ptr") throw new WrongTypeException(n.Position, n.Identifier);
+
+                        var s = i.TypeArguments.Single() is StructSymbol ss ? ss : throw new WrongTypeException(n.Position, n.Identifier);
+
+                        this.FindStructMember(n.Position, s, n.Member.Identifier);
+
+                        return this.GetTypeOfExpression(n.Member, function);
+                    }
+
+                case MemberAccessIdentifierNode n: {
+                        var s = this.VisitIdentifier(n, function) is StructSymbol ss ? ss : throw new WrongTypeException(n.Position, n.Identifier);
+
+                        this.FindStructMember(n.Position, s, n.Member.Identifier);
+
+                        return this.GetTypeOfExpression(n.Member, function);
+                    }
+
+                case IdentifierExpressionNode n: return this.VisitIdentifier(n, function);
 
                 case UnaryExpressionNode n:
                     var t = this.GetTypeOfExpression(n.Expression, function);
@@ -151,7 +175,7 @@ namespace ArkeOS.Tools.KohlCompiler.Analysis {
                             return t;
 
                         case Operator.AddressOf:
-                            return new TypeSymbol("ptr", new List<TypeSymbol> { t });
+                            return new TypeSymbol("ptr", 1, new List<TypeSymbol> { t });
 
                         case Operator.Dereference:
                             return t.TypeArguments.Single();
@@ -215,6 +239,17 @@ namespace ArkeOS.Tools.KohlCompiler.Analysis {
             }
 
             throw new WrongTypeException(node.Position, "invalid operands");
+        }
+
+        private TypeSymbol VisitIdentifier(IdentifierExpressionNode n, FunctionSymbol function) {
+            if (this.TryFindRegister(n.Identifier, out var rs)) return WellKnownSymbol.Word;
+            if (function != null && this.TryFindArgument(function, n.Identifier, out var ps)) return ps.Type;
+            if (function != null && this.TryFindLocalVariable(function, n.Identifier, out var ls)) return ls.Type;
+            if (this.TryFindGlobalVariable(n.Identifier, out var gs)) return gs.Type;
+            if (this.TryFindConstVariable(n.Identifier, out var cs)) return cs.Type;
+            if (this.TryFindType(n.Identifier, out var ts)) return ts;
+
+            throw new WrongTypeException(n.Position, n.Identifier);
         }
     }
 }

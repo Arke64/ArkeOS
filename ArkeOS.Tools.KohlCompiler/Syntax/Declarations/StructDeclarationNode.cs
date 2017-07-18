@@ -1,7 +1,7 @@
 ﻿namespace ArkeOS.Tools.KohlCompiler.Syntax {
     public sealed class StructDeclarationNode : DeclarationNode {
-        public SyntaxListNode<VariableDeclarationNode> Variables { get; }
+        public SyntaxListNode<VariableDeclarationNode> Members { get; }
 
-        public StructDeclarationNode(Token identifier, SyntaxListNode<VariableDeclarationNode> variables) : base(identifier) => this.Variables = variables;
+        public StructDeclarationNode(Token identifier, SyntaxListNode<VariableDeclarationNode> members) : base(identifier) => this.Members = members;
     }
 }
