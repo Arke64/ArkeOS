@@ -193,6 +193,12 @@ namespace ArkeOS.Tools.KohlCompiler.Syntax {
             if (this.lexer.TryPeek(TokenType.OpenParenthesis)) {
                 return new FunctionCallIdentifierNode(tok, this.ReadArgumentList());
             }
+            else if (this.lexer.TryRead(TokenType.Period)) {
+                return new MemberAccessIdentifierNode(tok, this.ReadIdentifier());
+            }
+            else if (this.lexer.TryRead(TokenType.MinusGreaterThan)) {
+                return new MemberDereferenceIdentifierNode(tok, this.ReadIdentifier());
+            }
             else {
                 return tok.Value.IsValidEnum<Register>() ? new RegisterIdentifierNode(tok) : (IdentifierExpressionNode)new IdentifierNode(tok);
             }
