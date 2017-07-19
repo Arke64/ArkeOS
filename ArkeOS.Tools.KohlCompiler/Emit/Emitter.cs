@@ -88,15 +88,14 @@ namespace ArkeOS.Tools.KohlCompiler.Emit {
             foreach (var f in this.functions) {
                 str.AppendLine($"func {f.Source.Symbol.Name}: 0x{functionOffsets[f.Source.Symbol]:X16}");
 
-                var stackPosition = 0;
                 var stackFormat = hexFormatString(f.Source.Symbol.StackRequired);
                 var instrFormat = hexFormatString(f.Length);
 
                 foreach (var a in f.Source.Symbol.Arguments)
-                    str.AppendLine($"arg {a.Name}: 0x{(stackPosition++).ToString(stackFormat)}");
+                    str.AppendLine($"arg {a.Name}: 0x{f.Source.Symbol.GetStackPosition(a).ToString(stackFormat)}");
 
                 foreach (var a in f.Source.Symbol.LocalVariables)
-                    str.AppendLine($"var {a.Name}: 0x{(stackPosition++).ToString(stackFormat)}");
+                    str.AppendLine($"var {a.Name}: 0x{f.Source.Symbol.GetStackPosition(a).ToString(stackFormat)}");
 
                 var offset = 0UL;
                 foreach (var i in f.Instructions) {

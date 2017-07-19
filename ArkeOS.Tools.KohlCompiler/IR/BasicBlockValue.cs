@@ -64,4 +64,13 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
 
         public override string ToString() => $"rref {this.Symbol}";
     }
+
+    public sealed class StructMemberLValue : LValue {
+        public RValue Target { get; }
+        public StructMemberSymbol Member { get; }
+
+        public StructMemberLValue(RValue target, StructMemberSymbol member) => (this.Target, this.Member) = (target, member);
+
+        public override string ToString() => $"strc {this.Target}.{this.Member}";
+    }
 }

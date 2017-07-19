@@ -53,7 +53,7 @@ namespace ArkeOS.Tools.KohlCompiler.Emit {
             var thisFileOffset = functionAddresses[this.Source.Symbol];
 
             foreach (var f in this.globalVariableFixups)
-                f.src.Literal = globalVariableAddresses.TryGetValue(f.target, out var addr) ? addr : throw new IdentifierNotFoundException(default(PositionInfo), f.target.Name);
+                f.src.Literal += globalVariableAddresses.TryGetValue(f.target, out var addr) ? addr : throw new IdentifierNotFoundException(default(PositionInfo), f.target.Name);
 
             foreach (var f in this.jumpFixups)
                 f.src.Literal = this.blockOffsets[f.target] - f.src.Literal;
@@ -82,10 +82,11 @@ namespace ArkeOS.Tools.KohlCompiler.Emit {
         private Parameter GetParameter(LValue variable) {
             switch (variable) {
                 case RegisterLValue v: return Parameter.CreateRegister(v.Symbol.Register);
-                case ArgumentLValue v: return Parameter.CreateLiteral(this.Source.Symbol.GetPosition(v.Symbol), ParameterFlags.RelativeToRBP | ParameterFlags.Indirect);
-                case LocalVariableLValue v: return Parameter.CreateLiteral(this.Source.Symbol.GetPosition(v.Symbol) + (ulong)this.Source.Symbol.Arguments.Count, ParameterFlags.RelativeToRBP | ParameterFlags.Indirect);
+                case ArgumentLValue v: return Parameter.CreateLiteral(this.Source.Symbol.GetStackPosition(v.Symbol), ParameterFlags.RelativeToRBP | ParameterFlags.Indirect);
+                case LocalVariableLValue v: return Parameter.CreateLiteral(this.Source.Symbol.GetStackPosition(v.Symbol), ParameterFlags.RelativeToRBP | ParameterFlags.Indirect);
                 case GlobalVariableLValue v: return this.EmitGlobalVariable(v.Symbol);
                 case PointerLValue v: return this.Dereference(v);
+                case StructMemberLValue v: var b = this.GetParameter(v.Target); b.Literal += v.Member.Offset; return b;
                 default: Debug.Assert(false); throw new InvalidOperationException();
             }
         }

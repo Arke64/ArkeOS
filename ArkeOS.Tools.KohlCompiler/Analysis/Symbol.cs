@@ -7,8 +7,9 @@ using System.Linq;
 namespace ArkeOS.Tools.KohlCompiler.Analysis {
     public abstract class Symbol : IEquatable<Symbol> {
         public string Name { get; }
+        public TypeSymbol Type { get; }
 
-        protected Symbol(string name) => this.Name = name;
+        protected Symbol(string name, TypeSymbol type) => (this.Name, this.Type) = (name, type);
 
         public override string ToString() => $"{this.Name}({this.GetType().Name})";
 
@@ -34,62 +35,57 @@ namespace ArkeOS.Tools.KohlCompiler.Analysis {
     public sealed class FunctionSymbol : Symbol {
         private List<ArgumentSymbol> arguments;
         private List<LocalVariableSymbol> localVariables;
+        private ulong argumentsStackSize;
 
-        public TypeSymbol Type { get; }
         public IReadOnlyList<ArgumentSymbol> Arguments => this.arguments;
         public IReadOnlyList<LocalVariableSymbol> LocalVariables => this.localVariables;
 
         public ulong StackRequired => (ulong)(this.Arguments.Sum(v => (long)v.Type.Size) + this.LocalVariables.Sum(v => (long)v.Type.Size));
 
-        public FunctionSymbol(string name, TypeSymbol type, IReadOnlyList<ArgumentSymbol> arguments, IReadOnlyList<LocalVariableSymbol> variables) : base(name) => (this.Type, this.arguments, this.localVariables) = (type, arguments.ToList(), variables.ToList());
+        public FunctionSymbol(string name, TypeSymbol type, IReadOnlyList<ArgumentSymbol> arguments, IReadOnlyList<LocalVariableSymbol> variables) : base(name, type) => (this.arguments, this.localVariables, this.argumentsStackSize) = (arguments.ToList(), variables.ToList(), (ulong)arguments.Sum(a => (long)a.Type.Size));
 
         public void AddLocalVariable(LocalVariableSymbol variable) => this.localVariables.Add(variable);
 
-        public ulong GetPosition(ArgumentSymbol sym) => FunctionSymbol.GetPosition(this.arguments, sym);
-        public ulong GetPosition(LocalVariableSymbol sym) => FunctionSymbol.GetPosition(this.localVariables, sym);
+        public ulong GetStackPosition(ArgumentSymbol sym) => FunctionSymbol.GetPosition(this.arguments, sym);
+        public ulong GetStackPosition(LocalVariableSymbol sym) => FunctionSymbol.GetPosition(this.localVariables, sym) + this.argumentsStackSize;
 
         private static ulong GetPosition<T>(List<T> source, T sym) where T : Symbol {
             var idx = source.IndexOf(sym);
 
-            return idx != -1 ? (ulong)idx : throw new IdentifierNotFoundException(default(PositionInfo), sym.Name);
+            if (idx == -1) throw new IdentifierNotFoundException(default(PositionInfo), sym.Name);
+
+            return (ulong)source.Take(idx).Sum(i => (long)i.Type.Size);
         }
     }
 
     public sealed class ArgumentSymbol : Symbol {
-        public TypeSymbol Type { get; }
-
-        public ArgumentSymbol(string name, TypeSymbol type) : base(name) => this.Type = type;
+        public ArgumentSymbol(string name, TypeSymbol type) : base(name, type) { }
     }
 
     public sealed class LocalVariableSymbol : Symbol {
-        public TypeSymbol Type { get; }
-
-        public LocalVariableSymbol(string name, TypeSymbol type) : base(name) => this.Type = type;
+        public LocalVariableSymbol(string name, TypeSymbol type) : base(name, type) { }
     }
 
     public sealed class StructMemberSymbol : Symbol {
-        public TypeSymbol Type { get; }
+        public ulong Offset { get; }
 
-        public StructMemberSymbol(string name, TypeSymbol type) : base(name) => this.Type = type;
+        public StructMemberSymbol(string name, TypeSymbol type, ulong offset) : base(name, type) => this.Offset = offset;
     }
 
     public sealed class RegisterSymbol : Symbol {
         public Register Register { get; }
 
-        public RegisterSymbol(string name, Register register) : base(name) => this.Register = register;
+        public RegisterSymbol(string name, Register register) : base(name, WellKnownSymbol.Word) => this.Register = register;
     }
 
     public sealed class GlobalVariableSymbol : Symbol {
-        public TypeSymbol Type { get; }
-
-        public GlobalVariableSymbol(string name, TypeSymbol type) : base(name) => this.Type = type;
+        public GlobalVariableSymbol(string name, TypeSymbol type) : base(name, type) { }
     }
 
     public sealed class ConstVariableSymbol : Symbol {
-        public TypeSymbol Type { get; }
         public ulong Value { get; }
 
-        public ConstVariableSymbol(string name, TypeSymbol type, ulong value) : base(name) => (this.Type, this.Value) = (type, value);
+        public ConstVariableSymbol(string name, TypeSymbol type, ulong value) : base(name, type) => this.Value = value;
     }
 
     public class TypeSymbol : Symbol {
@@ -98,6 +94,6 @@ namespace ArkeOS.Tools.KohlCompiler.Analysis {
         public IReadOnlyCollection<TypeSymbol> TypeArguments { get; }
 
         public TypeSymbol(string name, ulong size) : this(name, size, new List<TypeSymbol>()) { }
-        public TypeSymbol(string name, ulong size, IReadOnlyCollection<TypeSymbol> typeArguments) : base(name + (typeArguments.Any() ? $"[{string.Join(", ", typeArguments.Select(g => g.Name))}]" : string.Empty)) => (this.BaseName, this.Size, this.TypeArguments) = (name, size, typeArguments);
+        public TypeSymbol(string name, ulong size, IReadOnlyCollection<TypeSymbol> typeArguments) : base(name + (typeArguments.Any() ? $"[{string.Join(", ", typeArguments.Select(g => g.Name))}]" : string.Empty), null) => (this.BaseName, this.Size, this.TypeArguments) = (name, size, typeArguments);
     }
 }

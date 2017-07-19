@@ -3,6 +3,7 @@ using ArkeOS.Tools.KohlCompiler.Analysis;
 using ArkeOS.Tools.KohlCompiler.Exceptions;
 using ArkeOS.Tools.KohlCompiler.Syntax;
 using ArkeOS.Utilities.Extensions;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -175,14 +176,32 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
             return result;
         }
 
-        private RValue AccessSymbol(IdentifierExpressionNode node, bool allowRValue) {
-            if (this.symbolTable.TryFindRegister(node.Identifier, out var rs)) return new RegisterLValue(rs);
-            if (this.symbolTable.TryFindArgument(this.functionSymbol, node.Identifier, out var ps)) return new ArgumentLValue(ps);
-            if (this.symbolTable.TryFindLocalVariable(this.functionSymbol, node.Identifier, out var ls)) return new LocalVariableLValue(ls);
-            if (this.symbolTable.TryFindGlobalVariable(node.Identifier, out var gs)) return new GlobalVariableLValue(gs);
-            if (allowRValue && this.symbolTable.TryFindConstVariable(node.Identifier, out var cs)) return new IntegerRValue(cs.Value);
+        private (Symbol symbol, RValue rvalue) AccessSymbol(IdentifierExpressionNode node, bool allowRValue) {
+            if (this.symbolTable.TryFindRegister(node.Identifier, out var rs)) return (rs, new RegisterLValue(rs));
+            if (this.symbolTable.TryFindArgument(this.functionSymbol, node.Identifier, out var ps)) return (ps, new ArgumentLValue(ps));
+            if (this.symbolTable.TryFindLocalVariable(this.functionSymbol, node.Identifier, out var ls)) return (ls, new LocalVariableLValue(ls));
+            if (this.symbolTable.TryFindGlobalVariable(node.Identifier, out var gs)) return (gs, new GlobalVariableLValue(gs));
+            if (allowRValue && this.symbolTable.TryFindConstVariable(node.Identifier, out var cs)) return (cs, new IntegerRValue(cs.Value));
 
             throw new ExpectedException(node.Position, "lvalue");
+        }
+
+        private RValue Visit(IdentifierExpressionNode node, bool allowRValue) {
+            var (symbol, rvalue) = this.AccessSymbol(node, allowRValue);
+
+            if (node is MemberAccessIdentifierNode n) {
+                if (!(symbol.Type is StructSymbol s)) throw new InvalidOperationException();
+
+                var mbr = this.symbolTable.FindStructMember(n.Position, s, n.Member.Identifier);
+
+                return new StructMemberLValue(rvalue, mbr);
+            }
+            else if (node is MemberDereferenceIdentifierNode d) {
+                throw new NotImplementedException();
+            }
+            else {
+                return rvalue;
+            }
         }
 
         private LValue ExtractLValue(ExpressionStatementNode node) {
@@ -190,7 +209,7 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
 
             switch (node) {
                 default: throw new ExpectedException(node.Position, "lvalue");
-                case IdentifierExpressionNode n: return (LValue)this.AccessSymbol(n, false);
+                case IdentifierExpressionNode n: return (LValue)this.Visit(n, false);
                 case UnaryExpressionNode n when n.Op.Operator == Operator.Dereference: return new PointerLValue(this.ExtractRValue(n.Expression));
             }
         }
@@ -202,7 +221,7 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
                 case IntegerLiteralNode n: return new IntegerRValue(n.Literal);
                 case BoolLiteralNode n: return new IntegerRValue(n.Literal ? ulong.MaxValue : 0);
                 case FunctionCallIdentifierNode n: return this.Visit(n);
-                case IdentifierExpressionNode n: return this.AccessSymbol(n, true);
+                case IdentifierExpressionNode n: return this.Visit(n, true);
                 case UnaryExpressionNode n:
                     switch (n.Op.Operator) {
                         case Operator.UnaryMinus: return this.ExtractRValue(new BinaryExpressionNode(n.Position, n.Expression, OperatorNode.FromOperator(n.Position, Operator.Multiplication), new IntegerLiteralNode(n.Position, ulong.MaxValue)));

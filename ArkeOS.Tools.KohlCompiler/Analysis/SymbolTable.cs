@@ -25,9 +25,17 @@ namespace ArkeOS.Tools.KohlCompiler.Analysis {
             var structs = ast.OfType<StructDeclarationNode>().Select(s => (s, new StructSymbol(s.Identifier))).ToList();
             this.Structs = structs.Select(i => i.Item2).ToList();
 
-            foreach (var s in structs)
-                foreach (var m in s.Item1.Members)
-                    s.Item2.AddMember(new StructMemberSymbol(m.Identifier, this.FindType(m.Type)));
+            foreach (var s in structs) {
+                var offset = 0UL;
+
+                for (var i = 0; i < s.Item1.Members.Count; i++) {
+                    var m = s.Item1.Members[i];
+
+                    s.Item2.AddMember(new StructMemberSymbol(m.Identifier, this.FindType(m.Type), offset));
+
+                    offset += s.Item2.Members[i].Type.Size;
+                }
+            }
 
             this.Functions = ast.OfType<FunctionDeclarationNode>().Select(i => this.Visit(i)).ToList();
         }
