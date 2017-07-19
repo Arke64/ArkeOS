@@ -40,7 +40,7 @@ namespace ArkeOS.Tools.KohlCompiler.Analysis {
             void visitStatement(StatementNode n)
             {
                 switch (n) {
-                    case VariableDeclarationAndInitializationNode s: variables.Add(new LocalVariableSymbol(s.Identifier, this.FindType(s.Type))); break;
+                    case VariableDeclarationNode s: variables.Add(new LocalVariableSymbol(s.Identifier, this.FindType(s.Type))); break;
                     case IfElseStatementNode s: visitStatementBlock(s.ElseStatementBlock); visitStatementBlock(s.StatementBlock); break;
                     case IfStatementNode s: visitStatementBlock(s.StatementBlock); break;
                     case WhileStatementNode s: visitStatementBlock(s.StatementBlock); break;
@@ -134,33 +134,35 @@ namespace ArkeOS.Tools.KohlCompiler.Analysis {
 
         public TypeSymbol GetTypeOfExpression(ExpressionStatementNode node) => this.GetTypeOfExpression(node, null);
 
-        public TypeSymbol GetTypeOfExpression(ExpressionStatementNode node, FunctionSymbol function) {
+        public TypeSymbol GetTypeOfExpression(ExpressionStatementNode node, FunctionSymbol function) => this.GetTypeOfExpression(node, function, null);
+
+        public TypeSymbol GetTypeOfExpression(ExpressionStatementNode node, FunctionSymbol function, StructSymbol parent) {
             switch (node) {
                 case IntegerLiteralNode n: return WellKnownSymbol.Word;
                 case BoolLiteralNode n: return WellKnownSymbol.Bool;
                 case FunctionCallIdentifierNode n: return this.TryFindFunction(n.Identifier, out var f) ? f.Type : throw new IdentifierNotFoundException(n.Position, n.Identifier);
 
                 case MemberDereferenceIdentifierNode n: {
-                        var i = this.VisitIdentifier(n, function);
+                        var i = this.VisitIdentifier(n, function, parent);
 
-                        if (i.BaseName != "ptr") throw new WrongTypeException(n.Position, n.Identifier);
+                        if (i.BaseName != "ptr") throw new WrongTypeException(n.Position, "not a ptr: " + n.Identifier);
 
                         var s = i.TypeArguments.Single() is StructSymbol ss ? ss : throw new WrongTypeException(n.Position, n.Identifier);
 
                         this.FindStructMember(n.Position, s, n.Member.Identifier);
 
-                        return this.GetTypeOfExpression(n.Member, function);
+                        return this.GetTypeOfExpression(n.Member, function, s);
                     }
 
                 case MemberAccessIdentifierNode n: {
-                        var s = this.VisitIdentifier(n, function) is StructSymbol ss ? ss : throw new WrongTypeException(n.Position, n.Identifier);
+                        var s = this.VisitIdentifier(n, function, parent) is StructSymbol ss ? ss : throw new WrongTypeException(n.Position, n.Identifier);
 
                         this.FindStructMember(n.Position, s, n.Member.Identifier);
 
-                        return this.GetTypeOfExpression(n.Member, function);
+                        return this.GetTypeOfExpression(n.Member, function, s);
                     }
 
-                case IdentifierExpressionNode n: return this.VisitIdentifier(n, function);
+                case IdentifierExpressionNode n: return this.VisitIdentifier(n, function, parent);
 
                 case UnaryExpressionNode n:
                     var t = this.GetTypeOfExpression(n.Expression, function);
@@ -241,7 +243,8 @@ namespace ArkeOS.Tools.KohlCompiler.Analysis {
             throw new WrongTypeException(node.Position, "invalid operands");
         }
 
-        private TypeSymbol VisitIdentifier(IdentifierExpressionNode n, FunctionSymbol function) {
+        private TypeSymbol VisitIdentifier(IdentifierExpressionNode n, FunctionSymbol function, StructSymbol strct) {
+            if (strct != null && this.TryFindStructMember(strct, n.Identifier, out var ss)) return ss.Type;
             if (this.TryFindRegister(n.Identifier, out var rs)) return WellKnownSymbol.Word;
             if (function != null && this.TryFindArgument(function, n.Identifier, out var ps)) return ps.Type;
             if (function != null && this.TryFindLocalVariable(function, n.Identifier, out var ls)) return ls.Type;

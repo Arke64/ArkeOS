@@ -56,13 +56,15 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
 
         private void Visit(TypedDeclarationNode node) {
             switch (node) {
-                default: throw new UnexpectedException(node.Position, "identifier node");
                 case VariableDeclarationAndInitializationNode n:
                     this.symbolTable.CheckAssignable(n.Type, n.Initializer, this.functionSymbol);
 
                     this.Visit(new AssignmentStatementNode(n.Position, new IdentifierNode(n.Token), n.Initializer));
 
                     break;
+
+                case VariableDeclarationNode n: break;
+                default: throw new UnexpectedException(node.Position, "identifier node");
             }
         }
 

@@ -97,7 +97,7 @@ namespace ArkeOS.Tools.KohlCompiler.Syntax {
             this.lexer.Read(TokenType.Colon);
             var type = this.ReadTypeIdentifier();
 
-            return new VariableDeclarationNode(ident, type);
+            return !this.lexer.TryRead(TokenType.Equal) ? new VariableDeclarationNode(ident, type) : new VariableDeclarationAndInitializationNode(ident, type, this.ReadExpression());
         }
 
         private VariableDeclarationAndInitializationNode ReadVariableDeclarationAndInitialization() {
@@ -146,7 +146,7 @@ namespace ArkeOS.Tools.KohlCompiler.Syntax {
                 this.lexer.Read(TokenType.Semicolon);
             }
             else if (tok.Type == TokenType.VarKeyword) {
-                res = this.ReadVariableDeclarationAndInitialization();
+                res = this.ReadVariableDeclaration();
 
                 this.lexer.Read(TokenType.Semicolon);
             }
