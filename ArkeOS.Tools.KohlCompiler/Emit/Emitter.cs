@@ -28,6 +28,8 @@ namespace ArkeOS.Tools.KohlCompiler.Emit {
 
             this.Emit(InstructionDefinition.SET, Parameter.CreateRegister(Register.RSP), Parameter.CreateLiteral((ulong)entry.Symbol.LocalVariables.Count + 0x1_0000));
             this.Emit(InstructionDefinition.SET, Parameter.CreateRegister(Register.RBP), Parameter.CreateLiteral(0x1_0000));
+            this.Emit(InstructionDefinition.CALL, Parameter.CreateLiteral(3, ParameterFlags.RelativeToRIP));
+            this.Emit(InstructionDefinition.HLT);
 
             var current = (ulong)this.instructions.Sum(i => i.Length);
 
