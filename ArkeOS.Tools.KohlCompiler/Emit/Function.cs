@@ -89,6 +89,8 @@ namespace ArkeOS.Tools.KohlCompiler.Emit {
                 case StructMemberLValue v:
                     var b = this.GetParameter(v.Target);
 
+                    b.IsIndirect = false;
+
                     this.Emit(InstructionDefinition.SET, Function.StackParam, b);
                     this.Emit(InstructionDefinition.ADD, Function.StackParam, Function.StackParam, Parameter.CreateLiteral(v.Member.Offset));
 
