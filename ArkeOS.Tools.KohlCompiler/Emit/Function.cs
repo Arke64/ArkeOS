@@ -73,7 +73,7 @@ namespace ArkeOS.Tools.KohlCompiler.Emit {
         private Parameter GetParameter(RValue variable) {
             switch (variable) {
                 case IntegerRValue v: return Parameter.CreateLiteral(v.Value);
-                case AddressOfRValue n: return this.GetParameter(n.Target);
+                case AddressOfRValue n: var res = this.GetParameter(n.Target); res.IsIndirect = false; return res;
                 case LValue v: return this.GetParameter(v);
                 default: Debug.Assert(false); throw new InvalidOperationException();
             }
