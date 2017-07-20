@@ -92,11 +92,7 @@ namespace ArkeOS.Tools.KohlCompiler.Emit {
         }
 
         private Parameter Dereference(PointerLValue value) {
-            var r = this.GetParameter(value.Target);
-
-            r.IsIndirect = true;
-
-            this.Emit(InstructionDefinition.SET, Function.StackParam, r);
+            this.Emit(InstructionDefinition.SET, Function.StackParam, this.GetParameter(value.Target));
 
             return Parameter.CreateStack(ParameterFlags.Indirect);
         }
