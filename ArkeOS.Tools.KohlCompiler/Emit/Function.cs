@@ -86,7 +86,14 @@ namespace ArkeOS.Tools.KohlCompiler.Emit {
                 case LocalVariableLValue v: return Parameter.CreateLiteral(this.Source.Symbol.GetStackPosition(v.Symbol), ParameterFlags.RelativeToRBP | ParameterFlags.Indirect);
                 case GlobalVariableLValue v: return this.EmitGlobalVariable(v.Symbol);
                 case PointerLValue v: return this.Dereference(v);
-                case StructMemberLValue v: var b = this.GetParameter(v.Target); b.Literal += v.Member.Offset; return b;
+                case StructMemberLValue v:
+                    var b = this.GetParameter(v.Target);
+
+                    this.Emit(InstructionDefinition.SET, Function.StackParam, b);
+                    this.Emit(InstructionDefinition.ADD, Function.StackParam, Function.StackParam, Parameter.CreateLiteral(v.Member.Offset));
+
+                    return Parameter.CreateStack(ParameterFlags.Indirect);
+
                 default: Debug.Assert(false); throw new InvalidOperationException();
             }
         }

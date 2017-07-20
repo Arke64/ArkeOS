@@ -189,15 +189,21 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
         private RValue Visit(IdentifierExpressionNode node, bool allowRValue) {
             var (symbol, rvalue) = this.AccessSymbol(node, allowRValue);
 
-            if (node is MemberAccessIdentifierNode n) {
+            if (node is MemberDereferenceIdentifierNode d) {
+                var type = symbol.Type;
+
+                if (type.BaseName != "ptr") throw new WrongTypeException(d.Position, type.BaseName);
+
+                type = type.TypeArguments.Single();
+
+                if (!(type is StructSymbol s)) throw new InvalidOperationException();
+
+                return new StructMemberLValue(new PointerLValue(rvalue), this.symbolTable.FindStructMember(d.Position, s, d.Member.Identifier));
+            }
+            else if (node is MemberAccessIdentifierNode a) {
                 if (!(symbol.Type is StructSymbol s)) throw new InvalidOperationException();
 
-                var mbr = this.symbolTable.FindStructMember(n.Position, s, n.Member.Identifier);
-
-                return new StructMemberLValue(rvalue, mbr);
-            }
-            else if (node is MemberDereferenceIdentifierNode d) {
-                throw new NotImplementedException();
+                return new StructMemberLValue(rvalue, this.symbolTable.FindStructMember(a.Position, s, a.Member.Identifier));
             }
             else {
                 return rvalue;
