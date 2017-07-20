@@ -72,8 +72,11 @@ namespace ArkeOS.Tools.KohlCompiler.Emit {
         private void GenerateGlobalVariables() {
             var next = 0UL;
 
-            foreach (var g in this.compilation.GlobalVariables)
-                this.globalVariableOffsets[g] = next++;
+            foreach (var g in this.compilation.GlobalVariables) {
+                this.globalVariableOffsets[g] = next;
+
+                next += g.Type.Size;
+            }
         }
 
         private void GenerateListing() {
