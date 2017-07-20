@@ -17,7 +17,7 @@ namespace ArkeOS.Tools.KohlCompiler.Syntax {
                 switch (tok.Type) {
                     case TokenType.StructKeyword: prog.Add(this.ReadStructDeclaration()); break;
                     case TokenType.FuncKeyword: prog.Add(this.ReadFunctionDeclaration()); break;
-                    case TokenType.VarKeyword: prog.Add(this.ReadVariableDeclarationAndInitialization()); this.lexer.Read(TokenType.Semicolon); break;
+                    case TokenType.VarKeyword: prog.Add(this.ReadVariableDeclaration()); this.lexer.Read(TokenType.Semicolon); break;
                     case TokenType.ConstKeyword: prog.Add(this.ReadConstDeclaration()); this.lexer.Read(TokenType.Semicolon); break;
                     default: throw this.GetUnexpectedException(tok);
                 }

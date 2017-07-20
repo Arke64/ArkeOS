@@ -18,8 +18,6 @@ namespace ArkeOS.Tools.KohlCompiler.Analysis {
         public IReadOnlyCollection<StructSymbol> Structs { get; }
 
         public SymbolTable(ProgramNode ast) {
-            this.ConstVariables = ast.OfType<ConstDeclarationNode>().Select(i => new ConstVariableSymbol(i.Identifier, this.FindType(i.Type), ((IntegerLiteralNode)i.Value).Literal)).ToList();
-            this.GlobalVariables = ast.OfType<VariableDeclarationAndInitializationNode>().Select(i => new GlobalVariableSymbol(i.Identifier, this.FindType(i.Type))).ToList();
             this.Registers = EnumExtensions.ToList<Register>().Select(i => new RegisterSymbol(i.ToString(), i)).ToList();
 
             var structs = ast.OfType<StructDeclarationNode>().Select(s => (s, new StructSymbol(s.Identifier))).ToList();
@@ -38,6 +36,8 @@ namespace ArkeOS.Tools.KohlCompiler.Analysis {
             }
 
             this.Functions = ast.OfType<FunctionDeclarationNode>().Select(i => this.Visit(i)).ToList();
+            this.ConstVariables = ast.OfType<ConstDeclarationNode>().Select(i => new ConstVariableSymbol(i.Identifier, this.FindType(i.Type), ((IntegerLiteralNode)i.Value).Literal)).ToList();
+            this.GlobalVariables = ast.OfType<VariableDeclarationNode>().Select(i => new GlobalVariableSymbol(i.Identifier, this.FindType(i.Type))).ToList();
         }
 
         private FunctionSymbol Visit(FunctionDeclarationNode node) {
