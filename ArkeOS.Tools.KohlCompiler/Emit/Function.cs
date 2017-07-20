@@ -156,6 +156,7 @@ namespace ArkeOS.Tools.KohlCompiler.Emit {
             foreach (var a in r.Arguments)
                 this.Emit(InstructionDefinition.SET, Function.StackParam, this.GetParameter(a));
 
+            //TODO Need to increment by the actual size
             this.Emit(InstructionDefinition.SUB, Function.RbpParam, Function.RspParam, Parameter.CreateLiteral((ulong)r.Arguments.Count));
 
             this.Emit(InstructionDefinition.ADD, Function.RspParam, Function.RspParam, Parameter.CreateLiteral((ulong)r.Target.LocalVariables.Count));
