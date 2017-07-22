@@ -8,6 +8,7 @@ Registers
 - RZERO: 0x0 register
 - RONE: 0x1 register
 - RMAX: 0xFF.. register
+- RTICK: Nanoseconds since startup
 - RIP: Address of the current instruction
 - RSP: Address of the current stack position
 - RBP: Value used for the RBP relative instruction flag
