@@ -6,7 +6,6 @@ using System.IO;
 namespace ArkeOS.Hardware.Architecture {
     public class Instruction {
         public byte Code { get; }
-        public byte Length { get; private set; }
         public InstructionDefinition Definition { get; }
 
         public Parameter ConditionalParameter { get; }
@@ -15,6 +14,8 @@ namespace ArkeOS.Hardware.Architecture {
         public Parameter Parameter1 { get; }
         public Parameter Parameter2 { get; }
         public Parameter Parameter3 { get; }
+
+        public byte Length => (byte)(1 + (this.Parameter1?.Length ?? 0) + (this.Parameter2?.Length ?? 0) + (this.Parameter3?.Length ?? 0) + (this.ConditionalParameter?.Length ?? 0));
 
         public override string ToString() => this.ToString(16);
 
@@ -37,30 +38,22 @@ namespace ArkeOS.Hardware.Architecture {
         public Instruction(InstructionDefinition def, IList<Parameter> parameters, Parameter conditionalParameter, InstructionConditionalType conditionalType) {
             this.Definition = def;
             this.Code = def.Code;
-            this.Length = (byte)(1 + (conditionalParameter?.Length ?? 0));
             this.ConditionalParameter = conditionalParameter;
             this.ConditionalType = conditionalType;
 
-            if (this.Definition.ParameterCount >= 1) {
+            if (this.Definition.ParameterCount >= 1)
                 this.Parameter1 = parameters[0];
-                this.Length += this.Parameter1.Length;
-            }
 
-            if (this.Definition.ParameterCount >= 2) {
+            if (this.Definition.ParameterCount >= 2)
                 this.Parameter2 = parameters[1];
-                this.Length += this.Parameter2.Length;
-            }
 
-            if (this.Definition.ParameterCount >= 3) {
+            if (this.Definition.ParameterCount >= 3)
                 this.Parameter3 = parameters[2];
-                this.Length += this.Parameter3.Length;
-            }
         }
 
         public Instruction(IWordStream stream, ulong address) {
             var bits = new BitStream(stream.ReadWord(address++));
 
-            this.Length = 1;
             this.Code = bits.ReadU8(8);
             this.Definition = InstructionDefinition.Find(this.Code);
 
@@ -68,7 +61,7 @@ namespace ArkeOS.Hardware.Architecture {
             if (this.Definition.ParameterCount > 1) this.Parameter2 = this.DecodeParameter(stream, ref address, bits);
             if (this.Definition.ParameterCount > 2) this.Parameter3 = this.DecodeParameter(stream, ref address, bits);
 
-            bits.Advance((3 - this.Definition.ParameterCount) * 8);
+            bits.Advance((3 - this.Definition.ParameterCount) * 13);
 
             if (bits.ReadU1()) {
                 this.ConditionalType = bits.ReadU1() ? InstructionConditionalType.WhenNotZero : InstructionConditionalType.WhenZero;
@@ -77,20 +70,29 @@ namespace ArkeOS.Hardware.Architecture {
         }
 
         private Parameter DecodeParameter(IWordStream stream, ref ulong address, BitStream bits) {
-            var para = new Parameter() {
-                IsIndirect = bits.ReadU1(),
-                RelativeTo = (ParameterRelativeTo)bits.ReadU8(2),
-                Type = (ParameterType)bits.ReadU8(2),
-                Register = (Register)bits.ReadU8(5)
-            };
+            var indirect = bits.ReadU1();
+            var relative = (ParameterRelativeTo)bits.ReadU8(2);
+            var type = (ParameterType)bits.ReadU8(2);
+            var literal = bits.ReadU64(8);
+            var register = (Register)literal;
+            var forbid = false;
 
-            if (para.Type == ParameterType.Literal) {
-                para.Literal = stream.ReadWord(address++);
-
-                this.Length++;
+            if (type == ParameterType.Literal) {
+                literal = stream.ReadWord(address++);
+                forbid = true;
+            }
+            else if (type == ParameterType.EmbeddedLiteral) {
+                type = ParameterType.Literal;
             }
 
-            return para;
+            return new Parameter() {
+                IsIndirect = indirect,
+                RelativeTo = relative,
+                Type = type,
+                Register = register,
+                Literal = literal,
+                ForbidEmbedded = forbid,
+            };
         }
 
         public void Encode(BinaryWriter writer) {
@@ -104,7 +106,7 @@ namespace ArkeOS.Hardware.Architecture {
             if (this.Definition.ParameterCount > 1) this.EncodeParameter(writer, bits, this.Parameter2);
             if (this.Definition.ParameterCount > 2) this.EncodeParameter(writer, bits, this.Parameter3);
 
-            bits.Advance((3 - this.Definition.ParameterCount) * 8);
+            bits.Advance((3 - this.Definition.ParameterCount) * 13);
 
             if (this.ConditionalParameter != null) {
                 bits.Write(true);
@@ -117,12 +119,15 @@ namespace ArkeOS.Hardware.Architecture {
         }
 
         private void EncodeParameter(BinaryWriter writer, BitStream bits, Parameter parameter) {
+            var type = parameter.Type == ParameterType.Literal && (parameter.Literal <= Parameter.MaxForEmbeddedLiteral && !parameter.ForbidEmbedded) ? ParameterType.EmbeddedLiteral : parameter.Type;
+            var literal = parameter.Type == ParameterType.Register ? (byte)parameter.Register : parameter.Literal;
+
             bits.Write(parameter.IsIndirect);
             bits.Write((byte)parameter.RelativeTo, 2);
-            bits.Write((byte)parameter.Type, 2);
-            bits.Write((byte)parameter.Register, 5);
+            bits.Write((byte)type, 2);
+            bits.Write(literal, 8);
 
-            if (parameter.Type == ParameterType.Literal)
+            if (type == ParameterType.Literal)
                 writer.Write(parameter.Literal);
         }
     }

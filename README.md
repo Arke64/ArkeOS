@@ -35,17 +35,25 @@ Each instruction begins with one word. Literal values are embedded immediately a
 
 Base
 ----
-- 8b Code
-- 30b Parameters (3x10b parameter info)
-- 12b Conditional (1b is enabled, 1b when non-zero, 10b parameter info)
-- 14b Reserved
+- 8b code
+- 13b parameter A
+- 13b parameter B
+- 13b parameter C
+- 15b conditional
+- 2b reserved
 
-Parameter Info
---------------
-- 1b is indirect
-- 2b relative (0 = none, 1 = RIP, 2 = RSP, 3 = R0; before indirection)
-- 2b type (0 = unused, 1 = register, 2 = literal, 3 = stack)
-- 5b register
+Conditional
+-----------
+- 1b enabled (0 = no, 1 = yes)
+- 1b state (0 = when zero, 1 = when non-zero)
+- 10b parameter
+
+Parameter
+---------
+- 1b indirect (0 = no, 1 = yes)
+- 2b relative (0 = none, 1 = RIP, 2 = RSP, 3 = RBP; before indirection)
+- 2b type (0 = register, 1 = stack, 2 = literal, 3 = embedded literal)
+- 8b data
 
 Instructions
 ============

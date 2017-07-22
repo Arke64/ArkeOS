@@ -184,7 +184,7 @@ namespace ArkeOS.Tools.KohlCompiler.Emit {
         private void EmitJump(BasicBlock target) => this.EmitJump(target, null);
 
         private void EmitJump(BasicBlock target, RValue whenZero) {
-            var param = Parameter.CreateLiteral(this.currentOffset, ParameterFlags.RelativeToRIP);
+            var param = Parameter.CreateLiteral(this.currentOffset, ParameterFlags.RelativeToRIP | ParameterFlags.ForbidEmbedded);
 
             if (whenZero == null) {
                 this.Emit(InstructionDefinition.SET, Parameter.CreateRegister(Register.RIP), param);
@@ -197,7 +197,7 @@ namespace ArkeOS.Tools.KohlCompiler.Emit {
         }
 
         private void EmitCall(FunctionSymbol target) {
-            var param = Parameter.CreateLiteral(this.currentOffset, ParameterFlags.RelativeToRIP);
+            var param = Parameter.CreateLiteral(this.currentOffset, ParameterFlags.RelativeToRIP | ParameterFlags.ForbidEmbedded);
 
             this.Emit(InstructionDefinition.CALL, param);
 
@@ -205,7 +205,7 @@ namespace ArkeOS.Tools.KohlCompiler.Emit {
         }
 
         private Parameter EmitGlobalVariable(GlobalVariableSymbol target) {
-            var param = Parameter.CreateLiteral(0, ParameterFlags.Indirect);
+            var param = Parameter.CreateLiteral(0, ParameterFlags.Indirect | ParameterFlags.ForbidEmbedded);
 
             this.globalVariableFixups.Add((param, target));
 

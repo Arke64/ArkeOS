@@ -14,7 +14,7 @@ namespace ArkeOS.Hardware.ArkeIndustries {
         private ulong instructionCacheBaseAddress;
         private ulong instructionCacheSize;
         private ulong executingAddress;
-        private ulong startTicks;
+        private ulong startTime;
         private byte systemTickInterval;
         private bool interruptsEnabled;
         private bool inIsr;
@@ -50,7 +50,7 @@ namespace ArkeOS.Hardware.ArkeIndustries {
             Array.Clear(this.regularRegisters, 0, this.regularRegisters.Length);
             Array.Clear(this.interruptRegisters, 0, this.interruptRegisters.Length);
 
-            this.startTicks = (ulong)DateTime.UtcNow.Ticks;
+            this.startTime = (ulong)DateTime.UtcNow.Ticks * 100UL;
             this.executingAddress = this.StartAddress;
             this.instructionCacheBaseAddress = this.StartAddress;
             this.instructionCacheSize = 4096;
@@ -149,7 +149,7 @@ namespace ArkeOS.Hardware.ArkeIndustries {
         private void Tick() {
             var execute = true;
 
-            this.WriteRegister(Register.RTICK, (ulong)DateTime.UtcNow.Ticks * 100UL - this.startTicks);
+            this.WriteRegister(Register.RTICK, (ulong)DateTime.UtcNow.Ticks * 100UL - this.startTime);
             this.WriteRegister(Register.RIP, this.executingAddress + this.CurrentInstruction.Length);
 
             if (this.CurrentInstruction.ConditionalParameter != null) {
