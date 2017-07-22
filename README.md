@@ -13,11 +13,6 @@ Registers
 - RSP: Address of the current stack position
 - RBP: Value used for the RBP relative instruction flag
 
-Configuration
-=============
-- 0x00: System tick interval
-- 0x01: Instruction cache size
-
 Interrupts
 ==========
 - 0x00: Invalid instruction (Code, Address)
@@ -120,9 +115,35 @@ Debug
 Devices
 =======
 
+Bus Controller
+--------------
+The bus controller can be used to query for all devices on the system. It has a hard-coded device ID of 0xFFF. Addresses on the bus have two parts. The upper 12 bits are the device ID and the remaining 52 bits are an address in that device. Address 0 of the bus controller holds how many devices are present. Starting at address 1 is a list of devices. Each device info holds four words, in order: id (used for bus addresses), device type, vendor id, and product id from that vendor.
+
+Device types:
+- 0x00: RAM
+- 0x01: bus controller
+- 0x02: processor
+- 0x03: interrupt controller
+- 0x04: boot manager
+- 0x05: disk drive
+- 0x06: keyboard
+- 0x07: display
+
+Boot Manager
+------------
+The boot device is a special device that receives control when the system starts. The bus controller will find the last boot manager on the bus and set RIP to the first address in its address space. So naturally a valid executable program should be located at that address which should start the system.
+
 Interrupt Controller
 --------------------
 Each address stores the address of the the interrupt handler for the respective vector. For example, address 2 contains the address of the handler for interrupt 2. Enqueuing and dequeueing interrupts occurs outside the system bus.
+
+Processor
+---------
+
+Executes instructions. Below address configure the processor.
+
+- 0x00: System tick interval
+- 0x01: Instruction cache size
 
 Keyboard
 --------
