@@ -5,16 +5,12 @@ ArkeOS is an entirely new computer architecture.
 Registers
 =========
 - R0-R15: General purpose use
-- RI0-RI7: General purpose use for interrupts only
 - RZERO: 0x0 register
 - RONE: 0x1 register
 - RMAX: 0xFF.. register
-- RBP: Current base address used for calculating relative to offsets
-- RSP: Address of the current stack position
 - RIP: Address of the current instruction
-- RSIP: Address of the instruction executing when an interrupt fires
-- RINT1: Data made available from an interrupt
-- RINT2: Data made available from an interrupt
+- RSP: Address of the current stack position
+- RBP: Value used for the RBP relative instruction flag
 
 Configuration
 =============

@@ -7,7 +7,9 @@ namespace ArkeOS.Hardware.ArkeIndustries {
         private const long InstructionsPerSecond = 2_000_000;
         private static long TicksPerInstruction { get; } = (long)((1.0 / Processor.InstructionsPerSecond) * TimeSpan.TicksPerSecond);
 
-        private ulong[] registers;
+        private readonly ulong[] interruptRegisters;
+        private readonly ulong[] regularRegisters;
+        private ulong[] activeRegisters;
         private Instruction[] instructionCache;
         private ulong instructionCacheBaseAddress;
         private ulong instructionCacheSize;
@@ -34,7 +36,9 @@ namespace ArkeOS.Hardware.ArkeIndustries {
             this.operandA = new Operand();
             this.operandB = new Operand();
             this.operandC = new Operand();
-            this.registers = new ulong[32];
+            this.interruptRegisters = new ulong[32];
+            this.regularRegisters = new ulong[32];
+            this.activeRegisters = this.regularRegisters;
             this.disposed = false;
         }
 
@@ -42,7 +46,8 @@ namespace ArkeOS.Hardware.ArkeIndustries {
             if (this.running)
                 this.Break();
 
-            Array.Clear(this.registers, 0, this.registers.Length);
+            Array.Clear(this.regularRegisters, 0, this.regularRegisters.Length);
+            Array.Clear(this.interruptRegisters, 0, this.interruptRegisters.Length);
 
             this.executingAddress = this.StartAddress;
             this.instructionCacheBaseAddress = this.StartAddress;
@@ -109,7 +114,6 @@ namespace ArkeOS.Hardware.ArkeIndustries {
                 this.systemTimer?.Wait();
 
                 this.instructionCache = null;
-                this.registers = null;
             }
 
             this.disposed = true;
@@ -188,10 +192,11 @@ namespace ArkeOS.Hardware.ArkeIndustries {
             if (interrupt.Handler == 0)
                 return;
 
-            this.WriteRegister(Register.RSIP, this.executingAddress);
+            this.activeRegisters = this.interruptRegisters;
+
             this.WriteRegister(Register.RIP, interrupt.Handler);
-            this.WriteRegister(Register.RINT1, interrupt.Data1);
-            this.WriteRegister(Register.RINT2, interrupt.Data2);
+            this.WriteRegister(Register.R0, interrupt.Data1);
+            this.WriteRegister(Register.R1, interrupt.Data2);
 
             this.executingAddress = interrupt.Handler;
 
@@ -261,8 +266,8 @@ namespace ArkeOS.Hardware.ArkeIndustries {
             return this.BusController.ReadWord(this.ReadRegister(Register.RSP));
         }
 
-        public ulong ReadRegister(Register register) => this.registers[(int)register];
-        public void WriteRegister(Register register, ulong value) => this.registers[(int)register] = value;
+        public ulong ReadRegister(Register register) => this.activeRegisters[(int)register];
+        public void WriteRegister(Register register, ulong value) => this.activeRegisters[(int)register] = value;
 
         public override ulong ReadWord(ulong address) {
             if (address == 0) {
@@ -382,18 +387,7 @@ namespace ArkeOS.Hardware.ArkeIndustries {
         private void ExecuteINT(Operand a, Operand b, Operand c) => this.RaiseInterrupt((Interrupt)a.Value, b.Value, c.Value);
 
         private void ExecuteEINT(Operand a, Operand b, Operand c) {
-            this.WriteRegister(Register.RIP, this.ReadRegister(Register.RSIP));
-            this.WriteRegister(Register.RI0, 0);
-            this.WriteRegister(Register.RI1, 0);
-            this.WriteRegister(Register.RI2, 0);
-            this.WriteRegister(Register.RI3, 0);
-            this.WriteRegister(Register.RI4, 0);
-            this.WriteRegister(Register.RI5, 0);
-            this.WriteRegister(Register.RI6, 0);
-            this.WriteRegister(Register.RINT1, 0);
-            this.WriteRegister(Register.RINT2, 0);
-            this.WriteRegister(Register.RSIP, 0);
-
+            this.activeRegisters = this.regularRegisters;
             this.inIsr = false;
         }
 
