@@ -5,9 +5,6 @@ using System.IO;
 
 namespace ArkeOS.Hardware.Architecture {
     public class Instruction {
-        private static Parameter.Calculated RZEROCalculatedOperand { get; } = new Parameter.Calculated(true, Parameter.CreateRegister(Register.RZERO));
-        private static Parameter.Calculated RONECalculatedOperand { get; } = new Parameter.Calculated(true, Parameter.CreateRegister(Register.RONE));
-
         public byte Code { get; }
         public byte Length { get; private set; }
         public InstructionDefinition Definition { get; }
@@ -87,12 +84,7 @@ namespace ArkeOS.Hardware.Architecture {
                 Register = (Register)bits.ReadU8(5)
             };
 
-            if (para.Type == ParameterType.Calculated) {
-                this.DecodeCalculatedParameter(stream, ref address, para);
-
-                this.Length++;
-            }
-            else if (para.Type == ParameterType.Literal) {
+            if (para.Type == ParameterType.Literal) {
                 para.Literal = stream.ReadWord(address++);
 
                 this.Length++;
@@ -100,17 +92,6 @@ namespace ArkeOS.Hardware.Architecture {
 
             return para;
         }
-
-        private void DecodeCalculatedParameter(IWordStream stream, ref ulong address, Parameter parameter) {
-            var bits = new BitStream(stream.ReadWord(address++));
-
-            parameter.Base = this.DecodeCalculatedOperand(stream, ref address, bits);
-            parameter.Index = this.DecodeCalculatedOperand(stream, ref address, bits);
-            parameter.Scale = this.DecodeCalculatedOperand(stream, ref address, bits);
-            parameter.Offset = this.DecodeCalculatedOperand(stream, ref address, bits);
-        }
-
-        private Parameter.Calculated DecodeCalculatedOperand(IWordStream stream, ref ulong address, BitStream bits) => new Parameter.Calculated(bits.ReadU1(), this.DecodeParameter(stream, ref address, bits));
 
         public void Encode(BinaryWriter writer) {
             var origPosition = writer.BaseStream.Position;
@@ -141,32 +122,8 @@ namespace ArkeOS.Hardware.Architecture {
             bits.Write((byte)parameter.Type, 2);
             bits.Write((byte)parameter.Register, 5);
 
-            if (parameter.Type == ParameterType.Calculated) {
-                this.EncodeCalculatedParameter(writer, parameter);
-            }
-            else if (parameter.Type == ParameterType.Literal) {
+            if (parameter.Type == ParameterType.Literal)
                 writer.Write(parameter.Literal);
-            }
-        }
-
-        private void EncodeCalculatedParameter(BinaryWriter writer, Parameter parameter) {
-            var origPosition = writer.BaseStream.Position;
-            var bits = new BitStream();
-
-            writer.Write(0UL);
-
-            this.EncodeCalculatedOperand(writer, bits, parameter.Base);
-            this.EncodeCalculatedOperand(writer, bits, parameter.Index ?? Instruction.RZEROCalculatedOperand);
-            this.EncodeCalculatedOperand(writer, bits, parameter.Scale ?? Instruction.RONECalculatedOperand);
-            this.EncodeCalculatedOperand(writer, bits, parameter.Offset ?? Instruction.RZEROCalculatedOperand);
-
-            writer.WriteAt(bits.Word, origPosition);
-        }
-
-        private void EncodeCalculatedOperand(BinaryWriter writer, BitStream bits, Parameter.Calculated parameter) {
-            bits.Write(parameter.IsPositive);
-
-            this.EncodeParameter(writer, bits, parameter.Parameter);
         }
     }
 }

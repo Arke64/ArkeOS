@@ -205,7 +205,6 @@ namespace ArkeOS.Hardware.ArkeIndustries {
                 case ParameterType.Register: value = this.ReadRegister(parameter.Register); break;
                 case ParameterType.Stack: value = this.Pop(); break;
                 case ParameterType.Literal: value = parameter.Literal; break;
-                case ParameterType.Calculated: value = this.GetCalculatedValue(parameter); break;
             }
 
             switch (parameter.RelativeTo) {
@@ -244,33 +243,10 @@ namespace ArkeOS.Hardware.ArkeIndustries {
                     case ParameterType.Register: address += this.ReadRegister(parameter.Register); break;
                     case ParameterType.Stack: address += this.Pop(); break;
                     case ParameterType.Literal: address += parameter.Literal; break;
-                    case ParameterType.Calculated: address += this.GetCalculatedValue(parameter); break;
                 }
 
                 this.BusController.WriteWord(address, value);
             }
-        }
-
-        private ulong GetCalculatedValue(Parameter parameter) {
-            var address = this.GetValue(parameter.Base.Parameter);
-
-            var index = this.GetValue(parameter.Index.Parameter) * this.GetValue(parameter.Scale.Parameter);
-            if ((parameter.Index.IsPositive && parameter.Scale.IsPositive) || (!parameter.Index.IsPositive && !parameter.Scale.IsPositive)) {
-                address += index;
-            }
-            else {
-                address -= index;
-            }
-
-            var offset = this.GetValue(parameter.Offset.Parameter);
-            if (parameter.Offset.IsPositive) {
-                address += offset;
-            }
-            else {
-                address -= offset;
-            }
-
-            return address;
         }
 
         public void Push(ulong value) {

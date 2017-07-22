@@ -227,21 +227,7 @@ namespace ArkeOS.Tools.Assembler {
             if (isIndirect)
                 value = value.Substring(1, value.Length - 2);
 
-            if (value[0] == '(') {
-                value = value.Substring(1, value.Length - 2);
-
-                var parts = value.Split('+', '*');
-
-                if (parts[0][0] == '-') throw new InvalidParameterException("Base can't be negative.");
-
-                var @base = new Parameter.Calculated(true, this.ParseParameter(parts[0], resolveNames));
-                var index = parts.Length > 1 ? new Parameter.Calculated(parts[1][0] != '-', this.ParseParameter(parts[1].TrimStart('-'), resolveNames)) : null;
-                var scale = parts.Length > 2 ? new Parameter.Calculated(parts[2][0] != '-', this.ParseParameter(parts[2].TrimStart('-'), resolveNames)) : null;
-                var offset = parts.Length > 3 ? new Parameter.Calculated(parts[3][0] != '-', this.ParseParameter(parts[3].TrimStart('-'), resolveNames)) : null;
-
-                return this.ReduceCalculated(Parameter.CreateCalculated(@base, index, scale, offset, isIndirect, ParameterRelativeTo.None));
-            }
-            else if (value[0] == '{') {
+            if (value[0] == '{') {
                 value = value.Substring(1, value.Length - 2);
                 var res = this.ParseParameter(value, resolveNames);
                 res.RelativeTo = ParameterRelativeTo.RIP;
@@ -253,7 +239,7 @@ namespace ArkeOS.Tools.Assembler {
                 res.RelativeTo = ParameterRelativeTo.RSP;
                 return res;
             }
-            else if (value[0] == '\\') {
+            else if (value[0] == '(') {
                 value = value.Substring(1, value.Length - 2);
                 var res = this.ParseParameter(value, resolveNames);
                 res.RelativeTo = ParameterRelativeTo.RBP;
@@ -303,42 +289,6 @@ namespace ArkeOS.Tools.Assembler {
             else {
                 throw new InvalidParameterException(value);
             }
-        }
-
-        private Parameter ReduceCalculated(Parameter calculated) {
-            bool valid(Parameter.Calculated c) => c == null || (c.Parameter.Type == ParameterType.Literal && !c.Parameter.IsIndirect);
-
-            if (!valid(calculated.Base) || !valid(calculated.Index) || !valid(calculated.Scale) || !valid(calculated.Offset))
-                return calculated;
-
-            var value = calculated.Base.Parameter.Literal;
-
-            if (calculated.Index != null) {
-                var calc = calculated.Index.Parameter.Literal;
-
-                if (calculated.Scale != null)
-                    calc *= calculated.Scale.Parameter.Literal;
-
-                if (calculated.Index.IsPositive) {
-                    value += calc;
-                }
-                else {
-                    value -= calc;
-                }
-            }
-
-            if (calculated.Offset != null) {
-                var calc = calculated.Offset.Parameter.Literal;
-
-                if (calculated.Offset.IsPositive) {
-                    value += calc;
-                }
-                else {
-                    value -= calc;
-                }
-            }
-
-            return Parameter.CreateLiteral(value, calculated.IsIndirect, calculated.RelativeTo);
         }
     }
 }

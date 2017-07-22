@@ -34,7 +34,7 @@ Interrupts
 
 Instruction Format
 ==================
-Each instruction begins with one word. Calculated and literal values are embedded recursively as they appear. There is no limit on how far calculated parameters can recurse.
+Each instruction begins with one word. Literal values are embedded immediately after the instruction.
 
 Base
 ----
@@ -43,16 +43,11 @@ Base
 - 12b Conditional (1b is enabled, 1b when non-zero, 10b parameter info)
 - 14b Reserved
 
-Calculated Parameter
---------------------
-- 44b Parameters (4x10b: 1b is positive, 10b parameter info; format of [base + index * scale + offset])
-- 20b Reserved
-
 Parameter Info
 --------------
 - 1b is indirect
 - 2b relative (0 = none, 1 = RIP, 2 = RSP, 3 = R0; before indirection)
-- 2b type (0 = calculated, 1 = register, 2 = literal, 3 = stack)
+- 2b type (0 = unused, 1 = register, 2 = literal, 3 = stack)
 - 5b register
 
 Instructions

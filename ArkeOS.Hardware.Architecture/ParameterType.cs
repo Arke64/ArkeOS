@@ -1,6 +1,6 @@
 ﻿namespace ArkeOS.Hardware.Architecture {
     public enum ParameterType {
-        Calculated,
+        Unused,
         Register,
         Literal,
         Stack,
