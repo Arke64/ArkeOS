@@ -347,10 +347,12 @@ namespace ArkeOS.Hardware.ArkeIndustries {
                 case 27: this.ExecuteMULF(a, b, c); break;
                 case 28: this.ExecutePOW(a, b, c); break;
                 case 29: this.ExecutePOWF(a, b, c); break;
-                case 30: this.ExecuteMOD(a, b, c); break;
-                case 31: this.ExecuteMODF(a, b, c); break;
-                case 32: this.ExecuteITOF(a, b, c); break;
-                case 33: this.ExecuteFTOI(a, b, c); break;
+                case 30: this.ExecuteLOG(a, b, c); break;
+                case 31: this.ExecuteLOGF(a, b, c); break;
+                case 32: this.ExecuteMOD(a, b, c); break;
+                case 33: this.ExecuteMODF(a, b, c); break;
+                case 34: this.ExecuteITOF(a, b, c); break;
+                case 35: this.ExecuteFTOI(a, b, c); break;
 
                 case 40: this.ExecuteSR(a, b, c); break;
                 case 41: this.ExecuteSL(a, b, c); break;
@@ -504,6 +506,21 @@ namespace ArkeOS.Hardware.ArkeIndustries {
 
             unchecked {
                 a.Value = (ulong)BitConverter.DoubleToInt64Bits(Math.Pow(bb, cc));
+            }
+        }
+
+        private void ExecuteLOG(Operand a, Operand b, Operand c) {
+            unchecked {
+                a.Value = (ulong)Math.Log(c.Value, b.Value);
+            }
+        }
+
+        private void ExecuteLOGF(Operand a, Operand b, Operand c) {
+            var bb = BitConverter.Int64BitsToDouble((long)b.Value);
+            var cc = BitConverter.Int64BitsToDouble((long)c.Value);
+
+            unchecked {
+                a.Value = (ulong)BitConverter.DoubleToInt64Bits(Math.Log(cc, bb));
             }
         }
 

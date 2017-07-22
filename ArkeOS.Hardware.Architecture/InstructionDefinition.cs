@@ -28,10 +28,12 @@ namespace ArkeOS.Hardware.Architecture {
         public static InstructionDefinition MULF { get; } = new InstructionDefinition(nameof(InstructionDefinition.MULF), 27, ParameterDirection.Write, ParameterDirection.Read, ParameterDirection.Read);
         public static InstructionDefinition POW { get; } = new InstructionDefinition(nameof(InstructionDefinition.POW), 28, ParameterDirection.Write, ParameterDirection.Read, ParameterDirection.Read);
         public static InstructionDefinition POWF { get; } = new InstructionDefinition(nameof(InstructionDefinition.POWF), 29, ParameterDirection.Write, ParameterDirection.Read, ParameterDirection.Read);
-        public static InstructionDefinition MOD { get; } = new InstructionDefinition(nameof(InstructionDefinition.MOD), 30, ParameterDirection.Write, ParameterDirection.Read, ParameterDirection.Read);
-        public static InstructionDefinition MODF { get; } = new InstructionDefinition(nameof(InstructionDefinition.MODF), 31, ParameterDirection.Write, ParameterDirection.Read, ParameterDirection.Read);
-        public static InstructionDefinition ITOF { get; } = new InstructionDefinition(nameof(InstructionDefinition.ITOF), 32, ParameterDirection.Write, ParameterDirection.Read);
-        public static InstructionDefinition FTOI { get; } = new InstructionDefinition(nameof(InstructionDefinition.FTOI), 33, ParameterDirection.Write, ParameterDirection.Read);
+        public static InstructionDefinition LOG { get; } = new InstructionDefinition(nameof(InstructionDefinition.LOG), 30, ParameterDirection.Write, ParameterDirection.Read, ParameterDirection.Read);
+        public static InstructionDefinition LOGF { get; } = new InstructionDefinition(nameof(InstructionDefinition.LOGF), 31, ParameterDirection.Write, ParameterDirection.Read, ParameterDirection.Read);
+        public static InstructionDefinition MOD { get; } = new InstructionDefinition(nameof(InstructionDefinition.MOD), 32, ParameterDirection.Write, ParameterDirection.Read, ParameterDirection.Read);
+        public static InstructionDefinition MODF { get; } = new InstructionDefinition(nameof(InstructionDefinition.MODF), 33, ParameterDirection.Write, ParameterDirection.Read, ParameterDirection.Read);
+        public static InstructionDefinition ITOF { get; } = new InstructionDefinition(nameof(InstructionDefinition.ITOF), 34, ParameterDirection.Write, ParameterDirection.Read);
+        public static InstructionDefinition FTOI { get; } = new InstructionDefinition(nameof(InstructionDefinition.FTOI), 35, ParameterDirection.Write, ParameterDirection.Read);
 
         public static InstructionDefinition SR { get; } = new InstructionDefinition(nameof(InstructionDefinition.SR), 40, ParameterDirection.Write, ParameterDirection.Read, ParameterDirection.Read);
         public static InstructionDefinition SL { get; } = new InstructionDefinition(nameof(InstructionDefinition.SL), 41, ParameterDirection.Write, ParameterDirection.Read, ParameterDirection.Read);
