@@ -1,4 +1,4 @@
-func main: 0x0000000000000004
+func main: 0x0000000000000007
 var $tmp_0: 0x0
 var $tmp_1: 0x1
 0x00: SET S RBP
@@ -14,7 +14,7 @@ var $tmp_1: 0x1
 0x12: SET R0 [\0x1/]
 0x14: RET
 
-func fib: 0x0000000000000019
+func fib: 0x000000000000001C
 arg n: 0x0
 var $tmp_2: 0x1
 var $tmp_3: 0x2

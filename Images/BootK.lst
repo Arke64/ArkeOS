@@ -1,4 +1,4 @@
-func main: 0x0000000000000004
+func main: 0x0000000000000007
 var currentDevice: 0x00
 var deviceCount: 0x01
 var deviceAddress: 0x02
