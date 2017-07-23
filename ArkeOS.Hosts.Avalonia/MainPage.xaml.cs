@@ -1,23 +1,16 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Reflection;
-using System.Threading;
-using System.Threading.Tasks;
-
-using Avalonia;
-using Avalonia.Platform;
+﻿using ArkeOS.Hardware.Architecture;
+using ArkeOS.Hardware.ArkeIndustries;
+using ArkeOS.Utilities.Extensions;
 using Avalonia.Controls;
+using Avalonia.Input;
+using Avalonia.Interactivity;
 using Avalonia.Markup.Xaml;
 using Avalonia.Media.Imaging;
-using Avalonia.Interactivity;
+using Avalonia.Platform;
 using Avalonia.Threading;
-using Avalonia.Input;
-
-using ArkeOS.Hardware.Architecture;
-using ArkeOS.Hardware.ArkeIndustries;
-using ArkeOS.Utilities;
-using ArkeOS.Utilities.Extensions;
+using System;
+using System.Collections.Generic;
+using System.IO;
 
 namespace ArkeOS.Hosts.Avalonia {
     public partial class MainPage : UserControl {
@@ -65,9 +58,10 @@ namespace ArkeOS.Hosts.Avalonia {
         }
 
         private void RawSetPixel(ILockedFramebuffer fb, int y, int x, byte red, byte green, byte blue, byte alpha) {
-            int addr = y * fb.RowBytes + x*4;
-            unsafe {
-                byte* bitmap = (byte*) fb.Address;
+            int addr = y * fb.RowBytes + x * 4;
+            unsafe
+            {
+                byte* bitmap = (byte*)fb.Address;
                 bitmap[addr] = red;
                 bitmap[addr + 1] = green;
                 bitmap[addr + 2] = blue;
@@ -119,12 +113,12 @@ namespace ArkeOS.Hosts.Avalonia {
 
         private static Stream DiskImage() {
             var dir = MainPage.ApplicationDirectory();
-            return File.Open(dir + "/Disk 0.bin", FileMode.OpenOrCreate, FileAccess.ReadWrite);
+            return File.Open(dir + "/../Images/Fib.bin", FileMode.OpenOrCreate, FileAccess.ReadWrite);
         }
 
         private static Stream BootImage() {
             var dir = MainPage.ApplicationDirectory();
-            return File.Open(dir + "/Boot.bin", FileMode.Open, FileAccess.Read);
+            return File.Open(dir + "/../Images/BootK.bin", FileMode.Open, FileAccess.Read);
         }
 
         private void StartButton_Click(object sender, RoutedEventArgs e) {
@@ -166,7 +160,7 @@ namespace ArkeOS.Hosts.Avalonia {
                 this.RefreshDebug();
             });
 
-            this.system.Reset();
+            this.system.Start();
 
             this.RefreshDebug();
 
