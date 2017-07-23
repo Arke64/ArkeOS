@@ -103,6 +103,12 @@ namespace ArkeOS.Hardware.ArkeIndustries {
             this.systemTimer.Start();
         }
 
+        public void RefreshInstruction() {
+            this.executingAddress = this.ReadRegister(Register.RIP);
+
+            this.SetNextInstruction();
+        }
+
         public void Step() => this.Tick();
 
         protected override void Dispose(bool disposing) {

@@ -5,6 +5,7 @@
             <Button Name="ContinueButton" Content="Continue" Click="ContinueButton_Click" />
             <Button Name="StepButton" Content="Step" Click="StepButton_Click" />
             <Button Name="RefreshButton" Content="Refresh" Click="RefreshButton_Click" />
+            <Button Name="ApplyButton" Content="Apply" Click="ApplyButton_Click" />
         </StackPanel>
 
         <StackPanel Orientation="Horizontal">

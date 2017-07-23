@@ -88,6 +88,10 @@ namespace ArkeOS.Hosts.UWP {
 
                 this.host.Processor.WriteRegister((Register)Enum.Parse(typeof(Register), r), (ulong)Convert.ToInt64(textbox.Text.Replace("_", "").Replace(",", "").Replace("0b", "").Replace("0x", "").Replace("0d", ""), displayBase));
             }
+
+            this.host.Processor.RefreshInstruction();
+
+            this.RefreshDebug();
         }
 
         private void RefreshDebug() {
@@ -115,7 +119,7 @@ namespace ArkeOS.Hosts.UWP {
         }
 
         private void FormatRadioButton_Checked(object sender, RoutedEventArgs e) => this.RefreshDebug();
-
         private void RefreshButton_Click(object sender, RoutedEventArgs e) => this.RefreshDebug();
+        private void ApplyButton_Click(object sender, RoutedEventArgs e) => this.Apply();
     }
 }
