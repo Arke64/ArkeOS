@@ -1,35 +1,39 @@
-﻿const DeviceAddressBitSize : word = 0d52;
-
+const DeviceIdShift : word = 0d52;
+const BusControllerId : word = 0xFFF;
 const BootDeviceType : word = 0d5;
 const BootDeviceSignature : word = 0x00000000454B5241;
-const BootDeviceSignatureOffset : word = 0x0;
-const BootDeviceEntryPointOffset : word = 0x1;
 
-const BusControllerId : word = 0xFFF;
-const BusControllerDeviceCountOffset : word = 0d0;
-const BusControllerDeviceListOffset : word = 0d1;
+struct BusControllerInfo {
+    var deviceCount : word;
+    var deviceList : ptr[BusDeviceInfo];
+}
 
-const BusDeviceEntryLength : word = 0d4;
-const BusDeviceEntryIdOffset : word = 0d0;
-const BusDeviceEntryTypeOffset : word = 0d1;
+struct BusDeviceInfo {
+    var id : word;
+    var type : word;
+    var vendorId : word;
+    var productId : word;
+}
+
+struct BootDeviceHeader {
+    var signature : word;
+    var entryPoint : word;
+}
 
 func main() : word {
-	var currentDevice : ptr[word] = BusControllerId << DeviceAddressBitSize;
-	var deviceCount : word = *(currentDevice + BusControllerDeviceCountOffset);
+    var controllerInfo : ptr[BusControllerInfo] = BusControllerId << DeviceIdShift;
+    var deviceCount : word = controllerInfo->deviceCount;
+    var device : ptr[BusDeviceInfo] = controllerInfo->deviceList;
 
-	currentDevice += BusControllerDeviceListOffset;
+    while (deviceCount > 0) {
+        if (device->type == BootDeviceType) {
+            var header : ptr[BootDeviceHeader] = device->id << DeviceIdShift;
 
-	while (deviceCount > 0) {
-		if (*(currentDevice + BusDeviceEntryTypeOffset) == BootDeviceType) {
-			var deviceAddress : ptr[word] = *(currentDevice + BusDeviceEntryIdOffset) << DeviceAddressBitSize;
+            if (header->signature == BootDeviceSignature)
+                RIP = &header->entryPoint;
+        }
 
-			if (*(deviceAddress + BootDeviceSignatureOffset) == BootDeviceSignature) {
-				RIP = deviceAddress + BootDeviceEntryPointOffset;
-			}
-		}
-		else {
-			deviceCount -= 1;
-			currentDevice += BusDeviceEntryLength;
-		}
-	}
+        deviceCount -= 1;
+        device += 1;
+    }
 }
