@@ -240,8 +240,13 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
 
                 case BinaryExpressionNode n:
                     var target = this.CreateTemporaryLocalVariable(type);
+                    var lhsType = this.symbolTable.GetTypeOfExpression(n.Left, this.functionSymbol);
+                    var rhs = this.ExtractRValue(n.Right);
 
-                    this.block.PushInstuction(new BasicBlockBinaryOperationInstruction(target, this.ExtractRValue(n.Left), (BinaryOperationType)n.Op.Operator, this.ExtractRValue(n.Right)));
+                    if (lhsType.BaseName == "ptr" && rhs is IntegerRValue r && (n.Op.Operator == Operator.Addition || n.Op.Operator == Operator.Subtraction))
+                        rhs = new IntegerRValue(r.Value * lhsType.TypeArguments.Single().Size);
+
+                    this.block.PushInstuction(new BasicBlockBinaryOperationInstruction(target, this.ExtractRValue(n.Left), (BinaryOperationType)n.Op.Operator, rhs));
 
                     return target;
             }
