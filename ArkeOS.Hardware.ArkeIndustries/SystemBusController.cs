@@ -35,11 +35,12 @@ namespace ArkeOS.Hardware.ArkeIndustries {
                 return;
 
             var count = (ulong)this.Devices.Count();
-            var memory = new ulong[count * 4 + 1];
+            var memory = new ulong[count * 4 + 2];
             var index = 0;
             var bootId = 0UL;
 
             memory[index++] = count - 1;
+            memory[index++] = (this.MaxId << this.AddressBits) + 2;
 
             foreach (var device in this.Devices) {
                 memory[index++] = device.Id;

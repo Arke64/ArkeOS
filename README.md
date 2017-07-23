@@ -117,7 +117,7 @@ Devices
 
 Bus Controller
 --------------
-The bus controller can be used to query for all devices on the system. It has a hard-coded device ID of 0xFFF. Addresses on the bus have two parts. The upper 12 bits are the device ID and the remaining 52 bits are an address in that device. Address 0 of the bus controller holds how many devices are present. Starting at address 1 is a list of devices. Each device info holds four words, in order: id (used for bus addresses), device type, vendor id, and product id from that vendor.
+The bus controller can be used to query for all devices on the system. It has a hard-coded device ID of 0xFFF. Addresses on the bus have two parts. The upper 12 bits are the device ID and the remaining 52 bits are an address in that device. Address 0 of the bus controller holds how many devices are present and address 1 is a pointer to a list of devices. Each device info holds four words, in order: id (used for bus addresses), device type, vendor id, and product id from that vendor.
 
 Device types:
 - 0x00: RAM
