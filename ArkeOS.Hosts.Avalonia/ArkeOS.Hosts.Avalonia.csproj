@@ -1,0 +1,31 @@
+﻿<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>netcoreapp1.1</TargetFramework>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\ArkeOS.Hardware.Architecture\ArkeOS.Hardware.Architecture.csproj">
+      <Project>{f983d92b-e6a3-490f-9177-d578da2efb80}</Project>
+      <Name>ArkeOS.Hardware.Architecture</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\ArkeOS.Hardware.ArkeIndustries\ArkeOS.Hardware.ArkeIndustries.csproj">
+      <Project>{36396d22-3ccd-4283-a0c4-2d865da2d863}</Project>
+      <Name>ArkeOS.Hardware.ArkeIndustries</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\ArkeOS.Utilities\ArkeOS.Utilities.csproj">
+      <Project>{2e225ced-2308-4336-84a4-4d053581bbd0}</Project>
+      <Name>ArkeOS.Utilities</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Avalonia" Version="0.5.0" />
+    <PackageReference Include="Avalonia.Desktop" Version="0.5.0" />
+    <PackageReference Include="Avalonia.Gtk3" Version="0.5.0" />
+    <PackageReference Include="Avalonia.Skia.Desktop" Version="0.5.0" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="**\*.xaml;Assets\*" Exclude="bin\**;obj\**;**\*.xproj;packages\**;@(EmbeddedResource)" />
+  </ItemGroup>
+</Project>
