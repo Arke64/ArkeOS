@@ -57,7 +57,7 @@ Basic
 -----
 - 00 HLT: Stops the processor
 - 01 NOP: No operation
-- 02 INT A B C: Raise the interrupt specified by A passing B to RINT1 and C to RINT2
+- 02 INT A B C: Raise the interrupt specified by A setting R0 to B and R1 to C
 - 03 EINT: Return from the interrupt
 - 04 INTE: Enables interrupts
 - 05 INTD: Disables interrupts
