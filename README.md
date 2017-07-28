@@ -1,4 +1,4 @@
-3ArkeOS
+ArkeOS
 ======
 ArkeOS is an entirely new computer architecture.
 
