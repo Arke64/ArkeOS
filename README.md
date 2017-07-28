@@ -1,4 +1,4 @@
-ArkeOS
+3ArkeOS
 ======
 ArkeOS is an entirely new computer architecture.
 
@@ -41,7 +41,7 @@ Conditional
 -----------
 - 1b enabled (0 = no, 1 = yes)
 - 1b state (0 = when zero, 1 = when non-zero)
-- 10b parameter
+- 13b parameter
 
 Parameter
 ---------
