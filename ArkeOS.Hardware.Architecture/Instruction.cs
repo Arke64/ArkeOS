@@ -1,5 +1,6 @@
 ﻿using ArkeOS.Utilities;
 using ArkeOS.Utilities.Extensions;
+using System;
 using System.Collections.Generic;
 using System.IO;
 
@@ -19,15 +20,17 @@ namespace ArkeOS.Hardware.Architecture {
 
         public override string ToString() => this.ToString(16);
 
-        public string ToString(int radix) {
+        public string ToString(int radix) => this.ToString(radix, ulong.MaxValue, null, null);
+
+        public string ToString(int radix, ulong currentInstructionOffset, string instructionFormatString, IReadOnlyDictionary<ulong, string> rbpOffsetNames) {
             var str = string.Empty;
 
             if (this.ConditionalParameter != null) {
                 str += this.ConditionalType == InstructionConditionalType.WhenZero ? "IFZ " : "IFNZ ";
-                str += this.ConditionalParameter.ToString(radix) + " ";
+                str += this.ConditionalParameter.ToString(radix, currentInstructionOffset, instructionFormatString, rbpOffsetNames) + " ";
             }
 
-            return (str + this.Definition.Mnemonic + " " + this.Parameter1?.ToString(radix) + " " + this.Parameter2?.ToString(radix) + " " + this.Parameter3?.ToString(radix)).Trim();
+            return (str + this.Definition.Mnemonic + " " + this.Parameter1?.ToString(radix, currentInstructionOffset, instructionFormatString, rbpOffsetNames) + " " + this.Parameter2?.ToString(radix, currentInstructionOffset, instructionFormatString, rbpOffsetNames) + " " + this.Parameter3?.ToString(radix, currentInstructionOffset, instructionFormatString, rbpOffsetNames)).Trim();
         }
 
         public Instruction(byte code, IList<Parameter> parameters) : this(code, parameters, null, default(InstructionConditionalType)) { }

@@ -39,13 +39,13 @@ IF NOT EXIST "%KohlCompiler%" (
 )
 
 IF "%BootExtension%" == ".k" (
-    dotnet "%KohlCompiler%" --asm --output "%ScriptRoot%..\Images\%BootDisk%.bin" --src "%ScriptRoot%..\Images\%BootDisk%.k"
+    dotnet "%KohlCompiler%" --lst --resolve-lst --output "%ScriptRoot%..\Images\%BootDisk%.bin" --src "%ScriptRoot%..\Images\%BootDisk%.k"
 ) ELSE (IF "%BootExtension%" == ".asm" (
     dotnet "%Assembler%" "%ScriptRoot%..\Images\%BootDisk%.asm"
 ))
 
 IF "%AppExtension%" == ".k" (
-    dotnet "%KohlCompiler%" --asm --bootable --output "%ScriptRoot%..\Images\%AppDisk%.bin" --src "%ScriptRoot%..\Images\%AppDisk%.k"
+    dotnet "%KohlCompiler%" --lst --resolve-lst --bootable --output "%ScriptRoot%..\Images\%AppDisk%.bin" --src "%ScriptRoot%..\Images\%AppDisk%.k"
 ) ELSE (IF "%AppExtension%" == ".asm" (
     dotnet "%Assembler%" "%ScriptRoot%..\Images\%AppDisk%.asm"
 ))

@@ -91,20 +91,31 @@ namespace ArkeOS.Tools.KohlCompiler.Emit {
                 str.AppendLine();
 
             foreach (var f in this.functions) {
-                str.AppendLine($"func {f.Source.Symbol.Name}: 0x{functionOffsets[f.Source.Symbol]:X16}");
+                str.AppendLine($"func {f.Source.Symbol.Name}: 0x{this.functionOffsets[f.Source.Symbol]:X16}");
 
                 var stackFormat = hexFormatString(f.Source.Symbol.StackRequired);
                 var instrFormat = hexFormatString(f.Length);
+                var positions = new Dictionary<ulong, string>();
 
-                foreach (var a in f.Source.Symbol.Arguments)
-                    str.AppendLine($"arg {a.Name}: 0x{f.Source.Symbol.GetStackPosition(a).ToString(stackFormat)}");
+                foreach (var a in f.Source.Symbol.Arguments) {
+                    var pos = f.Source.Symbol.GetStackPosition(a);
 
-                foreach (var a in f.Source.Symbol.LocalVariables)
-                    str.AppendLine($"var {a.Name}: 0x{f.Source.Symbol.GetStackPosition(a).ToString(stackFormat)}");
+                    positions.Add(pos, a.Name);
+
+                    str.AppendLine($"arg {a.Name}: 0x{pos.ToString(stackFormat)}");
+                }
+
+                foreach (var a in f.Source.Symbol.LocalVariables) {
+                    var pos = f.Source.Symbol.GetStackPosition(a);
+
+                    positions.Add(pos, a.Name);
+
+                    str.AppendLine($"var {a.Name}: 0x{pos.ToString(stackFormat)}");
+                }
 
                 var offset = 0UL;
                 foreach (var i in f.Instructions) {
-                    str.AppendLine($"0x{offset.ToString(instrFormat)}: {i}");
+                    str.AppendLine($"0x{offset.ToString(instrFormat)}: {i.ToString(16, offset, instrFormat, positions)}");
                     offset += i.Length;
                 }
 

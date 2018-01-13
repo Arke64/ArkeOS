@@ -1,4 +1,5 @@
 ﻿using ArkeOS.Utilities.Extensions;
+using System.Collections.Generic;
 
 namespace ArkeOS.Hardware.Architecture {
     public class Parameter {
@@ -52,7 +53,9 @@ namespace ArkeOS.Hardware.Architecture {
 
         public override string ToString() => this.ToString(16);
 
-        public string ToString(int radix) {
+        public string ToString(int radix) => this.ToString(radix, ulong.MaxValue, null, null);
+
+        public string ToString(int radix, ulong currentInstructionOffset, string instructionFormatString, IReadOnlyDictionary<ulong, string> rbpOffsetNames) {
             var str = "";
 
             switch (this.Type) {
@@ -63,8 +66,10 @@ namespace ArkeOS.Hardware.Architecture {
             }
 
             switch (this.RelativeTo) {
+                case ParameterRelativeTo.RIP when this.Type == ParameterType.Literal && currentInstructionOffset != ulong.MaxValue: return "0x" + ((ulong)((long)this.Literal + (long)currentInstructionOffset)).ToString(instructionFormatString);
                 case ParameterRelativeTo.RIP: str = "{" + str + "}"; break;
                 case ParameterRelativeTo.RSP: str = "<" + str + ">"; break;
+                case ParameterRelativeTo.RBP when rbpOffsetNames != null && this.Type == ParameterType.Literal && this.IsIndirect: return rbpOffsetNames[this.Literal];
                 case ParameterRelativeTo.RBP: str = "(" + str + ")"; break;
             }
 

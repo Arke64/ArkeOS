@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
-VisualStudioVersion = 15.0.26430.16
+VisualStudioVersion = 15.0.27130.2020
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ArkeOS.Tools.Assembler", "ArkeOS.Tools.Assembler\ArkeOS.Tools.Assembler.csproj", "{E9776C8D-E3AD-4BCA-AA37-0C4883463480}"
 EndProject
@@ -130,5 +130,8 @@ Global
 		{0608B53C-37C0-4F65-8900-4DC59D208C3A} = {A8A09D5A-380E-4C15-8DDD-1837F84F41C6}
 		{63DFA5BC-89C0-47B4-AC74-DE15321C2619} = {0608B53C-37C0-4F65-8900-4DC59D208C3A}
 		{E4898220-49F7-45DC-8B09-2E9C652F9721} = {0608B53C-37C0-4F65-8900-4DC59D208C3A}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {8BFFAB39-7587-4F08-8AE0-BE39B7045E98}
 	EndGlobalSection
 EndGlobal

@@ -24,6 +24,7 @@ namespace ArkeOS.Tools.KohlCompiler {
         public string OutputName { get; set; } = "Kohl.bin";
         public bool Optimize { get; set; } = false;
         public bool EmitAssemblyListing { get; set; } = false;
+        public bool ResolveNamesInListing { get; set; } = false;
         public bool EmitBootable { get; set; } = false;
 
         public void AddSource(string file) => this.sources.Add(file);
@@ -39,7 +40,8 @@ namespace ArkeOS.Tools.KohlCompiler {
                 switch (cur) {
                     case "bootable": c.EmitBootable = true; break;
                     case "optimize": c.Optimize = true; break;
-                    case "asm": c.EmitAssemblyListing = true; break;
+                    case "lst": c.EmitAssemblyListing = true; break;
+                    case "resolve-lst": c.ResolveNamesInListing= true; break;
                     case "output": c.OutputName = a.Dequeue(); break;
                     case "src": c.AddSource(a.Dequeue()); break;
                     default: e.Add(cur); break;
