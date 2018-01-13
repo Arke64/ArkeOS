@@ -1,0 +1,9 @@
+{
+  "profiles": {
+    "ArkeOS.Tools.Assembler": {
+      "commandName": "Project",
+      "commandLineArgs": "Typer.asm",
+      "workingDirectory": "D:\\Code\\ArkeOS\\Images"
+    }
+  }
+}
