@@ -108,14 +108,21 @@ namespace ArkeOS.Hosts.UWP {
 
             this.CurrentInstructionLabel.Text = this.host.Processor.CurrentInstruction.ToString(displayBase);
 
+            var value = 0UL;
             try {
-                var addr = (ulong)Convert.ToInt64(this.MemoryAddressTextBox.Text.Replace("_", "").Replace(",", "").Replace("0b", "").Replace("0x", "").Replace("0d", ""), displayBase);
+                var str = this.MemoryAddressTextBox.Text.Replace("_", "").Replace(",", "").Replace("0b", "").Replace("0x", "").Replace("0d", "");
 
-                this.MemoryValueTextBox.Text = this.host.SystemBusController.ReadWord(addr).ToString(displayBase);
+                if (!string.IsNullOrWhiteSpace(str)) {
+                    var addr = (ulong)Convert.ToInt64(str, displayBase);
+
+                    value = this.host.SystemBusController.ReadWord(addr);
+                }
             }
             catch {
-                this.MemoryValueTextBox.Text = 0UL.ToString(displayBase);
+                value = 0;
             }
+
+            this.MemoryValueTextBox.Text = value.ToString(displayBase);
         }
 
         private void FormatRadioButton_Checked(object sender, RoutedEventArgs e) => this.RefreshDebug();
