@@ -90,7 +90,7 @@ namespace ArkeOS.Hosts.Avalonia {
             this.BreakButton = this.Get<Button>("BreakButton");
             this.BreakButton.Click += this.BreakButton_Click;
             this.ContinueButton = this.Get<Button>("ContinueButton");
-            this.StopButton.Click += this.StopButton_Click;
+            this.ContinueButton.Click += this.ContinueButton_Click;
             this.RefreshButton = this.Get<Button>("RefreshButton");
             this.RefreshButton.Click += this.RefreshButton_Click;
             this.StartButton = this.Get<Button>("StartButton");
@@ -98,8 +98,6 @@ namespace ArkeOS.Hosts.Avalonia {
             this.InputTextBox = this.Get<TextBox>("InputTextBox");
             this.StepButton = this.Get<Button>("StepButton");
             this.StepButton.Click += this.StepButton_Click;
-            this.ContinueButton = this.Get<Button>("ContinueButton");
-            this.ContinueButton.Click += this.ContinueButton_Click;
             this.HexRadioButton = this.Get<RadioButton>("HexRadioButton");
             this.DecRadioButton = this.Get<RadioButton>("DecRadioButton");
             this.BinRadioButton = this.Get<RadioButton>("BinRadioButton");
