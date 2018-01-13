@@ -1,6 +1,8 @@
 ﻿using ArkeOS.Hardware.Architecture;
 using ArkeOS.Utilities.Extensions;
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using Windows.UI.Core;
 using Windows.UI.Xaml;
@@ -9,16 +11,25 @@ using Windows.UI.Xaml.Navigation;
 
 namespace ArkeOS.Hosts.UWP {
     public partial class Debugger : Page {
+        private readonly IReadOnlyDictionary<Register, TextBox> registers;
         private SystemHost host;
         private DispatcherTimer refreshTimer;
 
         public Debugger() {
             this.InitializeComponent();
 
+            var type = this.GetType();
+            this.registers = Enum.GetValues(typeof(Register)).Cast<Register>().ToDictionary(r => r, r => (TextBox)type.GetField(r + "TextBox", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(this));
+
             this.BreakButton.IsEnabled = false;
             this.ContinueButton.IsEnabled = false;
             this.StepButton.IsEnabled = false;
             this.RefreshButton.IsEnabled = true;
+
+            void onFormat(object s, RoutedEventArgs e) => this.RefreshDebug();
+            this.HexRadioButton.Checked += onFormat;
+            this.DecRadioButton.Checked += onFormat;
+            this.BinRadioButton.Checked += onFormat;
         }
 
         protected override void OnNavigatedTo(NavigationEventArgs e) {
@@ -83,11 +94,8 @@ namespace ArkeOS.Hosts.UWP {
         private void Apply() {
             var displayBase = (this.HexRadioButton.IsChecked ?? false) ? 16 : ((this.DecRadioButton.IsChecked ?? false) ? 10 : 2);
 
-            foreach (var r in Enum.GetNames(typeof(Register))) {
-                var textbox = (TextBox)this.GetType().GetField(r + "TextBox", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(this);
-
-                this.host.Processor.WriteRegister((Register)Enum.Parse(typeof(Register), r), (ulong)Convert.ToInt64(textbox.Text.Replace("_", "").Replace(",", "").Replace("0b", "").Replace("0x", "").Replace("0d", ""), displayBase));
-            }
+            foreach (var r in this.registers)
+                this.host.Processor.WriteRegister(r.Key, (ulong)Convert.ToInt64(r.Value.Text.Replace("_", "").Replace(",", "").Replace("0b", "").Replace("0x", "").Replace("0d", ""), displayBase));
 
             this.host.Processor.RefreshInstruction();
 
@@ -97,14 +105,8 @@ namespace ArkeOS.Hosts.UWP {
         private void RefreshDebug() {
             var displayBase = (this.HexRadioButton.IsChecked ?? false) ? 16 : ((this.DecRadioButton.IsChecked ?? false) ? 10 : 2);
 
-            foreach (var r in Enum.GetNames(typeof(Register))) {
-                var textbox = (TextBox)this.GetType().GetField(r + "TextBox", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(this);
-
-                if (textbox == null)
-                    return;
-
-                textbox.Text = this.host.Processor.ReadRegister((Register)Enum.Parse(typeof(Register), r)).ToString(displayBase);
-            }
+            foreach (var r in this.registers)
+                r.Value.Text = this.host.Processor.ReadRegister(r.Key).ToString(displayBase);
 
             this.CurrentInstructionLabel.Text = this.host.Processor.CurrentInstruction.ToString(displayBase);
 
@@ -125,7 +127,6 @@ namespace ArkeOS.Hosts.UWP {
             this.MemoryValueTextBox.Text = value.ToString(displayBase);
         }
 
-        private void FormatRadioButton_Checked(object sender, RoutedEventArgs e) => this.RefreshDebug();
         private void RefreshButton_Click(object sender, RoutedEventArgs e) => this.RefreshDebug();
         private void ApplyButton_Click(object sender, RoutedEventArgs e) => this.Apply();
     }
