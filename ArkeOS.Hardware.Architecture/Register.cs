@@ -19,7 +19,7 @@
         RZERO,
         RONE,
         RMAX,
-        RTICK,
+        RTIME,
         RIP,
         RSP,
         RBP,

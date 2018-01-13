@@ -155,7 +155,7 @@ namespace ArkeOS.Hardware.ArkeIndustries {
         private void Tick() {
             var execute = true;
 
-            this.WriteRegister(Register.RTICK, (ulong)DateTime.UtcNow.Ticks * 100UL - this.startTime);
+            this.WriteRegister(Register.RTIME, (ulong)DateTime.UtcNow.Ticks * 100UL - this.startTime);
             this.WriteRegister(Register.RIP, this.executingAddress + this.CurrentInstruction.Length);
 
             if (this.CurrentInstruction.ConditionalParameter != null) {
@@ -279,14 +279,12 @@ namespace ArkeOS.Hardware.ArkeIndustries {
         public void WriteRegister(Register register, ulong value) => this.activeRegisters[(int)register] = value;
 
         public override ulong ReadWord(ulong address) {
-            if (address == 0) {
-                return this.systemTickInterval;
-            }
-            else if (address == 1) {
-                return this.instructionCacheSize;
-            }
-            else {
-                return 0;
+            switch (address) {
+                case 0: return this.systemTickInterval;
+                case 1: return this.instructionCacheSize;
+                case 2: return 1;
+                case 3: return 23;
+                default: return 0;
             }
         }
 

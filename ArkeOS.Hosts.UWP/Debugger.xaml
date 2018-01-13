@@ -47,8 +47,8 @@
                 <TextBox Name="RBPTextBox" />
             </StackPanel>
             <StackPanel Grid.Column="3" Grid.Row="1">
-                <TextBlock>RTICK</TextBlock>
-                <TextBox Name="RTICKTextBox" />
+                <TextBlock>RTIME</TextBlock>
+                <TextBox Name="RTIMETextBox" />
             </StackPanel>
             <StackPanel Grid.Column="0" Grid.Row="2">
                 <TextBlock>RZERO</TextBlock>

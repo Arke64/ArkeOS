@@ -8,7 +8,7 @@ Registers
 - RZERO: 0x0 register
 - RONE: 0x1 register
 - RMAX: 0xFF.. register
-- RTICK: Nanoseconds since startup
+- RTIME: Time units since startup
 - RIP: Address of the current instruction
 - RSP: Address of the current stack position
 - RBP: Value used for the RBP relative instruction flag
@@ -144,6 +144,8 @@ Executes instructions. Below address configure the processor.
 
 - 0x00: System tick interval
 - 0x01: Instruction cache size
+- 0x02: Time units per value in RTIME
+- 0x03: Biased exponent of time units in RTIME such that time in seconds since startup, where x is this value and y is the value at address 0x02, is `RTIME * y * (10 ^ (x - 32))`
 
 Keyboard
 --------
