@@ -16,7 +16,6 @@ namespace ArkeOS.Tools.FontGenerator {
                 return;
             }
 
-            //TODO Remove CoreCompat reference once .NET Standard 2.0 adds System.Drawing
             using (var bmp = new Bitmap(args[0])) {
                 var final = "";
 

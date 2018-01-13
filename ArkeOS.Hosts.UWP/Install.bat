@@ -11,8 +11,8 @@ SET BootExtension=%~x1
 SET AppDisk=%~n2
 SET AppExtension=%~x2
 SET PackageId=fc7d35ed-c3ad-4862-946c-a21d4fde227c
-SET Assembler=%ScriptRoot%..\ArkeOS.Tools.Assembler\bin\Debug\netcoreapp1.1\ArkeOS.Tools.Assembler.dll
-SET KohlCompiler=%ScriptRoot%..\ArkeOS.Tools.KohlCompiler\bin\Debug\netcoreapp1.1\ArkeOS.Tools.KohlCompiler.dll
+SET Assembler=%ScriptRoot%..\ArkeOS.Tools.Assembler\bin\Debug\netcoreapp2.0\ArkeOS.Tools.Assembler.dll
+SET KohlCompiler=%ScriptRoot%..\ArkeOS.Tools.KohlCompiler\bin\Debug\netcoreapp2.0\ArkeOS.Tools.KohlCompiler.dll
 
 FOR /D %%A IN ("%LOCALAPPDATA%\Packages\%PackageId%*") DO (
     SET PackageFolder=%%A
