@@ -71,6 +71,7 @@ namespace ArkeOS.Hardware.ArkeIndustries {
             if (this.running) {
                 this.running = false;
                 this.runner.Wait();
+                this.systemTimer.Wait();
             }
         }
 
