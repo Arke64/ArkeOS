@@ -25,23 +25,9 @@ struct DisplayDeviceInfo {
 }
 
 func main() : word {
-    var controllerInfo : ptr[BusControllerInfo] = BusControllerId << DeviceIdShift;
-    var deviceCount : word = controllerInfo->deviceCount;
-    var device : ptr[BusDeviceInfo] = controllerInfo->deviceList;
-    var header : ptr[DisplayDeviceInfo] = 0;
-    var base : ptr[word] = 0;
-
-    while (deviceCount > 0) {
-        if (device->type == DisplayDeviceType) {
-            header = device->id << DeviceIdShift;
-            base = (device->id << DeviceIdShift) + DisplayDataOffset;
-            deviceCount = 0;
-        }
-        else {
-            deviceCount -= 1;
-            device += 1;
-        }
-    }
+    var displayId : word = findDevice(DisplayDeviceType);
+    var header : ptr[DisplayDeviceInfo] = displayId << DeviceIdShift;
+    var base : ptr[word] = (displayId << DeviceIdShift) + DisplayDataOffset;
 
     R2 = header->columns;
     R3 = header->rows;
@@ -63,4 +49,20 @@ func main() : word {
     *(base + 10) = 0d76;
     *(base + 11) = 0d68;
     *(base + 12) = 0d33;
+}
+
+func findDevice(type: word) : word {
+    var controllerInfo : ptr[BusControllerInfo] = BusControllerId << DeviceIdShift;
+    var deviceCount : word = controllerInfo->deviceCount;
+    var device : ptr[BusDeviceInfo] = controllerInfo->deviceList;
+
+    while (deviceCount > 0) {
+        if (device->type == type)
+            return device->id;
+
+        deviceCount -= 1;
+        device += 1;
+    }
+
+    return 0;
 }
