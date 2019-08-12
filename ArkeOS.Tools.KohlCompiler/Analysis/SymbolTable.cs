@@ -258,6 +258,7 @@ namespace ArkeOS.Tools.KohlCompiler.Analysis {
             if (function != null && this.TryFindLocalVariable(function, n.Identifier, out var ls)) return ls.Type;
             if (this.TryFindGlobalVariable(n.Identifier, out var gs)) return gs.Type;
             if (this.TryFindConstVariable(n.Identifier, out var cs)) return cs.Type;
+            if (this.TryFindFunction(n.Identifier, out var fs)) return fs.Type;
             if (this.TryFindType(n.Identifier, out var ts)) return ts;
 
             throw new WrongTypeException(n.Position, n.Identifier);

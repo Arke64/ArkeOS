@@ -49,6 +49,14 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
         public override string ToString() => $"gref {this.Symbol}";
     }
 
+    public sealed class FunctionLValue : LValue {
+        public FunctionSymbol Symbol { get; }
+
+        public FunctionLValue(FunctionSymbol function) => this.Symbol = function;
+
+        public override string ToString() => $"fref {this.Symbol}";
+    }
+
     public sealed class PointerLValue : LValue {
         public RValue Target { get; }
 

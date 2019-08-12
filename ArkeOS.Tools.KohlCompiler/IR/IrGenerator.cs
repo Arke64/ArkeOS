@@ -181,6 +181,7 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
             if (this.symbolTable.TryFindArgument(this.functionSymbol, node.Identifier, out var ps)) return (ps, new ArgumentLValue(ps));
             if (this.symbolTable.TryFindLocalVariable(this.functionSymbol, node.Identifier, out var ls)) return (ls, new LocalVariableLValue(ls));
             if (this.symbolTable.TryFindGlobalVariable(node.Identifier, out var gs)) return (gs, new GlobalVariableLValue(gs));
+            if (this.symbolTable.TryFindFunction(node.Identifier, out var fs)) return (fs, new FunctionLValue(fs));
             if (allowRValue && this.symbolTable.TryFindConstVariable(node.Identifier, out var cs)) return (cs, new IntegerRValue(cs.Value));
 
             throw new ExpectedException(node.Position, "lvalue");

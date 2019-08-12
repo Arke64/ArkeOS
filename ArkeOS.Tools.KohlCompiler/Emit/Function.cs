@@ -17,6 +17,7 @@ namespace ArkeOS.Tools.KohlCompiler.Emit {
         private readonly List<(Parameter src, BasicBlock target)> jumpFixups = new List<(Parameter, BasicBlock)>();
         private readonly List<(Parameter src, FunctionSymbol target)> callFixups = new List<(Parameter, FunctionSymbol)>();
         private readonly List<(Parameter src, GlobalVariableSymbol target)> globalVariableFixups = new List<(Parameter, GlobalVariableSymbol)>();
+        private readonly List<(Parameter src, FunctionSymbol target)> functionPointerAddressOfFixups = new List<(Parameter src, FunctionSymbol target)>();
         private readonly List<Instruction> instructions = new List<Instruction>();
         private ulong currentOffset = 0;
 
@@ -60,6 +61,9 @@ namespace ArkeOS.Tools.KohlCompiler.Emit {
 
             foreach (var f in this.callFixups)
                 f.src.Literal = functionAddresses[f.target] - (thisFileOffset + f.src.Literal);
+
+            foreach (var f in this.functionPointerAddressOfFixups)
+                f.src.Literal = functionAddresses[f.target] - (thisFileOffset + f.src.Literal);
         }
 
         private void Emit(InstructionDefinition def, params Parameter[] parameters) => this.Add(new Instruction(def, parameters));
@@ -85,6 +89,7 @@ namespace ArkeOS.Tools.KohlCompiler.Emit {
                 case ArgumentLValue v: return Parameter.CreateLiteral(this.Source.Symbol.GetStackPosition(v.Symbol), ParameterFlags.RelativeToRBP | ParameterFlags.Indirect);
                 case LocalVariableLValue v: return Parameter.CreateLiteral(this.Source.Symbol.GetStackPosition(v.Symbol), ParameterFlags.RelativeToRBP | ParameterFlags.Indirect);
                 case GlobalVariableLValue v: return this.EmitGlobalVariable(v.Symbol);
+                case FunctionLValue v: return this.EmitFunctionPointerAddressOf(v.Symbol);
                 case PointerLValue v: return this.Dereference(v);
                 case StructMemberLValue v:
                     var b = this.GetParameter(v.Target);
@@ -208,6 +213,14 @@ namespace ArkeOS.Tools.KohlCompiler.Emit {
             var param = Parameter.CreateLiteral(0, ParameterFlags.Indirect | ParameterFlags.ForbidEmbedded);
 
             this.globalVariableFixups.Add((param, target));
+
+            return param;
+        }
+
+        private Parameter EmitFunctionPointerAddressOf(FunctionSymbol target) {
+            var param = Parameter.CreateLiteral(this.currentOffset, ParameterFlags.RelativeToRIP | ParameterFlags.ForbidEmbedded);
+
+            this.functionPointerAddressOfFixups.Add((param, target));
 
             return param;
         }
