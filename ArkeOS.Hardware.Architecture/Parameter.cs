@@ -66,7 +66,7 @@ namespace ArkeOS.Hardware.Architecture {
             }
 
             switch (this.RelativeTo) {
-                case ParameterRelativeTo.RIP when this.Type == ParameterType.Literal && currentInstructionOffset != ulong.MaxValue: return "0x" + ((ulong)((long)this.Literal + (long)currentInstructionOffset)).ToString(instructionFormatString);
+                case ParameterRelativeTo.RIP when this.Type == ParameterType.Literal && currentInstructionOffset != ulong.MaxValue: return "@0x" + ((ulong)((long)this.Literal + (long)currentInstructionOffset)).ToString(instructionFormatString);
                 case ParameterRelativeTo.RIP: str = "{" + str + "}"; break;
                 case ParameterRelativeTo.RSP: str = "<" + str + ">"; break;
                 case ParameterRelativeTo.RBP when rbpOffsetNames != null && this.Type == ParameterType.Literal && this.IsIndirect: return rbpOffsetNames[this.Literal];
