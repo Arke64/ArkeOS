@@ -82,7 +82,8 @@ func main() : word {
 }
 
 func deviceWaiting() : word {
-    brk;
+    RSP = 0x2_0000;
+    RBP = 0x2_0000;
 
     if (R0 == keyboardId)
         *displayBuffer = *displayBuffer + 1;
