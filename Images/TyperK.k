@@ -63,22 +63,14 @@ func main() : word {
     columns = displayHeader->columns;
     rows = displayHeader->rows;
     column = 0;
-    row = 0;
+    row = 1;
     shifted = false;
 
-    *(displayBuffer + 0) = 0d72;
-    *(displayBuffer + 1) = 0d69;
-    *(displayBuffer + 2) = 0d76;
-    *(displayBuffer + 3) = 0d76;
-    *(displayBuffer + 4) = 0d79;
-    *(displayBuffer + 5) = 0d44;
-    *(displayBuffer + 6) = 0d32;
-    *(displayBuffer + 7) = 0d87;
-    *(displayBuffer + 8) = 0d79;
-    *(displayBuffer + 9) = 0d82;
-    *(displayBuffer + 10) = 0d76;
-    *(displayBuffer + 11) = 0d68;
-    *(displayBuffer + 12) = 0d33;
+    *(displayBuffer + 0) = 0x52;
+    *(displayBuffer + 1) = 0x45;
+    *(displayBuffer + 2) = 0x41;
+    *(displayBuffer + 3) = 0x44;
+    *(displayBuffer + 4) = 0x59;
 
     interruptHeader->deviceWaiting = &deviceWaiting;
 
