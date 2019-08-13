@@ -224,8 +224,9 @@ namespace ArkeOS.Tools.KohlCompiler.Analysis {
                         case Operator.NotAnd:
                         case Operator.NotOr:
                         case Operator.NotXor:
-                            if (lt != WellKnownSymbol.Word) throw new WrongTypeException(n.Position, lt.Name);
-                            if (rt != WellKnownSymbol.Word) throw new WrongTypeException(n.Position, rt.Name);
+                            if (lt != WellKnownSymbol.Word && lt != WellKnownSymbol.Bool) throw new WrongTypeException(n.Position, lt.Name);
+                            if (rt != WellKnownSymbol.Word && rt != WellKnownSymbol.Bool) throw new WrongTypeException(n.Position, rt.Name);
+                            if (lt != rt) throw new WrongTypeException(n.Position, rt.Name);
 
                             return lt;
 
