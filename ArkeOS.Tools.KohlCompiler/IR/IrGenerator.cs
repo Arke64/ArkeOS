@@ -231,10 +231,18 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
                 case IdentifierExpressionNode n: return this.Visit(n, true);
                 case UnaryExpressionNode n:
                     switch (n.Op.Operator) {
-                        case Operator.UnaryMinus: return this.ExtractRValue(new BinaryExpressionNode(n.Position, n.Expression, OperatorNode.FromOperator(n.Position, Operator.Multiplication), new IntegerLiteralNode(n.Position, ulong.MaxValue)));
-                        case Operator.Not: return this.ExtractRValue(new BinaryExpressionNode(n.Position, n.Expression, OperatorNode.FromOperator(n.Position, Operator.Xor), new IntegerLiteralNode(n.Position, ulong.MaxValue)));
                         case Operator.AddressOf: return new AddressOfRValue(this.ExtractLValue(n.Expression));
                         case Operator.Dereference: return new PointerLValue(this.ExtractRValue(n.Expression));
+
+                        case Operator.UnaryMinus:
+                            var urhs = this.symbolTable.GetTypeOfExpression(n.Expression, this.functionSymbol) is var t1 && t1 == WellKnownSymbol.Word ? new IntegerLiteralNode(n.Position, ulong.MaxValue) : (t1 == WellKnownSymbol.Bool ? (ExpressionStatementNode)new BoolLiteralNode(n.Position, true) : throw new WrongTypeException(n.Position, t1.ToString()));
+
+                            return this.ExtractRValue(new BinaryExpressionNode(n.Position, n.Expression, OperatorNode.FromOperator(n.Position, Operator.Multiplication), urhs));
+
+                        case Operator.Not:
+                            var nrhs = this.symbolTable.GetTypeOfExpression(n.Expression, this.functionSymbol) is var t2 && t2 == WellKnownSymbol.Word ? new IntegerLiteralNode(n.Position, ulong.MaxValue) : (t2 == WellKnownSymbol.Bool ? (ExpressionStatementNode)new BoolLiteralNode(n.Position, true) : throw new WrongTypeException(n.Position, t2.ToString()));
+
+                            return this.ExtractRValue(new BinaryExpressionNode(n.Position, n.Expression, OperatorNode.FromOperator(n.Position, Operator.Xor), nrhs));
                     }
 
                     break;

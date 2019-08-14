@@ -124,7 +124,7 @@ func deviceWaiting() : word {
             }
 
             var char : word = 0x00;
-            if (shifted == false) {
+            if (!shifted) {
                      if (code == 0d00) char = 0x60;
                 else if (code == 0d01) char = 0x31;
                 else if (code == 0d02) char = 0x32;
