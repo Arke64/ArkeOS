@@ -15,6 +15,16 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
         public override string ToString() => $"{this.Target} = {this.Value}";
     }
 
+    public sealed class BasicBlockUnaryOperationInstruction : BasicBlockInstruction {
+        public LValue Target { get; }
+        public UnaryOperationType Op { get; }
+        public RValue Source { get; }
+
+        public BasicBlockUnaryOperationInstruction(LValue target, UnaryOperationType op, RValue source) => (this.Target, this.Op, this.Source) = (target, op, source);
+
+        public override string ToString() => $"{this.Target} = '{this.Op}' {this.Source}";
+    }
+
     public sealed class BasicBlockBinaryOperationInstruction : BasicBlockInstruction {
         public LValue Target { get; }
         public RValue Left { get; }
@@ -38,6 +48,11 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
         public BasicBlockIntrinsicInstruction(InstructionDefinition inst, RValue argument1, RValue argument2, RValue argument3) => (this.Intrinsic, this.Argument1, this.Argument2, this.Argument3) = (inst, argument1, argument2, argument3);
 
         public override string ToString() => $"{this.Intrinsic.Mnemonic} {this.Argument1} {this.Argument2} {this.Argument3}";
+    }
+
+    public enum UnaryOperationType {
+        Minus = Operator.UnaryMinus,
+        Not = Operator.Not,
     }
 
     public enum BinaryOperationType {

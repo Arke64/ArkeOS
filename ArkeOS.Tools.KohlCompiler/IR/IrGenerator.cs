@@ -235,14 +235,12 @@ namespace ArkeOS.Tools.KohlCompiler.IR {
                         case Operator.Dereference: return new PointerLValue(this.ExtractRValue(n.Expression));
 
                         case Operator.UnaryMinus:
-                            var urhs = this.symbolTable.GetTypeOfExpression(n.Expression, this.functionSymbol) is var t1 && t1 == WellKnownSymbol.Word ? new IntegerLiteralNode(n.Position, ulong.MaxValue) : (t1 == WellKnownSymbol.Bool ? (ExpressionStatementNode)new BoolLiteralNode(n.Position, true) : throw new WrongTypeException(n.Position, t1.ToString()));
-
-                            return this.ExtractRValue(new BinaryExpressionNode(n.Position, n.Expression, OperatorNode.FromOperator(n.Position, Operator.Multiplication), urhs));
-
                         case Operator.Not:
-                            var nrhs = this.symbolTable.GetTypeOfExpression(n.Expression, this.functionSymbol) is var t2 && t2 == WellKnownSymbol.Word ? new IntegerLiteralNode(n.Position, ulong.MaxValue) : (t2 == WellKnownSymbol.Bool ? (ExpressionStatementNode)new BoolLiteralNode(n.Position, true) : throw new WrongTypeException(n.Position, t2.ToString()));
+                            var dest = this.CreateTemporaryLocalVariable(type);
 
-                            return this.ExtractRValue(new BinaryExpressionNode(n.Position, n.Expression, OperatorNode.FromOperator(n.Position, Operator.Xor), nrhs));
+                            this.block.PushInstuction(new BasicBlockUnaryOperationInstruction(dest, (UnaryOperationType)n.Op.Operator, this.ExtractRValue(n.Expression)));
+
+                            return dest;
                     }
 
                     break;

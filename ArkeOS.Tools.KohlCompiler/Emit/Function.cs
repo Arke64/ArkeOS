@@ -34,6 +34,7 @@ namespace ArkeOS.Tools.KohlCompiler.Emit {
                 foreach (var i in node.Instructions) {
                     switch (i) {
                         case BasicBlockAssignmentInstruction n: this.Visit(n); break;
+                        case BasicBlockUnaryOperationInstruction n: this.Visit(n); break;
                         case BasicBlockBinaryOperationInstruction n: this.Visit(n); break;
                         case BasicBlockIntrinsicInstruction n: this.Visit(n); break;
                         default: Debug.Assert(false); break;
@@ -119,6 +120,17 @@ namespace ArkeOS.Tools.KohlCompiler.Emit {
         }
 
         private void Visit(BasicBlockAssignmentInstruction a) => this.Emit(InstructionDefinition.SET, this.GetParameter(a.Target), this.GetParameter(a.Value));
+
+        private void Visit(BasicBlockUnaryOperationInstruction n) {
+            var t = this.GetParameter(n.Target);
+            var s = this.GetParameter(n.Source);
+
+            switch (n.Op) {
+                case UnaryOperationType.Minus: this.Emit(InstructionDefinition.MUL, t, s, Parameter.CreateLiteral(ulong.MaxValue)); break;
+                case UnaryOperationType.Not: this.Emit(InstructionDefinition.NOT, t, s); break;
+                default: Debug.Assert(false); break;
+            }
+        }
 
         private void Visit(BasicBlockBinaryOperationInstruction n) {
             var def = default(InstructionDefinition);
